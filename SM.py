@@ -1,22 +1,21 @@
 from __future__ import annotations
 
-
 import asyncio
-from itertools import zip_longest
+import os
 import random
 import time
+from itertools import zip_longest
 from typing import *  # type: ignore
-
 
 import aiohttp
 import discord
 from discord.ext import commands
 
-
 from config import IMAGE_LINK_TEMPLATES, ITEMS_JSON_LINK, NONE_EMOJI
-from discotools import perms, EmbedUI, scheduler, spam_command, make_choice_embed, user_choice
-from functions import search_for, split_to_fields, filter_flags
-
+from discotools import (EmbedUI, make_choice_embed, perms, scheduler,
+                        spam_command, user_choice)
+from functions import filter_flags, search_for, split_to_fields
+from SM_classes import Rarity
 
 OPERATIONS = {
     '+20%':  {'eneCap', 'heaCap', 'eneReg', 'heaCap', 'heaCol', 'phyDmg', 'expDmg', 'eleDmg', 'heaDmg', 'eneDmg'},
@@ -87,6 +86,8 @@ ELEMENTS = {'PHYSICAL':  (0xffb800, STAT_NAMES['phyDmg'][1]),
             'ELECTRIC':  (0x106ed8, STAT_NAMES['eleDmg'][1]),
             'COMBINED':  (0x211d1d, '🔰')}
 ELEMENTS: dict[str, tuple[int, str]]
+ITEM_IMAGE_FILES = {
+    'Debug Item': r"D:\Obrazy\Games\Supermechs\Sprites\Deatomizer.png"}
 
 
 class AnyStats(TypedDict, total=False):
@@ -330,6 +331,11 @@ class SuperMechs(commands.Cog):
             self.item_list: list[ItemDict] = await response.json(encoding='utf-8', content_type=None)
 
 
+    def refresh_session(self) -> None:
+        self.bot.loop.create_task(self.session.close())
+        self.session = aiohttp.ClientSession()
+
+
     def abbrevs_and_names(self) -> tuple[dict[str, list[str]], dict[str, ItemDict]]:
         """Returns dict of abbrevs and dict of names and items:
         Energy Free Armor => EFA"""
@@ -370,6 +376,9 @@ class SuperMechs(commands.Cog):
         if item['name'] in self.image_url_cache:
             return self.image_url_cache[item['name']]
 
+        if item['name'] in ITEM_IMAGE_FILES:
+            return ITEM_IMAGE_FILES[item['name']]
+
         safe_name = item['name'].replace(' ', '')
 
         for url_temp in IMAGE_LINK_TEMPLATES:
@@ -396,6 +405,8 @@ class SuperMechs(commands.Cog):
         """Debug command; returns names of items that don't have an image"""
         if scan:
             start = time.time()
+            tasks: set[Coroutine[Any, Any, str]] = set()
+
             async with ctx.typing():
                 for item in self.item_list:
                     if item['name'] in self.no_img:
@@ -404,15 +415,17 @@ class SuperMechs(commands.Cog):
                     elif item['name'].replace(' ', '') in self.image_url_cache:
                         continue
 
-                    await self.get_image(item)
-            total = round(time.time() - start)
+                    tasks.add(self.get_image(item))
+
+            await asyncio.wait(tasks, return_when='ALL_COMPLETED')
+            total = round(time.time() - start, 1)
             txt = f', {total}s'
 
         else:
             txt = ''
 
-        text = (f'```\n{self.no_img}```\n' if self.no_img else ''
-                f'({len(self.no_img)}/{len(self.image_url_cache)}/{len(self.item_list)}){txt}')
+        text = (f'```\n{self.no_img}```\n' if self.no_img else r'{}') + \
+                f'({len(self.no_img)}/{len(self.image_url_cache)}/{len(self.item_list)}){txt}'
 
         await ctx.send(text)
 
@@ -501,8 +514,22 @@ class SuperMechs(commands.Cog):
         embed = EmbedUI(emojis, title=item['name'], desc=desc, color=ELEMENTS[item['element']][0])
         img_url = await self.get_image(item)
 
+        # check for http so we don't make unnecessary IO access
+        if not img_url.startswith('http') and os.path.isfile(img_url):
+            file = discord.File(img_url, filename="image.png")
+            img_url = 'attachment://image.png'
+
+        else:
+            file = None
+
         if '-c' in flags:
-            embed.set_thumbnail(url=img_url or ITEM_TYPES[item['type']][0])
+            if file:
+                embed.set_image(url=img_url)
+                embed.set_thumbnail(url=ITEM_TYPES[item['type']][0])
+
+            else:
+                embed.set_thumbnail(url=img_url or ITEM_TYPES[item['type']][0])
+
             prepare_embed = compact_embed
 
         else:
@@ -529,7 +556,9 @@ class SuperMechs(commands.Cog):
             msg = botmsg
 
         else:
-            msg = await ctx.send(embed=embed)
+            msg = await ctx.send(embed=embed, file=file)
+
+
 
         embed.msg = msg
         await embed.add_options(add_cancel=True)
@@ -537,7 +566,7 @@ class SuperMechs(commands.Cog):
         # -------------------------------------------- main loop --------------------------------------------
         while True:
             try:
-                (react, _), event = (await scheduler(ctx, {'reaction_add', 'reaction_remove'}, pred, 20.0)).pop()
+                ((react, _), event) ,= await scheduler(ctx, {'reaction_add', 'reaction_remove'}, pred, 20.0)
                 react: discord.Reaction
 
             except asyncio.TimeoutError:
@@ -636,6 +665,8 @@ class SuperMechs(commands.Cog):
             color = ELEMENTS[valid_specs['element']][0]
 
         elif 'tier' in valid_specs:
+            a = getattr(Rarity, valid_specs['tier'])
+            color = Rarity[valid_specs['tier']].value.color
             color = {'C': 0xB1B1B1, 'R': 0x55ACEE, 'E': 0xCC41CC,
                      'L': 0xE0A23C, 'M': 0xFE6333, 'D': 0xFFFFFF}[valid_specs['tier']]
 
@@ -681,6 +712,7 @@ class SuperMechs(commands.Cog):
     @perms(5)
     async def fetch(self, ctx: commands.Context):
         """Forces to update the item list"""
+        self.refresh_session()
         await self.get_item_list()
         await ctx.message.add_reaction('✅')
 

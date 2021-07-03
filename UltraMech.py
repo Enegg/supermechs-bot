@@ -73,6 +73,7 @@ class Setup(commands.Cog):
         if action not in {'load', 'reload', 'unload'}:
             raise TypeError('Bad action argument passed')
 
+        # load/reload/unload_extension
         func: Callable[[str], None] = getattr(ctx.bot, action + '_extension')
 
         if func is None:

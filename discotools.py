@@ -62,6 +62,7 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
             ctx.command.reset_cooldown(ctx)
             return True
 
+        assert channel.name is not None
         name: str = channel.name.lower()
 
         if any(s in name for s in {'spam', 'bot'}):
@@ -71,7 +72,7 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
         return cd
 
 
-    C = TypeVar('C', bound=commands.Command[Any])
+    C = TypeVar('C', bound=commands.Command)
 
     def wrapper(command: C) -> C:
         if cd:
@@ -226,7 +227,7 @@ async def user_choice(ctx: commands.Context, items: Sequence[VT], msg_args: dict
         predicate: Callable[[discord.Message], bool]=None, timeout: float=None) -> tuple[discord.Message, Optional[VT]]:
     """Creates a message from msg_args and sends it to passed Context's channel.
     Awaits a message from Context's author that meets the predicate (default implementation checks author, channel and content.isdigit())
-    and returns a tuple of message sent and an item that matched the input or None if the input was invalid."""
+    and returns a tuple of message sent and an item that matched the input or None if the input was invalid or timed out."""
 
     bot_msg = await ctx.send(**msg_args)
 

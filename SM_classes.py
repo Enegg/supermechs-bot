@@ -68,14 +68,13 @@ class Tier(NamedTuple):
     icon:  str
     color: int
 
-
     def __str__(self):
         return self.icon
 
 
 
 class Rarity(Enum):
-    P = PERK     = Tier(-1, '🟡', 0xFFFF33)
+    P = PERK      = Tier(-1,'🟡', 0xFFFF33)
     C = COMMON    = Tier(0, '⚪', 0xB1B1B1)
     R = RARE      = Tier(1, '🔵', 0x55ACEE)
     E = EPIC      = Tier(2, '🟣', 0xCC41CC)
@@ -164,7 +163,6 @@ def validate_stat(stat: str, value: Any=None, none_passes: bool=True, *, obj: ob
 class PhyDamageMixin:
     phyDmg:    tuple[int, int] | None = None
     phyResDmg: int | None = None
-
 
 @dataclass
 class EleDamageMixin:
