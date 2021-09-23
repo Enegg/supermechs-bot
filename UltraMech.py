@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-
-from typing import *  # type: ignore
 import os
-
+import traceback
+from typing import *
 
 import discord
 from discord.ext import commands
 
-
-from config import PREFIX_LOCAL, PREFIX_HOST, LOGS_CHANNEL
-
-
+from config import LOGS_CHANNEL, PREFIX_HOST, PREFIX_LOCAL
 
 TOKEN: str | None = os.environ.get('TOKEN')
 
@@ -19,7 +15,8 @@ if TOKEN is not None:
     hosted = True
 
 else:
-    import sys, importlib
+    import importlib
+    import sys
 
     token_module = importlib.import_module('TOKEN')
     TOKEN = getattr(token_module, 'TOKEN', None)
@@ -149,10 +146,10 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         return
 
     if isinstance(error, e.BadArgument):
-        await ctx.send(error, delete_after=5.0)
+        await ctx.send(error, delete_after=10.0)
 
     else:
-        print(error)
+        traceback.print_exception(type(error), error, None)
 
         if bot.hosted:
             channel = bot.get_channel(LOGS_CHANNEL)

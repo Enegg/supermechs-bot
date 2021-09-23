@@ -1,10 +1,8 @@
 """Functions that can find use outside of discord.py scope"""
 from __future__ import annotations
 
-
 import re
-from typing import *  # type: ignore
-
+from typing import *
 
 SupportsSet = TypeVar('SupportsSet', bound=Hashable)
 
@@ -30,6 +28,18 @@ def search_for(phrase: str, iterable: Iterable[str]) -> list[str]:
 
     phrase = r'\b' + re.sub('[^a-z ]+', '', phrase).replace(' ', '.* ')
     return [i for i in iterable if re.search(phrase, i.lower())]
+
+
+def look_for(phrase: str, iterable: Iterable[str]) -> Iterator[str]:
+    """Helper func capable of finding a specific string following a name rule,
+    like `hal burn sco` in `Half Burnt Scope`"""
+    parts = phrase.lower().split()
+
+    for name in iterable:
+        words = iter(name.lower().split())
+
+        if all(any(word.startswith(prefix) for word in words) for prefix in parts):
+            yield name
 
 
 def split_to_fields(all_items: list[AnyStr], offset: int=1, field_limit: int | tuple[int, int]=2048) -> list[list[AnyStr]]:
@@ -71,3 +81,10 @@ def split_to_fields(all_items: list[AnyStr], offset: int=1, field_limit: int | t
 def filter_flags(flag_set: set[SupportsSet], items: Iterable[SupportsSet]) -> tuple[set[SupportsSet], list[SupportsSet]]:
     _flags = flag_set.intersection(items)
     return _flags, [s for s in items if s not in _flags]
+
+
+def js_format(string: str, **kwargs: Any) -> str:
+    for key, value in kwargs.items():
+        string = string.replace(f'%{key}%', str(value))
+
+    return string

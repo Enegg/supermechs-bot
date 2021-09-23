@@ -1,14 +1,12 @@
 """Functions & classes to work alongside discord.py"""
 from __future__ import annotations
 
-
 import asyncio
-from typing import *  # type: ignore
-
+from functools import partial
+from typing import *
 
 import discord
 from discord.ext import commands
-
 
 VT = TypeVar("VT")
 Predicate = Callable[..., bool]
@@ -38,7 +36,7 @@ def perms(lvl: int):
     return commands.check(extended_check)
 
 
-def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=commands.BucketType.default, ignore_for_admins: bool=True):
+def spam_command(rate: int = None, per: float = None, bucket: commands.BucketType = commands.BucketType.default, *, ignore_for_admins: bool = True, regex: str = None):
     """Ratelimits the command in channels that are not "spam" or "bot" channels.
     If rate argument is not passed, the command is disabled for those channels entirely."""
     if rate is per is None:
@@ -51,37 +49,71 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
         cd = True
 
 
-    def check(ctx: commands.Context) -> bool:
+    def base_check(ctx: commands.Context) -> bool:
         channel = ctx.channel
 
         if isinstance(channel, discord.DMChannel):
             ctx.command.reset_cooldown(ctx)
             return True
 
-        if ignore_for_admins and getattr(channel.permissions_for(ctx.author), 'administrator', False): # type: ignore
+        assert isinstance(channel, discord.TextChannel)
+        assert isinstance(ctx.author, discord.Member)
+
+        if ignore_for_admins and getattr(channel.permissions_for(ctx.author), 'administrator', False):
             ctx.command.reset_cooldown(ctx)
             return True
 
-        assert channel.name is not None
-        name: str = channel.name.lower()
+        return False
 
-        if any(s in name for s in {'spam', 'bot'}):
-            ctx.command.reset_cooldown(ctx)
-            return True
+    if regex is not None:
+        import re
+        search = partial(re.search, pattern=re.compile(regex))
 
-        return cd
+        def check_re(ctx: commands.Context) -> bool:
+            if base_check(ctx):
+                return True
+
+            assert not isinstance(ctx.channel, (discord.GroupChannel, discord.DMChannel))
+
+            if search(ctx.channel.name.lower()) is not None:
+                ctx.command.reset_cooldown(ctx)
+                return True
+
+            return cd
+
+        check = check_re
+
+    else:
+        def check_str(ctx: commands.Context) -> bool:
+            if base_check(ctx):
+                return True
+
+            assert not isinstance(ctx.channel, (discord.GroupChannel, discord.DMChannel))
+
+            name = ctx.channel.name.lower()
+
+            if any(s in name for s in {'spam', 'bot'}):
+                ctx.command.reset_cooldown(ctx)
+                return True
+
+            return cd
+
+        check = check_str
 
 
-    C = TypeVar('C', bound=commands.Command)
+    if cd:
+        C = TypeVar('C', bound=commands.Command)
 
-    def wrapper(command: C) -> C:
-        if cd:
+        def cd_wrapper(command: C) -> C:
             command = commands.cooldown(rate, per, bucket)(command)
             command.cooldown_after_parsing = True
 
-        return commands.check(check)(command)
+            return commands.check(check)(command)
 
-    return wrapper
+        return cd_wrapper
+
+    else:
+        return commands.check(check)
 
 
 # embed customization
@@ -183,7 +215,7 @@ class EmbedUI(discord.Embed):
 
 
 def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter: Callable[[VT], str]=str, **kwargs: Any) -> discord.Embed:
-    """Given 1 < len(items) <= threshold, enumerates items and puts them in embed's body.
+    """Given 1 < len(items), enumerates items and puts them in embed's body.
     Embed can be customized from kwargs, those are passed to embed constructor.
     'title' has {number} argument passed for formatting.
     'description_list' has {number}, {padding} & {item} passed for formatting.
@@ -199,7 +231,7 @@ def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter
     number = len(items)
 
     if number < 2:
-        raise ValueError('Iterable contains fewer than 2 items')
+        raise ValueError('Sequence contains fewer than 2 items')
 
     padding = len(str(number)) + 1
     kwargs['title']  = kwargs.get('title', 'Found {n} items!').format(number=number, n=number)
@@ -210,12 +242,7 @@ def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter
     kwargs['color']  = kwargs.get('color', kwargs.get('colour', ctx.author.color.value))
     kwargs['author'] = kwargs.get('author', {'name': f'Requested by {ctx.author.display_name}', 'icon_url': str(ctx.author.avatar_url)})
 
-    try:
-        embed = discord.Embed.from_dict(kwargs)  # type: ignore
-
-    except TypeError as e:
-        print(e)
-        raise
+    embed = discord.Embed.from_dict(kwargs)  # type: ignore
 
     if len(embed) > 6000:
         raise ValueError('Embed body exceeded 6000 character limit')
@@ -223,13 +250,9 @@ def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter
     return embed
 
 
-async def user_choice(ctx: commands.Context, items: Sequence[VT], msg_args: dict[str, Any],
-        predicate: Callable[[discord.Message], bool]=None, timeout: float=None) -> tuple[discord.Message, Optional[VT]]:
-    """Creates a message from msg_args and sends it to passed Context's channel.
-    Awaits a message from Context's author that meets the predicate (default implementation checks author, channel and content.isdigit())
-    and returns a tuple of message sent and an item that matched the input or None if the input was invalid or timed out."""
-
-    bot_msg = await ctx.send(**msg_args)
+async def get_message(ctx: commands.Context, predicate: Callable[[discord.Message], bool] = None, timeout: float = None) -> discord.Message:
+    """Awaits a message from Context's author that meets the predicate (default implementation checks author, channel and content.isdigit())
+    and returns it. Raises TimeoutError on timeout and ValueError if the input was invalid."""
 
     if predicate is None:
         def check(m: discord.Message):
@@ -237,25 +260,7 @@ async def user_choice(ctx: commands.Context, items: Sequence[VT], msg_args: dict
 
         predicate = check
 
-    try:
-        reply = await ctx.bot.wait_for('message', check=predicate, timeout=timeout)
-
-    except asyncio.TimeoutError:
-        await bot_msg.add_reaction('⏰')
-        return bot_msg, None
-
-    else:
-        choice = int(reply.content) - 1
-
-        if 0 <= choice < len(items):
-            item = items[choice]
-            await reply.delete()
-
-        else:
-            await reply.add_reaction('❌')
-            return bot_msg, None
-
-    return bot_msg, item
+    return await ctx.bot.wait_for('message', check=predicate, timeout=timeout)
 
 
 async def scheduler(ctx: commands.Context, events: Iterable[str], check: Predicate | Iterable[Predicate], timeout: float = None,
@@ -289,7 +294,7 @@ class Flag(commands.Converter):
 
     Returns flags found in command arguments
     """
-    flags: tuple[str, ...]
+    flags: tuple[str, ...] | None
 
     def __new__(cls, *, flags: tuple[str, ...]=None):
         self = super(Flag, cls).__new__(cls)
@@ -308,7 +313,7 @@ class Flag(commands.Converter):
 
 
     def __contains__(self, key: str) -> bool:
-        return bool(self.flags) and key in self.flags
+        return self.flags is not None and key in self.flags
 
 
     def __repr__(self):
@@ -330,8 +335,8 @@ class Flag(commands.Converter):
 
 
 
-def async_from_sync(loop: asyncio.AbstractEventLoop, coro: Awaitable[Any], callback: Callable[[asyncio.Task], Any]=None):
+def async_from_sync(loop: asyncio.AbstractEventLoop, coro: Awaitable[Any], callback: Callable[[asyncio.Task[Any]], Any]=None):
     task = loop.create_task(coro)
 
-    if callback:
+    if callback is not None:
         task.add_done_callback(callback)
