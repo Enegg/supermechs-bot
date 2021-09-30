@@ -5,8 +5,8 @@ import asyncio
 from functools import partial
 from typing import *
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 VT = TypeVar("VT")
 Predicate = Callable[..., bool]
@@ -36,7 +36,7 @@ def perms(lvl: int):
     return commands.check(extended_check)
 
 
-def spam_command(rate: int = None, per: float = None, bucket: commands.BucketType = commands.BucketType.default, *, ignore_for_admins: bool = True, regex: str = None):
+def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=commands.BucketType.default, *, ignore_for_admins: bool=True, regex: str=None):
     """Ratelimits the command in channels that are not "spam" or "bot" channels.
     If rate argument is not passed, the command is disabled for those channels entirely."""
     if rate is per is None:
@@ -52,12 +52,14 @@ def spam_command(rate: int = None, per: float = None, bucket: commands.BucketTyp
     def base_check(ctx: commands.Context) -> bool:
         channel = ctx.channel
 
-        if isinstance(channel, discord.DMChannel):
+        assert ctx.command is not None
+
+        if isinstance(channel, disnake.DMChannel):
             ctx.command.reset_cooldown(ctx)
             return True
 
-        assert isinstance(channel, discord.TextChannel)
-        assert isinstance(ctx.author, discord.Member)
+        assert isinstance(channel, disnake.TextChannel)
+        assert isinstance(ctx.author, disnake.Member)
 
         if ignore_for_admins and getattr(channel.permissions_for(ctx.author), 'administrator', False):
             ctx.command.reset_cooldown(ctx)
@@ -73,7 +75,8 @@ def spam_command(rate: int = None, per: float = None, bucket: commands.BucketTyp
             if base_check(ctx):
                 return True
 
-            assert not isinstance(ctx.channel, (discord.GroupChannel, discord.DMChannel))
+            assert ctx.command is not None
+            assert isinstance(ctx.channel, (disnake.TextChannel, disnake.Thread))
 
             if search(ctx.channel.name.lower()) is not None:
                 ctx.command.reset_cooldown(ctx)
@@ -88,7 +91,8 @@ def spam_command(rate: int = None, per: float = None, bucket: commands.BucketTyp
             if base_check(ctx):
                 return True
 
-            assert not isinstance(ctx.channel, (discord.GroupChannel, discord.DMChannel))
+            assert ctx.command is not None
+            assert isinstance(ctx.channel, (disnake.TextChannel, disnake.Thread))
 
             name = ctx.channel.name.lower()
 
@@ -117,7 +121,7 @@ def spam_command(rate: int = None, per: float = None, bucket: commands.BucketTyp
 
 
 # embed customization
-class EmbedUI(discord.Embed):
+class EmbedUI(disnake.Embed):
     """Preset for an embed creating a choice menu
 
     By default, it holds these emojis:
@@ -126,7 +130,7 @@ class EmbedUI(discord.Embed):
 
     NUMBERS = ('0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟')
 
-    def __init__(self, emojis: list[str] | None=None, msg: discord.Message | commands.Context | None=None, **kwargs: Any):
+    def __init__(self, emojis: list[str] | None=None, msg: disnake.Message | commands.Context | None=None, **kwargs: Any):
         if desc := kwargs.get('desc'):
             kwargs.setdefault('description', desc)
 
@@ -137,7 +141,7 @@ class EmbedUI(discord.Embed):
         if isinstance(msg, commands.Context):
             self._msg = msg.message
 
-        elif msg is None or isinstance(msg, discord.Message):
+        elif msg is None or isinstance(msg, disnake.Message):
             self._msg = msg
 
         else:
@@ -146,7 +150,7 @@ class EmbedUI(discord.Embed):
 
     def set_default(self, ctx: commands.Context):
         """Sets embed author"""
-        self.set_author(name=f'Requested by {ctx.author.display_name}', icon_url=str(ctx.author.avatar_url))
+        self.set_author(name=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
         return self
 
 
@@ -180,8 +184,8 @@ class EmbedUI(discord.Embed):
         return self._msg
 
     @msg.setter
-    def msg(self, value: discord.Message | commands.Context):
-        if not isinstance(value, (discord.Message, commands.Context)):
+    def msg(self, value: disnake.Message | commands.Context):
+        if not isinstance(value, (disnake.Message, commands.Context)):
             raise TypeError(f'Expected Context or Message object, got {type(value)}')
 
         if isinstance(value, commands.Context):
@@ -214,7 +218,7 @@ class EmbedUI(discord.Embed):
 
 
 
-def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter: Callable[[VT], str]=str, **kwargs: Any) -> discord.Embed:
+def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter: Callable[[VT], str]=str, **kwargs: Any) -> disnake.Embed:
     """Given 1 < len(items), enumerates items and puts them in embed's body.
     Embed can be customized from kwargs, those are passed to embed constructor.
     'title' has {number} argument passed for formatting.
@@ -240,9 +244,9 @@ def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter
     desc += '\n'.join(fill.format(number=n, item=i, padding=padding, n=n, i=i, p=padding) for n, i in enumerate(map(name_getter, items), 1))
     kwargs['description'] = desc
     kwargs['color']  = kwargs.get('color', kwargs.get('colour', ctx.author.color.value))
-    kwargs['author'] = kwargs.get('author', {'name': f'Requested by {ctx.author.display_name}', 'icon_url': str(ctx.author.avatar_url)})
+    kwargs['author'] = kwargs.get('author', {'name': f'Requested by {ctx.author.display_name}', 'icon_url': ctx.author.display_avatar.url})
 
-    embed = discord.Embed.from_dict(kwargs)  # type: ignore
+    embed = disnake.Embed.from_dict(kwargs)
 
     if len(embed) > 6000:
         raise ValueError('Embed body exceeded 6000 character limit')
@@ -250,12 +254,12 @@ def make_choice_embed(ctx: commands.Context, items: Sequence[VT], *, name_getter
     return embed
 
 
-async def get_message(ctx: commands.Context, predicate: Callable[[discord.Message], bool] = None, timeout: float = None) -> discord.Message:
+async def get_message(ctx: commands.Context[commands.Bot], predicate: Callable[[disnake.Message], bool]=None, timeout: float=None) -> disnake.Message:
     """Awaits a message from Context's author that meets the predicate (default implementation checks author, channel and content.isdigit())
     and returns it. Raises TimeoutError on timeout and ValueError if the input was invalid."""
 
     if predicate is None:
-        def check(m: discord.Message):
+        def check(m: disnake.Message):
             return m.author == ctx.author and m.channel == ctx.channel and m.content.isdigit()
 
         predicate = check

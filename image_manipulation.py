@@ -4,7 +4,7 @@ import asyncio
 from io import BytesIO
 import aiohttp
 
-import discord
+import disnake
 from PIL import Image
 
 
@@ -14,11 +14,11 @@ async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
         return Image.open(BytesIO(await response.content.read()))
 
 
-def image_to_file(image: Image.Image, filename: str=None) -> discord.File:
+def image_to_file(image: Image.Image, filename: str = None) -> disnake.File:
     with BytesIO() as stream:
         image.save(stream, format='png')
         stream.seek(0)
-        return discord.File(stream, filename)
+        return disnake.File(stream, filename)
 
 
 def bbox_to_w_h(bbox: tuple[int, int, int, int] | None) -> tuple[int, int]:

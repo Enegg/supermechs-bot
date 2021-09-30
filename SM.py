@@ -10,8 +10,8 @@ from string import ascii_letters
 from typing import *
 
 import aiohttp
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 from config import FOO, IMAGE_LINK_TEMPLATES, ITEMS_JSON_LINK, NONE_EMOJI
 from discotools import (EmbedUI, get_message, make_choice_embed, scheduler,
@@ -52,6 +52,7 @@ class StringIterator(Iterator[str]):
 
         self._unread.appendleft(self.last)
         self.last = None
+
 
 
 def concat_op(op: str) -> str:
@@ -205,7 +206,7 @@ def buff_difference(stat: str, enabled: bool, value: int | None) -> tuple[str, i
     return str(buffed), buffed - value
 
 
-def default_embed(embed: discord.Embed, item: ItemDict, divine: bool, buffs_enabled: bool) -> None:
+def default_embed(embed: disnake.Embed, item: ItemDict, divine: bool, buffs_enabled: bool) -> None:
     _min, _max = item['transform_range'].split('-')
 
     lower = Rarity[_min].level
@@ -271,7 +272,7 @@ def default_embed(embed: discord.Embed, item: ItemDict, divine: bool, buffs_enab
     embed.add_field(name=f'Stats{note}:', value=item_stats, inline=False)
 
 
-def compact_embed(embed: discord.Embed, item: ItemDict, divine: bool, buffs_enabled: bool) -> None:
+def compact_embed(embed: disnake.Embed, item: ItemDict, divine: bool, buffs_enabled: bool) -> None:
     _min, _max = item['transform_range'].split('-')
 
     lower = Rarity[_min].level
@@ -598,7 +599,7 @@ class SuperMechs(commands.Cog):
 
         # check for http so we don't make unnecessary IO access
         if not img_url.startswith('http') and os.path.isfile(img_url):
-            file = discord.File(img_url, filename="image.png")
+            file = disnake.File(img_url, filename="image.png")
             img_url = 'attachment://image.png'
 
         else:
@@ -621,13 +622,13 @@ class SuperMechs(commands.Cog):
             if img_url:
                 embed.set_image(url=img_url)
 
-        embed.set_author(name=f'Requested by {ctx.author.display_name}', icon_url=str(ctx.author.avatar_url))
+        embed.set_author(name=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
         embed.set_footer(text='Toggle arena buffs with B' + ' and divine stats with D' * ('🇩' in emojis))
         # adding item stats
 
         divine = buffs_enabled = False
 
-        def pred(r: discord.Reaction, u: discord.Member):
+        def pred(r: disnake.Reaction, u: disnake.Member):
             return u == ctx.author and r.message == msg and str(r) in emojis
 
         prepare_embed(embed, item, divine, buffs_enabled)
@@ -637,7 +638,11 @@ class SuperMechs(commands.Cog):
             msg = botmsg
 
         else:
-            msg = await ctx.send(embed=embed, file=file)
+            if file is None:
+                msg = await ctx.send(embed=embed)
+
+            else:
+                msg = await ctx.send(embed=embed, file=file)
 
 
 
@@ -648,7 +653,7 @@ class SuperMechs(commands.Cog):
         while True:
             try:
                 ((react, _), event) ,= await scheduler(ctx, {'reaction_add', 'reaction_remove'}, pred, 20.0)
-                react: discord.Reaction
+                react: disnake.Reaction
 
             except asyncio.TimeoutError:
                 break
@@ -674,8 +679,7 @@ class SuperMechs(commands.Cog):
         await msg.clear_reactions()
 
 
-    @commands.command(aliases=['bi', 'smlookup'],
-        usage='[type:[tors/top/side/.../dron], elem:[exp/elec/phys/combined], tier:[C-D]]')
+    @commands.command(aliases=['bi', 'smlookup'])
     async def browseitems(self, ctx: commands.Context, *, args: str):
         """Lookup items by rarity, element and type"""
         preparsed = map(str.strip, args.split(','))
@@ -694,7 +698,7 @@ class SuperMechs(commands.Cog):
             f"\n`3` – {Icons.SIDE_LEFT.emoji}{Icons.TORSO.emoji}{Icons.SIDE_RIGHT.emoji} – `4`{none}`2` – {mods} – `6`"
             f"\n`5` – {Icons.SIDE_LEFT.emoji}{Icons.LEGS.emoji}{Icons.SIDE_RIGHT.emoji} – `6`{none}`3` – {mods} – `7`"
             f"\n`C` – {Icons.CHARGE.emoji}{Icons.TELEPORTER.emoji}{Icons.HOOK.emoji} – `H`{none}`4` – {mods} – `8`")
-        embed = discord.Embed(title=title, description=desc)
+        embed = disnake.Embed(title=title, description=desc)
         await ctx.send(embed=embed)
 
 
@@ -725,7 +729,7 @@ class SuperMechs(commands.Cog):
             except KeyError:
                 raise commands.UserInputError('Name not found.') from None
 
-        embed = discord.Embed(title=f'Mech build "{name}"', description=str(mech), color=ctx.author.color)
+        embed = disnake.Embed(title=f'Mech build "{name}"', description=str(mech), color=ctx.author.color)
         embed.add_field(name='Stats:', value=mech.display_stats)
 
         if mech.torso is None:
@@ -774,7 +778,7 @@ class SuperMechs(commands.Cog):
         name = ' '.join(name_parts).lower()
         names = list(s.strip() for s in name.split(','))
 
-        botmsg = None
+        botmsg: disnake.Message | None = None
         failed: list[str] = []
 
         mech = self.get_current_mech(ctx)
@@ -862,6 +866,6 @@ class SuperMechs(commands.Cog):
 
 
 
-def setup(bot: commands.Bot[commands.Context]):
+def setup(bot: commands.Bot):
     bot.add_cog(SuperMechs(bot))
     print('SM loaded')

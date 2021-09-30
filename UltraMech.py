@@ -2,52 +2,80 @@ from __future__ import annotations
 
 import os
 import traceback
+from argparse import ArgumentParser
 from typing import *
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
+from disnake.ext.commands import errors
+from dotenv import load_dotenv
 
 from config import LOGS_CHANNEL, PREFIX_HOST, PREFIX_LOCAL
 
-TOKEN: str | None = os.environ.get('TOKEN')
+parser = ArgumentParser()
+parser.add_argument('--local', action='store_true')
+parser.add_argument('--prefix', type=str)
+# parser.add_argument('--log-file', action='store_true')
+args = parser.parse_args()
+LOCAL: bool = args.local
 
-if TOKEN is not None:
-    hosted = True
+load_dotenv()
+TOKEN = os.environ.get('TOKEN')
+
+if TOKEN is None:
+    raise EnvironmentError('TOKEN not found in environment variables')
+
+
+if args.prefix:
+    PREFIX: str = args.prefix
+
+elif LOCAL:
+    PREFIX = PREFIX_LOCAL
 
 else:
-    import importlib
-    import sys
-
-    token_module = importlib.import_module('TOKEN')
-    TOKEN = getattr(token_module, 'TOKEN', None)
-
-    if not TOKEN:
-        raise EnvironmentError('Not running localy and TOKEN is not an environment variable')
-
-    if args := frozenset(sys.argv[1:]):
-        hosted = 'host' in args
-
-    else:
-        hosted = False
+    PREFIX = PREFIX_HOST
 
 
-def prefix_handler(bot: HostedBot, msg: discord.Message) -> Union[str, list[str]]:
-    prefix = (PREFIX_LOCAL, PREFIX_HOST)[bot.hosted]
+def prefix_handler(bot: HostedBot, msg: disnake.Message) -> str | tuple[str, str]:
+    if isinstance(msg.channel, disnake.DMChannel):
+        return (PREFIX, '')
 
-    if isinstance(msg.channel, discord.DMChannel):
-        return [prefix, '']
+    return PREFIX
 
-    return prefix
 
 # ------------------------------------------ Bot init ------------------------------------------
+
+simple_reactions: dict[type[commands.CommandError], str] = {
+    errors.CommandNotFound: '❓',
+    errors.CheckFailure: '🔒',
+    errors.NotOwner: '🔒',
+    errors.CommandOnCooldown: '🕓'}
 
 class HostedBot(commands.Bot):
     def __init__(self, hosted: bool=False, **options):
         super().__init__(**options)
         self.hosted = hosted
 
-intents = discord.Intents(guilds=True, members=True, emojis=True, messages=True, reactions=True)
-bot = HostedBot(command_prefix=prefix_handler, hosted=hosted, intents=intents)
+
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if type(error) in simple_reactions:
+            await ctx.message.add_reaction(simple_reactions[type(error)])
+            return
+
+        if isinstance(error, errors.BadArgument):
+            await ctx.send(str(error), delete_after=10.0)
+
+        else:
+            traceback.print_exception(type(error), error, None)
+
+            if bot.hosted:
+                channel = bot.get_channel(LOGS_CHANNEL)
+                assert isinstance(channel, disnake.TextChannel)
+                await channel.send(f'{error}\n{type(error)}')
+
+
+intents = disnake.Intents(guilds=True, members=True, emojis=True, messages=True, reactions=True)
+bot = HostedBot(command_prefix=prefix_handler, hosted=LOCAL, intents=intents)
 
 # ----------------------------------------------------------------------------------------------
 
@@ -129,32 +157,12 @@ class Setup(commands.Cog):
     async def shutdown(self, ctx: commands.Context):
         """Terminates the bot connection."""
         await ctx.send('I will be back')
-        await bot.logout()
+        bot.login
+        await bot.close()
 
 
 bot.add_cog(Setup())
 bot.load_extension('SM')
-
-@bot.event
-async def on_command_error(ctx: commands.Context, error: commands.CommandError):
-    e = commands.errors
-    simple_reactions = {e.CommandNotFound: '❓', e.CheckFailure: '🔒', e.CommandOnCooldown: '🕓'}
-    simple_reactions: dict[type[commands.CommandError], str]
-
-    if type(error) in simple_reactions:
-        await ctx.message.add_reaction(simple_reactions[type(error)])
-        return
-
-    if isinstance(error, e.BadArgument):
-        await ctx.send(error, delete_after=10.0)
-
-    else:
-        traceback.print_exception(type(error), error, None)
-
-        if bot.hosted:
-            channel = bot.get_channel(LOGS_CHANNEL)
-            assert isinstance(channel, discord.TextChannel)
-            await channel.send(f'{error}\n{type(error)}')
 
 @bot.event
 async def on_ready():
@@ -163,14 +171,14 @@ async def on_ready():
 
     if bot.hosted:
         channel = bot.get_channel(LOGS_CHANNEL)
-        assert isinstance(channel, discord.TextChannel)
+        assert isinstance(channel, disnake.TextChannel)
         await channel.send("I'm back online")
         activity = {'name': 'SuperMechs', 'url': 'https://workshop-unlimited.vercel.app/',
-                    'type': discord.ActivityType.playing}
+                    'type': disnake.ActivityType.playing}
 
     else:
-        activity = {'name': 'under maintenance', 'type': discord.ActivityType.playing}
+        activity = {'name': 'under maintenance', 'type': disnake.ActivityType.playing}
 
-    await bot.change_presence(activity=discord.Activity(**activity))
+    await bot.change_presence(activity=disnake.Activity(**activity))
 
 bot.run(TOKEN)
