@@ -74,8 +74,20 @@ class HostedBot(commands.Bot):
                 await channel.send(f'{error}\n{type(error)}')
 
 
+    async def on_ready(self):
+        text = f'{bot.user.name} is online'
+        print(text, '-' * len(text), sep='\n')
+
+
+if LOCAL:
+    activity = disnake.Game('under maintenance')
+
+else:
+    activity = disnake.Game('SuperMechs')
+
+
 intents = disnake.Intents(guilds=True, members=True, emojis=True, messages=True, reactions=True)
-bot = HostedBot(command_prefix=prefix_handler, hosted=LOCAL, intents=intents)
+bot = HostedBot(command_prefix=prefix_handler, hosted=LOCAL, intents=intents, activity=activity)
 
 # ----------------------------------------------------------------------------------------------
 
@@ -164,21 +176,5 @@ class Setup(commands.Cog):
 bot.add_cog(Setup())
 bot.load_extension('SM')
 
-@bot.event
-async def on_ready():
-    text = f'{bot.user.name} is online'
-    print(text, '-' * len(text), sep='\n')
-
-    if bot.hosted:
-        channel = bot.get_channel(LOGS_CHANNEL)
-        assert isinstance(channel, disnake.TextChannel)
-        await channel.send("I'm back online")
-        activity = {'name': 'SuperMechs', 'url': 'https://workshop-unlimited.vercel.app/',
-                    'type': disnake.ActivityType.playing}
-
-    else:
-        activity = {'name': 'under maintenance', 'type': disnake.ActivityType.playing}
-
-    await bot.change_presence(activity=disnake.Activity(**activity))
 
 bot.run(TOKEN)

@@ -8,7 +8,7 @@ from typing import *
 import aiohttp
 from PIL import Image
 
-from image_manipulation import bbox_to_w_h, get_image
+from image_manipulation import get_image_w_h, get_image
 
 if TYPE_CHECKING:
     from typing_extensions import NotRequired
@@ -203,10 +203,10 @@ class MechRenderer:
 
     def __init__(self, torso: Item) -> None:
         self.torso_image = torso.image
-        self.pixels_to_left = 0
-        self.pixels_to_right = 0
-        self.pixels_upwards = 0
-        self.pixels_downwards = 0
+        self.pixels_left  = 0
+        self.pixels_right = 0
+        self.pixels_above = 0
+        self.pixels_below = 0
         assert torso.attachments is not None
         self.torso_attachments = torso.attachments
 
@@ -222,7 +222,8 @@ class MechRenderer:
         attachment = item.attachment
         assert attachment is not None
 
-        item_x, item_y = attachment['x'], attachment['y']
+        item_x = attachment['x']
+        item_y = attachment['y']
 
         if layer == 'drone':
             offset = Attachment(x=0, y=0)
@@ -235,18 +236,18 @@ class MechRenderer:
         x = x_offset - item_x
         y = y_offset - item_y
 
-        self.check_offset(item, x, y)
+        self.adjust_offset(item, x, y)
         self.put_image(item.image, layer, x, y)
 
 
-    def check_offset(self, item: Item, x: int, y: int) -> None:
-        width, height = bbox_to_w_h(item.image.getbbox())
-        t_width, t_height = bbox_to_w_h(self.torso_image.getbbox())
+    def adjust_offset(self, item: Item, x: int, y: int) -> None:
+        width, height = get_image_w_h(item.image)
+        t_width, t_height = get_image_w_h(self.torso_image)
 
-        self.pixels_to_left = max(self.pixels_to_left, max(-x, 0))
-        self.pixels_upwards = max(self.pixels_upwards, max(-y, 0))
-        self.pixels_to_right = max(self.pixels_to_right, max(x + width - t_width, 0))
-        self.pixels_downwards = max(self.pixels_downwards, max(y + height - t_height, 0))
+        self.pixels_left  = max(self.pixels_left,  -x)
+        self.pixels_above = max(self.pixels_above, -y)
+        self.pixels_right = max(self.pixels_right, x + width  - t_width)
+        self.pixels_below = max(self.pixels_below, y + height - t_height)
 
 
     def put_image(self, image: Image.Image, layer: str, x: int, y: int) -> None:
@@ -256,14 +257,14 @@ class MechRenderer:
     def finalize(self) -> Image.Image:
         self.put_image(self.torso_image, 'torso', 0, 0)
 
-        width, height = bbox_to_w_h(self.torso_image.getbbox())
-        width += self.pixels_to_left + self.pixels_to_right
-        height += self.pixels_upwards + self.pixels_downwards
+        width, height = get_image_w_h(self.torso_image)
+        width += self.pixels_left + self.pixels_right
+        height += self.pixels_above + self.pixels_below
 
         canvas = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 
         for x, y, image in filter(None, self.images):
-            canvas.alpha_composite(image, (x + self.pixels_to_left, y + self.pixels_upwards))
+            canvas.alpha_composite(image, (x + self.pixels_left, y + self.pixels_above))
 
         return canvas
 
@@ -372,15 +373,12 @@ class Mech:
 
 
     def __str__(self) -> str:
-        def make_str(item: Item | None) -> str:
-            return '' if item is None else f'{item.type.capitalize()}: {item}'
-
-        string_parts = [*map(make_str, (self.torso, self.legs, self.drone))]
+        string_parts = [f'{item.type.capitalize()}: {item}' for item in (self.torso, self.legs, self.drone) if item is not None]
 
         if weapon_string := ', '.join(f'{wep}{f" x{count}" * (count > 1)}' for wep, count in Counter(filter(None, self.iter_weapons())).items()):
             string_parts.append('Weapons: ' + weapon_string)
 
-        string_parts.extend(map(make_str, (self.tele, self.charge, self.hook)))
+        string_parts.extend(f'{item.type.capitalize()}: {item}' for item in (self.tele, self.charge, self.hook) if item is not None)
 
         if modules := ', '.join(f'{mod}{f" x{count}" * (count > 1)}' for mod, count in Counter(filter(None, self.iter_modules())).items()):
             string_parts.append('Modules: ' + modules)
@@ -430,7 +428,7 @@ class Mech:
     def display_stats(self) -> str:
         stats = self.calc_stats
         reference = tuple(stat_mixin.keys())
-        order = sorted(stats, key=lambda item: reference.index(item))
+        order = sorted(stats, key=reference.index)
 
         main_str = ''
 
@@ -454,7 +452,7 @@ class Mech:
     @property
     def image(self) -> Image.Image:
         """Returns `Image` object merging all item images.
-        Requires the torso to be set, otherwise raises `ValueError`"""
+        Requires the torso to be set, otherwise raises `RuntimeError`"""
         if self.torso is None:
             raise RuntimeError('Cannot create image without torso set')
 
@@ -470,9 +468,9 @@ class Mech:
             canvas.add_image(item, layer)
 
         if self.drone is not None:
-            width, height = bbox_to_w_h(self.drone.image.getbbox())
-            t_width, t_height = bbox_to_w_h(self.torso.image.getbbox())
-            self.drone.attachment = Attachment(x=t_width - width - 50, y=t_height - height // 2)
+            width, height = get_image_w_h(self.drone.image)
+            t_width, t_height = get_image_w_h(self.torso.image)
+            self.drone.attachment = Attachment(x=t_width - width - 50, y=height + 25)
 
             canvas.add_image(self.drone, 'drone')
 
@@ -608,7 +606,7 @@ class Item:
 
 
     def __repr__(self) -> str:
-        return '<{0.name} - {0.element.value} {0.type} {0.rarity} {0.stats}>'.format(self)
+        return '<{0.name} - {0.element} {0.type} {0.rarity} {0.stats}>'.format(self)
 
 
     def __eq__(self, o: object) -> bool:
@@ -634,16 +632,17 @@ class Item:
         if self._image is None:
             raise RuntimeError('load_image was never called')
 
-        if 'width' in self.kwargs or 'height' in self.kwargs:
-            new_width, new_height = self.kwargs.get('width', 0), self.kwargs.get('height', 0)
+        if not ('width' in self.kwargs or 'height' in self.kwargs):
+            return self._image.copy()
 
-            width, height = bbox_to_w_h(self._image.getbbox())
-            width = new_width or width
-            height = new_height or height
+        new_width  = self.kwargs.get('width',  0)
+        new_height = self.kwargs.get('height', 0)
 
-            return self._image.resize((width, height))
+        width, height = get_image_w_h(self._image)
+        width = new_width or width
+        height = new_height or height
 
-        return self._image.copy()
+        return self._image.resize((width, height))
 
 
     async def load_image(self, session: aiohttp.ClientSession) -> None:

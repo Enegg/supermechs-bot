@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from functools import partial
 from typing import *
 
@@ -9,13 +10,14 @@ import disnake
 from disnake.ext import commands
 
 VT = TypeVar("VT")
+C = TypeVar('C', bound=commands.Command)
 Predicate = Callable[..., bool]
 
 # decorators
 def perms(lvl: int):
     """Defines required user's lvl to access a command, following:
     1 - manage messages, 2 - manage guild, 3 - admin, 4 - guild owner, 5 - bot author"""
-    async def extended_check(ctx: commands.Context) -> bool:
+    async def extended_check(ctx: commands.Context[commands.Bot]) -> bool:
         if await ctx.bot.is_owner(ctx.author):
             return True
 
@@ -29,7 +31,9 @@ def perms(lvl: int):
 
         if lvl <= len(perm_keys):
             key = perm_keys[lvl - 1]
-            return getattr(ctx.author.permissions_in(ctx.channel), key, False)  # type: ignore
+            assert isinstance(ctx.author, disnake.Member)
+            assert isinstance(ctx.channel, (disnake.TextChannel, disnake.Thread))
+            return getattr(ctx.channel.permissions_for(ctx.author), key, False)
 
         return False
 
@@ -43,11 +47,12 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
         cd = False
 
     elif rate is None or per is None:
-        raise ValueError('Specified one of two cooldown arguments; both are required')
+        raise TypeError('Specified one of two cooldown arguments; both are required')
 
     else:
         cd = True
 
+    assert rate is not None and per is not None
 
     def base_check(ctx: commands.Context) -> bool:
         channel = ctx.channel
@@ -61,14 +66,13 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
         assert isinstance(channel, disnake.TextChannel)
         assert isinstance(ctx.author, disnake.Member)
 
-        if ignore_for_admins and getattr(channel.permissions_for(ctx.author), 'administrator', False):
+        if ignore_for_admins and ctx.author.guild_permissions.administrator:
             ctx.command.reset_cooldown(ctx)
             return True
 
         return False
 
     if regex is not None:
-        import re
         search = partial(re.search, pattern=re.compile(regex))
 
         def check_re(ctx: commands.Context) -> bool:
@@ -106,8 +110,6 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
 
 
     if cd:
-        C = TypeVar('C', bound=commands.Command)
-
         def cd_wrapper(command: C) -> C:
             command = commands.cooldown(rate, per, bucket)(command)
             command.cooldown_after_parsing = True

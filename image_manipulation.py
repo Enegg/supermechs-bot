@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import asyncio
 from io import BytesIO
-import aiohttp
 
+import aiohttp
 import disnake
 from PIL import Image
 
@@ -14,14 +14,15 @@ async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
         return Image.open(BytesIO(await response.content.read()))
 
 
-def image_to_file(image: Image.Image, filename: str = None) -> disnake.File:
+def image_to_file(image: Image.Image, filename: str=None) -> disnake.File:
     with BytesIO() as stream:
         image.save(stream, format='png')
         stream.seek(0)
         return disnake.File(stream, filename)
 
 
-def bbox_to_w_h(bbox: tuple[int, int, int, int] | None) -> tuple[int, int]:
+def get_image_w_h(image: Image.Image) -> tuple[int, int]:
+    bbox = image.getbbox()
     assert bbox is not None
     x, y, a, b = bbox
     return a - x, b - y
