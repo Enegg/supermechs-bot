@@ -18,7 +18,7 @@ from discotools import (EmbedUI, get_message, make_choice_embed, scheduler,
                         spam_command)
 from functions import filter_flags, js_format, search_for
 from image_manipulation import image_to_file
-from SM_classes import STAT_NAMES, Element, Icons, Item, ItemDict, Mech, Rarity
+from SM_classes import STAT_NAMES, Elements, Icons, Item, ItemDict, Mech, Rarity
 
 OPERATIONS = {
     '+20%':  {'eneCap', 'heaCap', 'eneReg', 'heaCap', 'heaCol', 'phyDmg', 'expDmg', 'eleDmg', 'heaDmg', 'eneDmg'},
@@ -168,7 +168,7 @@ def parse_kwargs(args: Iterable[str]):
 
 def get_specs(item: ItemDict) -> dict[str, str]:
     return {'type':  Icons[item['type']].emoji,
-            'element': Element[item['element']].emoji,
+            'element': Elements[item['element']].emoji,
             'tier': Rarity[item['transform_range'][0]].emoji}
 
 
@@ -594,7 +594,7 @@ class SuperMechs(commands.Cog):
 
         # embedding
         desc = f"{item['element'].capitalize()} {item['type'].replace('_', ' ').lower()}"
-        embed = EmbedUI(emojis, title=item['name'], desc=desc, color=Element[item['element']].color)
+        embed = EmbedUI(emojis, title=item['name'], desc=desc, color=Elements[item['element']].color)
         img_url = await self.get_image_url(item)
 
         # check for http so we don't make unnecessary IO access

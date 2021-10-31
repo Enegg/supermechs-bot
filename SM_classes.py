@@ -19,40 +19,54 @@ class Stat(NamedTuple):
     emoji: str
 
 
-STAT_NAMES = {
-    'weight':    Stat('Weight',                   '<:weight:725870760484143174>'),
-    'health':    Stat('HP',                       '<:health:725870887588462652>'),
-    'eneCap':    Stat('Energy',                   '<:energy:725870941883859054>'),
-    'eneReg':    Stat('Regeneration',              '<:regen:725871003665825822>'),
-    'heaCap':    Stat('Heat',                       '<:heat:725871043767435336>'),
-    'heaCol':    Stat('Cooling',                 '<:cooling:725871075778363422>'),
-    'phyRes':    Stat('Physical resistance',      '<:phyres:725871121051811931>'),
-    'expRes':    Stat('Explosive resistance',     '<:expres:725871136935772294>'),
-    'eleRes':    Stat('Electric resistance',     '<:elecres:725871146716758077>'),
-    'phyDmg':    Stat('Damage',                   '<:phydmg:725871208830074929>'),
-    'phyResDmg': Stat('Resistance drain',      '<:phyresdmg:725871259635679263>'),
-    'expDmg':    Stat('Damage',                   '<:expdmg:725871223338172448>'),
-    'heaDmg':    Stat('Heat damage',              '<:headmg:725871613639393290>'),
-    'heaCapDmg': Stat('Heat capacity drain',  '<:heatcapdmg:725871478083551272>'),
-    'heaColDmg': Stat('Cooling damage',       '<:coolingdmg:725871499281563728>'),
-    'expResDmg': Stat('Resistance drain',      '<:expresdmg:725871281311842314>'),
-    'eleDmg':    Stat('Damage',                   '<:eledmg:725871233614479443>'),
-    'eneDmg':    Stat('Energy drain',             '<:enedmg:725871599517171719>'),
-    'eneCapDmg': Stat('Energy capacity drain', '<:enecapdmg:725871420126789642>'),
-    'eneRegDmg': Stat('Regeneration damage',    '<:regendmg:725871443815956510>'),
-    'eleResDmg': Stat('Resistance drain',      '<:eleresdmg:725871296381976629>'),
-    'range':     Stat('Range',                     '<:range:725871752072134736>'),
-    'push':      Stat('Knockback',                  '<:push:725871716613488843>'),
-    'pull':      Stat('Pull',                       '<:pull:725871734141616219>'),
-    'recoil':    Stat('Recoil',                   '<:recoil:725871778282340384>'),
-    'retreat':   Stat('Retreat',                 '<:retreat:725871804236955668>'),
-    'advance':   Stat('Advance',                 '<:advance:725871818115907715>'),
-    'walk':      Stat('Walking',                    '<:walk:725871844581834774>'),
-    'jump':      Stat('Jumping',                    '<:jump:725871869793796116>'),
-    'uses':      Stat('',                           '<:uses:725871917923303688>'),
-    'backfire':  Stat('Backfire',               '<:backfire:725871901062201404>'),
-    'heaCost':   Stat('Heat cost',               '<:heatgen:725871674007879740>'),
-    'eneCost':   Stat('Energy cost',            '<:eneusage:725871660237979759>')}
+STAT_NAMES = dict(
+       weight=Stat('Weight',                   '<:weight:725870760484143174>'),
+       health=Stat('HP',                       '<:health:725870887588462652>'),
+       eneCap=Stat('Energy',                   '<:energy:725870941883859054>'),
+       eneReg=Stat('Regeneration',              '<:regen:725871003665825822>'),
+       heaCap=Stat('Heat',                       '<:heat:725871043767435336>'),
+       heaCol=Stat('Cooling',                 '<:cooling:725871075778363422>'),
+       phyRes=Stat('Physical resistance',      '<:phyres:725871121051811931>'),
+       expRes=Stat('Explosive resistance',     '<:expres:725871136935772294>'),
+       eleRes=Stat('Electric resistance',     '<:elecres:725871146716758077>'),
+       phyDmg=Stat('Damage',                   '<:phydmg:725871208830074929>'),
+    phyResDmg=Stat('Resistance drain',      '<:phyresdmg:725871259635679263>'),
+       expDmg=Stat('Damage',                   '<:expdmg:725871223338172448>'),
+       heaDmg=Stat('Heat damage',              '<:headmg:725871613639393290>'),
+    heaCapDmg=Stat('Heat capacity drain',  '<:heatcapdmg:725871478083551272>'),
+    heaColDmg=Stat('Cooling damage',       '<:coolingdmg:725871499281563728>'),
+    expResDmg=Stat('Resistance drain',      '<:expresdmg:725871281311842314>'),
+       eleDmg=Stat('Damage',                   '<:eledmg:725871233614479443>'),
+       eneDmg=Stat('Energy drain',             '<:enedmg:725871599517171719>'),
+    eneCapDmg=Stat('Energy capacity drain', '<:enecapdmg:725871420126789642>'),
+    eneRegDmg=Stat('Regeneration damage',    '<:regendmg:725871443815956510>'),
+    eleResDmg=Stat('Resistance drain',      '<:eleresdmg:725871296381976629>'),
+        range=Stat('Range',                     '<:range:725871752072134736>'),
+         push=Stat('Knockback',                  '<:push:725871716613488843>'),
+         pull=Stat('Pull',                       '<:pull:725871734141616219>'),
+       recoil=Stat('Recoil',                   '<:recoil:725871778282340384>'),
+      retreat=Stat('Retreat',                 '<:retreat:725871804236955668>'),
+      advance=Stat('Advance',                 '<:advance:725871818115907715>'),
+         walk=Stat('Walking',                    '<:walk:725871844581834774>'),
+         jump=Stat('Jumping',                    '<:jump:725871869793796116>'),
+         uses=Stat('Uses',                       '<:uses:725871917923303688>'),
+     backfire=Stat('Backfire',               '<:backfire:725871901062201404>'),
+      heaCost=Stat('Heat cost',               '<:heatgen:725871674007879740>'),
+      eneCost=Stat('Energy cost',            '<:eneusage:725871660237979759>'))
+WORKSHOP_STATS: dict[str, type[int]] = dict(
+    weight=int,
+    health=int,
+    eneCap=int,
+    eneReg=int,
+    heaCap=int,
+    heaCol=int,
+    phyRes=int,
+    expRes=int,
+    eleRes=int,
+    bulletCap=int,
+    rocketCap=int,
+    walk=int,
+    jump=int)
 
 
 AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELEPORTER', 'CHARGE_ENGINE', 'HOOK', 'MODULE']
@@ -108,16 +122,7 @@ class Attachment(TypedDict):
     x: int
     y: int
 
-
-class Attachments(TypedDict):
-    leg1: Attachment
-    leg2: Attachment
-    side1: Attachment
-    side2: Attachment
-    side3: Attachment
-    side4: Attachment
-    top1: Attachment
-    top2: Attachment
+Attachments = dict[str, Attachment]
 
 
 
@@ -139,7 +144,7 @@ class ItemDict(TypedDict):
 
 class Tier(NamedTuple):
     level: int
-    emoji:  str
+    emoji: str
     color: int
 
     def __str__(self):
@@ -156,17 +161,17 @@ class Rarity(Tier, Enum):
 
 
 
-class Elem(NamedTuple):
-    name: str
+class Element(NamedTuple):
+    name:  str
     color: int
     emoji: str
 
-class Element(Elem, Enum):
-    EXPLOSIVE = HEAT = Elem('EXPLOSIVE', 0xb71010, STAT_NAMES['expDmg'][1])
-    ELECTRIC  = ELEC = Elem('ELECTRIC',  0x106ed8, STAT_NAMES['eleDmg'][1])
-    PHYSICAL  = PHYS = Elem('PHYSICAL',  0xffb800, STAT_NAMES['phyDmg'][1])
-    COMBINED  = COMB = Elem('COMBINED',  0x211d1d, '🔰')
-    OMNI =             Elem('OMNI',      0x000000, '<a:energyball:731885130594910219>')
+class Elements(Element, Enum):
+    EXPLOSIVE = HEAT = Element('EXPLOSIVE', 0xb71010, STAT_NAMES['expDmg'][1])
+    ELECTRIC  = ELEC = Element('ELECTRIC',  0x106ed8, STAT_NAMES['eleDmg'][1])
+    PHYSICAL  = PHYS = Element('PHYSICAL',  0xffb800, STAT_NAMES['phyDmg'][1])
+    COMBINED  = COMB = Element('COMBINED',  0x211d1d, '🔰')
+    OMNI =             Element('OMNI',      0x000000, '<a:energyball:731885130594910219>')
 
 
 
@@ -175,17 +180,17 @@ class Icon(NamedTuple):
     emoji: str
 
 class Icons(Icon, Enum):
-    TORSO      = Icon('https://i.imgur.com/iNtSziV.png', '<:torso:730115680363347968>')
-    LEGS       = Icon('https://i.imgur.com/6NBLOhU.png', '<:legs:730115699397361827>')
-    DRONE      = Icon('https://i.imgur.com/oqQmXTF.png', '<:drone:730115574763618394>')
-    SIDE_RIGHT = Icon('https://i.imgur.com/CBbvOnQ.png', '<:sider:730115747799629940>')
-    SIDE_LEFT  = Icon('https://i.imgur.com/UuyYCrw.png', '<:sidel:730115729365663884>')
-    TOP_RIGHT  = Icon('https://i.imgur.com/LW7ZCGZ.png', '<:topr:730115786735091762>')
-    TOP_LEFT   = Icon('https://i.imgur.com/1xlnVgK.png', '<:topl:730115768431280238>')
-    TELEPORTER = Icon('https://i.imgur.com/Fnq035A.png', '<:tele:730115603683213423>')
+    TORSO      = Icon('https://i.imgur.com/iNtSziV.png',  '<:torso:730115680363347968>')
+    LEGS       = Icon('https://i.imgur.com/6NBLOhU.png',   '<:legs:730115699397361827>')
+    DRONE      = Icon('https://i.imgur.com/oqQmXTF.png',  '<:drone:730115574763618394>')
+    SIDE_RIGHT = Icon('https://i.imgur.com/CBbvOnQ.png',  '<:sider:730115747799629940>')
+    SIDE_LEFT  = Icon('https://i.imgur.com/UuyYCrw.png',  '<:sidel:730115729365663884>')
+    TOP_RIGHT  = Icon('https://i.imgur.com/LW7ZCGZ.png',   '<:topr:730115786735091762>')
+    TOP_LEFT   = Icon('https://i.imgur.com/1xlnVgK.png',   '<:topl:730115768431280238>')
+    TELEPORTER = Icon('https://i.imgur.com/Fnq035A.png',   '<:tele:730115603683213423>')
     CHARGE     = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
-    HOOK       = Icon('https://i.imgur.com/8oAoPcJ.png', '<:hook:730115622347735071>')
-    MODULE     = Icon('https://i.imgur.com/dQR8UgN.png', '<:mod:730115649866694686>')
+    HOOK       = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
+    MODULE     = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
     SIDE_WEAPON = SIDE_RIGHT
     TOP_WEAPON = TOP_RIGHT
     CHARGE_ENGINE = CHARGE
@@ -196,45 +201,39 @@ class Icons(Icon, Enum):
 
 
 MAX_WEIGHT = 1010
+PERFECT_WEIGHT = 1000
 
 
 class MechRenderer:
     layer_order = ('drone', 'side2', 'side4', 'top2', 'leg2', 'torso', 'leg1', 'top1', 'side1', 'side3')
 
-    def __init__(self, torso: Item) -> None:
+    def __init__(self, torso: Item[Attachments]) -> None:
         self.torso_image = torso.image
         self.pixels_left  = 0
         self.pixels_right = 0
         self.pixels_above = 0
         self.pixels_below = 0
-        assert torso.attachments is not None
-        self.torso_attachments = torso.attachments
+        self.torso_attachments = torso.attachment
 
         self.images: list[tuple[int, int, Image.Image] | None] = [None] * 10
 
 
-    def add_image(self, item: Item, layer: str) -> None:
+    def add_image(self, item: Item[Attachment], layer: str) -> None:
         if layer == 'legs':
             self.add_image(item, 'leg1')
             self.add_image(item, 'leg2')
             return
 
-        attachment = item.attachment
-        assert attachment is not None
-
-        item_x = attachment['x']
-        item_y = attachment['y']
+        item_x = item.attachment['x']
+        item_y = item.attachment['y']
 
         if layer == 'drone':
-            offset = Attachment(x=0, y=0)
+            x, y = -item_x, -item_y
 
         else:
-            offset: Attachment = self.torso_attachments[layer]
-
-        x_offset, y_offset = offset['x'], offset['y']
-
-        x = x_offset - item_x
-        y = y_offset - item_y
+            offset = self.torso_attachments[layer]
+            x = offset['x'] - item_x
+            y = offset['y'] - item_y
 
         self.adjust_offset(item, x, y)
         self.put_image(item.image, layer, x, y)
@@ -272,26 +271,27 @@ class MechRenderer:
 
 class Mech:
     """Represents a mech build."""
-    torso:  Item | None
-    legs:   Item | None
-    drone:  Item | None
-    side1:  Item | None
-    side2:  Item | None
-    side3:  Item | None
-    side4:  Item | None
-    top1:   Item | None
-    top2:   Item | None
-    tele:   Item | None
-    charge: Item | None
-    hook:   Item | None
-    mod1:   Item | None
-    mod2:   Item | None
-    mod3:   Item | None
-    mod4:   Item | None
-    mod5:   Item | None
-    mod6:   Item | None
-    mod7:   Item | None
-    mod8:   Item | None
+    if TYPE_CHECKING:
+        torso:  Item[Attachments] | None
+        legs:   Item[Attachment] | None
+        drone:  Item[Attachment] | None
+        side1:  Item[Attachment] | None
+        side2:  Item[Attachment] | None
+        side3:  Item[Attachment] | None
+        side4:  Item[Attachment] | None
+        top1:   Item[Attachment] | None
+        top2:   Item[Attachment] | None
+        tele:   Item[None] | None
+        charge: Item[None] | None
+        hook:   Item[None] | None
+        mod1:   Item[None] | None
+        mod2:   Item[None] | None
+        mod3:   Item[None] | None
+        mod4:   Item[None] | None
+        mod5:   Item[None] | None
+        mod6:   Item[None] | None
+        mod7:   Item[None] | None
+        mod8:   Item[None] | None
 
     def __init__(self):
         self._items: dict[str, Item | None] = {
@@ -322,10 +322,11 @@ class Mech:
 
 
     def __getattr__(self, name: Any) -> Item | None:
-        if name in self._items:
+        try:
             return self._items[name]
 
-        raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
+        except KeyError:
+            raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
 
 
     def __setitem__(self, _type: AnyType | tuple[AnyType, int], value: Item | None) -> None:
@@ -409,15 +410,15 @@ class Mech:
                 if item is None:
                     continue
 
-                for key in stat_mixin.keys():
+                for key in WORKSHOP_STATS.keys():
                     if key in item.stats:
                         if key not in total_stats:
                             total_stats[key] = 0
 
                         total_stats[key] += item.stats[key]
 
-            if (weight := total_stats.setdefault('weight', 0)) > 1000:
-                total_stats['health'] = total_stats.get('health', 0) - (weight - 1000) * 15
+            if (weight := total_stats.setdefault('weight', 0)) > PERFECT_WEIGHT:
+                total_stats['health'] = total_stats.get('health', 0) - (weight - PERFECT_WEIGHT) * 15
 
             self.has_modified = False
 
@@ -427,7 +428,7 @@ class Mech:
     @property
     def display_stats(self) -> str:
         stats = self.calc_stats
-        reference = tuple(stat_mixin.keys())
+        reference = tuple(WORKSHOP_STATS.keys())
         order = sorted(stats, key=reference.index)
 
         main_str = ''
@@ -439,7 +440,7 @@ class Mech:
 
                 emojis = '👽⚙️👌❗⛔'
 
-                e = emojis[(value > 0) + (value >= 1000) + (value > 1000) + (value > MAX_WEIGHT)]
+                e = emojis[(value > 0) + (value >= PERFECT_WEIGHT) + (value > PERFECT_WEIGHT) + (value > MAX_WEIGHT)]
 
                 main_str += f'{icon} **{value}** {e} {name}\n'
 
@@ -485,7 +486,8 @@ class Mech:
             await asyncio.wait(coros, timeout=5, return_when='ALL_COMPLETED')
 
 
-    def iter_weapons(self) -> Iterator[Item | None]:
+    def iter_weapons(self) -> Iterator[Item[Attachment] | None]:
+        """Iterator over mech's side and top weapons"""
         items = self._items
         yield items['side1']
         yield items['side2']
@@ -495,7 +497,8 @@ class Mech:
         yield items['top2']
 
 
-    def iter_modules(self) -> Iterator[Item | None]:
+    def iter_modules(self) -> Iterator[Item[None] | None]:
+        """Iterator over mech's modules"""
         items = self._items
         yield items['mod1']
         yield items['mod2']
@@ -507,58 +510,65 @@ class Mech:
         yield items['mod8']
 
 
-    def iter_items(self) -> Iterator[Item | None]:
+    def iter_items(self) -> Iterator[Item[Attachments] | Item[Attachment] | Item[None] | None]:
+        """Iterator over all mech's items"""
         yield from self._items.values()
 
 
     def modified(self) -> None:
+        """Callback to indicate caching methods to update contents"""
         self.has_modified = True
 
 
+AttachmentType = TypeVar('AttachmentType', Attachment, Attachments, None)
 
-stat_mixin = dict[str, type[Union[int, tuple[int, int]]]](
-    weight=int,
-    health=int,
-    eneCap=int,
-    eneReg=int,
-    heaCap=int,
-    heaCol=int,
-    phyRes=int,
-    expRes=int,
-    eleRes=int,
-    bulletCap=int,
-    rocketCap=int)
-
-
-damage_mixin = dict[str, type[Union[int, tuple[int, int]]]](
-    phyDmg=tuple[int, int],
-    phyResDmg=int,
-    eleDmg=tuple[int, int],
-    eneDmg=int,
-    eneCapDmg=int,
-    eneRegDmg=int,
-    eleResDmg=int,
-    expDmg=tuple[int, int],
-    heaDmg=int,
-    heaCapDmg=int,
-    heaColDmg=int,
-    expResDmg=int,
-    range=tuple[int, int],
-    push=int,
-    pull=int,
-    recoil=int,
-    advance=int,
-    retreat=int,
-    backfire=int,
-    heaCost=int,
-    eneCost=int,
-    bulletCost=int,
-    rocketCost=int)
-
-
-
-class Item:
+class Item(Generic[AttachmentType]):
     """Represents a single item."""
+    @overload
+    def __init__(
+        self: Item[Attachments],
+        id: int,
+        name: str,
+        image: str,
+        type: Literal['TORSO'],
+        stats: AnyStats,
+        transform_range: str,
+        divine: AnyStats=None,
+        element: str=None,
+        attachment: Attachments = ...,
+        **kwargs: Any
+        ) -> None: ...
+
+    @overload
+    def __init__(
+        self: Item[Attachment],
+        id: int,
+        name: str,
+        image: str,
+        type: Literal['LEGS', 'SIDE_WEAPON', 'TOP_WEAPON', 'DRONE'],
+        stats: AnyStats,
+        transform_range: str,
+        divine: AnyStats=None,
+        element: str=None,
+        attachment: Attachment = ...,
+        **kwargs: Any
+        ) -> None: ...
+
+    @overload
+    def __init__(
+        self: Item[None],
+        id: int,
+        name: str,
+        image: str,
+        type: Literal['CHARGE', 'TELEPORT', 'HOOK', 'MODULE'],
+        stats: AnyStats,
+        transform_range: str,
+        divine: AnyStats=None,
+        element: str=None,
+        attachment: None = ...,
+        **kwargs: Any
+        ) -> None: ...
+
 
     def __init__(
         self,
@@ -570,7 +580,7 @@ class Item:
         transform_range: str,
         divine: AnyStats=None,
         element: str=None,
-        attachment: Attachment | Attachments | None=None,
+        attachment=None,
         **kwargs: Any
         ) -> None:
 
@@ -588,17 +598,10 @@ class Item:
 
         val_a, _, val_b = transform_range.partition('-')
         self.rarity = (Rarity[val_a], Rarity[val_b]) if val_b else Rarity[val_a]
-        self.element = Element.OMNI if element is None else Element[element]
+        self.element = Elements.OMNI if element is None else Elements[element]
 
-        self.attachment = self.attachments = None
+        self._attachment = attachment
         self.kwargs = kwargs
-
-        if attachment is not None:
-            if 'x' in attachment:
-                self.attachment: Attachment | None = attachment  # type: ignore
-
-            else:
-                self.attachments: Attachments | None = attachment  # type: ignore
 
 
     def __str__(self) -> str:
@@ -621,9 +624,17 @@ class Item:
             and o.rarity == self.rarity)
 
 
-
     def __hash__(self) -> int:
         return hash(self.id)
+
+    @property
+    def attachment(self) -> AttachmentType:
+        return self._attachment  # type: ignore
+
+
+    @attachment.setter
+    def attachment(self, attach: AttachmentType) -> None:
+        self._attachment = attach
 
 
     @property
