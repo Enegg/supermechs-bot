@@ -14,6 +14,15 @@ if TYPE_CHECKING:
     from typing_extensions import NotRequired
 
 
+class GameGlobals(NamedTuple):
+    MAX_WEIGHT: int = 1000
+    OVERWEIGHT_THRESHOLD: int = 10
+    OVERWEIGHT_PENALTIES: dict[str, int] = {'health': 15}
+
+
+
+
+
 class Stat(NamedTuple):
     name: str
     emoji: str
@@ -200,9 +209,6 @@ class Icons(Icon, Enum):
     # KIT
 
 
-MAX_WEIGHT = 1010
-PERFECT_WEIGHT = 1000
-
 
 class MechRenderer:
     layer_order = ('drone', 'side2', 'side4', 'top2', 'leg2', 'torso', 'leg1', 'top1', 'side1', 'side3')
@@ -293,7 +299,7 @@ class Mech:
         mod7:   Item[None] | None
         mod8:   Item[None] | None
 
-    def __init__(self):
+    def __init__(self, *, gg: GameGlobals=GameGlobals()):
         self._items: dict[str, Item | None] = {
             'torso':  None,
             'legs':   None,
@@ -319,6 +325,7 @@ class Mech:
         self.has_modified = True
         self.stats_cache = AnyStats()
         self.items_to_load: set[Item] = set()
+        self.globals = gg
 
 
     def __getattr__(self, name: Any) -> Item | None:
@@ -397,7 +404,7 @@ class Mech:
         return (self.torso is not None
                 and self.legs is not None
                 and any(wep is not None for wep in self.iter_weapons())
-                and self.weight <= MAX_WEIGHT)
+                and self.weight <= self.globals.MAX_WEIGHT + self.globals.OVERWEIGHT_THRESHOLD)
 
 
     @property
@@ -417,8 +424,11 @@ class Mech:
 
                         total_stats[key] += item.stats[key]
 
-            if (weight := total_stats.setdefault('weight', 0)) > PERFECT_WEIGHT:
-                total_stats['health'] = total_stats.get('health', 0) - (weight - PERFECT_WEIGHT) * 15
+            if (weight := total_stats.setdefault('weight', 0)) > self.globals.MAX_WEIGHT:
+                for stat, pen in self.globals.OVERWEIGHT_PENALTIES.items():
+                    total_stats[stat] = total_stats.get(stat, 0) - (weight - self.globals.MAX_WEIGHT) * pen
+
+                # total_stats['health'] = total_stats.get('health', 0) - (weight - self.globals.MAX_WEIGHT) * 15
 
             self.has_modified = False
 
@@ -440,7 +450,8 @@ class Mech:
 
                 emojis = '👽⚙️👌❗⛔'
 
-                e = emojis[(value > 0) + (value >= PERFECT_WEIGHT) + (value > PERFECT_WEIGHT) + (value > MAX_WEIGHT)]
+                e = emojis[(value > 0) + (value >= self.globals.MAX_WEIGHT) +
+                           (value > self.globals.MAX_WEIGHT) + (value > self.globals.MAX_WEIGHT + self.globals.OVERWEIGHT_THRESHOLD)]
 
                 main_str += f'{icon} **{value}** {e} {name}\n'
 
@@ -662,3 +673,26 @@ class Item(Generic[AttachmentType]):
             raise ValueError('Image URL was not set')
 
         self._image = await get_image(self.image_url, session)
+
+
+
+AnyItem = Union[Item[Attachments], Item[Attachment], Item[None]]
+
+
+
+class GameItem:
+    def __init__(self, name_or_id: str | int, items: Mapping[int, Item]) -> None:
+        if isinstance(name_or_id, int):
+            self.item = items[name_or_id]
+
+        elif isinstance(name_or_id, str):
+            for item in items.values():
+                if item.name == name_or_id:
+                    self.item = item
+                    break
+
+            else:
+                raise ValueError(f'No item name matched "{name_or_id}"')
+
+        else:
+            raise TypeError(f'Expected a name string or item ID, got {type(name_or_id)}')
