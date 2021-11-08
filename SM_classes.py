@@ -2,72 +2,16 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
-from enum import Enum
 from typing import *
 
 import aiohttp
 from PIL import Image
 
-from image_manipulation import bbox_to_w_h, get_image
+from enums import STAT_NAMES, WORKSHOP_STATS, Elements, Icons, Rarity
+from image_manipulation import MechRenderer, get_image, get_image_w_h
 
 if TYPE_CHECKING:
     from typing_extensions import NotRequired
-
-
-class Stat(NamedTuple):
-    name: str
-    emoji: str
-
-
-STAT_NAMES = dict(
-       weight=Stat('Weight',                   '<:weight:725870760484143174>'),
-       health=Stat('HP',                       '<:health:725870887588462652>'),
-       eneCap=Stat('Energy',                   '<:energy:725870941883859054>'),
-       eneReg=Stat('Regeneration',              '<:regen:725871003665825822>'),
-       heaCap=Stat('Heat',                       '<:heat:725871043767435336>'),
-       heaCol=Stat('Cooling',                 '<:cooling:725871075778363422>'),
-       phyRes=Stat('Physical resistance',      '<:phyres:725871121051811931>'),
-       expRes=Stat('Explosive resistance',     '<:expres:725871136935772294>'),
-       eleRes=Stat('Electric resistance',     '<:elecres:725871146716758077>'),
-       phyDmg=Stat('Damage',                   '<:phydmg:725871208830074929>'),
-    phyResDmg=Stat('Resistance drain',      '<:phyresdmg:725871259635679263>'),
-       expDmg=Stat('Damage',                   '<:expdmg:725871223338172448>'),
-       heaDmg=Stat('Heat damage',              '<:headmg:725871613639393290>'),
-    heaCapDmg=Stat('Heat capacity drain',  '<:heatcapdmg:725871478083551272>'),
-    heaColDmg=Stat('Cooling damage',       '<:coolingdmg:725871499281563728>'),
-    expResDmg=Stat('Resistance drain',      '<:expresdmg:725871281311842314>'),
-       eleDmg=Stat('Damage',                   '<:eledmg:725871233614479443>'),
-       eneDmg=Stat('Energy drain',             '<:enedmg:725871599517171719>'),
-    eneCapDmg=Stat('Energy capacity drain', '<:enecapdmg:725871420126789642>'),
-    eneRegDmg=Stat('Regeneration damage',    '<:regendmg:725871443815956510>'),
-    eleResDmg=Stat('Resistance drain',      '<:eleresdmg:725871296381976629>'),
-        range=Stat('Range',                     '<:range:725871752072134736>'),
-         push=Stat('Knockback',                  '<:push:725871716613488843>'),
-         pull=Stat('Pull',                       '<:pull:725871734141616219>'),
-       recoil=Stat('Recoil',                   '<:recoil:725871778282340384>'),
-      retreat=Stat('Retreat',                 '<:retreat:725871804236955668>'),
-      advance=Stat('Advance',                 '<:advance:725871818115907715>'),
-         walk=Stat('Walking',                    '<:walk:725871844581834774>'),
-         jump=Stat('Jumping',                    '<:jump:725871869793796116>'),
-         uses=Stat('Uses',                       '<:uses:725871917923303688>'),
-     backfire=Stat('Backfire',               '<:backfire:725871901062201404>'),
-      heaCost=Stat('Heat cost',               '<:heatgen:725871674007879740>'),
-      eneCost=Stat('Energy cost',            '<:eneusage:725871660237979759>'))
-WORKSHOP_STATS: dict[str, type[int]] = dict(
-    weight=int,
-    health=int,
-    eneCap=int,
-    eneReg=int,
-    heaCap=int,
-    heaCol=int,
-    phyRes=int,
-    expRes=int,
-    eleRes=int,
-    bulletCap=int,
-    rocketCap=int,
-    walk=int,
-    jump=int)
-
 
 AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELEPORTER', 'CHARGE_ENGINE', 'HOOK', 'MODULE']
 AnyElement = Literal['PHYSICAL', 'EXPLOSIVE', 'ELECTRIC', 'COMBINED']
@@ -117,13 +61,11 @@ class AnyStats(TypedDict, total=False):
     rocketCost: int
 
 
-
 class Attachment(TypedDict):
     x: int
     y: int
 
 Attachments = dict[str, Attachment]
-
 
 
 class ItemDict(TypedDict):
@@ -139,383 +81,6 @@ class ItemDict(TypedDict):
     divine: AnyStats
     tags: NotRequired[list[str]]
     attachment: NotRequired[Attachment | Attachments]
-
-
-
-class Tier(NamedTuple):
-    level: int
-    emoji: str
-    color: int
-
-    def __str__(self):
-        return self.emoji
-
-class Rarity(Tier, Enum):
-    C = Tier(0, '⚪', 0xB1B1B1); COMMON = C
-    R = Tier(1, '🔵', 0x55ACEE); RARE = R
-    E = Tier(2, '🟣', 0xCC41CC); EPIC = E
-    L = Tier(3, '🟠', 0xE0A23C); LEGENDARY = L
-    M = Tier(4, '🟤', 0xFE6333); MYTHICAL = M
-    D = Tier(5, '⚪', 0xFFFFFF); DIVINE = D
-    P = Tier(6, '🟡', 0xFFFF33); PERK = P
-
-
-
-class Element(NamedTuple):
-    name:  str
-    color: int
-    emoji: str
-
-class Elements(Element, Enum):
-    EXPLOSIVE = HEAT = Element('EXPLOSIVE', 0xb71010, STAT_NAMES['expDmg'][1])
-    ELECTRIC  = ELEC = Element('ELECTRIC',  0x106ed8, STAT_NAMES['eleDmg'][1])
-    PHYSICAL  = PHYS = Element('PHYSICAL',  0xffb800, STAT_NAMES['phyDmg'][1])
-    COMBINED  = COMB = Element('COMBINED',  0x211d1d, '🔰')
-    OMNI =             Element('OMNI',      0x000000, '<a:energyball:731885130594910219>')
-
-
-
-class Icon(NamedTuple):
-    URL: str
-    emoji: str
-
-class Icons(Icon, Enum):
-    TORSO      = Icon('https://i.imgur.com/iNtSziV.png',  '<:torso:730115680363347968>')
-    LEGS       = Icon('https://i.imgur.com/6NBLOhU.png',   '<:legs:730115699397361827>')
-    DRONE      = Icon('https://i.imgur.com/oqQmXTF.png',  '<:drone:730115574763618394>')
-    SIDE_RIGHT = Icon('https://i.imgur.com/CBbvOnQ.png',  '<:sider:730115747799629940>')
-    SIDE_LEFT  = Icon('https://i.imgur.com/UuyYCrw.png',  '<:sidel:730115729365663884>')
-    TOP_RIGHT  = Icon('https://i.imgur.com/LW7ZCGZ.png',   '<:topr:730115786735091762>')
-    TOP_LEFT   = Icon('https://i.imgur.com/1xlnVgK.png',   '<:topl:730115768431280238>')
-    TELEPORTER = Icon('https://i.imgur.com/Fnq035A.png',   '<:tele:730115603683213423>')
-    CHARGE     = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
-    HOOK       = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
-    MODULE     = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
-    SIDE_WEAPON = SIDE_RIGHT
-    TOP_WEAPON = TOP_RIGHT
-    CHARGE_ENGINE = CHARGE
-    GRAPPLING_HOOK = HOOK
-    # SHIELD            = Icon('', '')
-    # PERK              = Icon('', '')
-    # KIT
-
-
-MAX_WEIGHT = 1010
-PERFECT_WEIGHT = 1000
-
-
-class MechRenderer:
-    layer_order = ('drone', 'side2', 'side4', 'top2', 'leg2', 'torso', 'leg1', 'top1', 'side1', 'side3')
-
-    def __init__(self, torso: Item[Attachments]) -> None:
-        self.torso_image = torso.image
-        self.pixels_to_left = 0
-        self.pixels_to_right = 0
-        self.pixels_upwards = 0
-        self.pixels_downwards = 0
-        self.torso_attachments = torso.attachment
-
-        self.images: list[tuple[int, int, Image.Image] | None] = [None] * 10
-
-
-    def add_image(self, item: Item[Attachment], layer: str) -> None:
-        if layer == 'legs':
-            self.add_image(item, 'leg1')
-            self.add_image(item, 'leg2')
-            return
-
-        item_x = item.attachment['x']
-        item_y = item.attachment['y']
-
-        if layer == 'drone':
-            x, y = -item_x, -item_y
-
-        else:
-            offset = self.torso_attachments[layer]
-            x = offset['x'] - item_x
-            y = offset['y'] - item_y
-
-        self.check_offset(item, x, y)
-        self.put_image(item.image, layer, x, y)
-
-
-    def check_offset(self, item: Item, x: int, y: int) -> None:
-        width, height = bbox_to_w_h(item.image.getbbox())
-        t_width, t_height = bbox_to_w_h(self.torso_image.getbbox())
-
-        self.pixels_to_left = max(self.pixels_to_left, max(-x, 0))
-        self.pixels_upwards = max(self.pixels_upwards, max(-y, 0))
-        self.pixels_to_right = max(self.pixels_to_right, max(x + width - t_width, 0))
-        self.pixels_downwards = max(self.pixels_downwards, max(y + height - t_height, 0))
-
-
-    def put_image(self, image: Image.Image, layer: str, x: int, y: int) -> None:
-        self.images[self.layer_order.index(layer)] = (x, y, image)
-
-
-    def finalize(self) -> Image.Image:
-        self.put_image(self.torso_image, 'torso', 0, 0)
-
-        width, height = bbox_to_w_h(self.torso_image.getbbox())
-        width += self.pixels_to_left + self.pixels_to_right
-        height += self.pixels_upwards + self.pixels_downwards
-
-        canvas = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-
-        for x, y, image in filter(None, self.images):
-            canvas.alpha_composite(image, (x + self.pixels_to_left, y + self.pixels_upwards))
-
-        return canvas
-
-
-
-class Mech:
-    """Represents a mech build."""
-    if TYPE_CHECKING:
-        torso:  Item[Attachments] | None
-        legs:   Item[Attachment] | None
-        drone:  Item[Attachment] | None
-        side1:  Item[Attachment] | None
-        side2:  Item[Attachment] | None
-        side3:  Item[Attachment] | None
-        side4:  Item[Attachment] | None
-        top1:   Item[Attachment] | None
-        top2:   Item[Attachment] | None
-        tele:   Item[None] | None
-        charge: Item[None] | None
-        hook:   Item[None] | None
-        mod1:   Item[None] | None
-        mod2:   Item[None] | None
-        mod3:   Item[None] | None
-        mod4:   Item[None] | None
-        mod5:   Item[None] | None
-        mod6:   Item[None] | None
-        mod7:   Item[None] | None
-        mod8:   Item[None] | None
-
-    def __init__(self):
-        self._items: dict[str, Item | None] = {
-            'torso':  None,
-            'legs':   None,
-            'drone':  None,
-            'side1':  None,
-            'side2':  None,
-            'side3':  None,
-            'side4':  None,
-            'top1':   None,
-            'top2':   None,
-            'tele':   None,
-            'charge': None,
-            'hook':   None,
-            'mod1':   None,
-            'mod2':   None,
-            'mod3':   None,
-            'mod4':   None,
-            'mod5':   None,
-            'mod6':   None,
-            'mod7':   None,
-            'mod8':   None}
-
-        self.has_modified = True
-        self.stats_cache = AnyStats()
-        self.items_to_load: set[Item] = set()
-
-
-    def __getattr__(self, name: Any) -> Item | None:
-        if name in self._items:
-            return self._items[name]
-
-        raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
-
-
-    def __setitem__(self, _type: AnyType | tuple[AnyType, int], value: Item | None) -> None:
-        if not isinstance(value, (Item, type(None))):
-            raise TypeError
-
-        pos = None
-
-        if isinstance(_type, tuple):
-            _type, pos = _type
-
-        item_type = _type.lower()
-        self.has_modified = True
-
-        if value is not None and value._image is None:
-            self.items_to_load.add(value)
-
-        if item_type in {'torso', 'legs', 'drone', 'teleporter', 'charge', 'charge_engine', 'hook', 'grappling_hook'}:
-            self._items[item_type] = value
-            return
-
-        if pos is None:
-            raise TypeError(f'"{item_type}" requires pos passed')
-
-        if item_type == 'module':
-            if not 0 < pos <= 8:
-                raise ValueError(f'Pos outside range 1-8')
-
-            self._items[f'mod{pos}'] = value
-
-        elif item_type == 'side_weapon':
-            if not 0 < pos <= 4:
-                raise ValueError(f'Pos outside range 1-4')
-
-            self._items[f'side{pos}'] = value
-
-        elif item_type == 'top_weapon':
-            if not 0 < pos <= 2:
-                raise ValueError(f'Pos outside range 1-2')
-
-            self._items[f'top{pos}'] = value
-
-        else:
-            raise TypeError('Invalid item type passed')
-
-
-    def __str__(self) -> str:
-        def make_str(item: Item | None) -> str:
-            return '' if item is None else f'{item.type.capitalize()}: {item}'
-
-        string_parts = [*map(make_str, (self.torso, self.legs, self.drone))]
-
-        if weapon_string := ', '.join(f'{wep}{f" x{count}" * (count > 1)}' for wep, count in Counter(filter(None, self.iter_weapons())).items()):
-            string_parts.append('Weapons: ' + weapon_string)
-
-        string_parts.extend(map(make_str, (self.tele, self.charge, self.hook)))
-
-        if modules := ', '.join(f'{mod}{f" x{count}" * (count > 1)}' for mod, count in Counter(filter(None, self.iter_modules())).items()):
-            string_parts.append('Modules: ' + modules)
-
-        return '\n'.join(filter(None, string_parts))
-
-
-    @property
-    def weight(self) -> int:
-        return self.calc_stats.get('weight', 0)
-
-
-    @property
-    def is_valid(self) -> bool:
-        return (self.torso is not None
-                and self.legs is not None
-                and any(wep is not None for wep in self.iter_weapons())
-                and self.weight <= MAX_WEIGHT)
-
-
-    @property
-    def calc_stats(self) -> AnyStats:
-        if self.has_modified:
-            total_stats = self.stats_cache
-            total_stats.clear()  # type: ignore
-
-            for item in self.iter_items():
-                if item is None:
-                    continue
-
-                for key in WORKSHOP_STATS.keys():
-                    if key in item.stats:
-                        if key not in total_stats:
-                            total_stats[key] = 0
-
-                        total_stats[key] += item.stats[key]
-
-            if (weight := total_stats.setdefault('weight', 0)) > PERFECT_WEIGHT:
-                total_stats['health'] = total_stats.get('health', 0) - (weight - PERFECT_WEIGHT) * 15
-
-            self.has_modified = False
-
-        return self.stats_cache
-
-
-    @property
-    def display_stats(self) -> str:
-        stats = self.calc_stats
-        reference = tuple(WORKSHOP_STATS.keys())
-        order = sorted(stats, key=lambda item: reference.index(item))
-
-        main_str = ''
-
-        for stat in order:
-            name, icon = STAT_NAMES[stat]
-            if stat == 'weight':
-                value = stats[stat]  # type: ignore
-
-                emojis = '👽⚙️👌❗⛔'
-
-                e = emojis[(value > 0) + (value >= PERFECT_WEIGHT) + (value > PERFECT_WEIGHT) + (value > MAX_WEIGHT)]
-
-                main_str += f'{icon} **{value}** {e} {name}\n'
-
-            else:
-                main_str += f'{icon} **{stats[stat]}** {name}\n'
-
-        return main_str
-
-
-    @property
-    def image(self) -> Image.Image:
-        """Returns `Image` object merging all item images.
-        Requires the torso to be set, otherwise raises `RuntimeError`"""
-        if self.torso is None:
-            raise RuntimeError('Cannot create image without torso set')
-
-        canvas = MechRenderer(self.torso)
-
-        if self.legs is not None:
-            canvas.add_image(self.legs, 'legs')
-
-        for item, layer in zip(self.iter_weapons(), ('side1', 'side2', 'side3', 'side4', 'top1', 'top2')):
-            if item is None:
-                continue
-
-            canvas.add_image(item, layer)
-
-        if self.drone is not None:
-            width, height = bbox_to_w_h(self.drone.image.getbbox())
-            t_width, t_height = bbox_to_w_h(self.torso.image.getbbox())
-            self.drone.attachment = Attachment(x=t_width - width - 50, y=t_height - height // 2)
-
-            canvas.add_image(self.drone, 'drone')
-
-        return canvas.finalize()
-
-
-    async def load_images(self, session: aiohttp.ClientSession) -> None:
-        """Bulk loads item images"""
-        coros = {item.load_image(session) for item in self.iter_items() if item is not None if item._image is None}
-
-        if coros:
-            await asyncio.wait(coros, timeout=5, return_when='ALL_COMPLETED')
-
-
-    def iter_weapons(self) -> Iterator[Item | None]:
-        items = self._items
-        yield items['side1']
-        yield items['side2']
-        yield items['side3']
-        yield items['side4']
-        yield items['top1']
-        yield items['top2']
-
-
-    def iter_modules(self) -> Iterator[Item | None]:
-        items = self._items
-        yield items['mod1']
-        yield items['mod2']
-        yield items['mod3']
-        yield items['mod4']
-        yield items['mod5']
-        yield items['mod6']
-        yield items['mod7']
-        yield items['mod8']
-
-
-    def iter_items(self) -> Iterator[Item | None]:
-        yield from self._items.values()
-
-
-    def modified(self) -> None:
-        self.has_modified = True
 
 
 AttachmentType = TypeVar('AttachmentType', Attachment, Attachments, None)
@@ -623,7 +188,7 @@ class Item(Generic[AttachmentType]):
 
 
     def __hash__(self) -> int:
-        return hash(self.id)
+        return hash((self.id, self.name, self.type))
 
     @property
     def attachment(self) -> AttachmentType:
@@ -642,9 +207,10 @@ class Item(Generic[AttachmentType]):
             raise RuntimeError('load_image was never called')
 
         if 'width' in self.kwargs or 'height' in self.kwargs:
-            new_width, new_height = self.kwargs.get('width', 0), self.kwargs.get('height', 0)
+            new_width  = self.kwargs.get('width',  0)
+            new_height = self.kwargs.get('height', 0)
 
-            width, height = bbox_to_w_h(self._image.getbbox())
+            width, height = get_image_w_h(self._image)
             width = new_width or width
             height = new_height or height
 
@@ -659,3 +225,274 @@ class Item(Generic[AttachmentType]):
             raise ValueError('Image URL was not set')
 
         self._image = await get_image(self.image_url, session)
+
+
+class GameVars(NamedTuple):
+    MAX_WEIGHT: int = 1000
+    OVERWEIGHT: int = 10
+    PENALTIES: dict[str, int] = {
+        'health': 15}
+
+    @property
+    def MAX_OVERWEIGHT(self) -> int:
+        return self.MAX_WEIGHT + self.OVERWEIGHT
+
+
+DEFAULT_VARS = GameVars()
+
+
+class Mech:
+    """Represents a mech build."""
+    if TYPE_CHECKING:
+        torso:  Item[Attachments] | None
+        legs:   Item[Attachment] | None
+        drone:  Item[Attachment] | None
+        side1:  Item[Attachment] | None
+        side2:  Item[Attachment] | None
+        side3:  Item[Attachment] | None
+        side4:  Item[Attachment] | None
+        top1:   Item[Attachment] | None
+        top2:   Item[Attachment] | None
+        tele:   Item[None] | None
+        charge: Item[None] | None
+        hook:   Item[None] | None
+        mod1:   Item[None] | None
+        mod2:   Item[None] | None
+        mod3:   Item[None] | None
+        mod4:   Item[None] | None
+        mod5:   Item[None] | None
+        mod6:   Item[None] | None
+        mod7:   Item[None] | None
+        mod8:   Item[None] | None
+
+    def __init__(self, *, vars: GameVars=DEFAULT_VARS):
+        self._items: dict[str, Item | None] = {
+            'torso':  None,
+            'legs':   None,
+            'drone':  None,
+            'side1':  None,
+            'side2':  None,
+            'side3':  None,
+            'side4':  None,
+            'top1':   None,
+            'top2':   None,
+            'tele':   None,
+            'charge': None,
+            'hook':   None,
+            'mod1':   None,
+            'mod2':   None,
+            'mod3':   None,
+            'mod4':   None,
+            'mod5':   None,
+            'mod6':   None,
+            'mod7':   None,
+            'mod8':   None}
+
+        self.has_modified = True
+        self.stats_cache = AnyStats()
+        self.items_to_load: set[Item] = set()
+        self.game_vars = vars
+
+
+    def __getattr__(self, name: Any) -> Item | None:
+        if name in self._items:
+            return self._items[name]
+
+        raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
+
+
+    def __setitem__(self, _type: AnyType | tuple[AnyType, int], value: Item | None) -> None:
+        if not isinstance(value, (Item, type(None))):
+            raise TypeError
+
+        pos = None
+
+        if isinstance(_type, tuple):
+            _type, pos = _type
+
+        item_type = _type.lower()
+        self.has_modified = True
+
+        if value is not None and value._image is None:
+            self.items_to_load.add(value)
+
+        if item_type in {'torso', 'legs', 'drone', 'teleporter', 'charge', 'charge_engine', 'hook', 'grappling_hook'}:
+            self._items[item_type] = value
+            return
+
+        if pos is None:
+            raise TypeError(f'"{item_type}" requires pos passed')
+
+        if item_type == 'module':
+            if not 0 < pos <= 8:
+                raise ValueError(f'Pos outside range 1-8')
+
+            self._items[f'mod{pos}'] = value
+
+        elif item_type == 'side_weapon':
+            if not 0 < pos <= 4:
+                raise ValueError(f'Pos outside range 1-4')
+
+            self._items[f'side{pos}'] = value
+
+        elif item_type == 'top_weapon':
+            if not 0 < pos <= 2:
+                raise ValueError(f'Pos outside range 1-2')
+
+            self._items[f'top{pos}'] = value
+
+        else:
+            raise TypeError('Invalid item type passed')
+
+
+    def __str__(self) -> str:
+        def make_str(item: Item | None) -> str:
+            return '' if item is None else f'{item.type.capitalize()}: {item}'
+
+        string_parts = [*map(make_str, (self.torso, self.legs, self.drone))]
+
+        if weapon_string := ', '.join(f'{wep}{f" x{count}" * (count > 1)}' for wep, count in Counter(filter(None, self.iter_weapons())).items()):
+            string_parts.append('Weapons: ' + weapon_string)
+
+        string_parts.extend(map(make_str, (self.tele, self.charge, self.hook)))
+
+        if modules := ', '.join(f'{mod}{f" x{count}" * (count > 1)}' for mod, count in Counter(filter(None, self.iter_modules())).items()):
+            string_parts.append('Modules: ' + modules)
+
+        return '\n'.join(filter(None, string_parts))
+
+
+    @property
+    def weight(self) -> int:
+        return self.calc_stats.get('weight', 0)
+
+
+    @property
+    def is_valid(self) -> bool:
+        return (self.torso is not None
+                and self.legs is not None
+                and any(wep is not None for wep in self.iter_weapons())
+                and self.weight <= self.game_vars.MAX_OVERWEIGHT)
+
+
+    @property
+    def calc_stats(self) -> AnyStats:
+        if self.has_modified:
+            total_stats = self.stats_cache
+            total_stats.clear()  # type: ignore
+
+            for item in self.iter_items():
+                if item is None:
+                    continue
+
+                for key in WORKSHOP_STATS.keys():
+                    if key in item.stats:
+                        if key not in total_stats:
+                            total_stats[key] = 0
+
+                        total_stats[key] += item.stats[key]
+
+            if (weight := total_stats.setdefault('weight', 0)) > self.game_vars.MAX_WEIGHT:
+                for key, pen in self.game_vars.PENALTIES.items():
+                    total_stats[key] = total_stats.get(key, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
+
+            self.has_modified = False
+
+        return self.stats_cache
+
+
+    @property
+    def display_stats(self) -> str:
+        stats = self.calc_stats
+        reference = tuple(WORKSHOP_STATS.keys())
+        order = sorted(stats, key=lambda item: reference.index(item))
+
+        main_str = ''
+
+        for stat in order:
+            name, icon = STAT_NAMES[stat]
+            if stat == 'weight':
+                value = stats[stat]  # type: ignore
+
+                emojis = '👽⚙️👌❗⛔'
+
+                e = emojis[
+                    (value > 0)
+                    + (value >= self.game_vars.MAX_WEIGHT)
+                    + (value > self.game_vars.MAX_WEIGHT)
+                    + (value > self.game_vars.MAX_OVERWEIGHT)]
+
+                main_str += f'{icon} **{value}** {e} {name}\n'
+
+            else:
+                main_str += f'{icon} **{stats[stat]}** {name}\n'
+
+        return main_str
+
+
+    @property
+    def image(self) -> Image.Image:
+        """Returns `Image` object merging all item images.
+        Requires the torso to be set, otherwise raises `RuntimeError`"""
+        if self.torso is None:
+            raise RuntimeError('Cannot create image without torso set')
+
+        canvas = MechRenderer(self.torso)
+
+        if self.legs is not None:
+            canvas.add_image(self.legs, 'legs')
+
+        for item, layer in zip(self.iter_weapons(), ('side1', 'side2', 'side3', 'side4', 'top1', 'top2')):
+            if item is None:
+                continue
+
+            canvas.add_image(item, layer)
+
+        if self.drone is not None:
+            width, height = get_image_w_h(self.drone.image)
+            t_width, t_height = get_image_w_h(self.torso.image)
+            self.drone.attachment = Attachment(x=t_width - width - 50, y=t_height - height // 2)
+
+            canvas.add_image(self.drone, 'drone')
+
+        return canvas.finalize()
+
+
+    async def load_images(self, session: aiohttp.ClientSession) -> None:
+        """Bulk loads item images"""
+        coros = {item.load_image(session) for item in self.iter_items() if item is not None if item._image is None}
+
+        if coros:
+            await asyncio.wait(coros, timeout=5, return_when='ALL_COMPLETED')
+
+
+    def iter_weapons(self) -> Iterator[Item | None]:
+        items = self._items
+        yield items['side1']
+        yield items['side2']
+        yield items['side3']
+        yield items['side4']
+        yield items['top1']
+        yield items['top2']
+
+
+    def iter_modules(self) -> Iterator[Item | None]:
+        items = self._items
+        yield items['mod1']
+        yield items['mod2']
+        yield items['mod3']
+        yield items['mod4']
+        yield items['mod5']
+        yield items['mod6']
+        yield items['mod7']
+        yield items['mod8']
+
+
+    def iter_items(self) -> Iterator[Item | None]:
+        yield from self._items.values()
+
+
+    def modified(self) -> None:
+        self.has_modified = True
+
+
