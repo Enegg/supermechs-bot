@@ -295,10 +295,11 @@ class Mech:
 
 
     def __getattr__(self, name: Any) -> Item | None:
-        if name in self._items:
+        try:
             return self._items[name]
 
-        raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
+        except KeyError:
+            raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
 
 
     def __setitem__(self, _type: AnyType | tuple[AnyType, int], value: Item | None) -> None:
@@ -346,15 +347,12 @@ class Mech:
 
 
     def __str__(self) -> str:
-        def make_str(item: Item | None) -> str:
-            return '' if item is None else f'{item.type.capitalize()}: {item}'
-
-        string_parts = [*map(make_str, (self.torso, self.legs, self.drone))]
+        string_parts = [f'{item.type.capitalize()}: {item}' for item in (self.torso, self.legs, self.drone) if item is not None]
 
         if weapon_string := ', '.join(f'{wep}{f" x{count}" * (count > 1)}' for wep, count in Counter(filter(None, self.iter_weapons())).items()):
             string_parts.append('Weapons: ' + weapon_string)
 
-        string_parts.extend(map(make_str, (self.tele, self.charge, self.hook)))
+        string_parts.extend(f'{item.type.capitalize()}: {item}' for item in (self.tele, self.charge, self.hook) if item is not None)
 
         if modules := ', '.join(f'{mod}{f" x{count}" * (count > 1)}' for mod, count in Counter(filter(None, self.iter_modules())).items()):
             string_parts.append('Modules: ' + modules)
@@ -393,8 +391,8 @@ class Mech:
                         total_stats[key] += item.stats[key]
 
             if (weight := total_stats.setdefault('weight', 0)) > self.game_vars.MAX_WEIGHT:
-                for key, pen in self.game_vars.PENALTIES.items():
-                    total_stats[key] = total_stats.get(key, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
+                for stat, pen in self.game_vars.PENALTIES.items():
+                    total_stats[stat] = total_stats.get(stat, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
 
             self.has_modified = False
 
@@ -405,7 +403,7 @@ class Mech:
     def display_stats(self) -> str:
         stats = self.calc_stats
         reference = tuple(WORKSHOP_STATS.keys())
-        order = sorted(stats, key=lambda item: reference.index(item))
+        order = sorted(stats, key=reference.index)
 
         main_str = ''
 
@@ -451,7 +449,7 @@ class Mech:
         if self.drone is not None:
             width, height = get_image_w_h(self.drone.image)
             t_width, t_height = get_image_w_h(self.torso.image)
-            self.drone.attachment = Attachment(x=t_width - width - 50, y=t_height - height // 2)
+            self.drone.attachment = Attachment(x=t_width - width - 50, y=height + 25)
 
             canvas.add_image(self.drone, 'drone')
 
@@ -466,7 +464,8 @@ class Mech:
             await asyncio.wait(coros, timeout=5, return_when='ALL_COMPLETED')
 
 
-    def iter_weapons(self) -> Iterator[Item | None]:
+    def iter_weapons(self) -> Iterator[Item[Attachment] | None]:
+        """Iterator over mech's side and top weapons"""
         items = self._items
         yield items['side1']
         yield items['side2']
@@ -476,7 +475,8 @@ class Mech:
         yield items['top2']
 
 
-    def iter_modules(self) -> Iterator[Item | None]:
+    def iter_modules(self) -> Iterator[Item[None] | None]:
+        """Iterator over mech's modules"""
         items = self._items
         yield items['mod1']
         yield items['mod2']
@@ -488,11 +488,11 @@ class Mech:
         yield items['mod8']
 
 
-    def iter_items(self) -> Iterator[Item | None]:
+    def iter_items(self) -> Iterator[Item[Attachments] | Item[Attachment] | Item[None] | None]:
+        """Iterator over all mech's items"""
         yield from self._items.values()
 
 
     def modified(self) -> None:
+        """Callback to indicate caching methods to update contents"""
         self.has_modified = True
-
-

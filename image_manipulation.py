@@ -18,7 +18,7 @@ async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
         return Image.open(BytesIO(await response.content.read()))
 
 
-def image_to_file(image: Image.Image, filename: str = None) -> disnake.File:
+def image_to_file(image: Image.Image, filename: str=None) -> disnake.File:
     with BytesIO() as stream:
         image.save(stream, format='png')
         stream.seek(0)
