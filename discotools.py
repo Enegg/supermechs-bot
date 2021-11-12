@@ -52,8 +52,6 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
     else:
         cd = True
 
-    assert rate is not None and per is not None
-
     def base_check(ctx: commands.Context) -> bool:
         channel = ctx.channel
 
@@ -110,6 +108,8 @@ def spam_command(rate: int=None, per: float=None, bucket: commands.BucketType=co
 
 
     if cd:
+        assert rate is not None and per is not None
+
         def cd_wrapper(command: C) -> C:
             command = commands.cooldown(rate, per, bucket)(command)
             command.cooldown_after_parsing = True
