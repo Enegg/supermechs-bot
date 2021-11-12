@@ -4,6 +4,7 @@ import os
 import traceback
 from argparse import ArgumentParser
 from typing import *
+import aiohttp
 
 import disnake
 from disnake.ext import commands
@@ -55,6 +56,7 @@ class HostedBot(commands.Bot):
     def __init__(self, hosted: bool=False, **options):
         super().__init__(**options)
         self.hosted = hosted
+        self.session = aiohttp.ClientSession()
 
 
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -76,7 +78,7 @@ class HostedBot(commands.Bot):
 
     async def on_ready(self):
         text = f'{bot.user.name} is online'
-        print(text, '-' * len(text), sep='\n')
+        print(text, f'The prefix is {PREFIX}', '-' * len(text), sep='\n')
 
 
 if LOCAL:

@@ -64,9 +64,6 @@ class Tier(NamedTuple):
     emoji: str
     color: int
 
-    def __str__(self):
-        return self.emoji
-
 
 class Element(NamedTuple):
     name:  str
@@ -87,6 +84,9 @@ class Rarity(Tier, Enum):
     M = Tier(4, '🟤', 0xFE6333); MYTHICAL = M
     D = Tier(5, '⚪', 0xFFFFFF); DIVINE = D
     P = Tier(6, '🟡', 0xFFFF33); PERK = P
+
+    def __str__(self) -> str:
+        return self.emoji
 
 
 class Elements(Element, Enum):

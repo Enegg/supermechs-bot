@@ -1,7 +1,6 @@
 """Functions that can find use outside of discord.py scope"""
 from __future__ import annotations
 
-import re
 from typing import *
 
 SupportsSet = TypeVar('SupportsSet', bound=Hashable)
@@ -20,17 +19,7 @@ def common_items(*items: Iterable[SupportsSet]) -> set[SupportsSet]:
     return result
 
 
-def search_for(phrase: str, iterable: Iterable[str]) -> list[str]:
-    """Helper func capable of finding a specific string following a name rule,
-    like "_burn_" in "Half Burnt Scope\""""
-    if not iterable:
-        return iterable
-
-    phrase = r'\b' + re.sub('[^a-z ]+', '', phrase).replace(' ', '.* ')
-    return [i for i in iterable if re.search(phrase, i.lower())]
-
-
-def look_for(phrase: str, iterable: Iterable[str]) -> Iterator[str]:
+def search_for(phrase: str, iterable: Iterable[str]) -> Iterator[str]:
     """Helper func capable of finding a specific string following a name rule,
     like `hal burn sco` in `Half Burnt Scope`"""
     parts = phrase.lower().split()
@@ -78,9 +67,9 @@ def split_to_fields(all_items: list[AnyStr], offset: int=1, field_limit: int | t
     return slices_list
 
 
-def filter_flags(flag_set: set[SupportsSet], items: Iterable[SupportsSet]) -> tuple[set[SupportsSet], list[SupportsSet]]:
-    _flags = flag_set.intersection(items)
-    return _flags, [s for s in items if s not in _flags]
+def filter_flags(flags: Iterable[SupportsSet], items: Iterable[SupportsSet]) -> tuple[frozenset[SupportsSet], Iterator[SupportsSet]]:
+    _flags = frozenset(flags).intersection(items)
+    return _flags, (s for s in items if s not in _flags)
 
 
 def js_format(string: str, **kwargs: Any) -> str:
