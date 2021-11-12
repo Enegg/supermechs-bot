@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
+from functools import cached_property
 from typing import *
 
 import aiohttp
@@ -227,11 +228,74 @@ class Item(Generic[AttachmentType]):
         self._image = await get_image(self.image_url, session)
 
 
+class GameItem:
+    """Represents item inside inventory."""
+
+    def __init__(self, reference: Item, tier: Rarity) -> None:
+        self.ref = reference
+        self._power = 0
+        self.tier = tier
+
+        rarity = reference.rarity
+
+        if isinstance(rarity, Rarity):
+            self.rarity = self.max_rarity = rarity
+
+        else:
+            self.rarity, self.max_rarity = rarity
+
+
+    def can_transform(self) -> bool:
+        """Returns True if item has enough power to transform and has't reached max transform tier, False otherwise"""
+        if 1 + 1 == 2:  # TODO: condition(s) for power
+            return False
+
+        if self.tier < self.max_rarity:
+            return True
+
+        return False
+
+
+    def transform(self) -> None:
+        """Transforms the item to higher tier, if it has enough power"""
+        if not self.can_transform():
+            raise ValueError('Not enough power to transform')
+
+        self.tier = Rarity.next_tier(self.tier)
+        del self.max_power
+        self._power = 0
+
+
+    @property
+    def power(self) -> int:
+        return self._power
+
+
+    def add_power(self, power: int) -> None:
+        if not isinstance(power, int):
+            raise TypeError('Invalid type')
+
+        if power < 0:
+            raise ValueError('Negative value')
+
+        self._power += power
+
+
+    @cached_property
+    def max_power(self) -> int:
+        """Returns the total power necessary to max the item at current tier"""
+        upper = self.max_rarity
+        lower = self.rarity
+        current = self.tier
+        item = self.ref
+
+        return 0
+
+
 class GameVars(NamedTuple):
     MAX_WEIGHT: int = 1000
     OVERWEIGHT: int = 10
-    PENALTIES: dict[str, int] = {
-        'health': 15}
+    PENALTIES: dict[str, int] = {'health': 15}
 
     @property
     def MAX_OVERWEIGHT(self) -> int:
@@ -288,8 +352,6 @@ class Mech:
             'mod7':   None,
             'mod8':   None}
 
-        self.has_modified = True
-        self.stats_cache = AnyStats()
         self.items_to_load: set[Item] = set()
         self.game_vars = vars
 
@@ -312,7 +374,7 @@ class Mech:
             _type, pos = _type
 
         item_type = _type.lower()
-        self.has_modified = True
+        del self.calc_stats  # force to calculate again
 
         if value is not None and value._image is None:
             self.items_to_load.add(value)
@@ -373,30 +435,26 @@ class Mech:
                 and self.weight <= self.game_vars.MAX_OVERWEIGHT)
 
 
-    @property
+    @cached_property
     def calc_stats(self) -> AnyStats:
-        if self.has_modified:
-            total_stats = self.stats_cache
-            total_stats.clear()  # type: ignore
+        stats_cache = AnyStats()
 
-            for item in self.iter_items():
-                if item is None:
-                    continue
+        for item in self.iter_items():
+            if item is None:
+                continue
 
-                for key in WORKSHOP_STATS.keys():
-                    if key in item.stats:
-                        if key not in total_stats:
-                            total_stats[key] = 0
+            for key in WORKSHOP_STATS.keys():
+                if key in item.stats:
+                    if key not in stats_cache:
+                        stats_cache[key] = 0
 
-                        total_stats[key] += item.stats[key]
+                    stats_cache[key] += item.stats[key]
 
-            if (weight := total_stats.setdefault('weight', 0)) > self.game_vars.MAX_WEIGHT:
-                for stat, pen in self.game_vars.PENALTIES.items():
-                    total_stats[stat] = total_stats.get(stat, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
+        if (weight := stats_cache.setdefault('weight', 0)) > self.game_vars.MAX_WEIGHT:
+            for stat, pen in self.game_vars.PENALTIES.items():
+                stats_cache[stat] = stats_cache.get(stat, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
 
-            self.has_modified = False
-
-        return self.stats_cache
+        return stats_cache
 
 
     @property
@@ -410,17 +468,17 @@ class Mech:
         for stat in order:
             name, icon = STAT_NAMES[stat]
             if stat == 'weight':
-                value = stats[stat]  # type: ignore
+                weight = stats[stat]  # type: ignore
 
                 emojis = '👽⚙️👌❗⛔'
 
                 e = emojis[
-                    (value > 0)
-                    + (value >= self.game_vars.MAX_WEIGHT)
-                    + (value > self.game_vars.MAX_WEIGHT)
-                    + (value > self.game_vars.MAX_OVERWEIGHT)]
+                    (weight > 0)
+                    + (weight >= self.game_vars.MAX_WEIGHT)
+                    + (weight > self.game_vars.MAX_WEIGHT)
+                    + (weight > self.game_vars.MAX_OVERWEIGHT)]
 
-                main_str += f'{icon} **{value}** {e} {name}\n'
+                main_str += f'{icon} **{weight}** {e} {name}\n'
 
             else:
                 main_str += f'{icon} **{stats[stat]}** {name}\n'
@@ -491,8 +549,3 @@ class Mech:
     def iter_items(self) -> Iterator[Item[Attachments] | Item[Attachment] | Item[None] | None]:
         """Iterator over all mech's items"""
         yield from self._items.values()
-
-
-    def modified(self) -> None:
-        """Callback to indicate caching methods to update contents"""
-        self.has_modified = True
