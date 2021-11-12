@@ -89,6 +89,29 @@ class Rarity(Tier, Enum):
     P = Tier(6, '🟡', 0xFFFF33); PERK = P
 
 
+    def __gt__(self, o: object) -> bool:
+        if not isinstance(o, Rarity):
+            return NotImplemented
+
+        return self.level > o.level
+
+
+    def __lt__(self, o: object) -> bool:
+        if not isinstance(o, Rarity):
+            return NotImplemented
+
+        return self.level < o.level
+
+
+    @classmethod
+    def next_tier(cls, tier: Rarity) -> Rarity:
+        for rarity in cls:
+            if rarity.level == tier.level + 1:
+                return rarity
+
+        raise TypeError('Highest rarity already achieved')
+
+
 class Elements(Element, Enum):
     EXPLOSIVE = HEAT = Element('EXPLOSIVE', 0xb71010, STAT_NAMES['expDmg'].emoji)
     ELECTRIC  = ELEC = Element('ELECTRIC',  0x106ed8, STAT_NAMES['eleDmg'].emoji)
@@ -113,6 +136,14 @@ class Icons(Icon, Enum):
     TOP_WEAPON = TOP_RIGHT
     CHARGE_ENGINE = CHARGE
     GRAPPLING_HOOK = HOOK
+    TELE = TELEPORTER
     # SHIELD            = Icon('', '')
     # PERK              = Icon('', '')
     # KIT
+
+    def __str__(self) -> str:
+        return self.emoji
+
+
+class PowerTier(Enum):
+    pass
