@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 from typing import *
 import aiohttp
 
+import aiohttp
 import disnake
 from disnake.ext import commands
 from disnake.ext.commands import errors
@@ -59,7 +60,7 @@ class HostedBot(commands.Bot):
         self.session = aiohttp.ClientSession()
 
 
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         if type(error) in simple_reactions:
             await ctx.message.add_reaction(simple_reactions[type(error)])
             return
@@ -171,7 +172,6 @@ class Setup(commands.Cog):
     async def shutdown(self, ctx: commands.Context):
         """Terminates the bot connection."""
         await ctx.send('I will be back')
-        bot.login
         await bot.close()
 
 

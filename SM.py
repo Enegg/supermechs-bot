@@ -13,12 +13,16 @@ import aiohttp
 import disnake
 from disnake.ext import commands
 
-from config import FOO, IMAGE_LINK_TEMPLATES, ITEMS_JSON_LINK, NONE_EMOJI
+from config import DEFAULT_PACK_URL, IMAGE_LINK_TEMPLATES, NONE_EMOJI
 from discotools import (EmbedUI, get_message, make_choice_embed, scheduler,
                         spam_command)
 from functions import filter_flags, js_format, search_for
 from image_manipulation import image_to_file
-from SM_classes import STAT_NAMES, Elements, Icons, Item, ItemDict, Mech, Rarity
+from SM_classes import (STAT_NAMES, Elements, Icons, Item, ItemDict, Mech,
+                        Rarity)
+
+if TYPE_CHECKING:
+    from UltraMech import HostedBot
 
 OPERATIONS = {
     '+20%':  {'eneCap', 'heaCap', 'eneReg', 'heaCap', 'heaCol', 'phyDmg', 'expDmg', 'eleDmg', 'heaDmg', 'eneDmg'},
@@ -164,16 +168,6 @@ def parse_kwargs(args: Iterable[str]):
     #         specs[key] = value.strip()
 
     # return specs, ignored_args
-
-
-def get_specs(item: ItemDict) -> dict[str, str]:
-    return {'type':  Icons[item['type']].emoji,
-            'element': Elements[item['element']].emoji,
-            'tier': Rarity[item['transform_range'][0]].emoji}
-
-
-def emoji_for_browseitems(specs: dict[str, str], spec_filter: Container[str]) -> str:
-    return ''.join(v for k, v in specs.items() if k not in spec_filter)
 
 
 # helper functions for ,stats
@@ -328,49 +322,37 @@ def random_str(length: int) -> str:
     return ''.join(random.sample(ascii_letters, length))
 
 
-
 class SuperMechs(commands.Cog):
     """Set of commands related to the SuperMechs game."""
-    def __init__(self, bot: commands.Bot):
+
+    def __init__(self, bot: HostedBot):
         self.bot = bot
         self.image_url_cache: dict[str, str] = {}
         self.no_img:     set[str] = set()
         self.no_stats:   set[str] = set()
-        self.abbrevs:    dict[str, list[str]] = {}
         self.items_dict: dict[str, ItemDict] = {}
-        self.session = aiohttp.ClientSession()
         self.base_url: str | None = None
-        self.bot.loop.create_task(self.load_item_pack(FOO)).add_done_callback(self.callback)
 
-        self.player_builds = dict[int, dict[str, Mech]]()
-        self.players = dict[int, str]()
-
-
-    def cog_unload(self):
-        if not self.session.closed:
-            self.bot.loop.create_task(self.session.close())
+        self.player_builds: dict[int, dict[str, Mech]] = {}  # TODO: replace with actual database
+        self.players: dict[int, str] = {}
 
 
-    def callback(self, *_):
+    async def cog_load(self):
+        await self.load_item_pack(DEFAULT_PACK_URL)
         self.abbrevs, self.names = self.abbrevs_and_names()
 
 
-    async def get_item_list(self):
-        async with self.session.get(ITEMS_JSON_LINK) as response:
-            self.item_list: list[ItemDict] = await response.json(encoding='utf-8', content_type=None)
-
-
-    async def load_item_pack(self, pack_name: str):
-        async with self.session.get(pack_name) as response:
+    async def load_item_pack(self, pack_url: str):
+        async with self.bot.session.get(pack_url) as response:
             pack = await response.json(encoding='utf-8', content_type=None)
 
-        self.base_url = pack['config']['base_url']
-        self.item_list: list[ItemDict] = pack['items']
+        if isinstance(pack, list):
+            self.base_url = None
+            self.item_list: list[ItemDict] = pack
 
-
-    def refresh_session(self) -> None:
-        self.bot.loop.create_task(self.session.close())
-        self.session = aiohttp.ClientSession()
+        else:
+            self.base_url = pack['config']['base_url']
+            self.item_list: list[ItemDict] = pack['items']
 
 
     def create_mech(self, ctx: commands.Context, name: str=None, *, overwrite: bool=False) -> Mech:
@@ -465,7 +447,7 @@ class SuperMechs(commands.Cog):
             url = url_temp.format(safe_name)
 
             try:
-                async with self.session.head(url, raise_for_status=True):
+                async with self.bot.session.head(url, raise_for_status=True):
                     break
 
             except aiohttp.ClientResponseError:
@@ -510,11 +492,7 @@ class SuperMechs(commands.Cog):
         """Show to a frantic user where is his place"""
         frantics = ['https://i.imgur.com/Bbbf4AH.mp4', 'https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4']
         choice = random.choice(frantics)
-        # embed = discord.Embed(type='video', url=choice)
-        # embed = discord.Embed.from_dict({'url': choice, 'video': {
-        #                                 'url': choice, 'width': 1204, 'height': 720}})
         await ctx.send(choice)
-        # await ctx.send(embed=embed)
 
 
     @spam_command()
@@ -529,9 +507,6 @@ class SuperMechs(commands.Cog):
                 'Name / abbreviation needs to be 3+ characters long.'
                 if name else
                 'No item name or abbreviation passed.')
-
-        if not self.abbrevs or not self.names:
-            self.callback()
 
         # returning the exact item name from short user input
         botmsg = None
@@ -689,25 +664,24 @@ class SuperMechs(commands.Cog):
     @spam_command()
     @commands.command(aliases=['MB'])
     async def mechbuilder(self, ctx: commands.Context, *args: str):
-        """WIP command, currently on hold"""
+        """WIP command; to be replaced"""
         title = 'Mech builder' #'      ' <-- invisible non-space char
         none, mods = NONE_EMOJI, Icons.MODULE.emoji * 2
         desc = (
             'Addresing items: `Weapon[n]:` `[name]`, `Module[n]:` `[name]`, `Torso:` `[name]` etc'
-            f"\n`1` – {Icons.TOP_LEFT.emoji}{Icons.DRONE.emoji}{Icons.TOP_RIGHT.emoji} – `2`{none}`1` – {mods} – `5`"
-            f"\n`3` – {Icons.SIDE_LEFT.emoji}{Icons.TORSO.emoji}{Icons.SIDE_RIGHT.emoji} – `4`{none}`2` – {mods} – `6`"
-            f"\n`5` – {Icons.SIDE_LEFT.emoji}{Icons.LEGS.emoji}{Icons.SIDE_RIGHT.emoji} – `6`{none}`3` – {mods} – `7`"
-            f"\n`C` – {Icons.CHARGE.emoji}{Icons.TELEPORTER.emoji}{Icons.HOOK.emoji} – `H`{none}`4` – {mods} – `8`")
+            f"\n`1` – {Icons.TOP_LEFT }{Icons.DRONE}{Icons.TOP_RIGHT } – `2`{none}`1` – {mods} – `5`"
+            f"\n`3` – {Icons.SIDE_LEFT}{Icons.TORSO}{Icons.SIDE_RIGHT} – `4`{none}`2` – {mods} – `6`"
+            f"\n`5` – {Icons.SIDE_LEFT}{Icons.LEGS }{Icons.SIDE_RIGHT} – `6`{none}`3` – {mods} – `7`"
+            f"\n`C` – {Icons.CHARGE   }{Icons.TELE }{Icons.HOOK      } – `H`{none}`4` – {mods} – `8`")
         embed = disnake.Embed(title=title, description=desc)
         await ctx.send(embed=embed)
 
 
     @commands.command()
     @commands.is_owner()
-    async def fetch(self, ctx: commands.Context):
+    async def fetch(self, ctx: commands.Context, url: str):
         """Forces to update the item list"""
-        self.refresh_session()
-        await self.get_item_list()
+        await self.load_item_pack(url)
         await ctx.message.add_reaction('✅')
 
 
@@ -741,7 +715,7 @@ class SuperMechs(commands.Cog):
         embed.set_image(url=f'attachment://{filename}')
 
         async with ctx.typing():
-            await mech.load_images(self.session)
+            await mech.load_images(self.bot.session)
             file = image_to_file(mech.image, filename)
             await ctx.send(embed=embed, file=file)
 
@@ -846,7 +820,7 @@ class SuperMechs(commands.Cog):
 
                 self.names[name] = item_dict
 
-            item = Item(**item_dict)
+            item = Item(**item_dict)  # type: ignore
             item.image_url = await self.get_image_url(item_dict)
 
             if pos is None:
@@ -866,6 +840,6 @@ class SuperMechs(commands.Cog):
 
 
 
-def setup(bot: commands.Bot):
+def setup(bot: HostedBot):
     bot.add_cog(SuperMechs(bot))
     print('SM loaded')
