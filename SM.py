@@ -20,6 +20,7 @@ from functions import filter_flags, js_format, search_for
 from image_manipulation import image_to_file
 from SM_classes import (STAT_NAMES, Elements, Icons, Item, ItemDict, Mech,
                         Rarity)
+from ui_components import MechView, ToggleButton, View
 
 if TYPE_CHECKING:
     from UltraMech import HostedBot
@@ -330,8 +331,6 @@ class SuperMechs(commands.Cog):
         self.image_url_cache: dict[str, str] = {}
         self.no_img:     set[str] = set()
         self.no_stats:   set[str] = set()
-        self.items_dict: dict[str, ItemDict] = {}
-        self.base_url: str | None = None
 
         self.player_builds: dict[int, dict[str, Mech]] = {}  # TODO: replace with actual database
         self.players: dict[int, str] = {}
@@ -346,13 +345,10 @@ class SuperMechs(commands.Cog):
         async with self.bot.session.get(pack_url) as response:
             pack = await response.json(encoding='utf-8', content_type=None)
 
-        if isinstance(pack, list):
-            self.base_url = None
-            self.item_list: list[ItemDict] = pack
-
-        else:
-            self.base_url = pack['config']['base_url']
-            self.item_list: list[ItemDict] = pack['items']
+        base_url: str = pack['config']['base_url']
+        self.base_url = base_url
+        self.item_list: list[ItemDict] = pack['items']
+        self.items_dict = {item_dict['name']: Item(base_url=base_url, **item_dict) for item_dict in self.item_list}  # type: ignore
 
 
     def create_mech(self, ctx: commands.Context, name: str=None, *, overwrite: bool=False) -> Mech:
@@ -383,7 +379,6 @@ class SuperMechs(commands.Cog):
         return self.create_mech(ctx)
 
 
-
     def swap_mech(self, ctx: commands.Context, name: str) -> None:
         id = ctx.author.id
 
@@ -401,7 +396,7 @@ class SuperMechs(commands.Cog):
 
         for item in self.item_list:
             name = item['name']
-            items[name] = item
+            items[name.lower()] = item
 
             if len(name) < 8:
                 continue
@@ -602,32 +597,31 @@ class SuperMechs(commands.Cog):
         # adding item stats
 
         divine = buffs_enabled = False
-
-        def pred(r: disnake.Reaction, u: disnake.Member):
-            return u == ctx.author and r.message == msg and str(r) in emojis
-
         prepare_embed(embed, item, divine, buffs_enabled)
 
+        view = View()
+        # view.add_item(ToggleButton(label='Buffs'))
+
         if botmsg is not None:
-            await botmsg.edit(embed=embed)
-            msg = botmsg
+            msg = await botmsg.edit(embed=embed, view=view)
+
+        elif file is None:
+            msg = await ctx.send(embed=embed, view=view)
 
         else:
-            if file is None:
-                msg = await ctx.send(embed=embed)
-
-            else:
-                msg = await ctx.send(embed=embed, file=file)
-
+            msg = await ctx.send(embed=embed, view=view, file=file)
 
 
         embed.msg = msg
         await embed.add_options(add_cancel=True)
 
+        def pred(r: disnake.Reaction, u: disnake.Member):
+            return u == ctx.author and r.message == msg and str(r) in emojis
+
         # -------------------------------------------- main loop --------------------------------------------
         while True:
             try:
-                ((react, _), event) ,= await scheduler(ctx, {'reaction_add', 'reaction_remove'}, pred, 20.0)
+                ((react, _), event), = await scheduler(ctx, {'reaction_add', 'reaction_remove'}, pred, 20.0)
                 react: disnake.Reaction
 
             except asyncio.TimeoutError:
@@ -838,6 +832,41 @@ class SuperMechs(commands.Cog):
         else:
             await ctx.message.add_reaction('✅')
 
+
+    @mech.command()
+    async def build(self, ctx: commands.Context):
+        id = ctx.author.id
+        mech = self.get_current_mech(ctx)
+        name = self.players[id]
+        embed = disnake.Embed(title=f'Mech build "{name}"', color=ctx.author.color if mech.torso is None else mech.torso.element.color)
+        embed.add_field(name='Stats:', value=mech.display_stats)
+
+        async def callback(inter: disnake.MessageInteraction):
+            embed.set_field_at(0, name='Stats:', value=mech.display_stats)
+
+            if mech.torso is None:
+                return {'embed': embed}
+
+            embed.color = mech.torso.element.color
+            filename = random_str(8) + '.png'
+
+            await mech.load_images(self.bot.session)
+            file = image_to_file(mech.image, filename)
+            embed.set_image(url=f'attachment://{filename}')
+            return {'embed': embed, 'file': file, 'attachments': []}
+
+        view = MechView(mech, self.items_dict, callback)
+        await ctx.send(embed=embed, view=view)
+
+
+
+    @commands.command()
+    @commands.is_owner()
+    async def debug(self, ctx: commands.Context):
+
+        mech = self.get_current_mech(ctx)
+        breakpoint()
+        # await ctx.send(mech.__dict__)
 
 
 def setup(bot: HostedBot):

@@ -64,9 +64,6 @@ class Tier(NamedTuple):
     emoji: str
     color: int
 
-    def __str__(self):
-        return self.emoji
-
 
 class Element(NamedTuple):
     name:  str
@@ -87,6 +84,9 @@ class Rarity(Tier, Enum):
     M = Tier(4, '🟤', 0xFE6333); MYTHICAL = M
     D = Tier(5, '⚪', 0xFFFFFF); DIVINE = D
     P = Tier(6, '🟡', 0xFFFF33); PERK = P
+
+    def __str__(self) -> str:
+        return self.emoji
 
 
     def __gt__(self, o: object) -> bool:
@@ -132,13 +132,15 @@ class Icons(Icon, Enum):
     CHARGE     = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
     HOOK       = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
     MODULE     = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
-    SIDE_WEAPON = SIDE_RIGHT
-    TOP_WEAPON = TOP_RIGHT
+    SIDE2 = SIDE4 = SIDE_WEAPON = SIDE_RIGHT
+    SIDE1 = SIDE3 = SIDE_LEFT
+    TOP2 = TOP_WEAPON = TOP_RIGHT
+    TOP1 = TOP_LEFT
     CHARGE_ENGINE = CHARGE
     GRAPPLING_HOOK = HOOK
     TELE = TELEPORTER
-    # SHIELD            = Icon('', '')
-    # PERK              = Icon('', '')
+    # SHIELD
+    # PERK
     # KIT
 
     def __str__(self) -> str:

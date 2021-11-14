@@ -9,15 +9,16 @@ import aiohttp
 from PIL import Image
 
 from enums import STAT_NAMES, WORKSHOP_STATS, Elements, Icons, Rarity
+from functions import js_format
 from image_manipulation import MechRenderer, get_image, get_image_w_h
 
 if TYPE_CHECKING:
     from typing_extensions import NotRequired
 
-AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELEPORTER', 'CHARGE_ENGINE', 'HOOK', 'MODULE']
+AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELEPORTER', 'CHARGE_ENGINE', 'GRAPPLING_HOOK', 'MODULE']
 AnyElement = Literal['PHYSICAL', 'EXPLOSIVE', 'ELECTRIC', 'COMBINED']
 
-# TORSO, LEGS, DRONE, SIDE_WEAPON, TOP_WEAPON, TELEPORTER, CHARGE, HOOK, MODULE
+# TORSO, LEGS, DRONE, SIDE_WEAPON, TOP_WEAPON, TELEPORTER, CHARGE, GRAPPLING_HOOK, MODULE
 
 ItemType = TypeVar('ItemType', bound=AnyType)
 
@@ -94,12 +95,13 @@ class Item(Generic[AttachmentType]):
         id: int,
         name: str,
         image: str,
-        type: Literal['TORSO'],
+        type: str,
         stats: AnyStats,
         transform_range: str,
+        base_url: str,
         divine: AnyStats=None,
         element: str=None,
-        attachment: Attachments = ...,
+        attachment: AttachmentType = ...,
         **kwargs: Any
         ) -> None: ...
 
@@ -109,12 +111,13 @@ class Item(Generic[AttachmentType]):
         id: int,
         name: str,
         image: str,
-        type: Literal['LEGS', 'SIDE_WEAPON', 'TOP_WEAPON', 'DRONE'],
+        type: str,
         stats: AnyStats,
         transform_range: str,
+        base_url: str,
         divine: AnyStats=None,
         element: str=None,
-        attachment: Attachment = ...,
+        attachment: AttachmentType = ...,
         **kwargs: Any
         ) -> None: ...
 
@@ -124,12 +127,13 @@ class Item(Generic[AttachmentType]):
         id: int,
         name: str,
         image: str,
-        type: Literal['CHARGE', 'TELEPORT', 'HOOK', 'MODULE'],
+        type: str,
         stats: AnyStats,
         transform_range: str,
+        base_url: str,
         divine: AnyStats=None,
         element: str=None,
-        attachment: None = ...,
+        attachment: AttachmentType = ...,
         **kwargs: Any
         ) -> None: ...
 
@@ -142,6 +146,7 @@ class Item(Generic[AttachmentType]):
         type: str,
         stats: AnyStats,
         transform_range: str,
+        base_url: str,
         divine: AnyStats=None,
         element: str=None,
         attachment=None,
@@ -151,8 +156,8 @@ class Item(Generic[AttachmentType]):
         assert isinstance(name, str) and isinstance(image, str), 'Invalid type'
         self.id = id
         self.name = name
-        self.partial_url = image
-        self.image_url: str | None = None
+
+        self.image_url = js_format(image, url=base_url)
         self._image: Image.Image | None = None
 
         self.icon = Icons[type]  # this will also validate if type is of correct type
@@ -181,6 +186,7 @@ class Item(Generic[AttachmentType]):
             return False
 
         return (o.id     == self.id
+            and o.image_url == self.image_url
             and o.name   == self.name
             and o.type   == self.type
             and o.stats  == self.stats
@@ -231,10 +237,11 @@ class Item(Generic[AttachmentType]):
 class GameItem:
     """Represents item inside inventory."""
 
-    def __init__(self, reference: Item, tier: Rarity) -> None:
+    def __init__(self, reference: Item, tier: Rarity, id: int) -> None:
         self.ref = reference
         self._power = 0
         self.tier = tier
+        self.id = id
 
         rarity = reference.rarity
 
@@ -305,6 +312,10 @@ class GameVars(NamedTuple):
 DEFAULT_VARS = GameVars()
 
 
+def format_count(it: Iterable[Any]) -> Iterator[str]:
+    return (f'{item}{f" x{count}" * (count > 1)}' for item, count in Counter(filter(None, it)).items())
+
+
 class Mech:
     """Represents a mech build."""
     if TYPE_CHECKING:
@@ -364,7 +375,7 @@ class Mech:
             raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
 
 
-    def __setitem__(self, _type: AnyType | tuple[AnyType, int], value: Item | None) -> None:
+    def __setitem__(self, _type: str | tuple[AnyType, int], value: Item | None) -> None:
         if not isinstance(value, (Item, type(None))):
             raise TypeError
 
@@ -373,11 +384,19 @@ class Mech:
         if isinstance(_type, tuple):
             _type, pos = _type
 
-        item_type = _type.lower()
-        del self.calc_stats  # force to calculate again
+
+        if 'calc_stats' in self.__dict__:
+            del self.calc_stats  # force to calculate again
+
 
         if value is not None and value._image is None:
             self.items_to_load.add(value)
+
+        item_type = _type.lower()
+
+        if item_type in self._items:
+            self._items[item_type] = value
+            return
 
         if item_type in {'torso', 'legs', 'drone', 'teleporter', 'charge', 'charge_engine', 'hook', 'grappling_hook'}:
             self._items[item_type] = value
@@ -411,15 +430,15 @@ class Mech:
     def __str__(self) -> str:
         string_parts = [f'{item.type.capitalize()}: {item}' for item in (self.torso, self.legs, self.drone) if item is not None]
 
-        if weapon_string := ', '.join(f'{wep}{f" x{count}" * (count > 1)}' for wep, count in Counter(filter(None, self.iter_weapons())).items()):
+        if weapon_string := ', '.join(format_count(self.iter_weapons())):
             string_parts.append('Weapons: ' + weapon_string)
 
         string_parts.extend(f'{item.type.capitalize()}: {item}' for item in (self.tele, self.charge, self.hook) if item is not None)
 
-        if modules := ', '.join(f'{mod}{f" x{count}" * (count > 1)}' for mod, count in Counter(filter(None, self.iter_modules())).items()):
+        if modules := ', '.join(format_count(self.iter_modules())):
             string_parts.append('Modules: ' + modules)
 
-        return '\n'.join(filter(None, string_parts))
+        return '\n'.join(string_parts)
 
 
     @property
@@ -473,7 +492,7 @@ class Mech:
                 emojis = '👽⚙️👌❗⛔'
 
                 e = emojis[
-                    (weight > 0)
+                    (weight >= 0)
                     + (weight >= self.game_vars.MAX_WEIGHT)
                     + (weight > self.game_vars.MAX_WEIGHT)
                     + (weight > self.game_vars.MAX_OVERWEIGHT)]
@@ -549,3 +568,59 @@ class Mech:
     def iter_items(self) -> Iterator[Item[Attachments] | Item[Attachment] | Item[None] | None]:
         """Iterator over all mech's items"""
         yield from self._items.values()
+
+
+class ArenaBuffs:
+    #                                   13    15    17
+    ref_def = (0, 1, 3,  5,  7,  9, 11, None, None, None, 20)
+    ref_res = (0, 2, 6, 10, 14, 18, 22, None, None, None, 40)
+    ref_hp  = (0, None, None, None, 90, 120, None, None, None, None, 300, 350)
+    #                                        150   180   210   240 ?
+
+    def __init__(self) -> None:
+        self.level_ref = {
+            'eneCap': 0,
+            'eneReg': 0,
+            'eneDeg': 0,
+            'heaCap': 0,
+            'heaCol': 0,
+            'heaDmg': 0,
+            'phyDmg': 0,
+            'expDmg': 0,
+            'eleDmg': 0,
+            'phyRes': 0,
+            'expRes': 0,
+            'eleRes': 0,
+            'health': 0,
+            'backfire': 0}
+
+
+    @staticmethod
+    def safe_get(level: int, bank: tuple[int | None, ...]) -> int:
+        while level > 0:
+            value = bank[level]
+
+            if value is not None:
+                return value
+
+            level -= 1
+
+        return 0
+
+
+    def get_buff(self, stat: str, value: int) -> int:
+        if stat not in self.level_ref:
+            return value
+
+        level = self.level_ref[stat]
+
+        if stat == 'health':
+            return value + self.safe_get(level, self.ref_hp) # +350
+
+        if stat == 'backfire':
+            return round(value * (1 - self.safe_get(level, self.ref_def) / 100)) # -20%
+
+        if stat in {'phyRes', 'expRes', 'eleRes'}:
+            return round(value * (1 + self.safe_get(level, self.ref_res) / 100))  # +40%
+
+        return round(value * (1 + self.safe_get(level, self.ref_def) / 100))  # +20%

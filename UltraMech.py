@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import os
 import traceback
 from argparse import ArgumentParser
@@ -53,7 +54,7 @@ simple_reactions: dict[type[commands.CommandError], str] = {
     errors.CommandOnCooldown: '🕓'}
 
 class HostedBot(commands.Bot):
-    def __init__(self, hosted: bool=False, **options):
+    def __init__(self, hosted: bool=False, **options: Any):
         super().__init__(**options)
         self.hosted = hosted
         self.session = aiohttp.ClientSession()
@@ -78,7 +79,7 @@ class HostedBot(commands.Bot):
 
     async def on_ready(self):
         text = f'{bot.user.name} is online'
-        print(text, '-' * len(text), sep='\n')
+        print(text, f'The prefix is {PREFIX}', '-' * len(text), sep='\n')
 
 
 if LOCAL:
@@ -89,7 +90,7 @@ else:
 
 
 intents = disnake.Intents(guilds=True, members=True, emojis=True, messages=True, reactions=True)
-bot = HostedBot(command_prefix=prefix_handler, hosted=LOCAL, intents=intents, activity=activity)
+bot = HostedBot(command_prefix=prefix_handler, hosted=LOCAL, intents=intents, activity=activity, test_guilds=[624937100034310164])
 
 # ----------------------------------------------------------------------------------------------
 
@@ -107,31 +108,38 @@ class Setup(commands.Cog):
         await ctx.send(cont)
 
 
-    async def _load_helper(self, ctx: commands.Context, ext: str, action: Literal['load', 'reload', 'unload'], save: bool=False):
+    async def _load_helper(self, ctx: commands.Context[commands.Bot], ext: str, action: Literal['load', 'reload', 'unload'], save: bool=False):
         """Function wrapping module loading in try ... except"""
         if action not in {'load', 'reload', 'unload'}:
             raise TypeError('Bad action argument passed')
 
         # load/reload/unload_extension
-        func: Callable[[str], None] = getattr(ctx.bot, action + '_extension')
+        ref = {'ui': 'ui_components', 'image': 'image_manipulation'}
 
-        if func is None:
-            raise ValueError('invalid action argument')
-
-        try:
-            func(ext)
-
-        except commands.errors.ExtensionError as e:
-            print(e)
-            await ctx.message.add_reaction('⚠️')
+        if ext in ref:
+            module = importlib.import_module(ref[ext])
+            importlib.reload(module)
 
         else:
-            print('Success')
-            emoji = {'load': '☑️', 'reload': '🔄', 'unload': '🚀'}[action]
-            await ctx.message.add_reaction(emoji)
+            func: Callable[[str], None] = getattr(ctx.bot, action + '_extension')
 
-            if save:
-                self.last_reload = ext
+            if func is None:
+                raise ValueError('invalid action argument')
+
+            try:
+                func(ext)
+
+            except commands.errors.ExtensionError as e:
+                print(e)
+                await ctx.message.add_reaction('⚠️')
+                return
+
+        print('Success')
+        emoji = {'load': '☑️', 'reload': '🔄', 'unload': '🚀'}[action]
+        await ctx.message.add_reaction(emoji)
+
+        if save:
+            self.last_reload = ext
 
 
     @commands.command()
@@ -174,7 +182,21 @@ class Setup(commands.Cog):
         await bot.close()
 
 
+class Misc(commands.Cog):
+    @commands.command()
+    async def ping(self, ctx: commands.Context[commands.Bot]):
+        """Pings the bot"""
+        await ctx.send(f'Pong! {round(ctx.bot.latency * 1000)}ms')
+
+
+    @commands.command()
+    async def invite(self, ctx: commands.Context[commands.Bot]):
+        """Sends an invite link for this bot to the channel"""
+        await ctx.send(disnake.utils.oauth_url(ctx.bot.user.id, scopes=('bot', 'applications.commands')))
+
+
 bot.add_cog(Setup())
+bot.add_cog(Misc())
 bot.load_extension('SM')
 
 

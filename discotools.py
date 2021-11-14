@@ -135,6 +135,7 @@ class EmbedUI(disnake.Embed):
     def __init__(self, emojis: list[str] | None=None, msg: disnake.Message | commands.Context | None=None, **kwargs: Any):
         if desc := kwargs.get('desc'):
             kwargs.setdefault('description', desc)
+            del kwargs['desc']
 
         super().__init__(**kwargs)
         self._emojis = emojis or list(self.NUMBERS)
