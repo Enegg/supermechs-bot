@@ -123,22 +123,22 @@ class MechView(View):
 
 
     def swap_buttons(self) -> None:
-        if not self.dropdown.disabled:
-            self.remove_item(self.dropdown)
-            self.dropdown.disabled = True
-
-            for button in self.fifth_row:
-                self.add_item(button)
-
-        else:
+        if self.dropdown.disabled:
             for button in self.fifth_row:
                 self.remove_item(button)
 
             self.dropdown.disabled = False
             self.add_item(self.dropdown)
 
+        else:
+            self.remove_item(self.dropdown)
+            self.dropdown.disabled = True
 
-    def push_item(self, item: Item | None):
+            for button in self.fifth_row:
+                self.add_item(button)
+
+
+    def push_item(self, item: Item | None) -> None:
         assert self.active is not None
         self.active.item = item
         # self.active.label = None if item is None else item.name
@@ -178,18 +178,18 @@ class ItemButton(Button[MechView]):
         self.item = item
 
 
-    def cycle_style(self):
-        if self.style is ButtonStyle.secondary or self.style is ButtonStyle.success:
+    def cycle_style(self) -> None:
+        if self.style is not ButtonStyle.primary:
             self.style = ButtonStyle.primary
 
-        elif self.style is ButtonStyle.primary and self.item is not None:
+        elif self.item is not None:
             self.style = ButtonStyle.success
 
         else:
             self.style = ButtonStyle.secondary
 
 
-    async def callback(self, interaction: disnake.MessageInteraction):
+    async def callback(self, interaction: disnake.MessageInteraction) -> None:
         assert self.view is not None
 
         self.view.toggle_style(self)
@@ -197,12 +197,17 @@ class ItemButton(Button[MechView]):
 
 
 class ItemView(View):
-    def __init__(self, *, timeout: Optional[float] = 180):
+    def __init__(self, *, timeout: Optional[float] = 180) -> None:
         super().__init__(timeout=timeout)
 
 
 class ToggleButton(Button[View]):
-    def __init__(self, *, style_off: ButtonStyle=ButtonStyle.secondary, style_on: ButtonStyle=ButtonStyle.success, callback: Callable[[disnake.MessageInteraction], Awaitable[dict[str, Any]]], **kwargs: Any):
+    def __init__(self, *,
+        style_off: ButtonStyle = ButtonStyle.secondary,
+        style_on: ButtonStyle = ButtonStyle.success,
+        callback: Callable[[disnake.MessageInteraction], Awaitable[dict[str, Any]]],
+        **kwargs: Any) -> None:
+
         super().__init__(style=style_off, **kwargs)
         self.styles = style_off, style_on
         self.call = callback
@@ -216,17 +221,17 @@ class ToggleButton(Button[View]):
             self.style = self.styles[0]
 
 
-    async def callback(self, interaction: disnake.MessageInteraction):
+    async def callback(self, interaction: disnake.MessageInteraction) -> None:
         self.toggle()
         await interaction.response.edit_message(**await self.call(interaction), view=self.view)
 
 
 class ActionButton(Button[View]):
-    def __init__(self, *, callback: Callable[[disnake.MessageInteraction], Awaitable[dict[str, Any]]], **kwargs: Any):
+    def __init__(self, *, callback: Callable[[disnake.MessageInteraction], Awaitable[dict[str, Any]]], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.call = callback
 
 
-    async def callback(self, interaction: disnake.MessageInteraction):
+    async def callback(self, interaction: disnake.MessageInteraction) -> None:
         await interaction.response.defer()
         await interaction.edit_original_message(**await self.call(interaction), view=self.view)

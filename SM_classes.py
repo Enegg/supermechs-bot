@@ -208,6 +208,12 @@ class Item(Generic[AttachmentType]):
 
 
     @property
+    def displayable(self) -> bool:
+        """Returns True if the item can be rendered on the mech, False otherwise"""
+        return self.type not in {'TELEPORTER', 'CHARGE_ENGINE', 'GRAPPLING_HOOK', 'MODULE'}
+
+
+    @property
     def image(self) -> Image.Image:
         """Returns a copy of image for this item. Before this property is ever retrieved, load_image needs to be called."""
         if self._image is None:
@@ -375,8 +381,8 @@ class Mech:
             raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
 
 
-    def __setitem__(self, _type: str | tuple[AnyType, int], value: Item | None) -> None:
-        if not isinstance(value, (Item, type(None))):
+    def __setitem__(self, _type: str | tuple[AnyType, int], item: Item | None) -> None:
+        if not isinstance(item, (Item, type(None))):
             raise TypeError
 
         pos = None
@@ -384,22 +390,24 @@ class Mech:
         if isinstance(_type, tuple):
             _type, pos = _type
 
-
         if 'calc_stats' in self.__dict__:
             del self.calc_stats  # force to calculate again
 
+        if item is not None and item.displayable:
+            if 'image' in self.__dict__:
+                del self.image
 
-        if value is not None and value._image is None:
-            self.items_to_load.add(value)
+            if item._image is None:
+                self.items_to_load.add(item)
 
         item_type = _type.lower()
 
         if item_type in self._items:
-            self._items[item_type] = value
+            self._items[item_type] = item
             return
 
         if item_type in {'torso', 'legs', 'drone', 'teleporter', 'charge', 'charge_engine', 'hook', 'grappling_hook'}:
-            self._items[item_type] = value
+            self._items[item_type] = item
             return
 
         if pos is None:
@@ -409,19 +417,19 @@ class Mech:
             if not 0 < pos <= 8:
                 raise ValueError(f'Pos outside range 1-8')
 
-            self._items[f'mod{pos}'] = value
+            self._items[f'mod{pos}'] = item
 
         elif item_type == 'side_weapon':
             if not 0 < pos <= 4:
                 raise ValueError(f'Pos outside range 1-4')
 
-            self._items[f'side{pos}'] = value
+            self._items[f'side{pos}'] = item
 
         elif item_type == 'top_weapon':
             if not 0 < pos <= 2:
                 raise ValueError(f'Pos outside range 1-2')
 
-            self._items[f'top{pos}'] = value
+            self._items[f'top{pos}'] = item
 
         else:
             raise TypeError('Invalid item type passed')
@@ -506,6 +514,36 @@ class Mech:
 
 
     @property
+    def buff_stats(self) -> str:
+        stats = self.calc_stats
+        reference = tuple(WORKSHOP_STATS.keys())
+        order = sorted(stats, key=reference.index)
+
+        main_str = ''
+
+        for stat in order:
+            name, icon = STAT_NAMES[stat]
+            if stat == 'weight':
+                weight = stats[stat]  # type: ignore
+
+                emojis = '👽⚙️👌❗⛔'
+
+                e = emojis[
+                    (weight >= 0)
+                    + (weight >= self.game_vars.MAX_WEIGHT)
+                    + (weight > self.game_vars.MAX_WEIGHT)
+                    + (weight > self.game_vars.MAX_OVERWEIGHT)]
+
+                main_str += f'{icon} **{weight}** {e} {name}\n'
+
+            else:
+                main_str += f'{icon} **{stats[stat]}** {name}\n'
+
+        return main_str
+
+
+
+    @cached_property
     def image(self) -> Image.Image:
         """Returns `Image` object merging all item images.
         Requires the torso to be set, otherwise raises `RuntimeError`"""
@@ -531,6 +569,11 @@ class Mech:
             canvas.add_image(self.drone, 'drone')
 
         return canvas.finalize()
+
+
+    @property
+    def image_changed(self) -> bool:
+        """Returns True if the image has modified, False otherwise"""
 
 
     async def load_images(self, session: aiohttp.ClientSession) -> None:
@@ -571,9 +614,8 @@ class Mech:
 
 
 class ArenaBuffs:
-    #                                   13    15    17
-    ref_def = (0, 1, 3,  5,  7,  9, 11, None, None, None, 20)
-    ref_res = (0, 2, 6, 10, 14, 18, 22, None, None, None, 40)
+    ref_def = (0, 1, 3,  5,  7,  9, 11, 13, 15, 17, 20)
+    ref_res = (0, 2, 6, 10, 14, 18, 22, 26, 30, 34, 40)
     ref_hp  = (0, None, None, None, 90, 120, None, None, None, None, 300, 350)
     #                                        150   180   210   240 ?
 
@@ -624,3 +666,10 @@ class ArenaBuffs:
             return round(value * (1 + self.safe_get(level, self.ref_res) / 100))  # +40%
 
         return round(value * (1 + self.safe_get(level, self.ref_def) / 100))  # +20%
+
+
+    @classmethod
+    def maxed(cls) -> ArenaBuffs:
+        self = cls()
+        self.level_ref
+        return self

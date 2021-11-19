@@ -132,7 +132,7 @@ class Icons(Icon, Enum):
     CHARGE     = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
     HOOK       = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
     MODULE     = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
-    SIDE2 = SIDE4 = SIDE_WEAPON = SIDE_RIGHT
+    SIDE2 = SIDE4 = SIDE_WEAPON = SIDE_RIGHT  # XXX horrible, refactor
     SIDE1 = SIDE3 = SIDE_LEFT
     TOP2 = TOP_WEAPON = TOP_RIGHT
     TOP1 = TOP_LEFT
@@ -148,4 +148,5 @@ class Icons(Icon, Enum):
 
 
 class PowerTier(Enum):
+    # what was this supposed to do?
     pass

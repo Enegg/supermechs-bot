@@ -655,22 +655,6 @@ class SuperMechs(commands.Cog):
         parse_kwargs(preparsed)
 
 
-    @spam_command()
-    @commands.command(aliases=['MB'])
-    async def mechbuilder(self, ctx: commands.Context, *args: str):
-        """WIP command; to be replaced"""
-        title = 'Mech builder' #'      ' <-- invisible non-space char
-        none, mods = NONE_EMOJI, Icons.MODULE.emoji * 2
-        desc = (
-            'Addresing items: `Weapon[n]:` `[name]`, `Module[n]:` `[name]`, `Torso:` `[name]` etc'
-            f"\n`1` – {Icons.TOP_LEFT }{Icons.DRONE}{Icons.TOP_RIGHT } – `2`{none}`1` – {mods} – `5`"
-            f"\n`3` – {Icons.SIDE_LEFT}{Icons.TORSO}{Icons.SIDE_RIGHT} – `4`{none}`2` – {mods} – `6`"
-            f"\n`5` – {Icons.SIDE_LEFT}{Icons.LEGS }{Icons.SIDE_RIGHT} – `6`{none}`3` – {mods} – `7`"
-            f"\n`C` – {Icons.CHARGE   }{Icons.TELE }{Icons.HOOK      } – `H`{none}`4` – {mods} – `8`")
-        embed = disnake.Embed(title=title, description=desc)
-        await ctx.send(embed=embed)
-
-
     @commands.command()
     @commands.is_owner()
     async def fetch(self, ctx: commands.Context, url: str):
