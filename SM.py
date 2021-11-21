@@ -16,22 +16,17 @@ from disnake.ext import commands
 from config import DEFAULT_PACK_URL, IMAGE_LINK_TEMPLATES, NONE_EMOJI
 from discotools import (EmbedUI, get_message, make_choice_embed, scheduler,
                         spam_command)
-from functions import filter_flags, js_format, search_for
+from functions import filter_flags, search_for
 from image_manipulation import image_to_file
-from SM_classes import (STAT_NAMES, Elements, Icons, Item, ItemDict, Mech,
-                        Rarity)
-from ui_components import MechView, ToggleButton, View
+from SM_classes import (STAT_NAMES, ArenaBuffs, Elements, Icons, Item, ItemDict, ItemPack,
+                        Mech, Rarity)
+from ui_components import MechView, View
 
 if TYPE_CHECKING:
     from UltraMech import HostedBot
 
-OPERATIONS = {
-    '+20%':  {'eneCap', 'heaCap', 'eneReg', 'heaCap', 'heaCol', 'phyDmg', 'expDmg', 'eleDmg', 'heaDmg', 'eneDmg'},
-    '+40%': {'phyRes', 'expRes', 'eleRes'},
-    'reduce': {'backfire'}}
 LOCAL_IMAGES = {
     'Debug Item': r"D:\Obrazy\Games\Supermechs\Sprites\Deatomizer.png"}
-
 
 
 class StringIterator(Iterator[str]):
@@ -172,17 +167,17 @@ def parse_kwargs(args: Iterable[str]):
 
 
 # helper functions for ,stats
+MAX_BUFFS = ArenaBuffs.maxed()
+
 def buff(stat: str, enabled: bool, value: int) -> int:
     """Returns a value buffed respectively to stat type"""
     if not enabled:
         return value
-    if stat in OPERATIONS['+20%']:
-        return round(value * 1.2)
-    if stat in OPERATIONS['+40%']:
-        return round(value * 1.4)
-    if stat in OPERATIONS['reduce']:
-        return round(value * 0.8)
-    return value
+
+    if stat == 'health':
+        return value
+
+    return MAX_BUFFS.get_buff(stat, value)
 
 
 def missing(stat: str, enabled: bool, value: int | None) -> str:
@@ -207,14 +202,8 @@ def default_embed(embed: disnake.Embed, item: ItemDict, divine: bool, buffs_enab
     lower = Rarity[_min].level
     upper = Rarity[_max].level
 
-    if upper < 4:
-        tier = upper
-
-    else:
-        tier = 4 + divine
-
     colors = list(map(str, Rarity))
-    colors[tier] = f'({colors[tier]})'
+    colors[upper] = f'({colors[upper]})'
     embed.add_field(
         name='Transform range: ',
         value=''.join(colors[lower:upper + 1]),
@@ -224,41 +213,34 @@ def default_embed(embed: disnake.Embed, item: ItemDict, divine: bool, buffs_enab
     item_stats = ''  # the main string
     cost_stats = {'backfire', 'heaCost', 'eneCost'}
 
-    for stat in item['stats']:
-        if stat in cost_stats and not spaced:
+    for stat, stat_value in item['stats'].items():
+        if not spaced and stat in cost_stats:
             item_stats += '\n'
             spaced = True
 
-        # divine handler
-        pool = 'divine' if divine and stat in item['divine'] else 'stats'
         # number range handler
-        stat_value: int | list[int] = item[pool][stat]
+        if not isinstance(stat_value, list):
+            value, diff = buff_difference(stat, buffs_enabled, cast(int, stat_value))
+            change = f' **{diff:+}**' if diff else ''
 
-        if isinstance(stat_value, list):
-            # treat [x, 0] and [x] as x
-            if len(stat_value) == 1 or stat_value[1] == 0:
-                value, diff = buff_difference(stat, buffs_enabled, stat_value[0])
-                change = f' **{diff:+}**' if diff else ''
-
-            # otherwise [x, y] becomes "x-y"
-            else:
-                x, y = stat_value
-                v1, d1 = buff_difference(stat, buffs_enabled, x)
-                v2, d2 = buff_difference(stat, buffs_enabled, y)
-
-                change = f' **{d1:+} {d2:+}**' if d1 or d2 else ''
-                value = f'{v1}-{v2}'
+        elif stat_value[0] == stat_value[1]:
+            value, diff = buff_difference(stat, buffs_enabled, stat_value[0])
+            change = f' **{diff:+}**' if diff else ''
 
         else:
-            value, diff = buff_difference(stat, buffs_enabled, stat_value)
-            change = f' **{diff:+}**' if diff else ''
+            x, y = stat_value
+            v1, d1 = buff_difference(stat, buffs_enabled, x)
+            v2, d2 = buff_difference(stat, buffs_enabled, y)
+
+            change = f' ** {d1:+} {d2:+}**' if d1 or d2 else ''
+            value = f'{v1}-{v2}'
 
         name, emoji = STAT_NAMES[stat]
 
         if stat == 'uses':
             name = 'Use' if stat_value == 1 else 'Uses'
 
-        item_stats += f'{emoji} **{value}**{change} {name}\n'
+        item_stats += f'{emoji} **{value}** {name}{change}\n'
 
     if 'advance' in item['stats'] or 'retreat' in item['stats']:
         item_stats += f"{STAT_NAMES['jump'].emoji} **Jumping required**"
@@ -273,35 +255,20 @@ def compact_embed(embed: disnake.Embed, item: ItemDict, divine: bool, buffs_enab
     lower = Rarity[_min].level
     upper = Rarity[_max].level
 
-    if upper < 4:
-        tier = upper
-
-    else:
-        tier = 4 + divine
-
     colors = list(map(str, Rarity))
-    colors[tier] = f'({colors[tier]})'
+    colors[upper] = f'({colors[upper]})'
     color_str = ''.join(colors[lower:upper + 1])
     lines = [color_str]
 
-    for stat in item['stats']:
-        # divine handler
-        pool = 'divine' if divine and stat in item['divine'] else 'stats'
-        # number range handler
-        stat_value = item[pool][stat]
+    for stat, stat_value in item['stats'].items():
+        if not isinstance(stat_value, list):
+            value = missing(stat, buffs_enabled, cast(int, stat_value))
 
-        if isinstance(stat_value, list):
-            if len(stat_value) == 1:
-                value = missing(stat, buffs_enabled, stat_value[0])  # handling one spot range
-
-            elif stat_value[1] == 0:
-                value = stat_value[0]
-
-            else:
-                value = '-'.join(str(missing(stat, buffs_enabled, n)) for n in stat_value)
+        elif stat_value[0] == stat_value[1]:
+            value = missing(stat, buffs_enabled, stat_value[0])
 
         else:
-            value = missing(stat, buffs_enabled, stat_value)
+            value = '-'.join(str(missing(stat, buffs_enabled, n)) for n in stat_value)
 
         lines.append(f'{STAT_NAMES[stat].emoji} **{value}**')
 
@@ -329,8 +296,8 @@ class SuperMechs(commands.Cog):
     def __init__(self, bot: HostedBot):
         self.bot = bot
         self.image_url_cache: dict[str, str] = {}
-        self.no_img:     set[str] = set()
-        self.no_stats:   set[str] = set()
+        self.no_img:   set[str] = set()
+        self.no_stats: set[str] = set()
 
         self.player_builds: dict[int, dict[str, Mech]] = {}  # TODO: replace with actual database
         self.players: dict[int, str] = {}
@@ -343,12 +310,10 @@ class SuperMechs(commands.Cog):
 
     async def load_item_pack(self, pack_url: str):
         async with self.bot.session.get(pack_url) as response:
-            pack = await response.json(encoding='utf-8', content_type=None)
+            pack: ItemPack = await response.json(encoding='utf-8', content_type=None)
 
-        base_url: str = pack['config']['base_url']
-        self.base_url = base_url
-        self.item_list: list[ItemDict] = pack['items']
-        self.items_dict = {item_dict['name']: Item(base_url=base_url, **item_dict) for item_dict in self.item_list}  # type: ignore
+        self.item_list = pack['items']
+        self.items_dict = {item_dict['name']: Item(**item_dict, pack=pack['config']) for item_dict in self.item_list}
 
 
     def create_mech(self, ctx: commands.Context, name: str=None, *, overwrite: bool=False) -> Mech:
@@ -431,10 +396,10 @@ class SuperMechs(commands.Cog):
         if item['name'] in LOCAL_IMAGES:
             return LOCAL_IMAGES[item['name']]
 
-        if 'image' in item and self.base_url is not None:
-            url = js_format(item['image'], url=self.base_url)
-            self.image_url_cache[item['name']] = url
-            return url
+        # if 'image' in item and self.base_url is not None:
+        #     url = js_format(item['image'], url=self.base_url)
+        #     self.image_url_cache[item['name']] = url
+        #     return url
 
         safe_name = item['name'].replace(' ', '')
 
@@ -841,7 +806,6 @@ class SuperMechs(commands.Cog):
 
         view = MechView(mech, self.items_dict, callback)
         await ctx.send(embed=embed, view=view)
-
 
 
     @commands.command()

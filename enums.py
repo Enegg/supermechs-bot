@@ -66,7 +66,7 @@ class Tier(NamedTuple):
 
 
 class Element(NamedTuple):
-    name:  str
+    type:  str
     color: int
     emoji: str
 

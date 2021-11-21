@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
+from dataclasses import InitVar, dataclass, field
 from functools import cached_property
 from typing import *
 
@@ -15,6 +16,13 @@ from image_manipulation import MechRenderer, get_image, get_image_w_h
 if TYPE_CHECKING:
     from typing_extensions import NotRequired
 
+    class PackConfig(TypedDict):
+        key: str
+        name: str
+        base_url: str
+        description: str
+
+
 AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELEPORTER', 'CHARGE_ENGINE', 'GRAPPLING_HOOK', 'MODULE']
 AnyElement = Literal['PHYSICAL', 'EXPLOSIVE', 'ELECTRIC', 'COMBINED']
 
@@ -24,6 +32,12 @@ ItemType = TypeVar('ItemType', bound=AnyType)
 
 
 class AnyStats(TypedDict, total=False):
+    # NOTE: entries typed as tuples are actually lists, since they come from a JSON
+    # but we type it as tuples since they have fixed size and that matters more
+    # it could cause bugs had the actual lists be mutated, but unless you know it's actually a list,
+    # why would you attempt to mutate something typed as tuple?
+    # extra precaution: tuples can be hashed, allowing them as keys for dicts etc, whereas lists cannot
+    # but using a damage range as dict key does not sound reasonable
     weight: int
     health: int
     eneCap: int
@@ -68,6 +82,11 @@ class Attachment(TypedDict):
     y: int
 
 Attachments = dict[str, Attachment]
+AnyAttachment = Union[Attachment, Attachments, None]
+
+class ItemPack(TypedDict):
+    config: PackConfig
+    items: list[ItemDict]
 
 
 class ItemDict(TypedDict):
@@ -85,59 +104,44 @@ class ItemDict(TypedDict):
     attachment: NotRequired[Attachment | Attachments]
 
 
-AttachmentType = TypeVar('AttachmentType', Attachment, Attachments, None)
+# AttachmentType = TypeVar('AttachmentType', Attachment, Attachments, None)
+AttachmentType = TypeVar('AttachmentType', bound=AnyAttachment)
+
+@dataclass
+class ItemData(Generic[AttachmentType]):
+    """Represents data about an in-game item."""
+    id: int
+    name: str
+    pack: PackConfig
+    image: InitVar[str]
+    _type:  InitVar[str]
+    stats: AnyStats = field(repr=False, hash=False)
+    transform_range: InitVar[str]
+    element: Elements = Elements.OMNI
+    attachment: AttachmentType = cast(AttachmentType, None)
+    divine: AnyStats | None = field(default=None, repr=False, hash=False)
+
+
+    def __post_init__(self, image: str, type: str, transform_range: str) -> None:
+        self.image_url = js_format(image, url=self.pack['base_url'])
+        self.icon = Icons[type]
+
+        val_a, _, val_b = transform_range.partition('-')
+        self.rarity = (Rarity[val_a], Rarity[val_b]) if val_b else Rarity[val_a]
+
+        self._image: Image.Image | None = None
+
+
+    @property
+    def type(self) -> str:
+        return self.icon.name
+
+
+# item = ItemData(1, 'foo', {'key': '', 'name': '', 'base_url': '', 'description': ''}, 'foo', 'TORSO', AnyStats(), '', element=Elements.HEAT, attachment=None)
+
 
 class Item(Generic[AttachmentType]):
     """Represents a single item."""
-    @overload
-    def __init__(
-        self: Item[Attachments],
-        id: int,
-        name: str,
-        image: str,
-        type: str,
-        stats: AnyStats,
-        transform_range: str,
-        base_url: str,
-        divine: AnyStats=None,
-        element: str=None,
-        attachment: AttachmentType = ...,
-        **kwargs: Any
-        ) -> None: ...
-
-    @overload
-    def __init__(
-        self: Item[Attachment],
-        id: int,
-        name: str,
-        image: str,
-        type: str,
-        stats: AnyStats,
-        transform_range: str,
-        base_url: str,
-        divine: AnyStats=None,
-        element: str=None,
-        attachment: AttachmentType = ...,
-        **kwargs: Any
-        ) -> None: ...
-
-    @overload
-    def __init__(
-        self: Item[None],
-        id: int,
-        name: str,
-        image: str,
-        type: str,
-        stats: AnyStats,
-        transform_range: str,
-        base_url: str,
-        divine: AnyStats=None,
-        element: str=None,
-        attachment: AttachmentType = ...,
-        **kwargs: Any
-        ) -> None: ...
-
-
     def __init__(
         self,
         id: int,
@@ -146,31 +150,35 @@ class Item(Generic[AttachmentType]):
         type: str,
         stats: AnyStats,
         transform_range: str,
-        base_url: str,
-        divine: AnyStats=None,
-        element: str=None,
-        attachment=None,
+        pack: PackConfig,
+        divine: AnyStats = None,
+        element: str = 'OMNI',
+        attachment: AttachmentType = None,
         **kwargs: Any
-        ) -> None:
+    ) -> None:
 
-        assert isinstance(name, str) and isinstance(image, str), 'Invalid type'
         self.id = id
-        self.name = name
+        self.name = str(name)
 
-        self.image_url = js_format(image, url=base_url)
+        self.image_url = js_format(str(image), url=pack['base_url'])
+        self.pack = pack
         self._image: Image.Image | None = None
 
         self.icon = Icons[type]  # this will also validate if type is of correct type
-        self.type = type
         self.stats = stats
         self.divine = divine
 
         val_a, _, val_b = transform_range.partition('-')
         self.rarity = (Rarity[val_a], Rarity[val_b]) if val_b else Rarity[val_a]
-        self.element = Elements.OMNI if element is None else Elements[element]
+        self.element = Elements[element]
 
-        self._attachment = attachment
+        self.attachment = attachment
         self.kwargs = kwargs
+
+
+    # @classmethod
+    # def from_dict(cls, item_dict: ItemDict, pack: PackConfig) -> Item[AnyAttachment]:
+    #     return Item(pack=pack, **item_dict)
 
 
     def __str__(self) -> str:
@@ -178,7 +186,7 @@ class Item(Generic[AttachmentType]):
 
 
     def __repr__(self) -> str:
-        return '<{0.name} - {0.element.value} {0.type} {0.rarity} {0.stats}>'.format(self)
+        return '<{0.name} - {0.element} {0.type} {0.rarity} {0.stats}>'.format(self)
 
 
     def __eq__(self, o: object) -> bool:
@@ -197,20 +205,26 @@ class Item(Generic[AttachmentType]):
     def __hash__(self) -> int:
         return hash((self.id, self.name, self.type))
 
+
     @property
-    def attachment(self) -> AttachmentType:
-        return self._attachment  # type: ignore
+    def type(self) -> str:
+        return self.icon.name
 
 
-    @attachment.setter
-    def attachment(self, attach: AttachmentType) -> None:
-        self._attachment = attach
+    # @property
+    # def attachment(self) -> AttachmentType:
+    #     return self._attachment  # type: ignore
+
+
+    # @attachment.setter
+    # def attachment(self, attach: AttachmentType) -> None:
+    #     self._attachment = attach
 
 
     @property
     def displayable(self) -> bool:
         """Returns True if the item can be rendered on the mech, False otherwise"""
-        return self.type not in {'TELEPORTER', 'CHARGE_ENGINE', 'GRAPPLING_HOOK', 'MODULE'}
+        return self.type not in {'TELEPORTER', 'CHARGE', 'HOOK', 'MODULE'}
 
 
     @property
@@ -322,6 +336,30 @@ def format_count(it: Iterable[Any]) -> Iterator[str]:
     return (f'{item}{f" x{count}" * (count > 1)}' for item, count in Counter(filter(None, it)).items())
 
 
+
+class _Items(TypedDict):
+    torso:  Item[Attachments] | None
+    legs:   Item[Attachment] | None
+    drone:  Item[Attachment] | None
+    side1:  Item[Attachment] | None
+    side2:  Item[Attachment] | None
+    side3:  Item[Attachment] | None
+    side4:  Item[Attachment] | None
+    top1:   Item[Attachment] | None
+    top2:   Item[Attachment] | None
+    tele:   Item[None] | None
+    charge: Item[None] | None
+    hook:   Item[None] | None
+    mod1:   Item[None] | None
+    mod2:   Item[None] | None
+    mod3:   Item[None] | None
+    mod4:   Item[None] | None
+    mod5:   Item[None] | None
+    mod6:   Item[None] | None
+    mod7:   Item[None] | None
+    mod8:   Item[None] | None
+
+
 class Mech:
     """Represents a mech build."""
     if TYPE_CHECKING:
@@ -347,33 +385,12 @@ class Mech:
         mod8:   Item[None] | None
 
     def __init__(self, *, vars: GameVars=DEFAULT_VARS):
-        self._items: dict[str, Item | None] = {
-            'torso':  None,
-            'legs':   None,
-            'drone':  None,
-            'side1':  None,
-            'side2':  None,
-            'side3':  None,
-            'side4':  None,
-            'top1':   None,
-            'top2':   None,
-            'tele':   None,
-            'charge': None,
-            'hook':   None,
-            'mod1':   None,
-            'mod2':   None,
-            'mod3':   None,
-            'mod4':   None,
-            'mod5':   None,
-            'mod6':   None,
-            'mod7':   None,
-            'mod8':   None}
-
+        self._items: _Items = dict.fromkeys(_Items.__annotations__, None)  # type: ignore
         self.items_to_load: set[Item] = set()
         self.game_vars = vars
 
 
-    def __getattr__(self, name: Any) -> Item | None:
+    def __getattr__(self, name: Any) -> Item[AnyAttachment] | None:
         try:
             return self._items[name]
 
@@ -381,14 +398,14 @@ class Mech:
             raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
 
 
-    def __setitem__(self, _type: str | tuple[AnyType, int], item: Item | None) -> None:
+    def __setitem__(self, place: str | tuple[AnyType, int], item: Item[AnyAttachment] | None) -> None:
         if not isinstance(item, (Item, type(None))):
             raise TypeError
 
         pos = None
 
-        if isinstance(_type, tuple):
-            _type, pos = _type
+        if isinstance(place, tuple):
+            place, pos = place
 
         if 'calc_stats' in self.__dict__:
             del self.calc_stats  # force to calculate again
@@ -400,13 +417,9 @@ class Mech:
             if item._image is None:
                 self.items_to_load.add(item)
 
-        item_type = _type.lower()
+        item_type = place.lower()
 
         if item_type in self._items:
-            self._items[item_type] = item
-            return
-
-        if item_type in {'torso', 'legs', 'drone', 'teleporter', 'charge', 'charge_engine', 'hook', 'grappling_hook'}:
             self._items[item_type] = item
             return
 
@@ -485,59 +498,56 @@ class Mech:
 
 
     @property
-    def display_stats(self) -> str:
+    def sorted_stats(self) -> Iterator[tuple[str, int]]:
         stats = self.calc_stats
         reference = tuple(WORKSHOP_STATS.keys())
-        order = sorted(stats, key=reference.index)
 
+        for stat in sorted(stats, key=reference.index):
+            yield stat, stats[stat]
+
+
+    @property
+    def display_stats(self) -> str:
         main_str = ''
 
-        for stat in order:
+        for stat, value in self.sorted_stats:
             name, icon = STAT_NAMES[stat]
             if stat == 'weight':
-                weight = stats[stat]  # type: ignore
-
                 emojis = '👽⚙️👌❗⛔'
 
                 e = emojis[
-                    (weight >= 0)
-                    + (weight >= self.game_vars.MAX_WEIGHT)
-                    + (weight > self.game_vars.MAX_WEIGHT)
-                    + (weight > self.game_vars.MAX_OVERWEIGHT)]
+                    (value >= 0)
+                    + (value >= self.game_vars.MAX_WEIGHT)
+                    + (value > self.game_vars.MAX_WEIGHT)
+                    + (value > self.game_vars.MAX_OVERWEIGHT)]
 
-                main_str += f'{icon} **{weight}** {e} {name}\n'
+                main_str += f'{icon} **{value}** {e} {name}\n'
 
             else:
-                main_str += f'{icon} **{stats[stat]}** {name}\n'
+                main_str += f'{icon} **{value}** {name}\n'
 
         return main_str
 
 
     @property
     def buff_stats(self) -> str:
-        stats = self.calc_stats
-        reference = tuple(WORKSHOP_STATS.keys())
-        order = sorted(stats, key=reference.index)
-
         main_str = ''
 
-        for stat in order:
+        for stat, value in self.sorted_stats:
             name, icon = STAT_NAMES[stat]
             if stat == 'weight':
-                weight = stats[stat]  # type: ignore
-
                 emojis = '👽⚙️👌❗⛔'
 
                 e = emojis[
-                    (weight >= 0)
-                    + (weight >= self.game_vars.MAX_WEIGHT)
-                    + (weight > self.game_vars.MAX_WEIGHT)
-                    + (weight > self.game_vars.MAX_OVERWEIGHT)]
+                    (value >= 0)
+                    + (value >= self.game_vars.MAX_WEIGHT)
+                    + (value > self.game_vars.MAX_WEIGHT)
+                    + (value > self.game_vars.MAX_OVERWEIGHT)]
 
-                main_str += f'{icon} **{weight}** {e} {name}\n'
+                main_str += f'{icon} **{value}** {e} {name}\n'
 
             else:
-                main_str += f'{icon} **{stats[stat]}** {name}\n'
+                main_str += f'{icon} **{value}** {name}\n'
 
         return main_str
 
@@ -594,7 +604,6 @@ class Mech:
         yield items['top1']
         yield items['top2']
 
-
     def iter_modules(self) -> Iterator[Item[None] | None]:
         """Iterator over mech's modules"""
         items = self._items
@@ -607,34 +616,20 @@ class Mech:
         yield items['mod7']
         yield items['mod8']
 
-
-    def iter_items(self) -> Iterator[Item[Attachments] | Item[Attachment] | Item[None] | None]:
+    def iter_items(self) -> Iterator[Item[AnyAttachment] | None]:
         """Iterator over all mech's items"""
-        yield from self._items.values()
+        yield from self._items.values()  # type: ignore
 
 
 class ArenaBuffs:
     ref_def = (0, 1, 3,  5,  7,  9, 11, 13, 15, 17, 20)
-    ref_res = (0, 2, 6, 10, 14, 18, 22, 26, 30, 34, 40)
     ref_hp  = (0, None, None, None, 90, 120, None, None, None, None, 300, 350)
     #                                        150   180   210   240 ?
+    stat_ref = ('eneCap', 'eneReg', 'eneDeg', 'heaCap', 'heaCol', 'heaDmg', 'phyDmg',
+                'expDmg', 'eleDmg', 'phyRes', 'expRes', 'eleRes', 'health', 'backfire')
 
     def __init__(self) -> None:
-        self.level_ref = {
-            'eneCap': 0,
-            'eneReg': 0,
-            'eneDeg': 0,
-            'heaCap': 0,
-            'heaCol': 0,
-            'heaDmg': 0,
-            'phyDmg': 0,
-            'expDmg': 0,
-            'eleDmg': 0,
-            'phyRes': 0,
-            'expRes': 0,
-            'eleRes': 0,
-            'health': 0,
-            'backfire': 0}
+        self.level_ref = dict.fromkeys(self.stat_ref, 0)
 
 
     @staticmethod
@@ -663,13 +658,16 @@ class ArenaBuffs:
             return round(value * (1 - self.safe_get(level, self.ref_def) / 100)) # -20%
 
         if stat in {'phyRes', 'expRes', 'eleRes'}:
-            return round(value * (1 + self.safe_get(level, self.ref_res) / 100))  # +40%
+            return round(value * (1 + self.safe_get(level, self.ref_def) / 50))  # +40%
 
         return round(value * (1 + self.safe_get(level, self.ref_def) / 100))  # +20%
 
 
     @classmethod
     def maxed(cls) -> ArenaBuffs:
-        self = cls()
-        self.level_ref
+        self = cls.__new__(cls)
+
+        self.level_ref = dict.fromkeys(cls.stat_ref, len(cls.ref_def)-1)
+        self.level_ref['health'] = len(cls.ref_hp) - 1
+
         return self
