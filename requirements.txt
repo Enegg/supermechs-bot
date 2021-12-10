@@ -1,2 +1,2 @@
-git+https://github.com/EQUENOS/disnake.git
+disnake=2.2.2
 python-dotenv
