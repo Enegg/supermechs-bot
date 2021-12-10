@@ -63,12 +63,12 @@ class MechRenderer:
             x = offset['x'] - item_x
             y = offset['y'] - item_y
 
-        self.adjust_offsets(item, x, y)
+        self.adjust_offsets(item.image, x, y)
         self.put_image(item.image, layer, x, y)
 
 
-    def adjust_offsets(self, item: Item, x: int, y: int) -> None:
-        width, height = get_image_w_h(item.image)
+    def adjust_offsets(self, image: Image.Image, x: int, y: int) -> None:
+        width, height = get_image_w_h(image)
         t_width, t_height = get_image_w_h(self.torso_image)
 
         self.pixels_left  = max(self.pixels_left,  -x)
@@ -85,7 +85,7 @@ class MechRenderer:
         self.put_image(self.torso_image, 'torso', 0, 0)
 
         width, height = get_image_w_h(self.torso_image)
-        width += self.pixels_left + self.pixels_right
+        width  += self.pixels_left  + self.pixels_right
         height += self.pixels_above + self.pixels_below
 
         canvas = Image.new('RGBA', (width, height), (0, 0, 0, 0))

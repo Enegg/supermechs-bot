@@ -89,6 +89,10 @@ class Rarity(Tier, Enum):
         return self.emoji
 
 
+    def __int__(self) -> int:
+        return self.level
+
+
     def __gt__(self, o: object) -> bool:
         if not isinstance(o, Rarity):
             return NotImplemented
@@ -112,6 +116,48 @@ class Rarity(Tier, Enum):
         raise TypeError('Highest rarity already achieved')
 
 
+class RarityRange:
+    """Represents transformation range of an item"""
+    TIERS = tuple(Rarity)
+
+    def __init__(self, lower: Rarity, upper: Rarity=None) -> None:
+        if upper is None:
+            upper = lower
+
+        self.range = range(lower.level, upper.level)
+
+
+    @property
+    def lower(self) -> Rarity:
+        return self.TIERS[self.range.start]
+
+
+    @property
+    def upper(self) -> Rarity:
+        return self.TIERS[self.range.stop]
+
+
+    def __contains__(self, item: Rarity | RarityRange) -> bool:
+        if isinstance(item, Rarity):
+            return item.level in self.range
+
+        elif isinstance(item, RarityRange):
+            return item.range in self.range
+
+        else:
+            return NotImplemented
+
+
+    @classmethod
+    def from_string(cls, string: str) -> RarityRange:
+        up, _, down = string.partition('-')
+
+        if down:
+            return cls(Rarity[up], Rarity[down])
+
+        return cls(Rarity[up])
+
+
 class Elements(Element, Enum):
     EXPLOSIVE = HEAT = Element('EXPLOSIVE', 0xb71010, STAT_NAMES['expDmg'].emoji)
     ELECTRIC  = ELEC = Element('ELECTRIC',  0x106ed8, STAT_NAMES['eleDmg'].emoji)
@@ -121,23 +167,23 @@ class Elements(Element, Enum):
 
 
 class Icons(Icon, Enum):
-    TORSO      = Icon('https://i.imgur.com/iNtSziV.png',  '<:torso:730115680363347968>')
-    LEGS       = Icon('https://i.imgur.com/6NBLOhU.png',   '<:legs:730115699397361827>')
-    DRONE      = Icon('https://i.imgur.com/oqQmXTF.png',  '<:drone:730115574763618394>')
-    SIDE_RIGHT = Icon('https://i.imgur.com/CBbvOnQ.png',  '<:sider:730115747799629940>')
-    SIDE_LEFT  = Icon('https://i.imgur.com/UuyYCrw.png',  '<:sidel:730115729365663884>')
-    TOP_RIGHT  = Icon('https://i.imgur.com/LW7ZCGZ.png',   '<:topr:730115786735091762>')
-    TOP_LEFT   = Icon('https://i.imgur.com/1xlnVgK.png',   '<:topl:730115768431280238>')
-    TELEPORTER = Icon('https://i.imgur.com/Fnq035A.png',   '<:tele:730115603683213423>')
-    CHARGE     = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
-    HOOK       = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
-    MODULE     = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
-    SIDE2 = SIDE4 = SIDE_WEAPON = SIDE_RIGHT  # XXX horrible, refactor
+    TORSO          = Icon('https://i.imgur.com/iNtSziV.png',  '<:torso:730115680363347968>')
+    LEGS           = Icon('https://i.imgur.com/6NBLOhU.png',   '<:legs:730115699397361827>')
+    DRONE          = Icon('https://i.imgur.com/oqQmXTF.png',  '<:drone:730115574763618394>')
+    SIDE_WEAPON    = Icon('https://i.imgur.com/CBbvOnQ.png',  '<:sider:730115747799629940>')
+    SIDE_LEFT      = Icon('https://i.imgur.com/UuyYCrw.png',  '<:sidel:730115729365663884>')
+    TOP_WEAPON     = Icon('https://i.imgur.com/LW7ZCGZ.png',   '<:topr:730115786735091762>')
+    TOP_LEFT       = Icon('https://i.imgur.com/1xlnVgK.png',   '<:topl:730115768431280238>')
+    TELEPORTER     = Icon('https://i.imgur.com/Fnq035A.png',   '<:tele:730115603683213423>')
+    CHARGE_ENGINE  = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
+    GRAPPLING_HOOK = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
+    MODULE         = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
+    SIDE2 = SIDE4 = SIDE_RIGHT = SIDE_WEAPON  # XXX horrible, refactor
     SIDE1 = SIDE3 = SIDE_LEFT
-    TOP2 = TOP_WEAPON = TOP_RIGHT
+    TOP2 = TOP_RIGHT = TOP_WEAPON
     TOP1 = TOP_LEFT
-    CHARGE_ENGINE = CHARGE
-    GRAPPLING_HOOK = HOOK
+    CHARGE = CHARGE_ENGINE
+    HOOK = GRAPPLING_HOOK
     TELE = TELEPORTER
     # SHIELD
     # PERK
