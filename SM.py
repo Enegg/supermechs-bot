@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from itertools import zip_longest
 from typing import *
+import aiohttp
 
 import disnake
 from disnake.ext import commands
@@ -159,6 +160,11 @@ class SuperMechs(commands.Cog):
         self.players: dict[int, Player] = {}  # TODO: replace with actual database
 
 
+    @property
+    def session(self) -> aiohttp.ClientSession:
+        return self.bot.session
+
+
     async def cog_load(self) -> None:
         await self.load_item_pack(DEFAULT_PACK_URL)
         self.abbrevs = self.item_abbrevs()
@@ -166,7 +172,7 @@ class SuperMechs(commands.Cog):
 
     async def load_item_pack(self, pack_url: str) -> None:
         """Loads an item pack from url and sets it as active pack."""
-        async with self.bot.session.get(pack_url) as response:
+        async with self.session.get(pack_url) as response:
             pack: ItemPack = await response.json(encoding='utf-8', content_type=None)
 
         self.items_dict = {
@@ -210,8 +216,8 @@ class SuperMechs(commands.Cog):
         return abbrevs
 
 
-    def get_player(self, ctx: commands.Context | disnake.ApplicationCommandInteraction) -> Player:
-        id = ctx.author.id
+    def get_player(self, inter: disnake.ApplicationCommandInteraction) -> Player:
+        id = inter.author.id
 
         if id not in self.players:
             self.players[id] = Player(id)
@@ -355,7 +361,7 @@ class SuperMechs(commands.Cog):
         filename = f'{name}.png'
         embed.set_image(url=f'attachment://{filename}')
 
-        await mech.load_images(self.bot.session)
+        await mech.load_images(self.session)
         file = image_to_file(mech.image, filename)
         await inter.response.send_message(embed=embed, file=file)
 
@@ -395,9 +401,12 @@ class SuperMechs(commands.Cog):
         """
         player = self.get_player(inter)
 
-        if name is None or name not in player.builds:
-            mech = player.get_or_create_build(name)
+        if name is None:
+            mech = player.get_or_create_build()
             name = player.active_build
+
+        elif name not in player.builds:
+            mech = player.new_build(name)
 
         else:
             mech = player.builds[name]
@@ -405,43 +414,45 @@ class SuperMechs(commands.Cog):
         embed = disnake.Embed(title=f'Mech build "{name}"', color=inter.author.color)
         embed.add_field(name='Stats:', value=mech.print_stats())
 
-        view = MechView(mech, embed, self.items_dict, player.arena_buffs, self.bot.session)
+        view = MechView(mech, embed, self.items_dict, player.arena_buffs, self.session)
 
         if mech.torso is None:
-            await inter.response.send_message(embed=embed, view=view)
+            await inter.send(embed=embed, view=view)
 
         else:
             embed.color = mech.torso.element.color
 
-            await mech.load_images(self.bot.session)
+            await mech.load_images(self.session)
             filename = random_str(8) + '.png'
 
             file = image_to_file(mech.image, filename)
             embed.set_image(url=f'attachment://{filename}')
 
-            await inter.response.send_message(embed=embed, view=view, file=file)
+            await inter.send(embed=embed, view=view, file=file)
+
+
+    @build.autocomplete('name')
+    async def build_autocomp(self, inter: disnake.ApplicationCommandInteraction, input: str) -> list[str]:
+        player = self.get_player(inter)
+        input = input.lower()
+        return [name for name in player.builds if name.lower().startswith(input)]
 
 
     @commands.slash_command()
     async def buffs(self, inter: disnake.ApplicationCommandInteraction) -> None:
-        pass
-
-
-    @buffs.sub_command()
-    async def editor(self, inter: disnake.ApplicationCommandInteraction) -> None:
         """Interactive UI for modifying your arena buffs"""
         player = self.get_player(inter)
         view = ArenaBuffsView(player.arena_buffs)
         await inter.response.send_message('**Arena Shop**', view=view)
 
 
-    @buffs.sub_command()
+    @commands.slash_command(guild_ids=[624937100034310164])
     @commands.is_owner()
     async def maxed(self, inter: disnake.ApplicationCommandInteraction) -> None:
         """Maxes out your buffs"""
         me = self.get_player(inter)
         me.arena_buffs.levels.update(ArenaBuffs.maxed().levels)
-        await self.editor.invoke(inter)
+        await inter.send('Success', ephemeral=True)
 
 
 def setup(bot: HostedBot) -> None:

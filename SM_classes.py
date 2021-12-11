@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import *
 
-import aiohttp
+from aiohttp import ClientSession
 
 from enums import STAT_NAMES, WORKSHOP_STATS, Elements, Icons, Rarity
 from functions import js_format, random_str
@@ -199,7 +199,7 @@ class Item(Generic[AttachmentType]):
         return self._image.copy()
 
 
-    async def load_image(self, session: aiohttp.ClientSession) -> None:
+    async def load_image(self, session: ClientSession) -> None:
         """Loads the image from web"""
         if self.image_url is None:
             raise ValueError('Image URL was not set')
@@ -468,30 +468,35 @@ class Mech:
 
 
     def print_stats(self, buffs: ArenaBuffs=None) -> str:
-        main_str = ''
-
         if buffs is None:
             bank = self.sorted_stats
 
         else:
             bank = self.buffed_stats(buffs)
 
-        for stat, value in bank:
-            name, icon = STAT_NAMES[stat]
-            if stat == 'weight':
-                emojis = '👽⚙️✅👌❗⛔'
+        weight, value = next(bank)
+        name, icon = STAT_NAMES[weight]
 
-                e = emojis[
-                      (value >= 0)
-                    + (value >  self.game_vars.MAX_WEIGHT - 10)
-                    + (value >= self.game_vars.MAX_WEIGHT)
-                    + (value >  self.game_vars.MAX_WEIGHT)
-                    + (value >  self.game_vars.MAX_OVERWEIGHT)]
+        if value > self.game_vars.MAX_OVERWEIGHT:
+            emoji = '⛔'
 
-                main_str += f'{icon} **{value}** {e} {name}\n'
+        elif value > self.game_vars.MAX_WEIGHT:
+            emoji = '❗'
 
-            else:
-                main_str += f'{icon} **{value}** {name}\n'
+        elif value == self.game_vars.MAX_WEIGHT:
+            emoji = '👌'
+
+        elif value >= self.game_vars.MAX_WEIGHT - 10:
+            emoji = '🆗'
+
+        elif value < 0:
+            emoji = '🗿'
+
+        else:
+            emoji = '⚙️'
+
+        main_str = f'{icon} **{value}** {emoji} {name}\n' + \
+            '\n'.join('{1} **{2}** {0}'.format(*STAT_NAMES[stat], value) for stat, value in bank)
 
         return main_str
 
@@ -517,7 +522,7 @@ class Mech:
         if self.drone is not None:
             width, height = get_image_w_h(self.drone.image)
             t_width, t_height = get_image_w_h(self.torso.image)
-            self.drone.attachment = Attachment(x=t_width - width - 50, y=height + 25)
+            self.drone.attachment = Attachment(x=t_width - canvas.pixels_left - width - 50, y=height + canvas.pixels_above + 25)
 
             canvas.add_image(self.drone, 'drone')
 
@@ -531,7 +536,7 @@ class Mech:
         return 'image' in self.__dict__
 
 
-    async def load_images(self, session: aiohttp.ClientSession) -> None:
+    async def load_images(self, session: ClientSession) -> None:
         """Bulk loads item images"""
         coros = {item.load_image(session) for item in self.iter_items() if item is not None if item._image is None}
 

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from argparse import ArgumentParser
 from datetime import datetime
-import sys
+from functools import cached_property, partial
 from typing import *
 
 import aiohttp
@@ -17,7 +18,6 @@ from discotools import ChannelHandler
 
 parser = ArgumentParser()
 parser.add_argument('--local', action='store_true')
-parser.add_argument('--prefix', type=str)
 parser.add_argument('--log-file', action='store_true')
 args = parser.parse_args()
 LOCAL: bool = args.local
@@ -26,7 +26,7 @@ logger = logging.getLogger('channel_logs')
 logger.level = logging.INFO
 
 load_dotenv()
-TOKEN = os.environ.get('TOKEN')
+TOKEN = os.environ.get('TOKEN_DEV' if LOCAL else 'TOKEN')
 
 if TOKEN is None:
     raise EnvironmentError('TOKEN not found in environment variables')
@@ -35,13 +35,17 @@ if TOKEN is None:
 
 class HostedBot(commands.InteractionBot):
     def __init__(self, hosted: bool=False, **options: Any):
+        options.setdefault('sync_permissions', True)
         super().__init__(**options)
         self.hosted = hosted
-        self.session = aiohttp.ClientSession()
         self.run_time = datetime.now()
 
 
-    async def on_slash_command_error(self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError) -> None:
+    async def on_slash_command_error(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        error: commands.CommandError
+    ) -> None:
         if isinstance(error, (commands.UserInputError, commands.CheckFailure)):
             if isinstance(error, commands.NotOwner):
                 msg = 'You cannot use this command.'
@@ -75,11 +79,21 @@ class HostedBot(commands.InteractionBot):
         print(text, '-' * len(text), sep='\n')
 
 
+    @cached_property
+    def session(self) -> aiohttp.ClientSession:
+        session = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=30),
+            connector=self.http.connector)
+        session._request = partial(session._request, proxy=self.http.proxy)
+        return session
+
+
 bot = HostedBot(
     hosted=LOCAL,
+    owner_id=190505392504045570,
     intents=disnake.Intents(guilds=True),
     activity=disnake.Game('under maintenance' if LOCAL else 'SuperMechs'),
-    test_guilds=[624937100034310164, 842788736008978504, 756084361450750062])
+    guild_ids=[624937100034310164] if LOCAL else None)
 
 # ----------------------------------------------------------------------------------------------
 
@@ -98,11 +112,11 @@ class Setup(commands.Cog):
     async def extensions(
         self,
         inter: disnake.MessageCommandInteraction,
-        action: Literal['load', 'reload', 'unload'],
+        action: Literal['load', 'reload', 'unload'] = 'reload',
         ext: str=None
     ) -> None:
         """Extension manager
-        
+
         Parameters
         -----------
         action:
@@ -137,8 +151,8 @@ class Setup(commands.Cog):
         return [ext for ext in inter.bot.extensions if input in ext.lower()]
 
 
-    @commands.slash_command(guild_ids=[624937100034310164])
-    @commands.is_owner()
+    @commands.guild_permissions(624937100034310164, owner=True)
+    @commands.slash_command(default_permission=False, guild_ids=[624937100034310164])
     async def shutdown(self, inter: disnake.MessageCommandInteraction) -> None:
         """Terminates the bot connection."""
         await inter.send('I will be back')

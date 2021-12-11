@@ -12,6 +12,7 @@ from typing import *
 
 import disnake
 from disnake.ext import commands
+from disnake.utils import MISSING
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -116,15 +117,16 @@ class DiscordFormatter(logging.Formatter):
 
 
 class ChannelHandler(logging.Handler):
+    """Handler instance dispatching logging events to a discord channel."""
     def __init__(self, channel_id: int, client: disnake.Client, level: int=logging.NOTSET) -> None:
         super().__init__(level)
         self.client = client
-        self.dest: disnake.abc.Messageable | None = None
-        self.queue = deque[logging.LogRecord]()
+        self.dest: disnake.abc.Messageable = MISSING
+        self.queue: deque[logging.LogRecord] = deque()
         self.formatter = DiscordFormatter()
 
 
-        def setter(future: asyncio.Future[Any]) -> None:
+        def setter(future: asyncio.Future[None]) -> None:
             channel = client.get_channel(channel_id)
 
             if not isinstance(channel, disnake.abc.Messageable):
@@ -139,7 +141,7 @@ class ChannelHandler(logging.Handler):
 
 
     def emit(self, record: logging.LogRecord) -> None:
-        if self.dest is None:
+        if self.dest is MISSING:
             self.queue.append(record)
             return
 
