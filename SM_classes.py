@@ -519,10 +519,12 @@ class Mech:
 
             canvas.add_image(item, layer)
 
+        # drone is offset-relative so we need to handle that here
         if self.drone is not None:
             width, height = get_image_w_h(self.drone.image)
-            t_width, t_height = get_image_w_h(self.torso.image)
-            self.drone.attachment = Attachment(x=t_width - canvas.pixels_left - width - 50, y=height + canvas.pixels_above + 25)
+            self.drone.attachment = Attachment(
+                x=canvas.pixels_left  + width // 2,
+                y=canvas.pixels_above + height + 25)
 
             canvas.add_image(self.drone, 'drone')
 
