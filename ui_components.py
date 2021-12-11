@@ -313,14 +313,7 @@ class ArenaBuffsView(View):
 
     @button(label='Quit', style=ButtonStyle.red, row=3)
     async def quit_button(self, button: Button[ArenaBuffsView], inter: disnake.MessageInteraction) -> None:
-        self.remove_item(self.right_button)  # type: ignore
-        self.remove_item(self.left_button)  # type: ignore
-        self.remove_item(self.dropdown)  # type: ignore
-        self.remove_item(button)
-
-        for item in self.visible:
-            item.disabled = True
-
+        self.before_stop()
         self.stop()
         await inter.response.edit_message(view=self)
 
@@ -353,8 +346,7 @@ class ArenaBuffsView(View):
 
     @select(options=[EMPTY_OPTION], disabled=True, row=4)
     async def dropdown(self, select: Select[ArenaBuffsView], interaction: disnake.MessageInteraction) -> None:
-        assert interaction.values is not None
-        value_str, = interaction.values
+        value_str, = select.values
         level = int(value_str)
 
         self.push_value(level)
@@ -398,6 +390,16 @@ class ArenaBuffsView(View):
             for level, buff in enumerate(self.buffs.iter_as_str(button.custom_id))]
 
         self.active = button
+
+
+    def before_stop(self) -> None:
+        self.remove_item(self.right_button)  # type: ignore
+        self.remove_item(self.left_button)  # type: ignore
+        self.remove_item(self.quit_button)  # type: ignore
+        self.remove_item(self.dropdown)  # type: ignore
+
+        for item in self.visible:
+            item.disabled = True
 
 
     def push_value(self, level: int) -> None:

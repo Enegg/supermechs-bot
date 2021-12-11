@@ -215,7 +215,6 @@ class Misc(commands.Cog):
         await inter.send(embed=embed, ephemeral=True)
 
 
-
 bot.add_cog(Setup())
 bot.add_cog(Misc())
 bot.load_extension('SM')

@@ -170,7 +170,7 @@ class SuperMechs(commands.Cog):
         self.abbrevs = self.item_abbrevs()
 
 
-    async def load_item_pack(self, pack_url: str) -> None:
+    async def load_item_pack(self, pack_url: str, /) -> None:
         """Loads an item pack from url and sets it as active pack."""
         async with self.session.get(pack_url) as response:
             pack: ItemPack = await response.json(encoding='utf-8', content_type=None)
@@ -216,7 +216,7 @@ class SuperMechs(commands.Cog):
         return abbrevs
 
 
-    def get_player(self, inter: disnake.ApplicationCommandInteraction) -> Player:
+    def get_player(self, inter: disnake.ApplicationCommandInteraction, /) -> Player:
         id = inter.author.id
 
         if id not in self.players:
@@ -248,7 +248,7 @@ class SuperMechs(commands.Cog):
 
 
     @commands.slash_command()
-    @channel_lock(['bot', 'spam', 'supermechs'])
+    # @channel_lock(['bot', 'spam', 'supermechs', 'command', 'playground'])
     async def item(
         self,
         inter: disnake.ApplicationCommandInteraction,
@@ -315,7 +315,7 @@ class SuperMechs(commands.Cog):
 
 
     @commands.slash_command()
-    @channel_lock(['bot', 'spam', 'supermechs'])
+    # @channel_lock(['bot', 'spam', 'supermechs', 'command', 'playground'])
     async def mech(self, inter: disnake.ApplicationCommandInteraction) -> None:
         pass
 
@@ -335,7 +335,7 @@ class SuperMechs(commands.Cog):
             mech = player.get_active_build()
 
             if mech is None:
-                await inter.response.send_message("You don't have any builds.")
+                await inter.send("You do not have any builds.")
                 return
 
             name = player.active_build
@@ -344,7 +344,7 @@ class SuperMechs(commands.Cog):
             mech = player.builds[name]
 
         else:
-            await inter.response.send_message(
+            await inter.send(
                 f'No build found named "{name}".',
                 allowed_mentions=disnake.AllowedMentions.none())
             return
@@ -354,7 +354,7 @@ class SuperMechs(commands.Cog):
 
         if mech.torso is None:
             embed.color = inter.author.color
-            await inter.response.send_message(embed=embed)
+            await inter.send(embed=embed)
             return
 
         embed.color = mech.torso.element.color
@@ -363,7 +363,7 @@ class SuperMechs(commands.Cog):
 
         await mech.load_images(self.session)
         file = image_to_file(mech.image, filename)
-        await inter.response.send_message(embed=embed, file=file)
+        await inter.send(embed=embed, file=file)
 
 
     @mech.sub_command(name='list')
@@ -372,7 +372,7 @@ class SuperMechs(commands.Cog):
         player = self.get_player(inter)
 
         if not player.builds:
-            await inter.response.send_message('You do not have any mech builds.')
+            await inter.send('You do not have any mech builds.')
             return
 
         string = f'Currently active: **{player.active_build}**\n'
@@ -386,7 +386,7 @@ class SuperMechs(commands.Cog):
             f'; {build.weight} weight'
             for name, build in player.builds.items())
 
-        await inter.response.send_message(string)
+        await inter.send(string)
 
 
     @mech.sub_command()
@@ -416,6 +416,11 @@ class SuperMechs(commands.Cog):
 
         view = MechView(mech, embed, self.items_dict, player.arena_buffs, self.session)
 
+        async def on_timeout() -> None:
+            await inter.edit_original_message(view=None)
+
+        view.on_timeout = on_timeout
+
         if mech.torso is None:
             await inter.send(embed=embed, view=view)
 
@@ -443,7 +448,14 @@ class SuperMechs(commands.Cog):
         """Interactive UI for modifying your arena buffs"""
         player = self.get_player(inter)
         view = ArenaBuffsView(player.arena_buffs)
-        await inter.response.send_message('**Arena Shop**', view=view)
+
+        async def on_timeout() -> None:
+            view.before_stop()
+            await inter.edit_original_message(view=None)
+
+        view.on_timeout = on_timeout
+
+        await inter.send('**Arena Shop**', view=view)
 
 
     @commands.slash_command(guild_ids=[624937100034310164])
