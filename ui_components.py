@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import *
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Generic, TypeVar
 
 import aiohttp
 import disnake
@@ -63,7 +63,7 @@ class ItemView(View):
         item: Item[AnyAttachment],
         callback: Callable[[disnake.Embed, Item[AnyAttachment], bool], None],
         *,
-        timeout: Optional[float] = 180
+        timeout: float | None = 180
     ) -> None:
         super().__init__(timeout=timeout)
         self.call = callback
@@ -117,7 +117,7 @@ class MechView(View):
             ('top1', 'drone', 'top2', 'mod1', 'mod2'),
             ('side3', 'torso', 'side4', 'mod3', 'mod4'),
             ('side1', 'legs', 'side2', 'mod5', 'mod6'),
-            ('charge_engine', 'teleporter', 'grappling_hook', 'mod7', 'mod8')
+            ('charge', 'tele', 'hook', 'mod7', 'mod8')
             )):
             for id in row:
                 self.add_item(TrinaryButton(
@@ -157,9 +157,9 @@ class MechView(View):
             legs=[EMPTY_OPTION],
             top_weapon=[EMPTY_OPTION],
             side_weapon=[EMPTY_OPTION],
-            charge_engine=[EMPTY_OPTION],
-            teleporter=[EMPTY_OPTION],
-            grappling_hook=[EMPTY_OPTION],
+            charge=[EMPTY_OPTION],
+            tele=[EMPTY_OPTION],
+            hook=[EMPTY_OPTION],
             module=[EMPTY_OPTION])
 
 
@@ -416,6 +416,25 @@ class ArenaBuffsView(View):
 
         active.label = self.buffs.buff_as_str_aware(id).rjust(4, '⠀')
         self.toggle_style(active)
+
+
+class CompareView(View):
+    def __init__(self, embed: disnake.Embed, item_a: Item[AnyAttachment], item_b: Item[AnyAttachment], *, timeout: float | None = 180):
+        super().__init__(timeout=timeout)
+        self.embed = embed
+        self.item_a = item_a
+        self.item_b = item_b
+
+
+    @button(label='Buffs A')
+    async def buff_button_A(self, button: Button[CompareView], inter: disnake.MessageInteraction) -> None:
+        if was_off := button.style is ButtonStyle.gray:
+            button.style = ButtonStyle.green
+
+        else:
+            button.style = ButtonStyle.gray
+
+        await inter.response.edit_message(view=self)
 
 
 class TrinaryButton(Button[View], Generic[T]):

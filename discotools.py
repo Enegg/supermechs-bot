@@ -8,7 +8,7 @@ import re
 import traceback
 from collections import deque
 from functools import partial
-from typing import *
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, TypeVar
 
 import disnake
 from disnake.ext import commands
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 T = TypeVar('T')
-AnyContext = Union[commands.Context, disnake.ApplicationCommandInteraction]
+AnyContext = commands.Context | disnake.ApplicationCommandInteraction
 
 def channel_lock(
     words: Iterable[str]=None,
@@ -108,9 +108,11 @@ async def scheduler(
 
 
 class DiscordFormatter(logging.Formatter):
-    def formatException(self, exc_info: tuple[type[BaseException] | None, BaseException | None, TracebackType | None]) -> str:
+    @staticmethod
+    def formatException(exc_info: tuple[type[BaseException] | None, BaseException | None, TracebackType | None]) -> str:
+        """Format and return the specified exception information as discord markdown code block."""
         with io.StringIO() as sio:
-            sio.write('```\n')
+            sio.write('```py\n')
             traceback.print_exception(*exc_info, file=sio)
             sio.write('```')
             return sio.getvalue()
@@ -152,5 +154,5 @@ class ChannelHandler(logging.Handler):
 class ForbiddenChannel(commands.CheckFailure):
     """Exception raised when command is used from invalid channel."""
 
-    def __init__(self, message: Optional[str] = None, *args: Any) -> None:
+    def __init__(self, message: str = None, *args: Any) -> None:
         super().__init__(message=message or 'You cannot use this command here.', *args)

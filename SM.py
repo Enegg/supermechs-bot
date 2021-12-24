@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import random
 from itertools import zip_longest
-from typing import *
-import aiohttp
+from typing import TYPE_CHECKING, Iterable, cast
 
+import aiohttp
 import disnake
 from disnake.ext import commands
 
-from config import DEFAULT_PACK_URL
-from discotools import channel_lock
+from config import DEFAULT_PACK_URL, TEST_GUILDS
 from functions import random_str, search_for
 from image_manipulation import image_to_file
 from SM_classes import (STAT_NAMES, AnyAttachment, ArenaBuffs, Item, ItemPack,
@@ -167,7 +166,7 @@ class SuperMechs(commands.Cog):
 
     async def cog_load(self) -> None:
         await self.load_item_pack(DEFAULT_PACK_URL)
-        self.abbrevs = self.item_abbrevs()
+        self.abbrevs = self.abbreviate_names(self.items_dict)
 
 
     async def load_item_pack(self, pack_url: str, /) -> None:
@@ -180,12 +179,13 @@ class SuperMechs(commands.Cog):
             for item_dict in pack['items']}
 
 
-    def item_abbrevs(self) -> dict[str, set[str]]:
-        """Returns dict of abbrevs and dict of names and items:
+    @staticmethod
+    def abbreviate_names(names: Iterable[str], /) -> dict[str, set[str]]:
+        """Returns dict of abbrevs:
         Energy Free Armor => EFA"""
         abbrevs: dict[str, set[str]] = {}
 
-        for name in self.items_dict:
+        for name in names:
             if len(name) < 8:
                 continue
 
@@ -253,7 +253,7 @@ class SuperMechs(commands.Cog):
         self,
         inter: disnake.ApplicationCommandInteraction,
         name: str,
-        compact: bool=None,
+        compact: bool=False,
         invisible: bool=True,
         raw: bool=False
     ) -> None:
@@ -271,47 +271,33 @@ class SuperMechs(commands.Cog):
             Whether not to format the embed and send raw data instead
         """
 
-        if compact is None and isinstance(inter.author, disnake.Member):
-            compact = not inter.author.is_on_mobile()
-
-        # getting the item
-        item = self.items_dict.get(name, None)
-
-        if item is None:
+        if name not in self.items_dict:
             raise commands.UserInputError('Item not found.')
+
+        item = self.items_dict[name]
 
         # debug flag
         if raw:
             await inter.send(f'`{item!r}`', ephemeral=invisible)
             return
 
-        # embedding
         if compact:
             embed = disnake.Embed(color=item.element.color
-                ).set_author(name=item.name, icon_url=item.icon.URL
-                ).set_thumbnail(url=item.image_url)
+            ).set_author(name=item.name, icon_url=item.icon.URL
+            ).set_thumbnail(url=item.image_url)
             view = ItemView(embed, item, compact_embed)
 
         else:
             embed = disnake.Embed(title=item.name,
                 description=f"{item.element.name.capitalize()} {item.type.replace('_', ' ').lower()}",
                 color=item.element.color
-                ).set_thumbnail(url=item.icon.URL
-                ).set_image(url=item.image_url)
+            ).set_thumbnail(url=item.icon.URL
+            ).set_image(url=item.image_url)
             view = ItemView(embed, item, default_embed)
 
         await inter.send(embed=embed, view=view, ephemeral=invisible)
         await view.wait()
         await inter.edit_original_message(view=None)
-
-
-    @item.autocomplete('name')
-    async def item_autocomp(self, inter: disnake.ApplicationCommandInteraction, input: str) -> list[str]:
-        """Autocomplete for `item` slash command"""
-        if len(input) < 2:
-            return ['Start typing to get suggestions...']
-
-        return sorted(set(search_for(input, self.items_dict)) | self.abbrevs.get(input.lower(), set()))[:25]
 
 
     @commands.slash_command()
@@ -372,7 +358,7 @@ class SuperMechs(commands.Cog):
         player = self.get_player(inter)
 
         if not player.builds:
-            await inter.send('You do not have any mech builds.')
+            await inter.send('You do not have any builds.')
             return
 
         string = f'Currently active: **{player.active_build}**\n'
@@ -382,7 +368,7 @@ class SuperMechs(commands.Cog):
             f'{build.torso or "No torso"}'
             f', {build.legs or "no legs"}'
             f', {len(tuple(filter(None, build.iter_weapons())))} weapon(s)'
-            f', {len(tuple(filter(None, build.iter_modules())))} modules(s)'
+            f', {len(tuple(filter(None, build.iter_modules())))} module(s)'
             f'; {build.weight} weight'
             for name, build in player.builds.items())
 
@@ -390,6 +376,7 @@ class SuperMechs(commands.Cog):
 
 
     @mech.sub_command()
+    @commands.max_concurrency(1, commands.BucketType.user)
     async def build(self, inter: disnake.ApplicationCommandInteraction, name: str=None) -> None:
         """Interactive UI for modifying a mech build.
 
@@ -436,14 +423,17 @@ class SuperMechs(commands.Cog):
             await inter.send(embed=embed, view=view, file=file)
 
 
+    @show.autocomplete('name')
     @build.autocomplete('name')
-    async def build_autocomp(self, inter: disnake.ApplicationCommandInteraction, input: str) -> list[str]:
+    async def build_autocomplete(self, inter: disnake.ApplicationCommandInteraction, input: str) -> list[str]:
+        """Autocomplete for player builds"""
         player = self.get_player(inter)
         input = input.lower()
         return [name for name in player.builds if name.lower().startswith(input)]
 
 
     @commands.slash_command()
+    @commands.max_concurrency(1, commands.BucketType.user)
     async def buffs(self, inter: disnake.ApplicationCommandInteraction) -> None:
         """Interactive UI for modifying your arena buffs"""
         player = self.get_player(inter)
@@ -458,13 +448,46 @@ class SuperMechs(commands.Cog):
         await inter.send('**Arena Shop**', view=view)
 
 
-    @commands.slash_command(guild_ids=[624937100034310164])
+    @commands.slash_command(guild_ids=TEST_GUILDS)
     @commands.is_owner()
     async def maxed(self, inter: disnake.ApplicationCommandInteraction) -> None:
         """Maxes out your buffs"""
         me = self.get_player(inter)
         me.arena_buffs.levels.update(ArenaBuffs.maxed().levels)
         await inter.send('Success', ephemeral=True)
+
+
+    @commands.slash_command()
+    async def compare(self, inter: disnake.ApplicationCommandInteraction, item1: str, item2: str) -> None:
+        """Shows an interactive comparison of two items.
+
+        Parameters
+        -----------
+        item1: First item to compare.
+        item2: Second item to compare.
+        """
+        item_a = self.items_dict.get(item1)
+        item_b = self.items_dict.get(item2)
+
+        if item_a is None or item_b is None:
+            raise commands.UserInputError('Either of specified items not found.')
+
+
+    @item.autocomplete('name')
+    @compare.autocomplete('item1')
+    @compare.autocomplete('item2')
+    async def item_autocomplete(self, inter: disnake.ApplicationCommandInteraction, input: str) -> list[str]:
+        """Autocomplete for items"""
+        if len(input) < 2:
+            return ['Start typing to get suggestions...']
+
+        items = sorted(set(search_for(input, self.items_dict)) | self.abbrevs.get(input.lower(), set()))
+
+        if len(items) <= 25:
+            return items
+
+        return items[:25]
+
 
 
 def setup(bot: HostedBot) -> None:

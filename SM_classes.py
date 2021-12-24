@@ -4,15 +4,15 @@ import asyncio
 from collections import Counter
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import *
-
-from aiohttp import ClientSession
+from typing import (TYPE_CHECKING, Any, Generic, Iterable, Iterator, Literal,
+                    NamedTuple, TypedDict, TypeVar, cast)
 
 from enums import STAT_NAMES, WORKSHOP_STATS, Elements, Icons, Rarity
 from functions import js_format, random_str
 from image_manipulation import MechRenderer, get_image, get_image_w_h
 
 if TYPE_CHECKING:
+    from aiohttp import ClientSession
     from PIL.Image import Image
     from typing_extensions import NotRequired
 
@@ -23,12 +23,8 @@ if TYPE_CHECKING:
         description: str
 
 
-AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELEPORTER', 'CHARGE_ENGINE', 'GRAPPLING_HOOK', 'MODULE']
+AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELE', 'CHARGE', 'HOOK', 'MODULE']
 AnyElement = Literal['PHYSICAL', 'EXPLOSIVE', 'ELECTRIC', 'COMBINED']
-
-# TORSO, LEGS, DRONE, SIDE_WEAPON, TOP_WEAPON, TELEPORTER, CHARGE, GRAPPLING_HOOK, MODULE
-
-ItemType = TypeVar('ItemType', bound=AnyType)
 
 
 class AnyStats(TypedDict, total=False):
@@ -82,11 +78,8 @@ class Attachment(TypedDict):
     y: int
 
 Attachments = dict[str, Attachment]
-AnyAttachment = Union[Attachment, Attachments, None]
-
-class ItemPack(TypedDict):
-    config: PackConfig
-    items: list[ItemDict]
+AnyAttachment = Attachment | Attachments | None
+AttachmentType = TypeVar('AttachmentType', bound=AnyAttachment)
 
 
 class ItemDict(TypedDict):
@@ -104,7 +97,9 @@ class ItemDict(TypedDict):
     attachment: NotRequired[Attachment | Attachments]
 
 
-AttachmentType = TypeVar('AttachmentType', bound=AnyAttachment)
+class ItemPack(TypedDict):
+    config: PackConfig
+    items: list[ItemDict]
 
 
 class Item(Generic[AttachmentType]):
@@ -170,8 +165,8 @@ class Item(Generic[AttachmentType]):
 
 
     @property
-    def type(self) -> AnyType:
-        return cast(AnyType, self.icon.name)
+    def type(self) -> str:
+        return self.icon.name
 
 
     @property
@@ -296,51 +291,51 @@ def clear_cache(obj: object, name: str) -> None:
 
 
 class _Items(TypedDict):
-    torso: Item[Attachments] | None
-    legs:  Item[Attachment] | None
-    drone: Item[Attachment] | None
-    side1: Item[Attachment] | None
-    side2: Item[Attachment] | None
-    side3: Item[Attachment] | None
-    side4: Item[Attachment] | None
-    top1:  Item[Attachment] | None
-    top2:  Item[Attachment] | None
-    teleporter:     Item[None] | None
-    charge_engine:  Item[None] | None
-    grappling_hook: Item[None] | None
-    mod1: Item[None] | None
-    mod2: Item[None] | None
-    mod3: Item[None] | None
-    mod4: Item[None] | None
-    mod5: Item[None] | None
-    mod6: Item[None] | None
-    mod7: Item[None] | None
-    mod8: Item[None] | None
+    torso:  Item[Attachments] | None
+    legs:   Item[Attachment] | None
+    drone:  Item[Attachment] | None
+    side1:  Item[Attachment] | None
+    side2:  Item[Attachment] | None
+    side3:  Item[Attachment] | None
+    side4:  Item[Attachment] | None
+    top1:   Item[Attachment] | None
+    top2:   Item[Attachment] | None
+    tele:   Item[None] | None
+    charge: Item[None] | None
+    hook:   Item[None] | None
+    mod1:   Item[None] | None
+    mod2:   Item[None] | None
+    mod3:   Item[None] | None
+    mod4:   Item[None] | None
+    mod5:   Item[None] | None
+    mod6:   Item[None] | None
+    mod7:   Item[None] | None
+    mod8:   Item[None] | None
 
 
 class Mech:
     """Represents a mech build."""
     if TYPE_CHECKING:
-        torso: Item[Attachments] | None
-        legs:  Item[Attachment] | None
-        drone: Item[Attachment] | None
-        side1: Item[Attachment] | None
-        side2: Item[Attachment] | None
-        side3: Item[Attachment] | None
-        side4: Item[Attachment] | None
-        top1:  Item[Attachment] | None
-        top2:  Item[Attachment] | None
-        teleporter:     Item[None] | None
-        charge_engine:  Item[None] | None
-        grappling_hook: Item[None] | None
-        mod1: Item[None] | None
-        mod2: Item[None] | None
-        mod3: Item[None] | None
-        mod4: Item[None] | None
-        mod5: Item[None] | None
-        mod6: Item[None] | None
-        mod7: Item[None] | None
-        mod8: Item[None] | None
+        torso:  Item[Attachments] | None
+        legs:   Item[Attachment] | None
+        drone:  Item[Attachment] | None
+        side1:  Item[Attachment] | None
+        side2:  Item[Attachment] | None
+        side3:  Item[Attachment] | None
+        side4:  Item[Attachment] | None
+        top1:   Item[Attachment] | None
+        top2:   Item[Attachment] | None
+        tele:   Item[None] | None
+        charge: Item[None] | None
+        hook:   Item[None] | None
+        mod1:   Item[None] | None
+        mod2:   Item[None] | None
+        mod3:   Item[None] | None
+        mod4:   Item[None] | None
+        mod5:   Item[None] | None
+        mod6:   Item[None] | None
+        mod7:   Item[None] | None
+        mod8:   Item[None] | None
 
     def __init__(self, *, vars: GameVars=DEFAULT_VARS):
         self._items: _Items = dict.fromkeys(_Items.__annotations__, None)  # type: ignore
@@ -356,7 +351,7 @@ class Mech:
             raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
 
 
-    def __setitem__(self, place: str | tuple[AnyType, int], item: Item[AnyAttachment] | None) -> None:
+    def __setitem__(self, place: str | tuple[str, int], item: Item[AnyAttachment] | None) -> None:
         if not isinstance(item, (Item, type(None))):
             raise TypeError(f'Expected Item object or None, got {type(item)}')
 
@@ -382,26 +377,20 @@ class Mech:
         if pos is None:
             raise TypeError(f'"{item_type}" requires pos passed')
 
-        if item_type == 'module':
-            if not 0 < pos <= 8:
-                raise ValueError(f'Pos outside range 1-8')
+        item_types: dict[str, tuple[str, int]] = {
+            "module": ("mod", 8),
+            "side_weapon": ("side", 4),
+            "top_weapon": ("top", 2)}
 
-            self._items[f'mod{pos}'] = item
-
-        elif item_type == 'side_weapon':
-            if not 0 < pos <= 4:
-                raise ValueError(f'Pos outside range 1-4')
-
-            self._items[f'side{pos}'] = item
-
-        elif item_type == 'top_weapon':
-            if not 0 < pos <= 2:
-                raise ValueError(f'Pos outside range 1-2')
-
-            self._items[f'top{pos}'] = item
-
-        else:
+        if item_type not in item_types:
             raise TypeError('Invalid item type passed')
+
+        slug, limit = item_types[item_type]
+
+        if not 0 < pos <= limit:
+            raise ValueError(f"Position outside range 1-{limit}")
+
+        self._items[slug + str(pos)]
 
 
     def __str__(self) -> str:
@@ -477,23 +466,17 @@ class Mech:
         weight, value = next(bank)
         name, icon = STAT_NAMES[weight]
 
-        if value > self.game_vars.MAX_OVERWEIGHT:
-            emoji = '⛔'
+        emojis = '🗿⚙️🆗👌❗⛔'
+        vars = self.game_vars
 
-        elif value > self.game_vars.MAX_WEIGHT:
-            emoji = '❗'
+        cond = (
+              (value >= 0)
+            + (value >= vars.MAX_WEIGHT - 10)
+            + (value >= vars.MAX_WEIGHT)
+            + (value >  vars.MAX_WEIGHT)
+            + (value >  vars.MAX_OVERWEIGHT))
 
-        elif value == self.game_vars.MAX_WEIGHT:
-            emoji = '👌'
-
-        elif value >= self.game_vars.MAX_WEIGHT - 10:
-            emoji = '🆗'
-
-        elif value < 0:
-            emoji = '🗿'
-
-        else:
-            emoji = '⚙️'
+        emoji = emojis[cond]
 
         main_str = f'{icon} **{value}** {emoji} {name}\n' + \
             '\n'.join('{1} **{2}** {0}'.format(*STAT_NAMES[stat], value) for stat, value in bank)
@@ -559,21 +542,16 @@ class Mech:
     def iter_modules(self) -> Iterator[Item[None] | None]:
         """Iterator over mech's modules"""
         items = self._items
-        yield items['mod1']
-        yield items['mod2']
-        yield items['mod3']
-        yield items['mod4']
-        yield items['mod5']
-        yield items['mod6']
-        yield items['mod7']
-        yield items['mod8']
+
+        for n in range(1, 9):
+            yield items[f'mod{n}']
 
     def iter_specials(self) -> Iterator[Item[None] | None]:
         """Iterator over mech's specials, in order: tele, charge, hook"""
         items = self._items
-        yield items['teleporter']
-        yield items['charge_engine']
-        yield items['grappling_hook']
+        yield items['tele']
+        yield items['charge']
+        yield items['hook']
 
     def iter_items(self) -> Iterator[Item[AnyAttachment] | None]:
         """Iterator over all mech's items"""
@@ -615,18 +593,18 @@ class ArenaBuffs:
 
     @classmethod
     def get_percent(cls, stat: str, level: int) -> int:
-        if stat == 'health':
-            raise TypeError('"Health" stat has absolute increase, not percent')
+        match stat:
+            case 'health':
+                raise TypeError('"Health" stat has absolute increase, not percent')
 
-        value = cls.ref_def[level]
+            case 'backfire':
+                return -cls.ref_def[level]
 
-        if stat == 'backfire':
-            return -value
+            case 'expRes' | 'eleRes' | 'phyRes':
+                return cls.ref_def[level] * 2
 
-        if stat.endswith('Res'):
-            return value * 2
-
-        return value
+            case _:
+                return cls.ref_def[level]
 
 
     @classmethod
@@ -661,6 +639,7 @@ class ArenaBuffs:
 
 @dataclass
 class Player:
+    """Represents a SuperMechs player."""
     id: int
     builds: dict[str, Mech] = field(hash=False, default_factory=dict)
     arena_buffs: ArenaBuffs = field(hash=False, default_factory=ArenaBuffs, init=False)

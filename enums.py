@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import *
+from typing import NamedTuple
 
 
 class Stat(NamedTuple):
@@ -66,7 +66,6 @@ class Tier(NamedTuple):
 
 
 class Element(NamedTuple):
-    type:  str
     color: int
     emoji: str
 
@@ -77,13 +76,13 @@ class Icon(NamedTuple):
 
 
 class Rarity(Tier, Enum):
-    C = Tier(0, '⚪', 0xB1B1B1); COMMON = C
-    R = Tier(1, '🔵', 0x55ACEE); RARE = R
-    E = Tier(2, '🟣', 0xCC41CC); EPIC = E
-    L = Tier(3, '🟠', 0xE0A23C); LEGENDARY = L
-    M = Tier(4, '🟤', 0xFE6333); MYTHICAL = M
-    D = Tier(5, '⚪', 0xFFFFFF); DIVINE = D
-    P = Tier(6, '🟡', 0xFFFF33); PERK = P
+    COMMON    = C = Tier(0, '⚪', 0xB1B1B1)
+    RARE      = R = Tier(1, '🔵', 0x55ACEE)
+    EPIC      = E = Tier(2, '🟣', 0xCC41CC)
+    LEGENDARY = L = Tier(3, '🟠', 0xE0A23C)
+    MYTHICAL  = M = Tier(4, '🟤', 0xFE6333)
+    DIVINE    = D = Tier(5, '⚪', 0xFFFFFF)
+    PERK      = P = Tier(6, '🟡', 0xFFFF33)
 
     def __str__(self) -> str:
         return self.emoji
@@ -107,10 +106,9 @@ class Rarity(Tier, Enum):
         return self.level < o.level
 
 
-    @classmethod
-    def next_tier(cls, tier: Rarity) -> Rarity:
-        for rarity in cls:
-            if rarity.level == tier.level + 1:
+    def next_tier(self) -> Rarity:
+        for rarity in Rarity:
+            if rarity.level == self.level + 1:
                 return rarity
 
         raise TypeError('Highest rarity already achieved')
@@ -123,6 +121,9 @@ class RarityRange:
     def __init__(self, lower: Rarity, upper: Rarity=None) -> None:
         if upper is None:
             upper = lower
+
+        elif lower.level > upper.level:
+            raise ValueError('upper rarity below lower rarity')
 
         self.range = range(lower.level, upper.level)
 
@@ -159,32 +160,30 @@ class RarityRange:
 
 
 class Elements(Element, Enum):
-    EXPLOSIVE = HEAT = Element('EXPLOSIVE', 0xb71010, STAT_NAMES['expDmg'].emoji)
-    ELECTRIC  = ELEC = Element('ELECTRIC',  0x106ed8, STAT_NAMES['eleDmg'].emoji)
-    PHYSICAL  = PHYS = Element('PHYSICAL',  0xffb800, STAT_NAMES['phyDmg'].emoji)
-    COMBINED  = COMB = Element('COMBINED',  0x211d1d, '🔰')
-    OMNI =             Element('OMNI',      0x000000, '<a:energyball:731885130594910219>')
+    EXPLOSIVE = HEAT = Element(0xb71010, STAT_NAMES['expDmg'].emoji)
+    ELECTRIC  = ELEC = Element(0x106ed8, STAT_NAMES['eleDmg'].emoji)
+    PHYSICAL  = PHYS = Element(0xffb800, STAT_NAMES['phyDmg'].emoji)
+    COMBINED  = COMB = Element(0x211d1d, '🔰')
+    OMNI =             Element(0x000000, '<a:energyball:731885130594910219>')
 
 
 class Icons(Icon, Enum):
-    TORSO          = Icon('https://i.imgur.com/iNtSziV.png',  '<:torso:730115680363347968>')
-    LEGS           = Icon('https://i.imgur.com/6NBLOhU.png',   '<:legs:730115699397361827>')
-    DRONE          = Icon('https://i.imgur.com/oqQmXTF.png',  '<:drone:730115574763618394>')
-    SIDE_WEAPON    = Icon('https://i.imgur.com/CBbvOnQ.png',  '<:sider:730115747799629940>')
-    SIDE_LEFT      = Icon('https://i.imgur.com/UuyYCrw.png',  '<:sidel:730115729365663884>')
-    TOP_WEAPON     = Icon('https://i.imgur.com/LW7ZCGZ.png',   '<:topr:730115786735091762>')
-    TOP_LEFT       = Icon('https://i.imgur.com/1xlnVgK.png',   '<:topl:730115768431280238>')
-    TELEPORTER     = Icon('https://i.imgur.com/Fnq035A.png',   '<:tele:730115603683213423>')
-    CHARGE_ENGINE  = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
-    GRAPPLING_HOOK = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
-    MODULE         = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
-    SIDE2 = SIDE4 = SIDE_RIGHT = SIDE_WEAPON  # XXX horrible, refactor
-    SIDE1 = SIDE3 = SIDE_LEFT
-    TOP2 = TOP_RIGHT = TOP_WEAPON
-    TOP1 = TOP_LEFT
-    CHARGE = CHARGE_ENGINE
-    HOOK = GRAPPLING_HOOK
-    TELE = TELEPORTER
+    TORSO       = Icon('https://i.imgur.com/iNtSziV.png',  '<:torso:730115680363347968>')
+    LEGS        = Icon('https://i.imgur.com/6NBLOhU.png',   '<:legs:730115699397361827>')
+    DRONE       = Icon('https://i.imgur.com/oqQmXTF.png',  '<:drone:730115574763618394>')
+    SIDE_WEAPON = Icon('https://i.imgur.com/CBbvOnQ.png',  '<:sider:730115747799629940>')
+    SIDE_LEFT   = Icon('https://i.imgur.com/UuyYCrw.png',  '<:sidel:730115729365663884>')
+    TOP_WEAPON  = Icon('https://i.imgur.com/LW7ZCGZ.png',   '<:topr:730115786735091762>')
+    TOP_LEFT    = Icon('https://i.imgur.com/1xlnVgK.png',   '<:topl:730115768431280238>')
+    TELE        = Icon('https://i.imgur.com/Fnq035A.png',   '<:tele:730115603683213423>')
+    CHARGE      = Icon('https://i.imgur.com/UnDqJx8.png', '<:charge:730115557239685281>')
+    HOOK        = Icon('https://i.imgur.com/8oAoPcJ.png',   '<:hook:730115622347735071>')
+    MODULE      = Icon('https://i.imgur.com/dQR8UgN.png',    '<:mod:730115649866694686>')
+    SIDE_RIGHT = SIDE_WEAPON
+    TOP_RIGHT = TOP_WEAPON
+    CHARGE_ENGINE = CHARGE
+    GRAPPLING_HOOK = HOOK
+    TELEPORTER = TELE
     # SHIELD
     # PERK
     # KIT

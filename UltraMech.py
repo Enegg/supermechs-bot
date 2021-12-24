@@ -6,21 +6,21 @@ import sys
 from argparse import ArgumentParser
 from datetime import datetime
 from functools import cached_property, partial
-from typing import *
+from typing import Any, Final, Literal
 
 import aiohttp
 import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from config import LOGS_CHANNEL
-from discotools import ChannelHandler
+from config import HOME_GUILD_ID, LOGS_CHANNEL, OWNER_ID, TEST_GUILDS
+from discotools import ChannelHandler, DiscordFormatter
 
 parser = ArgumentParser()
 parser.add_argument('--local', action='store_true')
 parser.add_argument('--log-file', action='store_true')
 args = parser.parse_args()
-LOCAL: bool = args.local
+LOCAL: Final[bool] = args.local
 
 logger = logging.getLogger('channel_logs')
 logger.level = logging.INFO
@@ -90,10 +90,10 @@ class HostedBot(commands.InteractionBot):
 
 bot = HostedBot(
     hosted=LOCAL,
-    owner_id=190505392504045570,
+    owner_id=OWNER_ID,
     intents=disnake.Intents(guilds=True),
     activity=disnake.Game('under maintenance' if LOCAL else 'SuperMechs'),
-    guild_ids=[624937100034310164] if LOCAL else None)
+    guild_ids=TEST_GUILDS if LOCAL else None)
 
 # ----------------------------------------------------------------------------------------------
 
@@ -107,8 +107,8 @@ class Setup(commands.Cog):
         self.last_ext = None
 
 
-    @commands.slash_command(guild_ids=[624937100034310164])
-    @commands.is_owner()
+    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
+    @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
     async def extensions(
         self,
         inter: disnake.MessageCommandInteraction,
@@ -130,19 +130,22 @@ class Setup(commands.Cog):
 
             ext = self.last_ext
 
-        func: Callable[[str], None] = getattr(inter.bot, action + '_extension')
+        funcs = {
+            'load':   bot.load_extension,
+            'reload': bot.reload_extension,
+            'unload': bot.unload_extension}
 
         try:
-            func(ext)
+            funcs[action](ext)
 
-        except commands.ExtensionError as e:
-            print(e)
-            await inter.send('An error occured', ephemeral=True)
-            return
+        except commands.ExtensionError as error:
+            error_block = DiscordFormatter.formatException((type(error), error, error.__traceback__))
+            await inter.send(f'An error occured:\n{error_block}', ephemeral=True)
 
-        await inter.send('Success', ephemeral=True)
+        else:
+            await inter.send('Success', ephemeral=True)
 
-        self.last_ext = ext
+            self.last_ext = ext
 
 
     @extensions.autocomplete('ext')
@@ -151,11 +154,11 @@ class Setup(commands.Cog):
         return [ext for ext in inter.bot.extensions if input in ext.lower()]
 
 
-    @commands.guild_permissions(624937100034310164, owner=True)
-    @commands.slash_command(default_permission=False, guild_ids=[624937100034310164])
+    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
+    @commands.slash_command(default_permission=False, guild_ids=[HOME_GUILD_ID])
     async def shutdown(self, inter: disnake.MessageCommandInteraction) -> None:
         """Terminates the bot connection."""
-        await inter.send('I will be back')
+        await inter.send('I will be back', ephemeral=True)
         await bot.close()
 
 
@@ -163,7 +166,7 @@ class Misc(commands.Cog):
     @commands.slash_command()
     async def ping(self, inter: disnake.MessageCommandInteraction) -> None:
         """Shows bot latency"""
-        await inter.response.send_message(f'Pong! {round(inter.bot.latency * 1000)}ms')
+        await inter.send(f'Pong! {round(inter.bot.latency * 1000)}ms')
 
 
     @commands.slash_command()
@@ -213,7 +216,6 @@ class Misc(commands.Cog):
         embed.timestamp = bot.user.created_at
 
         await inter.send(embed=embed, ephemeral=True)
-
 
 bot.add_cog(Setup())
 bot.add_cog(Misc())

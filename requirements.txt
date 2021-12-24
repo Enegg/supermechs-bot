@@ -1,3 +1,3 @@
-disnake==2.2.2
+disnake>=2.2.2
 Pillow
 python-dotenv

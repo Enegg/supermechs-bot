@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 from collections import deque
 from string import ascii_letters
-from typing import *
+from typing import Any, AnyStr, Hashable, Iterable, Iterator, TypeVar
 
 SupportsSet = TypeVar('SupportsSet', bound=Hashable)
 
