@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import NamedTuple
+from typing import Iterator, NamedTuple
 
 
 class Stat(NamedTuple):
@@ -61,8 +61,8 @@ WORKSHOP_STATS: dict[str, type[int]] = dict(
 
 class Tier(NamedTuple):
     level: int
-    emoji: str
     color: int
+    emoji: str
 
 
 class Element(NamedTuple):
@@ -75,22 +75,35 @@ class Icon(NamedTuple):
     emoji: str
 
 
-class Rarity(Tier, Enum):
-    COMMON    = C = Tier(0, '⚪', 0xB1B1B1)
-    RARE      = R = Tier(1, '🔵', 0x55ACEE)
-    EPIC      = E = Tier(2, '🟣', 0xCC41CC)
-    LEGENDARY = L = Tier(3, '🟠', 0xE0A23C)
-    MYTHICAL  = M = Tier(4, '🟤', 0xFE6333)
-    DIVINE    = D = Tier(5, '⚪', 0xFFFFFF)
-    PERK      = P = Tier(6, '🟡', 0xFFFF33)
+class Rarity(Enum):
+    """Enumeration of item tiers"""
+    value: Tier
+
+    COMMON    = C = Tier(0, 0xB1B1B1, '⚪')
+    RARE      = R = Tier(1, 0x55ACEE, '🔵')
+    EPIC      = E = Tier(2, 0xCC41CC, '🟣')
+    LEGENDARY = L = Tier(3, 0xE0A23C, '🟠')
+    MYTHICAL  = M = Tier(4, 0xFE6333, '🟤')
+    DIVINE    = D = Tier(5, 0xFFFFFF, '⚪')
+    PERK      = P = Tier(6, 0xFFFF33, '🟡')
 
     def __str__(self) -> str:
         return self.emoji
 
-
     def __int__(self) -> int:
         return self.level
 
+    @property
+    def level(self) -> int:
+        return self.value.level
+
+    @property
+    def color(self) -> int:
+        return self.value.color
+
+    @property
+    def emoji(self) -> str:
+        return self.value.emoji
 
     def __gt__(self, o: object) -> bool:
         if not isinstance(o, Rarity):
@@ -98,13 +111,11 @@ class Rarity(Tier, Enum):
 
         return self.level > o.level
 
-
     def __lt__(self, o: object) -> bool:
         if not isinstance(o, Rarity):
             return NotImplemented
 
         return self.level < o.level
-
 
     def next_tier(self) -> Rarity:
         for rarity in Rarity:
@@ -118,7 +129,7 @@ class RarityRange:
     """Represents transformation range of an item"""
     TIERS = tuple(Rarity)
 
-    def __init__(self, lower: Rarity, upper: Rarity=None) -> None:
+    def __init__(self, lower: Rarity, upper: Rarity = None) -> None:
         if upper is None:
             upper = lower
 
@@ -127,47 +138,77 @@ class RarityRange:
 
         self.range = range(lower.level, upper.level)
 
+    def __str__(self) -> str:
+        return ''.join(map(str, self))
+
+    def __repr__(self) -> str:
+        return f'<{type(self).__name__} {self.min.name}-{self.max.name}>'
+
+    def __iter__(self) -> Iterator[Rarity]:
+        return (self.TIERS[n] for n in self.range)
 
     @property
-    def lower(self) -> Rarity:
+    def min(self) -> Rarity:
+        """Lower rarity bound"""
         return self.TIERS[self.range.start]
 
-
     @property
-    def upper(self) -> Rarity:
+    def max(self) -> Rarity:
+        """Upper rarity bound"""
         return self.TIERS[self.range.stop]
 
+    @property
+    def is_single(self) -> bool:
+        """Whether range has only one rarity"""
+        return len(self.range) == 1
 
     def __contains__(self, item: Rarity | RarityRange) -> bool:
-        if isinstance(item, Rarity):
-            return item.level in self.range
+        match item:
+            case Rarity():
+                return item.level in self.range
 
-        elif isinstance(item, RarityRange):
-            return item.range in self.range
+            case RarityRange():
+                return item.range in self.range
 
-        else:
-            return NotImplemented
-
+            case _:
+                return NotImplemented
 
     @classmethod
     def from_string(cls, string: str) -> RarityRange:
-        up, _, down = string.partition('-')
+        up, _, down = string.strip().partition('-')
 
         if down:
-            return cls(Rarity[up], Rarity[down])
+            return cls(Rarity[up.upper()], Rarity[down.upper()])
 
-        return cls(Rarity[up])
+        return cls(Rarity[up.upper()])
 
 
-class Elements(Element, Enum):
+class Elements(Enum):
+    """Enumeration of item elements"""
+    value: Element
+
+    PHYSICAL  = PHYS = Element(0xffb800, STAT_NAMES['phyDmg'].emoji)
     EXPLOSIVE = HEAT = Element(0xb71010, STAT_NAMES['expDmg'].emoji)
     ELECTRIC  = ELEC = Element(0x106ed8, STAT_NAMES['eleDmg'].emoji)
-    PHYSICAL  = PHYS = Element(0xffb800, STAT_NAMES['phyDmg'].emoji)
     COMBINED  = COMB = Element(0x211d1d, '🔰')
     OMNI =             Element(0x000000, '<a:energyball:731885130594910219>')
 
+    def __str__(self) -> str:
+        return self.emoji
 
-class Icons(Icon, Enum):
+    @property
+    def color(self) -> int:
+        return self.value.color
+
+    @property
+    def emoji(self) -> str:
+        return self.value.emoji
+
+
+class Icons(Enum):
+    """Enumeration of item types"""
+    value: Icon
+
     TORSO       = Icon('https://i.imgur.com/iNtSziV.png',  '<:torso:730115680363347968>')
     LEGS        = Icon('https://i.imgur.com/6NBLOhU.png',   '<:legs:730115699397361827>')
     DRONE       = Icon('https://i.imgur.com/oqQmXTF.png',  '<:drone:730115574763618394>')
@@ -191,7 +232,10 @@ class Icons(Icon, Enum):
     def __str__(self) -> str:
         return self.emoji
 
+    @property
+    def URL(self) -> str:
+        return self.value.URL
 
-class PowerTier(Enum):
-    # what was this supposed to do?
-    pass
+    @property
+    def emoji(self) -> str:
+        return self.value.emoji
