@@ -18,7 +18,7 @@ async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
         return Image.open(BytesIO(await response.content.read()))
 
 
-def image_to_file(image: Image.Image, filename: str=None) -> disnake.File:
+def image_to_file(image: Image.Image, filename: str = None) -> disnake.File:
     with BytesIO() as stream:
         image.save(stream, format='png')
         stream.seek(0)
@@ -37,14 +37,13 @@ class MechRenderer:
 
     def __init__(self, torso: Item[Attachments]) -> None:
         self.torso_image = torso.image
-        self.pixels_left  = 0
+        self.pixels_left = 0
         self.pixels_right = 0
         self.pixels_above = 0
         self.pixels_below = 0
         self.torso_attachments = torso.attachment
 
         self.images: list[tuple[int, int, Image.Image] | None] = [None] * 10
-
 
     def add_image(self, item: Item[Attachment], layer: str) -> None:
         if layer == 'legs':
@@ -66,39 +65,32 @@ class MechRenderer:
         self.adjust_offsets(item.image, x, y)
         self.put_image(item.image, layer, x, y)
 
-
     def adjust_offsets(self, image: Image.Image, x: int, y: int) -> None:
-        width, height = get_image_w_h(image)
+        i_width, i_height = get_image_w_h(image)
         t_width, t_height = get_image_w_h(self.torso_image)
 
-        self.pixels_left  = max(self.pixels_left,  -x)
+        self.pixels_left = max(self.pixels_left, -x)
         self.pixels_above = max(self.pixels_above, -y)
-        self.pixels_right = max(self.pixels_right, x + width  - t_width)
-        self.pixels_below = max(self.pixels_below, y + height - t_height)
-
+        self.pixels_right = max(self.pixels_right, x + i_width - t_width)
+        self.pixels_below = max(self.pixels_below, y + i_height - t_height)
 
     def put_image(self, image: Image.Image, layer: str, x: int, y: int) -> None:
         self.images[self.layer_order.index(layer)] = (x, y, image)
-
 
     def finalize(self) -> Image.Image:
         self.put_image(self.torso_image, 'torso', 0, 0)
 
         width, height = get_image_w_h(self.torso_image)
-        width  += self.pixels_left  + self.pixels_right
-        height += self.pixels_above + self.pixels_below
 
-        canvas = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        canvas = Image.new(
+            'RGBA',
+            (
+                width + self.pixels_left + self.pixels_right,
+                height + self.pixels_above + self.pixels_below
+            ),
+            (0, 0, 0, 0))
 
         for x, y, image in filter(None, self.images):
             canvas.alpha_composite(image, (x + self.pixels_left, y + self.pixels_above))
 
         return canvas
-
-
-
-if __name__ == '__main__':
-    img = asyncio.run(get_image('https://raw.githubusercontent.com/ctrl-raul/supermechs-item-images/master/reloaded/png/EnergyFreeArmor.png', aiohttp.ClientSession()))
-    img.show()
-    file = image_to_file(img)
-    print(file, file.filename)
