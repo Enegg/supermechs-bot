@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from io import BytesIO
 from typing import *
 
@@ -25,7 +24,7 @@ def image_to_file(image: Image.Image, filename: str = None) -> disnake.File:
         return disnake.File(stream, filename)
 
 
-def get_image_w_h(image: Image.Image) -> tuple[int, int]:
+def get_image_size(image: Image.Image) -> tuple[int, int]:
     bbox = image.getbbox()
     assert bbox is not None
     x, y, a, b = bbox
@@ -66,8 +65,8 @@ class MechRenderer:
         self.put_image(item.image, layer, x, y)
 
     def adjust_offsets(self, image: Image.Image, x: int, y: int) -> None:
-        i_width, i_height = get_image_w_h(image)
-        t_width, t_height = get_image_w_h(self.torso_image)
+        i_width, i_height = get_image_size(image)
+        t_width, t_height = get_image_size(self.torso_image)
 
         self.pixels_left = max(self.pixels_left, -x)
         self.pixels_above = max(self.pixels_above, -y)
@@ -80,7 +79,7 @@ class MechRenderer:
     def finalize(self) -> Image.Image:
         self.put_image(self.torso_image, 'torso', 0, 0)
 
-        width, height = get_image_w_h(self.torso_image)
+        width, height = get_image_size(self.torso_image)
 
         canvas = Image.new(
             'RGBA',
