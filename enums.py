@@ -136,7 +136,7 @@ class RarityRange:
         elif lower.level > upper.level:
             raise ValueError('upper rarity below lower rarity')
 
-        self.range = range(lower.level, upper.level)
+        self.range = range(lower.level, upper.level+1)
 
     def __str__(self) -> str:
         return ''.join(map(str, self))
@@ -155,7 +155,7 @@ class RarityRange:
     @property
     def max(self) -> Rarity:
         """Upper rarity bound"""
-        return self.TIERS[self.range.stop]
+        return self.TIERS[self.range.stop-1]
 
     @property
     def is_single(self) -> bool:
