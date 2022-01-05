@@ -1,4 +1,3 @@
-"""Config file containing basic variables."""
 #general vars
 LOGS_CHANNEL = 801620062821023744
 HOME_GUILD_ID = 624937100034310164
