@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, Generic, TypeVar
+from typing import Any, Callable, Coroutine, Generic, TypeVar
 
 import aiohttp
 import disnake
@@ -15,11 +15,8 @@ from disnake.utils import MISSING
 
 from enums import STAT_NAMES, Elements, Icons
 from images import image_to_file
-from SM_classes import ArenaBuffs
+from SM_classes import AnyItem, ArenaBuffs, InvItem, Mech
 from utils import random_str
-
-if TYPE_CHECKING:
-    from SM_classes import AnyItem, InvItem, Mech
 
 T = TypeVar('T')
 I = TypeVar('I', bound=UIItem)
