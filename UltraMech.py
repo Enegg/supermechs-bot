@@ -181,7 +181,7 @@ class Setup(commands.Cog):
         err: type[commands.CommandError] | None = getattr(commands.errors, exception, None)
 
         if err is None or not issubclass(err, commands.CommandError):
-            raise commands.UserInputError
+            raise commands.UserInputError('Exception specified has not been found.')
 
         try:
             raise err(arguments)
