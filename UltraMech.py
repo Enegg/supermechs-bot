@@ -1,20 +1,26 @@
 from __future__ import annotations
 
+import io
 import logging
 import os
 import sys
+import traceback
 from argparse import ArgumentParser
 from datetime import datetime
 from functools import cached_property, partial
 from typing import Any, Final, Literal
 
 import aiohttp
+import certifi
 import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
+from odmantic import AIOEngine
+from pymongo.errors import PyMongoError
 
 from config import HOME_GUILD_ID, LOGS_CHANNEL, OWNER_ID, TEST_GUILDS
-from discotools import ChannelHandler, DiscordFormatter
+from discotools import ChannelHandler, FileRecord, str_to_file
 
 parser = ArgumentParser()
 parser.add_argument('--local', action='store_true')
@@ -22,62 +28,60 @@ parser.add_argument('--log-file', action='store_true')
 args = parser.parse_args()
 LOCAL: Final[bool] = args.local
 
+logging.setLogRecordFactory(FileRecord)
 logger = logging.getLogger('channel_logs')
 logger.level = logging.INFO
 
 load_dotenv()
 TOKEN = os.environ.get('TOKEN_DEV' if LOCAL else 'TOKEN')
+DB_TOKEN = os.environ.get('DB_TOKEN')
 
 if TOKEN is None:
     raise EnvironmentError('TOKEN not found in environment variables')
 
+if DB_TOKEN is None:
+    raise EnvironmentError('DB_TOKEN not found in environment variables')
+
 # ------------------------------------------ Bot init ------------------------------------------
 
-class HostedBot(commands.InteractionBot):
-    def __init__(self, hosted: bool=False, **options: Any):
+class SMBot(commands.InteractionBot):
+    def __init__(self, hosted: bool = False, **options: Any):
         options.setdefault('sync_permissions', True)
         super().__init__(**options)
         self.hosted = hosted
         self.run_time = datetime.now()
 
+        if hosted:
+            self.engine = AIOEngine()
+
+        else:
+            self.engine = AIOEngine(AsyncIOMotorClient(DB_TOKEN, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where()))
 
     async def on_slash_command_error(
         self,
         inter: disnake.ApplicationCommandInteraction,
         error: commands.CommandError
     ) -> None:
-        if isinstance(error, (commands.UserInputError, commands.CheckFailure)):
-            if isinstance(error, commands.NotOwner):
-                msg = 'You cannot use this command.'
+        match error:
+            case commands.NotOwner():
+                await inter.send('This is a developer-only command.', ephemeral=True)
 
-            else:
-                msg = str(error)
+            case commands.UserInputError() | commands.CheckFailure():
+                await inter.send(error, ephemeral=True)
 
-            await inter.send(msg, ephemeral=True)
-            return
+            case _:
+                text = (
+                    f'{error}'
+                    f'\nCommand: `{inter.application_command.qualified_name}`'
+                    f"\nArguments: {', '.join(f'`{option}`: `{value}`' for option, value in inter.filled_options.items()) or 'None'}"
+                    f'\nPlace: {inter.guild or inter.channel}')
 
-        # tell the user there was an internal error
-        if isinstance(error, commands.CommandInvokeError):
-            origin = error.original
-
-            if isinstance(origin, disnake.HTTPException) and origin.code == 50035:  # Invalid Form Body
-                await inter.send('Message exceeded character limit...', ephemeral=True)
-
-            else:
+                logger.exception(text, exc_info=error)
                 await inter.send('Command executed with an error...', ephemeral=True)
-
-        text = (f'{error}'
-                f'\nCommand: `{inter.application_command.qualified_name}`'
-                f"\nArguments: {', '.join(f'`{option}`: `{value}`' for option, value in inter.filled_options.items()) or 'None'}"
-                f'\nPlace: {inter.guild or inter.channel}')
-
-        logger.exception(text, exc_info=error)
-
 
     async def on_ready(self) -> None:
         text = f'{bot.user.name} is online'
         print(text, '-' * len(text), sep='\n')
-
 
     @cached_property
     def session(self) -> aiohttp.ClientSession:
@@ -88,7 +92,7 @@ class HostedBot(commands.InteractionBot):
         return session
 
 
-bot = HostedBot(
+bot = SMBot(
     hosted=LOCAL,
     owner_id=OWNER_ID,
     intents=disnake.Intents(guilds=True),
@@ -103,9 +107,9 @@ logger.addHandler(handler)
 
 class Setup(commands.Cog):
     """Module management commands for development purposes."""
+
     def __init__(self):
         self.last_ext = None
-
 
     @commands.guild_permissions(HOME_GUILD_ID, owner=True)
     @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
@@ -113,7 +117,7 @@ class Setup(commands.Cog):
         self,
         inter: disnake.MessageCommandInteraction,
         action: Literal['load', 'reload', 'unload'] = 'reload',
-        ext: str=None
+        ext: str = None
     ) -> None:
         """Extension manager
 
@@ -139,7 +143,11 @@ class Setup(commands.Cog):
             funcs[action](ext)
 
         except commands.ExtensionError as error:
-            error_block = DiscordFormatter.formatException((type(error), error, error.__traceback__))
+            with io.StringIO() as sio:
+                sio.write('```py\n')
+                traceback.print_exception(type(error), error, error.__traceback__, file=sio)
+                sio.write('```')
+                error_block = sio.getvalue()
             await inter.send(f'An error occured:\n{error_block}', ephemeral=True)
 
         else:
@@ -147,12 +155,10 @@ class Setup(commands.Cog):
 
             self.last_ext = ext
 
-
     @extensions.autocomplete('ext')
     async def ext_autocomp(self, inter: disnake.MessageCommandInteraction, input: str) -> list[str]:
         input = input.lower()
         return [ext for ext in inter.bot.extensions if input in ext.lower()]
-
 
     @commands.guild_permissions(HOME_GUILD_ID, owner=True)
     @commands.slash_command(default_permission=False, guild_ids=[HOME_GUILD_ID])
@@ -161,6 +167,59 @@ class Setup(commands.Cog):
         await inter.send('I will be back', ephemeral=True)
         await bot.close()
 
+    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
+    @commands.slash_command(name='raise', default_permission=False, guild_ids=[HOME_GUILD_ID])
+    async def force_error(self, inter: disnake.MessageCommandInteraction, exception: str, arguments: str = None) -> None:
+        """Explicitly raises provided exception
+
+        Parameters
+        -----------
+        exception:
+            Name of the exception to raise
+        arguments:
+            Optional arguments to pass to the exception"""
+        err: type[commands.CommandError] | None = getattr(commands.errors, exception, None)
+
+        if err is None or not issubclass(err, commands.CommandError):
+            raise commands.UserInputError
+
+        try:
+            raise err(arguments)
+
+        finally:
+            await inter.send('Success', ephemeral=True)
+
+    @force_error.autocomplete('exception')
+    async def raise_autocomp(self, inter: disnake.MessageCommandInteraction, input: str) -> list[str]:
+        if len(input) < 2:
+            return ['Start typing to get options...']
+
+        input = input.lower()
+        return [exc for exc in commands.errors.__all__ if input in exc.lower()][:25]
+
+    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
+    @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
+    async def database(self, inter: disnake.MessageCommandInteraction) -> None:
+        """Show info about the database"""
+        await inter.response.defer()
+
+        bot.engine.client
+
+        try:
+            data = await bot.engine.client.server_info()
+
+        except PyMongoError:
+            await inter.send('Unable to connect.')
+            raise
+
+        data = str(data)
+
+        if len(data) > 2000:
+            await inter.send(file=str_to_file(data))
+
+        else:
+            await inter.send(data)
+
 
 class Misc(commands.Cog):
     @commands.slash_command()
@@ -168,22 +227,22 @@ class Misc(commands.Cog):
         """Shows bot latency"""
         await inter.send(f'Pong! {round(inter.bot.latency * 1000)}ms')
 
-
     @commands.slash_command()
     async def invite(self, inter: disnake.MessageCommandInteraction) -> None:
         """Sends an invite link for this bot to the channel"""
         await inter.send(disnake.utils.oauth_url(inter.bot.user.id, scopes=('bot', 'applications.commands')))
 
-
     @commands.slash_command(name='self')
     async def self_info(self, inter: disnake.MessageCommandInteraction) -> None:
         """Displays information about the bot."""
         app = await bot.application_info()
-        invite = disnake.utils.oauth_url(bot.user.id, scopes=('bot', 'applications.commands'))
         desc = (
             f'Member of {len(bot.guilds)} server{"s" * (len(bot.guilds) != 1)}'
-            f'\n**Author:** {app.owner.mention}'
-            f'\n[**Invite link**]({invite})')
+            f'\n**Author:** {app.owner.mention}')
+
+        if app.bot_public:
+            invite = disnake.utils.oauth_url(bot.user.id, scopes=('bot', 'applications.commands'))
+            desc += f'\n[**Invite link**]({invite})'
 
         uptime = datetime.now() - bot.run_time
         ss = uptime.seconds
@@ -216,6 +275,7 @@ class Misc(commands.Cog):
         embed.timestamp = bot.user.created_at
 
         await inter.send(embed=embed, ephemeral=True)
+
 
 bot.add_cog(Setup())
 bot.add_cog(Misc())
