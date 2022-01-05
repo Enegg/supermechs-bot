@@ -1,4 +1,6 @@
-"""Functions & classes to work alongside discord.py"""
+"""
+Functions & classes to work alongside disnake
+"""
 from __future__ import annotations
 
 import asyncio
@@ -8,23 +10,21 @@ import re
 import traceback
 from collections import deque
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, TypeVar
+from typing import Any, Callable, Iterable, Literal, TypeVar
 
 import disnake
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-if TYPE_CHECKING:
-    from types import TracebackType
-
 T = TypeVar('T')
 AnyContext = commands.Context | disnake.ApplicationCommandInteraction
 
+
 def channel_lock(
-    words: Iterable[str]=None,
-    regex: str | re.Pattern[str]=None,
-    admins_bypass: bool=True,
-    dm_channels_pass: bool=True
+    words: Iterable[str] = None,
+    regex: str | re.Pattern[str] = None,
+    admins_bypass: bool = True,
+    dm_channels_pass: bool = True
 ) -> Callable[[T], T]:
     """Locks command from use in channels that are not "spam" or "bot" channels.
     It's an error to specify both words and regex.
@@ -95,7 +95,6 @@ async def scheduler(
     if not tasks:
         raise ValueError('No events to await')
 
-
     done, pending = await asyncio.wait(tasks, timeout=timeout, return_when=return_when)
 
     if not done:
@@ -107,26 +106,36 @@ async def scheduler(
     return {(await task, task.get_name()) for task in done}
 
 
-class DiscordFormatter(logging.Formatter):
-    @staticmethod
-    def formatException(exc_info: tuple[type[BaseException] | None, BaseException | None, TracebackType | None]) -> str:
-        """Format and return the specified exception information as discord markdown code block."""
-        with io.StringIO() as sio:
-            sio.write('```py\n')
-            traceback.print_exception(*exc_info, file=sio)
-            sio.write('```')
-            return sio.getvalue()
+def str_to_file(fp: str | bytes | io.BufferedIOBase, filename: str | None = 'file.txt') -> disnake.File:
+    """Creates a disnake.File from a string, bytes or IO object."""
+    match fp:
+        case str():
+            file = io.BytesIO(fp.encode())
+
+        case bytes():
+            file = io.BytesIO(fp)
+
+        case _:
+            file = fp
+
+    return disnake.File(file, filename)
+
+
+class FileRecord(logging.LogRecord):
+    """LogRecord with extra file attribute"""
+
+    def __init__(self, *args: Any, file: disnake.File | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.file = file
 
 
 class ChannelHandler(logging.Handler):
     """Handler instance dispatching logging events to a discord channel."""
-    def __init__(self, channel_id: int, client: disnake.Client, level: int=logging.NOTSET) -> None:
-        super().__init__(level)
-        self.client = client
-        self.dest: disnake.abc.Messageable = MISSING
-        self.queue: deque[logging.LogRecord] = deque()
-        self.formatter = DiscordFormatter()
 
+    def __init__(self, channel_id: int, client: disnake.Client, level: int = logging.NOTSET) -> None:
+        super().__init__(level)
+        self.dest: disnake.abc.Messageable = MISSING
+        self.queue: deque[FileRecord] = deque()
 
         def setter(future: asyncio.Future[None]) -> None:
             channel = client.get_channel(channel_id)
@@ -139,16 +148,57 @@ class ChannelHandler(logging.Handler):
             while self.queue:
                 self.emit(self.queue.popleft())
 
-        client.loop.create_task(client.wait_until_ready()).add_done_callback(setter)
+        asyncio.ensure_future(client.wait_until_ready()).add_done_callback(setter)
 
+    @staticmethod
+    def format(record: FileRecord) -> str:
+        msg = record.getMessage()
 
-    def emit(self, record: logging.LogRecord) -> None:
+        if record.exc_info:
+            if not record.exc_text:
+                with io.StringIO() as sio:
+                    traceback.print_exception(*record.exc_info, file=sio)
+                    stack = sio.getvalue()
+
+                record.exc_text = stack
+
+            if len(record.exc_text) + len(msg) + 8 > 2000:
+                record.file = str_to_file(record.exc_text, 'traceback.py')
+
+            else:
+                if not msg.endswith('\n'):
+                    msg += '\n'
+
+                msg += '```py\n'
+                msg += record.exc_text
+                msg += '```'
+
+        return msg
+
+    def fallback_emit(self, record: FileRecord) -> Callable[[asyncio.Future[Any]], None]:
+        """Ensures the log is logged even in case of failure of sending to channel."""
+        def emit(future: asyncio.Future[Any]) -> None:
+            if future.exception():
+                print(super().format(record))
+
+            return
+
+        return emit
+
+    def emit(self, record: FileRecord) -> None:
         if self.dest is MISSING:
             self.queue.append(record)
             return
 
         msg = self.format(record)
-        self.client.loop.create_task(self.dest.send(msg, allowed_mentions=disnake.AllowedMentions.none()))
+
+        if record.file is None:
+            task = self.dest.send(msg, allowed_mentions=disnake.AllowedMentions.none())
+
+        else:
+            task = self.dest.send(msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none())
+
+        asyncio.ensure_future(task).add_done_callback(self.fallback_emit(record))
 
 
 class ForbiddenChannel(commands.CheckFailure):
