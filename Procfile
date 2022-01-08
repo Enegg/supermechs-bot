@@ -1,1 +1,1 @@
-worker: python UltraMech.py --log-file
+worker: python -O UltraMech.py --log-file
