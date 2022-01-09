@@ -310,7 +310,7 @@ class MechView(PaginatorView):
                     emoji=Icons[translate_type(id)].emoji,
                     row=pos,
                     custom_id=id,
-                    item=mech.__items__[id],
+                    item=getattr(mech, id),
                     callback=self.slot_button_cb
                 )
                 for id in row
