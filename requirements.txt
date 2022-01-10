@@ -1,5 +1,6 @@
-disnake>=2.2.2
+disnake>=2.3
 Pillow
 python-dotenv
+pymongo[srv]
 odmantic
 certifi
