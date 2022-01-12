@@ -126,26 +126,46 @@ class Rarity(Enum):
 
 
 class RarityRange:
-    """Represents transformation range of an item"""
     TIERS = tuple(Rarity)
 
-    def __init__(self, lower: Rarity, upper: Rarity = None) -> None:
+    def __init__(self, lower: Rarity | int, upper: Rarity | int = None) -> None:
+        """Represents a range of rarities an item can have. Unlike `range` object,
+        upper bound is inclusive."""
+
+        if isinstance(lower, Rarity):
+            lower = lower.level
+
         if upper is None:
             upper = lower
 
-        elif lower.level > upper.level:
-            raise ValueError('upper rarity below lower rarity')
+        elif isinstance(upper, Rarity):
+            upper = upper.level
 
-        self.range = range(lower.level, upper.level+1)
+        if not 0 <= lower <= upper <= self.TIERS[-1].level:
+            if lower > upper:
+                raise ValueError('upper rarity below lower rarity')
+
+            raise ValueError('rarities out of bounds')
+
+        self.range = range(lower, upper+1)
 
     def __str__(self) -> str:
-        return ''.join(map(str, self))
+        return ''.join(rarity.emoji for rarity in self)
 
     def __repr__(self) -> str:
-        return f'<{type(self).__name__} {self.min.name}-{self.max.name}>'
+        return f'RarityRange(Rarity.{self.min.name}, Rarity.{self.max.name})'
 
     def __iter__(self) -> Iterator[Rarity]:
         return (self.TIERS[n] for n in self.range)
+
+    def __eq__(self, obj: object) -> bool:
+        if not isinstance(obj, RarityRange):
+            return NotImplemented
+
+        return self.range == obj.range
+
+    def __len__(self) -> int:
+        return len(self.range)
 
     @property
     def min(self) -> Rarity:
