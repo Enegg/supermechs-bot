@@ -113,7 +113,7 @@ class ItemPack(TypedDict):
 
 class Item(Generic[AttachmentType]):
     """Represents a single item."""
-    loader: Callable[[str], Item[AttachmentType]]
+    loader: Callable[[str], AnyItem]
 
     def __init__(
         self,
@@ -155,7 +155,7 @@ class Item(Generic[AttachmentType]):
         return self.id
 
     def __repr__(self) -> str:
-        return f'<Item {self.name!r}: element={self.element.name} type={self.type} rarity={self.rarity!r} {self.stats=}>'
+        return '<Item {0.name!r}: element={0.element.name} type={0.type} rarity={0.rarity!r} stats={0.stats}>'.format(self)
 
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, Item):
@@ -414,9 +414,9 @@ class Mech(Model):
     """Represents a mech build."""
 
     game_vars: GameVars = DEFAULT_VARS
-    _items: _InvItems = PrivateAttr(default_factory=lambda: dict.fromkeys(_InvItems.__annotations__, None))
-    _stats: AnyStats = PrivateAttr(default_factory=dict)
-    _image: Image = PrivateAttr(MISSING)
+    __items__: _InvItems = PrivateAttr(default_factory=lambda: dict.fromkeys(_InvItems.__annotations__, None))
+    __stats__: AnyStats = PrivateAttr(default_factory=dict)
+    __image__: Image = PrivateAttr(MISSING)
 
     if TYPE_CHECKING:
         torso:  InvItem[Attachments] | None
@@ -442,7 +442,7 @@ class Mech(Model):
 
     def __getattr__(self, name: Any):
         try:
-            return self._items[name]
+            return self.__items__[name]
 
         except KeyError:
             raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
@@ -460,9 +460,9 @@ class Mech(Model):
 
         item_type = place.lower()
 
-        if item_type in self._items:
-            self.invalidate_image(item, self._items[item_type])
-            self._items[item_type] = item
+        if item_type in self.__items__:
+            self.invalidate_image(item, self.__items__[item_type])
+            self.__items__[item_type] = item
             return
 
         if pos is None:
@@ -482,8 +482,8 @@ class Mech(Model):
             raise ValueError(f"Position outside range 1-{limit}")
 
         item_type = slug + str(pos)
-        self.invalidate_image(item, self._items[item_type])
-        self._items[item_type] = item
+        self.invalidate_image(item, self.__items__[item_type])
+        self.__items__[item_type] = item
 
     def __str__(self) -> str:
         string_parts = [f'{item.type.capitalize()}: {item}' for item in (self.torso, self.legs, self.drone) if item is not None]
@@ -514,10 +514,10 @@ class Mech(Model):
 
     @property
     def stats(self) -> AnyStats:
-        if self._stats:
-            return self._stats
+        if self.__stats__:
+            return self.__stats__
 
-        stats_cache = self._stats
+        stats_cache = self.__stats__
 
         for item in self.iter_items():
             if item is None:
@@ -534,12 +534,12 @@ class Mech(Model):
             for stat, pen in self.game_vars.PENALTIES.items():
                 stats_cache[stat] = stats_cache.get(stat, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
 
-        self._stats = stats_cache
+        self.__stats__ = stats_cache
         return stats_cache
 
     @stats.deleter
     def stats(self) -> None:
-        cast(dict, self._stats).clear()
+        cast(dict, self.__stats__).clear()
 
     @property
     def sorted_stats(self) -> Iterator[tuple[str, int]]:
@@ -584,8 +584,8 @@ class Mech(Model):
     def image(self) -> Image:
         """Returns `Image` object merging all item images.
         Requires the torso to be set, otherwise raises `RuntimeError`"""
-        if self._image is not MISSING:
-            return self._image
+        if self.__image__ is not MISSING:
+            return self.__image__
 
         if self.torso is None:
             raise RuntimeError('Cannot create image without torso set')
@@ -610,12 +610,12 @@ class Mech(Model):
 
             canvas.add_image(self.drone.underlying, 'drone')
 
-        self._image = canvas.finalize()
-        return self._image
+        self.__image__ = canvas.finalize()
+        return self.__image__
 
     @image.deleter
     def image(self) -> None:
-        self._image = MISSING
+        self.__image__ = MISSING
 
     def invalidate_image(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
         if new is not None and new.displayable:
@@ -629,7 +629,7 @@ class Mech(Model):
     def has_image_cached(self) -> bool:
         """Returns True if the image is in cache, False otherwise.
         Does not check if the cache has been changed."""
-        return self._image is not MISSING
+        return self.__image__ is not MISSING
 
     async def load_images(self, session: ClientSession) -> None:
         """Bulk loads item images"""
@@ -640,7 +640,7 @@ class Mech(Model):
 
     def iter_weapons(self) -> Iterator[InvItem[Attachment] | None]:
         """Iterator over mech's side and top weapons"""
-        items = self._items
+        items = self.__items__
         yield items['side1']
         yield items['side2']
         yield items['side3']
@@ -650,21 +650,21 @@ class Mech(Model):
 
     def iter_modules(self) -> Iterator[InvItem[None] | None]:
         """Iterator over mech's modules"""
-        items = self._items
+        items = self.__items__
 
         for n in range(1, 9):
             yield items[f'mod{n}']
 
     def iter_specials(self) -> Iterator[InvItem[None] | None]:
         """Iterator over mech's specials, in order: tele, charge, hook"""
-        items = self._items
+        items = self.__items__
         yield items['tele']
         yield items['charge']
         yield items['hook']
 
     def iter_items(self) -> Iterator[AnyInvItem | None]:
         """Iterator over all mech's items"""
-        yield from self._items.values()  # type: ignore
+        yield from self.__items__.values()  # type: ignore
 
     @classmethod
     def __get_validators__(cls):
@@ -680,7 +680,7 @@ class Mech(Model):
                     raise TypeError('bytes object passed but it did not parse to dict')
 
                 mech = Mech()
-                mech._items = items
+                mech.__items__ = items
 
                 return mech
 
@@ -692,7 +692,7 @@ class Mech(Model):
 
     @classmethod
     def __bson__(cls, inst: Mech) -> bytes:
-        return bson.encode(inst._items)
+        return bson.encode(inst.__items__)
 
 
 class ArenaBuffs:
