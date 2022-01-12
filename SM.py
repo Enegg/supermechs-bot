@@ -38,19 +38,15 @@ def buff_difference(stat: str, enabled: bool, value: int) -> tuple[int, int]:
 
 
 def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> None:
-    rarity = item.rarity
+    """Fills embed with full-featured info about an item."""
 
-    if isinstance(rarity, Rarity):
-        color_str = f'({rarity})'
+    if item.rarity.is_single:
+        color_str = f'({item.rarity})'
 
     else:
-        _min, _max = rarity
-        lower = _min.level
-        upper = _max.level
-
-        colors = list(map(str, Rarity))
-        colors[upper] = f'({colors[upper]})'
-        color_str = ''.join(colors[lower:upper + 1])
+        colors = list(map(str, item.rarity))
+        colors[-1] = f'({colors[-1]})'
+        color_str = ''.join(colors)
 
     embed.add_field(name='Transform range: ', value=color_str, inline=False)
 
@@ -94,19 +90,15 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
 
 
 def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> None:
-    rarity = item.rarity
+    """Fills embed with reduced in size item info."""
 
-    if isinstance(rarity, Rarity):
-        color_str = f'({rarity})'
+    if item.rarity.is_single:
+        color_str = f'({item.rarity})'
 
     else:
-        _min, _max = rarity
-        lower = _min.level
-        upper = _max.level
-
-        colors = list(map(str, Rarity))
-        colors[upper] = f'({colors[upper]})'
-        color_str = ''.join(colors[lower:upper + 1])
+        colors = list(map(str, item.rarity))
+        colors[-1] = f'({colors[-1]})'
+        color_str = ''.join(colors)
 
     lines: list[str] = []
 
