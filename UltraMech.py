@@ -11,22 +11,20 @@ from functools import cached_property, partial
 from typing import Any, Final, Literal
 
 import aiohttp
-import certifi
 import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
-from odmantic import AIOEngine
-from pymongo.errors import PyMongoError
 
 from config import HOME_GUILD_ID, LOGS_CHANNEL, OWNER_ID, TEST_GUILDS
 from discotools import ChannelHandler, FileRecord, str_to_file
 
 parser = ArgumentParser()
 parser.add_argument('--local', action='store_true')
+parser.add_argument('--db_enabled', action='store_true')
 parser.add_argument('--log-file', action='store_true')
 args = parser.parse_args()
 LOCAL: Final[bool] = args.local
+DB_FEATURES: bool = args.db_enabled
 
 logging.setLogRecordFactory(FileRecord)
 logger = logging.getLogger('channel_logs')
@@ -34,28 +32,40 @@ logger.level = logging.INFO
 
 load_dotenv()
 TOKEN = os.environ.get('TOKEN_DEV' if LOCAL else 'TOKEN')
-DB_TOKEN = os.environ.get('DB_TOKEN')
 
 if TOKEN is None:
     raise EnvironmentError('TOKEN not found in environment variables')
 
-if DB_TOKEN is None:
-    raise EnvironmentError('DB_TOKEN not found in environment variables')
+if DB_FEATURES:
+    DB_TOKEN = os.environ.get('DB_TOKEN')
+
+    if DB_TOKEN is None:
+        raise EnvironmentError('DB_TOKEN not found in environment variables')
+
+    import certifi
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from odmantic import AIOEngine
+    from pymongo.errors import PyMongoError
+
+    if LOCAL:
+        engine = AIOEngine()
+
+    else:
+        engine = AIOEngine(AsyncIOMotorClient(DB_TOKEN, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where()))
+
+else:
+    engine = None
 
 # ------------------------------------------ Bot init ------------------------------------------
 
 class SMBot(commands.InteractionBot):
-    def __init__(self, hosted: bool = False, **options: Any):
+    def __init__(self, hosted: bool = False, engine: AIOEngine | None = None, **options: Any):
         options.setdefault('sync_permissions', True)
         super().__init__(**options)
         self.hosted = hosted
         self.run_time = datetime.now()
 
-        if hosted:
-            self.engine = AIOEngine()
-
-        else:
-            self.engine = AIOEngine(AsyncIOMotorClient(DB_TOKEN, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where()))
+        self.engine = engine
 
     async def on_slash_command_error(
         self,
@@ -94,6 +104,7 @@ class SMBot(commands.InteractionBot):
 
 bot = SMBot(
     hosted=LOCAL,
+    engine = engine,
     owner_id=OWNER_ID,
     intents=disnake.Intents(guilds=True),
     activity=disnake.Game('under maintenance' if LOCAL else 'SuperMechs'),
@@ -103,6 +114,7 @@ bot = SMBot(
 
 handler = ChannelHandler(LOGS_CHANNEL, bot, level=logging.INFO)
 logger.addHandler(handler)
+logger.info(f'Database is {"enabled" if DB_FEATURES else "disabled"}')
 
 
 class Setup(commands.Cog):
@@ -203,7 +215,7 @@ class Setup(commands.Cog):
         """Show info about the database"""
         await inter.response.defer()
 
-        bot.engine.client
+        assert bot.engine is not None
 
         try:
             data = await bot.engine.client.server_info()
