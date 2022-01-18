@@ -41,14 +41,14 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
     """Fills embed with full-featured info about an item."""
 
     if item.rarity.is_single:
-        color_str = f'({item.rarity})'
+        transform_range = f'({item.rarity})'
 
     else:
-        colors = list(map(str, item.rarity))
-        colors[-1] = f'({colors[-1]})'
-        color_str = ''.join(colors)
+        tiers = [tier.emoji for tier in item.rarity]
+        tiers[-1] = f'({tiers[-1]})'
+        transform_range = ''.join(tiers)
 
-    embed.add_field(name='Transform range: ', value=color_str, inline=False)
+    embed.add_field(name='Transform range: ', value=transform_range, inline=False)
 
     spaced = False
     item_stats = ''  # the main string
@@ -93,12 +93,12 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
     """Fills embed with reduced in size item info."""
 
     if item.rarity.is_single:
-        color_str = f'({item.rarity})'
+        transform_range = f'({item.rarity})'
 
     else:
-        colors = list(map(str, item.rarity))
-        colors[-1] = f'({colors[-1]})'
-        color_str = ''.join(colors)
+        tiers = [tier.emoji for tier in item.rarity]
+        tiers[-1] = f'({tiers[-1]})'
+        transform_range = ''.join(tiers)
 
     lines: list[str] = []
 
@@ -132,7 +132,7 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
         div = 4
 
     field_text = ('\n'.join(lines[i:i+div]) for i in range(0, line_count, div))
-    name_field_zip = zip_longest((color_str,), field_text, fillvalue='⠀')
+    name_field_zip = zip_longest((transform_range,), field_text, fillvalue='⠀')
 
     for name, field in name_field_zip:
         embed.add_field(name=name, value=field)
