@@ -10,7 +10,7 @@ from disnake.ext import commands
 
 from config import DEFAULT_PACK_URL, TEST_GUILDS
 from images import image_to_file
-from SM_classes import STAT_NAMES, AnyItem, ArenaBuffs, Item, ItemPack, Player, Rarity
+from SM_classes import STAT_NAMES, AnyItem, ArenaBuffs, Item, ItemPack, Player
 from ui_components import ArenaBuffsView, ItemView, MechView
 from utils import random_str, search_for
 
