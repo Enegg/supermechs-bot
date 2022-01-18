@@ -4,8 +4,40 @@ from enum import Enum
 from typing import Iterator, NamedTuple
 
 
+WORKSHOP_STATS: dict[str, type[int]] = dict(
+    weight=int,
+    health=int,
+    eneCap=int,
+    eneReg=int,
+    heaCap=int,
+    heaCol=int,
+    phyRes=int,
+    expRes=int,
+    eleRes=int,
+    bulletCap=int,
+    rocketCap=int,
+    walk=int,
+    jump=int)
+
+
 class Stat(NamedTuple):
     name: str
+    emoji: str
+
+
+class Tier(NamedTuple):
+    level: int
+    color: int
+    emoji: str
+
+
+class Element(NamedTuple):
+    color: int
+    emoji: str
+
+
+class Icon(NamedTuple):
+    URL: str
     emoji: str
 
 
@@ -43,36 +75,6 @@ STAT_NAMES = dict(
      backfire=Stat('Backfire',               '<:backfire:725871901062201404>'),
       heaCost=Stat('Heat cost',               '<:heatgen:725871674007879740>'),
       eneCost=Stat('Energy cost',            '<:eneusage:725871660237979759>'))
-WORKSHOP_STATS: dict[str, type[int]] = dict(
-    weight=int,
-    health=int,
-    eneCap=int,
-    eneReg=int,
-    heaCap=int,
-    heaCol=int,
-    phyRes=int,
-    expRes=int,
-    eleRes=int,
-    bulletCap=int,
-    rocketCap=int,
-    walk=int,
-    jump=int)
-
-
-class Tier(NamedTuple):
-    level: int
-    color: int
-    emoji: str
-
-
-class Element(NamedTuple):
-    color: int
-    emoji: str
-
-
-class Icon(NamedTuple):
-    URL: str
-    emoji: str
 
 
 class Rarity(Enum):
