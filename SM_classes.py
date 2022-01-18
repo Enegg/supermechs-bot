@@ -20,12 +20,6 @@ if TYPE_CHECKING:
     from PIL.Image import Image
     from typing_extensions import NotRequired
 
-    class PackConfig(TypedDict):
-        key: str
-        name: str
-        base_url: str
-        description: str
-
 
 AnyType = Literal['TORSO', 'LEGS', 'DRONE', 'SIDE_WEAPON', 'TOP_WEAPON', 'TELE', 'CHARGE', 'HOOK', 'MODULE']
 AnyElement = Literal['PHYSICAL', 'EXPLOSIVE', 'ELECTRIC', 'COMBINED']
@@ -106,8 +100,32 @@ class ItemDictAttachments(ItemDictBase):
 ItemDict = ItemDictBase | ItemDictAttachment | ItemDictAttachments
 
 
+class PackConfig(TypedDict):
+    key: str
+    name: str
+    base_url: str
+    description: str
+
+
 class ItemPack(TypedDict):
     config: PackConfig
+    items: list[ItemDict]
+
+
+class SpritePosition(TypedDict):
+    width: int
+    height: int
+    x: int
+    y: int
+
+
+class ItemPackv2(TypedDict):
+    version: str
+    key: str
+    name: str
+    description: str
+    spritesSheet: str
+    spritesMap: dict[str, SpritePosition]
     items: list[ItemDict]
 
 
