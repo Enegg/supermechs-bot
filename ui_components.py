@@ -86,7 +86,7 @@ class ToggleButton(Button[V]):
         *,
         style_off: ButtonStyle = ButtonStyle.secondary,
         style_on:  ButtonStyle = ButtonStyle.success,
-        callback: Callback[ToggleButton] = no_op,
+        callback: Callback[ToggleButton[V]] = no_op,
         on: bool = False,
         **kwargs: Any
     ) -> None:
@@ -545,9 +545,6 @@ class ArenaBuffsView(PaginatorView):
     active: TrinaryButton[ArenaBuffsView, bool | None] | None
 
     def __init__(self, buffs_ref: ArenaBuffs, user_id: int, *, columns_per_page: int = 3, timeout: float | None = 180) -> None:
-        super().__init__(user_id=user_id, timeout=timeout, columns_per_page=columns_per_page)
-        self.buffs = buffs_ref
-
         self.buttons = [
             [
                 TrinaryButton(
@@ -564,6 +561,8 @@ class ArenaBuffsView(PaginatorView):
                 ('eneReg', 'heaCol', 'expDmg', 'expRes', 'backfire'),
                 ('eneDmg', 'heaDmg', 'eleDmg', 'eleRes')))
         ]
+        super().__init__(user_id=user_id, timeout=timeout, columns_per_page=columns_per_page)
+        self.buffs = buffs_ref
         self.update_page()
 
     async def button_callback(self, button: TrinaryButton[ArenaBuffsView, bool | None], inter: disnake.MessageInteraction) -> None:
