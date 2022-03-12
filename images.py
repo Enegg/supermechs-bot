@@ -17,9 +17,9 @@ async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
         return Image.open(BytesIO(await response.content.read()))
 
 
-def image_to_file(image: Image.Image, filename: str = None) -> disnake.File:
+def image_to_file(image: Image.Image, filename: str | None = None) -> disnake.File:
     with BytesIO() as stream:
-        image.save(stream, format='png')
+        image.save(stream, format="png")
         stream.seek(0)
         return disnake.File(stream, filename)
 
@@ -32,7 +32,7 @@ def get_image_size(image: Image.Image) -> tuple[int, int]:
 
 
 class MechRenderer:
-    layer_order = ('drone', 'side2', 'side4', 'top2', 'leg2', 'torso', 'leg1', 'top1', 'side1', 'side3')
+    layer_order = ("drone", "side2", "side4", "top2", "leg2", "torso", "leg1", "top1", "side1", "side3")
 
     def __init__(self, torso: Item[Attachments]) -> None:
         self.torso_image = torso.image
@@ -45,21 +45,21 @@ class MechRenderer:
         self.images: list[tuple[int, int, Image.Image] | None] = [None] * 10
 
     def add_image(self, item: Item[Attachment], layer: str) -> None:
-        if layer == 'legs':
-            self.add_image(item, 'leg1')
-            self.add_image(item, 'leg2')
+        if layer == "legs":
+            self.add_image(item, "leg1")
+            self.add_image(item, "leg2")
             return
 
-        item_x = item.attachment['x']
-        item_y = item.attachment['y']
+        item_x = item.attachment["x"]
+        item_y = item.attachment["y"]
 
-        if layer == 'drone':
+        if layer == "drone":
             x, y = -item_x, -item_y
 
         else:
             offset = self.torso_attachments[layer]
-            x = offset['x'] - item_x
-            y = offset['y'] - item_y
+            x = offset["x"] - item_x
+            y = offset["y"] - item_y
 
         self.adjust_offsets(item.image, x, y)
         self.put_image(item.image, layer, x, y)
@@ -77,12 +77,12 @@ class MechRenderer:
         self.images[self.layer_order.index(layer)] = (x, y, image)
 
     def finalize(self) -> Image.Image:
-        self.put_image(self.torso_image, 'torso', 0, 0)
+        self.put_image(self.torso_image, "torso", 0, 0)
 
         width, height = get_image_size(self.torso_image)
 
         canvas = Image.new(
-            'RGBA',
+            "RGBA",
             (
                 width + self.pixels_left + self.pixels_right,
                 height + self.pixels_above + self.pixels_below

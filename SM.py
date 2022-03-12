@@ -23,7 +23,7 @@ MAX_BUFFS = ArenaBuffs.maxed()
 
 def buff(stat: str, enabled: bool, value: int) -> int:
     """Returns a value buffed respectively to stat type"""
-    if not enabled or stat == 'health':
+    if not enabled or stat == "health":
         return value
 
     return MAX_BUFFS.total_buff(stat, value)
@@ -31,7 +31,7 @@ def buff(stat: str, enabled: bool, value: int) -> int:
 
 def buff_difference(stat: str, enabled: bool, value: int) -> tuple[int, int]:
     """Returns a value buffed respectively to stat type and the difference between it and base"""
-    if not enabled or stat == 'health':
+    if not enabled or stat == "health":
         return value, 0
 
     return MAX_BUFFS.total_buff_difference(stat, value)
@@ -41,63 +41,63 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
     """Fills embed with full-featured info about an item."""
 
     if item.rarity.is_single:
-        transform_range = f'({item.rarity})'
+        transform_range = f"({item.rarity})"
 
     else:
         tiers = [tier.emoji for tier in item.rarity]
-        tiers[-1] = f'({tiers[-1]})'
+        tiers[-1] = f"({tiers[-1]})"
         transform_range = ''.join(tiers)
 
-    embed.add_field(name='Transform range: ', value=transform_range, inline=False)
+    embed.add_field(name="Transform range: ", value=transform_range, inline=False)
 
     spaced = False
     item_stats = ''  # the main string
-    cost_stats = {'backfire', 'heaCost', 'eneCost'}
+    cost_stats = {"backfire", "heaCost", "eneCost"}
 
     for stat, stat_value in item.stats.items():
         if not spaced and stat in cost_stats:
-            item_stats += '\n'
+            item_stats += "\n"
             spaced = True
 
         # number range handler
         if not isinstance(stat_value, list):
             value, diff = buff_difference(stat, buffs_enabled, cast(int, stat_value))
-            change = f' **{diff:+}**' if diff else ''
+            change = f" **{diff:+}**" if diff else ''
 
         elif stat_value[0] == stat_value[1]:
             value, diff = buff_difference(stat, buffs_enabled, stat_value[0])
-            change = f' **{diff:+}**' if diff else ''
+            change = f" **{diff:+}**" if diff else ''
 
         else:
             x, y = stat_value
             v1, d1 = buff_difference(stat, buffs_enabled, x)
             v2, d2 = buff_difference(stat, buffs_enabled, y)
 
-            change = f' ** {d1:+} {d2:+}**' if d1 or d2 else ''
-            value = f'{v1}-{v2}'
+            change = f" ** {d1:+} {d2:+}**" if d1 or d2 else ''
+            value = f"{v1}-{v2}"
 
         name, emoji = STAT_NAMES[stat]
 
-        if stat == 'uses':
-            name = 'Use' if stat_value == 1 else 'Uses'
+        if stat == "uses":
+            name = "Use" if stat_value == 1 else "Uses"
 
-        item_stats += f'{emoji} **{value}** {name}{change}\n'
+        item_stats += f"{emoji} **{value}** {name}{change}\n"
 
-    if 'advance' in item.stats or 'retreat' in item.stats:
+    if "advance" in item.stats or "retreat" in item.stats:
         item_stats += f"{STAT_NAMES['jump'].emoji} **Jumping required**"
 
-    embed.add_field(name='Stats:', value=item_stats, inline=False)
+    embed.add_field(name="Stats:", value=item_stats, inline=False)
 
 
 def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> None:
     """Fills embed with reduced in size item info."""
 
     if item.rarity.is_single:
-        transform_range = f'({item.rarity})'
+        transform_range = f"({item.rarity})"
 
     else:
         tiers = [tier.emoji for tier in item.rarity]
-        tiers[-1] = f'({tiers[-1]})'
+        tiers[-1] = f"({tiers[-1]})"
         transform_range = ''.join(tiers)
 
     lines: list[str] = []
@@ -110,11 +110,11 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
             value = buff(stat, buffs_enabled, stat_value[0])
 
         else:
-            value = '-'.join(str(buff(stat, buffs_enabled, n)) for n in stat_value)
+            value = "-".join(str(buff(stat, buffs_enabled, n)) for n in stat_value)
 
-        lines.append(f'{STAT_NAMES[stat].emoji} **{value}**')
+        lines.append(f"{STAT_NAMES[stat].emoji} **{value}**")
 
-    if 'advance' in item.stats or 'retreat' in item.stats:
+    if "advance" in item.stats or "retreat" in item.stats:
         lines.append(f"{STAT_NAMES['jump'].emoji}❗")
 
     line_count = len(lines)
@@ -131,8 +131,8 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
     else:
         div = 4
 
-    field_text = ('\n'.join(lines[i:i+div]) for i in range(0, line_count, div))
-    name_field_zip = zip_longest((transform_range,), field_text, fillvalue='⠀')
+    field_text = ("\n".join(lines[i:i+div]) for i in range(0, line_count, div))
+    name_field_zip = zip_longest((transform_range,), field_text, fillvalue="⠀")
 
     for name, field in name_field_zip:
         embed.add_field(name=name, value=field)
@@ -162,11 +162,11 @@ class SuperMechs(commands.Cog):
     async def load_item_pack(self, pack_url: str, /) -> None:
         """Loads an item pack from url and sets it as active pack."""
         async with self.session.get(pack_url) as response:
-            pack: ItemPack = await response.json(encoding='utf-8', content_type=None)
+            pack: ItemPack = await response.json(encoding="utf-8", content_type=None)
 
         self.items_dict = {
-            item_dict['name']: Item(**item_dict, pack=pack['config'])  # type: ignore[assignment]
-            for item_dict in pack['items']}
+            item_dict["name"]: Item(**item_dict, pack=pack["config"])  # type: ignore[assignment]
+            for item_dict in pack["items"]}
 
     @staticmethod
     def abbreviate_names(names: Iterable[str], /) -> dict[str, set[str]]:
@@ -178,7 +178,7 @@ class SuperMechs(commands.Cog):
             if len(name) < 8:
                 continue
 
-            is_single_word = ' ' not in name
+            is_single_word = " " not in name
 
             if (IsNotPascal := not name.isupper() and name[1:].islower()) and is_single_word:
                 continue
@@ -186,7 +186,7 @@ class SuperMechs(commands.Cog):
             abbrev = {''.join(a for a in name if a.isupper()).lower()}
 
             if not is_single_word:
-                abbrev.add(name.replace(' ', '').lower())  # Fire Fly => firefly
+                abbrev.add(name.replace(" ", '').lower())  # Fire Fly => firefly
 
             if not IsNotPascal and is_single_word:  # takes care of PascalCase names
                 last = 0
@@ -217,7 +217,7 @@ class SuperMechs(commands.Cog):
                 id = data
 
             case _:
-                raise TypeError(f'Invalid type: {type(data)}')
+                raise TypeError(f"Invalid type: {type(data)}")
 
         if id not in self.players:
             self.players[id] = Player(id=id)
@@ -236,12 +236,12 @@ class SuperMechs(commands.Cog):
         url:
             The pack url to load"""
         await self.load_item_pack(url)
-        await inter.send('Success', ephemeral=True)
+        await inter.send("Success", ephemeral=True)
 
     @commands.slash_command()
     async def frantic(self, inter: disnake.ApplicationCommandInteraction) -> None:
         """Humiliate frantic users"""
-        frantics = ['https://i.imgur.com/Bbbf4AH.mp4', 'https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4']
+        frantics = ["https://i.imgur.com/Bbbf4AH.mp4", "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4"]
         choice = random.choice(frantics)
         await inter.send(choice)
 
@@ -269,13 +269,13 @@ class SuperMechs(commands.Cog):
         """
 
         if name not in self.items_dict:
-            raise commands.UserInputError('Item not found.')
+            raise commands.UserInputError("Item not found.")
 
         item = self.items_dict[name]
 
         # debug flag
         if raw:
-            await inter.send(f'`{item!r}`', ephemeral=invisible)
+            await inter.send(f"`{item!r}`", ephemeral=invisible)
             return
 
         if compact:
@@ -303,7 +303,7 @@ class SuperMechs(commands.Cog):
         pass
 
     @mech.sub_command()
-    async def show(self, inter: disnake.ApplicationCommandInteraction, name: str = None) -> None:
+    async def show(self, inter: disnake.ApplicationCommandInteraction, name: str | None = None) -> None:
         """Displays your mech and its stats
 
         Parameters
@@ -317,7 +317,7 @@ class SuperMechs(commands.Cog):
             mech = player.active_build
 
             if mech is None:
-                await inter.send('You do not have any builds.', ephemeral=True)
+                await inter.send("You do not have any builds.", ephemeral=True)
                 return
 
             name = player.active_build_name
@@ -332,7 +332,7 @@ class SuperMechs(commands.Cog):
             return
 
         embed = disnake.Embed(title=f'Mech build "{name}"')
-        embed.add_field(name='Stats:', value=mech.print_stats(player.arena_buffs))
+        embed.add_field(name="Stats:", value=mech.print_stats(player.arena_buffs))
 
         if mech.torso is None:
             embed.color = inter.author.color
@@ -340,38 +340,38 @@ class SuperMechs(commands.Cog):
             return
 
         embed.color = mech.torso.element.color
-        filename = f'{name}.png'
-        embed.set_image(url=f'attachment://{filename}')
+        filename = f"{name}.png"
+        embed.set_image(url=f"attachment://{filename}")
 
         await mech.load_images(self.session)
         file = image_to_file(mech.image, filename)
         await inter.send(embed=embed, file=file)
 
-    @mech.sub_command(name='list')
+    @mech.sub_command(name="list")
     async def browse(self, inter: disnake.ApplicationCommandInteraction) -> None:
         """Displays a list of your builds"""
         player = self.get_player(inter)
 
         if not player.builds:
-            await inter.send('You do not have any builds.', ephemeral=True)
+            await inter.send("You do not have any builds.", ephemeral=True)
             return
 
-        string = f'Currently active: **{player.active_build_name}**\n'
+        string = f"Currently active: **{player.active_build_name}**\n"
 
-        string += '\n\n'.join(
-            f'**{name}**:\n'
+        string += "\n\n".join(
+            f"**{name}**:\n"
             f'{build.torso or "No torso"}'
             f', {build.legs or "no legs"}'
-            f', {len(tuple(filter(None, build.iter_weapons())))} weapon(s)'
-            f', {len(tuple(filter(None, build.iter_modules())))} module(s)'
-            f'; {build.weight} weight'
+            f", {len(tuple(filter(None, build.iter_weapons())))} weapon(s)"
+            f", {len(tuple(filter(None, build.iter_modules())))} module(s)"
+            f"; {build.weight} weight"
             for name, build in player.builds.items())
 
         await inter.send(string)
 
     @mech.sub_command()
     @commands.max_concurrency(1, commands.BucketType.user)
-    async def build(self, inter: disnake.ApplicationCommandInteraction, name: str = None) -> None:
+    async def build(self, inter: disnake.ApplicationCommandInteraction, name: str | None = None) -> None:
         """Interactive UI for modifying a mech build.
 
         Parameters
@@ -393,7 +393,7 @@ class SuperMechs(commands.Cog):
             mech = player.builds[name]
 
         embed = disnake.Embed(title=f'Mech build "{name}"', color=inter.author.color)
-        embed.add_field(name='Stats:', value=mech.print_stats())
+        embed.add_field(name="Stats:", value=mech.print_stats())
 
         view = MechView(mech, embed, self.items_dict, player.arena_buffs, self.session, user_id=inter.author.id, timeout=100)
 
@@ -404,10 +404,10 @@ class SuperMechs(commands.Cog):
             embed.color = mech.torso.element.color
 
             await mech.load_images(self.session)
-            filename = random_str(8) + '.png'
+            filename = random_str(8) + ".png"
 
             file = image_to_file(mech.image, filename)
-            embed.set_image(url=f'attachment://{filename}')
+            embed.set_image(url=f"attachment://{filename}")
 
             await inter.send(embed=embed, view=view, file=file)
 
@@ -416,8 +416,8 @@ class SuperMechs(commands.Cog):
         if await view.wait():
             await inter.edit_original_message(view=None)
 
-    @show.autocomplete('name')
-    @build.autocomplete('name')
+    @show.autocomplete("name")
+    @build.autocomplete("name")
     async def build_autocomplete(self, inter: disnake.ApplicationCommandInteraction, input: str) -> list[str]:
         """Autocomplete for player builds"""
         player = self.get_player(inter)
@@ -437,7 +437,7 @@ class SuperMechs(commands.Cog):
 
         view.on_timeout = on_timeout
 
-        await inter.send('**Arena Shop**', view=view)
+        await inter.send("**Arena Shop**", view=view)
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
     @commands.is_owner()
@@ -445,7 +445,7 @@ class SuperMechs(commands.Cog):
         """Maxes out your buffs"""
         me = self.get_player(inter)
         me.arena_buffs.levels.update(ArenaBuffs.maxed().levels)
-        await inter.send('Success', ephemeral=True)
+        await inter.send("Success", ephemeral=True)
 
     @commands.slash_command()
     async def compare(self, inter: disnake.ApplicationCommandInteraction, item1: str, item2: str) -> None:
@@ -460,15 +460,15 @@ class SuperMechs(commands.Cog):
         item_b = self.items_dict.get(item2)
 
         if item_a is None or item_b is None:
-            raise commands.UserInputError('Either of specified items not found.')
+            raise commands.UserInputError("Either of specified items not found.")
 
-    @item.autocomplete('name')
-    @compare.autocomplete('item1')
-    @compare.autocomplete('item2')
+    @item.autocomplete("name")
+    @compare.autocomplete("item1")
+    @compare.autocomplete("item2")
     async def item_autocomplete(self, inter: disnake.ApplicationCommandInteraction, input: str) -> list[str]:
         """Autocomplete for items"""
         if len(input) < 2:
-            return ['Start typing to get suggestions...']
+            return ["Start typing to get suggestions..."]
 
         items = sorted(set(search_for(input, self.items_dict)) | self.abbrevs.get(input.lower(), set()))
 
@@ -480,4 +480,4 @@ class SuperMechs(commands.Cog):
 
 def setup(bot: SMBot) -> None:
     bot.add_cog(SuperMechs(bot))
-    print('SM loaded')
+    print("SM loaded")

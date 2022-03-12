@@ -9,8 +9,8 @@ from collections import Counter
 from string import ascii_letters
 from typing import Any, Final, Hashable, Iterable, Iterator, TypeVar
 
-SupportsSet = TypeVar('SupportsSet', bound=Hashable)
-T = TypeVar('T')
+SupportsSet = TypeVar("SupportsSet", bound=Hashable)
+T = TypeVar("T")
 
 
 class _MissingSentinel:
@@ -27,7 +27,7 @@ class _MissingSentinel:
         return self
 
     def __reduce__(self) -> str:
-        return 'MISSING'
+        return "MISSING"
 
     def __deepcopy__(self: T, _: Any) -> T:
         return self
@@ -75,7 +75,7 @@ def search_for(phrase: str, iterable: Iterable[str], *, case_sensitive: bool = F
 def js_format(string: str, /, **kwargs: Any) -> str:
     """Format a JavaScript style string using given keys and values."""
     for key, value in kwargs.items():
-        string = re.sub(rf'%{re.escape(key)}%', str(value), string)
+        string = re.sub(rf"%{re.escape(key)}%", str(value), string)
 
     return string
 

@@ -16,13 +16,13 @@ import disnake
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-T = TypeVar('T')
+T = TypeVar("T")
 AnyContext = commands.Context | disnake.ApplicationCommandInteraction
 
 
 def channel_lock(
-    words: Iterable[str] = None,
-    regex: str | re.Pattern[str] = None,
+    words: Iterable[str] | None = None,
+    regex: str | re.Pattern[str] | None = None,
     admins_bypass: bool = True,
     dm_channels_pass: bool = True
 ) -> Callable[[T], T]:
@@ -33,7 +33,7 @@ def channel_lock(
     ------------
     words:
         Iterable of words a channel name should have one of to be considered "spam" channel.
-        Defaults to ['bot', 'spam']
+        Defaults to ["bot", "spam"]
     regex:
         A regex to match channel name with.
     admins_bypass:
@@ -43,13 +43,13 @@ def channel_lock(
     """
     if regex is not None:
         if words is not None:
-            raise TypeError('Using both words and regex is not allowed')
+            raise TypeError("Using both words and regex is not allowed")
 
         search = partial(re.search, pattern=re.compile(regex))
 
     else:
         if words is None:
-            _words = frozenset(('bot', 'spam'))
+            _words = frozenset(("bot", "spam"))
 
         else:
             _words = frozenset(words)
@@ -82,8 +82,8 @@ async def scheduler(
     client: disnake.Client,
     events: Iterable[str],
     check: Callable[..., bool] | Iterable[Callable[..., bool]],
-    timeout: float = None,
-    return_when: Literal['FIRST_COMPLETED', 'FIRST_EXCEPTION', 'ALL_COMPLETED'] = 'FIRST_COMPLETED'
+    timeout: float | None = None,
+    return_when: Literal["FIRST_COMPLETED", "FIRST_EXCEPTION", "ALL_COMPLETED"] = "FIRST_COMPLETED"
 ) -> set[tuple[Any, str]]:
     """Wrapper for `Client.wait_for` accepting multiple events. Returns the outcome of the event and its name."""
     if isinstance(check, Iterable):
@@ -93,7 +93,7 @@ async def scheduler(
         tasks = {asyncio.create_task(client.wait_for(event, check=check), name=event) for event in events}
 
     if not tasks:
-        raise ValueError('No events to await')
+        raise ValueError("No events to await")
 
     done, pending = await asyncio.wait(tasks, timeout=timeout, return_when=return_when)
 
@@ -106,7 +106,7 @@ async def scheduler(
     return {(await task, task.get_name()) for task in done}
 
 
-def str_to_file(fp: str | bytes | io.BufferedIOBase, filename: str | None = 'file.txt') -> disnake.File:
+def str_to_file(fp: str | bytes | io.BufferedIOBase, filename: str | None = "file.txt") -> disnake.File:
     """Creates a disnake.File from a string, bytes or IO object."""
     match fp:
         case str():
@@ -141,7 +141,7 @@ class ChannelHandler(logging.Handler):
             channel = client.get_channel(channel_id)
 
             if not isinstance(channel, disnake.abc.Messageable):
-                raise TypeError('Channel is not Messengable')
+                raise TypeError("Channel is not Messengable")
 
             self.dest = channel
 
@@ -163,15 +163,15 @@ class ChannelHandler(logging.Handler):
                 record.exc_text = stack
 
             if len(record.exc_text) + len(msg) + 8 > 2000:
-                record.file = str_to_file(record.exc_text, 'traceback.py')
+                record.file = str_to_file(record.exc_text, "traceback.py")
 
             else:
-                if not msg.endswith('\n'):
-                    msg += '\n'
+                if not msg.endswith("\n"):
+                    msg += "\n"
 
-                msg += '```py\n'
+                msg += "```py\n"
                 msg += record.exc_text
-                msg += '```'
+                msg += "```"
 
         return msg
 
@@ -204,5 +204,5 @@ class ChannelHandler(logging.Handler):
 class ForbiddenChannel(commands.CheckFailure):
     """Exception raised when command is used from invalid channel."""
 
-    def __init__(self, message: str = None, *args: Any) -> None:
-        super().__init__(message=message or 'You cannot use this command here.', *args)
+    def __init__(self, message: str | None = None, *args: Any) -> None:
+        super().__init__(message=message or "You cannot use this command here.", *args)
