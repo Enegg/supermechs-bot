@@ -276,7 +276,7 @@ class Misc(commands.Cog):
         embed = disnake.Embed(title="Bot info", description=desc, color=inter.me.color)
 
         tech_field = (
-            f'Python build: {".".join(map(str, sys.version_info[:3]))} {sys.version_info.releaselevel}'
+            f"Python build: {'.'.join(map(str, sys.version_info[:3]))} {sys.version_info.releaselevel}"
             f"\ndisnake version: {disnake.__version__}"
             f"\nUptime: {' '.join(time_data)}"
         )

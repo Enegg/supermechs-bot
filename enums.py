@@ -151,7 +151,7 @@ class RarityRange:
         self.range = range(lower, upper+1)
 
     def __str__(self) -> str:
-        return ''.join(rarity.emoji for rarity in self)
+        return "".join(rarity.emoji for rarity in self)
 
     def __repr__(self) -> str:
         return f"RarityRange(Rarity.{self.min.name}, Rarity.{self.max.name})"

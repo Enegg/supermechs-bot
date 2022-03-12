@@ -823,7 +823,7 @@ class Player(Model):
     builds: Dict[str, Mech] = Field(default_factory=dict, allow_mutation=False)
     arena_buffs: ArenaBuffs = Field(default_factory=ArenaBuffs, allow_mutation=False)
     inventory: Dict[uuid.UUID, AnyInvItem] = Field(default_factory=dict, allow_mutation=False)
-    active_build_name: str = ''
+    active_build_name: str = ""
     level: NonNegativeInt = 0
     exp:   NonNegativeInt = 0
 
@@ -839,7 +839,7 @@ class Player(Model):
             The name to create a new build with. Ignored if player has active build.
             If not passed, the name will be randomized.
         """
-        if self.active_build_name == '':
+        if self.active_build_name == "":
             return self.new_build(possible_name)
 
         return self.builds[self.active_build_name]

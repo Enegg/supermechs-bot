@@ -14,7 +14,7 @@ T = TypeVar("T")
 
 
 class _MissingSentinel:
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return False
 
     def __bool__(self) -> bool:
@@ -86,4 +86,4 @@ def format_count(it: Iterable[Any], /) -> Iterator[str]:
 
 def random_str(length: int) -> str:
     """Generates a random string of given length from ascii letters"""
-    return ''.join(random.sample(ascii_letters, length))
+    return "".join(random.sample(ascii_letters, length))

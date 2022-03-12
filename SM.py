@@ -46,12 +46,12 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
     else:
         tiers = [tier.emoji for tier in item.rarity]
         tiers[-1] = f"({tiers[-1]})"
-        transform_range = ''.join(tiers)
+        transform_range = "".join(tiers)
 
     embed.add_field(name="Transform range: ", value=transform_range, inline=False)
 
     spaced = False
-    item_stats = ''  # the main string
+    item_stats = ""  # the main string
     cost_stats = {"backfire", "heaCost", "eneCost"}
 
     for stat, stat_value in item.stats.items():
@@ -62,18 +62,18 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
         # number range handler
         if not isinstance(stat_value, list):
             value, diff = buff_difference(stat, buffs_enabled, cast(int, stat_value))
-            change = f" **{diff:+}**" if diff else ''
+            change = f" **{diff:+}**" if diff else ""
 
         elif stat_value[0] == stat_value[1]:
             value, diff = buff_difference(stat, buffs_enabled, stat_value[0])
-            change = f" **{diff:+}**" if diff else ''
+            change = f" **{diff:+}**" if diff else ""
 
         else:
             x, y = stat_value
             v1, d1 = buff_difference(stat, buffs_enabled, x)
             v2, d2 = buff_difference(stat, buffs_enabled, y)
 
-            change = f" ** {d1:+} {d2:+}**" if d1 or d2 else ''
+            change = f" ** {d1:+} {d2:+}**" if d1 or d2 else ""
             value = f"{v1}-{v2}"
 
         name, emoji = STAT_NAMES[stat]
@@ -98,7 +98,7 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
     else:
         tiers = [tier.emoji for tier in item.rarity]
         tiers[-1] = f"({tiers[-1]})"
-        transform_range = ''.join(tiers)
+        transform_range = "".join(tiers)
 
     lines: list[str] = []
 
@@ -183,10 +183,10 @@ class SuperMechs(commands.Cog):
             if (IsNotPascal := not name.isupper() and name[1:].islower()) and is_single_word:
                 continue
 
-            abbrev = {''.join(a for a in name if a.isupper()).lower()}
+            abbrev = {"".join(a for a in name if a.isupper()).lower()}
 
             if not is_single_word:
-                abbrev.add(name.replace(" ", '').lower())  # Fire Fly => firefly
+                abbrev.add(name.replace(" ", "").lower())  # Fire Fly => firefly
 
             if not IsNotPascal and is_single_word:  # takes care of PascalCase names
                 last = 0
@@ -224,7 +224,7 @@ class SuperMechs(commands.Cog):
 
         return self.players[id]
 
-    # ------------------------------------------- Commands -------------------------------------------
+    # ------------------------------------------ Commands ------------------------------------------
 
     @commands.slash_command()
     @commands.is_owner()
@@ -241,7 +241,10 @@ class SuperMechs(commands.Cog):
     @commands.slash_command()
     async def frantic(self, inter: disnake.ApplicationCommandInteraction) -> None:
         """Humiliate frantic users"""
-        frantics = ["https://i.imgur.com/Bbbf4AH.mp4", "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4"]
+        frantics = [
+            "https://i.imgur.com/Bbbf4AH.mp4",
+            "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4"
+        ]
         choice = random.choice(frantics)
         await inter.send(choice)
 
@@ -395,7 +398,14 @@ class SuperMechs(commands.Cog):
         embed = disnake.Embed(title=f'Mech build "{name}"', color=inter.author.color)
         embed.add_field(name="Stats:", value=mech.print_stats())
 
-        view = MechView(mech, embed, self.items_dict, player.arena_buffs, self.session, user_id=inter.author.id, timeout=100)
+        view = MechView(
+            mech,
+            embed,
+            self.items_dict,
+            player.arena_buffs,
+            self.session,
+            user_id=inter.author.id,
+            timeout=100)
 
         if mech.torso is None:
             await inter.send(embed=embed, view=view)
