@@ -169,9 +169,6 @@ class Item(Generic[AttachmentType]):
     def __str__(self) -> str:
         return self.name
 
-    def __index__(self) -> int:
-        return self.id
-
     def __repr__(self) -> str:
         return "<Item {0.name!r}: element={0.element.name} type={0.type} rarity={0.rarity!r} stats={0.stats}>".format(self)
 
@@ -288,6 +285,13 @@ class InvItem(Model, Generic[AttachmentType]):
             return v
 
         raise ValueError(f"{v.name} is outside item rarity bounds")
+
+    def __getattr__(self, name: Any):
+        try:
+            return getattr(self.underlying, name)
+
+        except AttributeError:
+            raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
 
     def __repr__(self) -> str:
         return f"<InvItem item={self.underlying!r} tier={self.max_rarity} power={self.power} UUID={self.UUID}>"
