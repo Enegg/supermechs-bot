@@ -8,7 +8,7 @@ import traceback
 from argparse import ArgumentParser
 from datetime import datetime
 from functools import cached_property, partial
-from typing import Any, Final, Literal
+from typing import Any, Final, Literal, Optional
 
 import aiohttp
 import disnake
@@ -128,7 +128,7 @@ class Setup(commands.Cog):
         self,
         inter: disnake.MessageCommandInteraction,
         action: Literal["load", "reload", "unload"] = "reload",
-        ext: str | None = None
+        ext: Optional[str] = None
     ) -> None:
         """Extension manager
 
@@ -180,7 +180,7 @@ class Setup(commands.Cog):
 
     @commands.guild_permissions(HOME_GUILD_ID, owner=True)
     @commands.slash_command(name="raise", default_permission=False, guild_ids=[HOME_GUILD_ID])
-    async def force_error(self, inter: disnake.MessageCommandInteraction, exception: str, arguments: str | None = None) -> None:
+    async def force_error(self, inter: disnake.MessageCommandInteraction, exception: str, arguments: Optional[str] = None) -> None:
         """Explicitly raises provided exception
 
         Parameters

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Iterable, cast
+from typing import TYPE_CHECKING, Iterable, Optional, cast
 
 import aiohttp
 import disnake
@@ -306,7 +306,7 @@ class SuperMechs(commands.Cog):
         pass
 
     @mech.sub_command()
-    async def show(self, inter: disnake.ApplicationCommandInteraction, name: str | None = None) -> None:
+    async def show(self, inter: disnake.ApplicationCommandInteraction, name: Optional[str] = None) -> None:
         """Displays your mech and its stats
 
         Parameters
@@ -374,7 +374,7 @@ class SuperMechs(commands.Cog):
 
     @mech.sub_command()
     @commands.max_concurrency(1, commands.BucketType.user)
-    async def build(self, inter: disnake.ApplicationCommandInteraction, name: str | None = None) -> None:
+    async def build(self, inter: disnake.ApplicationCommandInteraction, name: Optional[str] = None) -> None:
         """Interactive UI for modifying a mech build.
 
         Parameters
