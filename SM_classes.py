@@ -297,6 +297,11 @@ class InvItem(Model, Generic[AttachmentType]):
         return f"<InvItem item={self.underlying!r} tier={self.max_rarity} power={self.power} UUID={self.UUID}>"
 
     @property
+    def name(self) -> str:
+        """Name of the item"""
+        return self.underlying.name
+
+    @property
     def type(self) -> str:
         """Type of the underlying item."""
         return self.underlying.type
