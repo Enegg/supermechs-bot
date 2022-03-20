@@ -85,6 +85,15 @@ class SMBot(commands.InteractionBot):
             case commands.UserInputError() | commands.CheckFailure():
                 await inter.send(error, ephemeral=True)
 
+            case commands.MaxConcurrencyReached():
+                if error.per is commands.BucketType.user:
+                    text = "Your previous invocation of this command has not finished executing."
+
+                else:
+                    text = str(error)
+
+                await inter.send(text, ephemeral=True)
+
             case _:
                 arguments = ', '.join(
                     f'`{option}`: `{value}`'
