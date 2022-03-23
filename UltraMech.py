@@ -16,7 +16,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 from config import HOME_GUILD_ID, LOGS_CHANNEL, OWNER_ID, TEST_GUILDS
-from discotools import ChannelHandler, FileRecord, str_to_file
+from utils import ChannelHandler, FileRecord, str_to_file
 
 parser = ArgumentParser()
 parser.add_argument("--local", action="store_true")

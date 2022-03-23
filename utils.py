@@ -1,20 +1,29 @@
 """
-General use python functions
+Helper functions
 """
 from __future__ import annotations
 
+import asyncio
+import io
+import logging
 import random
 import re
-from collections import Counter
+import traceback
+import typing as t
+from collections import Counter, deque
+from functools import partial
 from string import ascii_letters
-from typing import Any, Final, Hashable, Iterable, Iterator, TypeVar
 
-SupportsSet = TypeVar("SupportsSet", bound=Hashable)
-T = TypeVar("T")
+import disnake
+from disnake.ext import commands
+
+SupportsSet = t.TypeVar("SupportsSet", bound=t.Hashable)
+T = t.TypeVar("T")
+AnyContext = commands.Context | disnake.ApplicationCommandInteraction
 
 
 class _MissingSentinel:
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: t.Any) -> bool:
         return False
 
     def __bool__(self) -> bool:
@@ -29,13 +38,14 @@ class _MissingSentinel:
     def __reduce__(self) -> str:
         return "MISSING"
 
-    def __deepcopy__(self: T, _: Any) -> T:
+    def __deepcopy__(self: T, _: t.Any) -> T:
         return self
 
 
-MISSING: Final[Any] = _MissingSentinel()
+MISSING: t.Final[t.Any] = _MissingSentinel()
 
-def common_items(*items: Iterable[SupportsSet]) -> set[SupportsSet]:
+
+def common_items(*items: t.Iterable[SupportsSet]) -> set[SupportsSet]:
     """Returns intersection of items in iterables"""
     if not items:
         return set()
@@ -49,7 +59,7 @@ def common_items(*items: Iterable[SupportsSet]) -> set[SupportsSet]:
     return result
 
 
-def search_for(phrase: str, iterable: Iterable[str], *, case_sensitive: bool = False) -> Iterator[str]:
+def search_for(phrase: str, iterable: t.Iterable[str], *, case_sensitive: bool = False) -> t.Iterator[str]:
     """Helper func capable of finding a specific string(s) in iterable.
     It is considered a match if every word in phrase appears in the name
     and in the same order. For example, both `burn scop` & `half scop`
@@ -60,7 +70,7 @@ def search_for(phrase: str, iterable: Iterable[str], *, case_sensitive: bool = F
     phrase:
         String of whitespace-separated words.
     iterable:
-        Iterable of strings to match against.
+        t.Iterable of strings to match against.
     case_sensitive:
         Whether the search should be case sensitive."""
     parts = (phrase if case_sensitive else phrase.lower()).split()
@@ -72,7 +82,7 @@ def search_for(phrase: str, iterable: Iterable[str], *, case_sensitive: bool = F
             yield name
 
 
-def js_format(string: str, /, **kwargs: Any) -> str:
+def js_format(string: str, /, **kwargs: t.Any) -> str:
     """Format a JavaScript style string using given keys and values."""
     for key, value in kwargs.items():
         string = re.sub(rf"%{re.escape(key)}%", str(value), string)
@@ -80,10 +90,201 @@ def js_format(string: str, /, **kwargs: Any) -> str:
     return string
 
 
-def format_count(it: Iterable[Any], /) -> Iterator[str]:
+def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
     return (f'{item}{f" x{count}" * (count > 1)}' for item, count in Counter(filter(None, it)).items())
 
 
 def random_str(length: int) -> str:
     """Generates a random string of given length from ascii letters"""
     return "".join(random.sample(ascii_letters, length))
+
+
+class ForbiddenChannel(commands.CheckFailure):
+    """Exception raised when command is used from invalid channel."""
+
+    def __init__(self, message: str | None = None, *args: t.Any) -> None:
+        super().__init__(message=message or "You cannot use this command here.", *args)
+
+
+def channel_lock(
+    words: t.Iterable[str] | None = None,
+    regex: str | re.Pattern[str] | None = None,
+    admins_bypass: bool = True,
+    dm_channels_pass: bool = True
+) -> t.Callable[[T], T]:
+    """Locks command from use in channels that are not "spam" or "bot" channels.
+    It's an error to specify both words and regex.
+
+    Parameters:
+    ------------
+    words:
+        t.Iterable of words a channel name should have one of to be considered "spam" channel.
+        Defaults to ["bot", "spam"]
+    regex:
+        A regex to match channel name with.
+    admins_bypass:
+        Whether to passthrough members with administrator privilege.
+    dm_channels_pass:
+        Whether to allow the command in DM channels.
+    """
+    if regex is not None:
+        if words is not None:
+            raise TypeError("Using both words and regex is not allowed")
+
+        search = partial(re.search, pattern=re.compile(regex))
+
+    else:
+        if words is None:
+            _words = {"bot", "spam"}
+
+        else:
+            _words = frozenset(words)
+
+        def sea(name: str) -> bool:
+            return any(s in name for s in _words)
+
+        search = sea
+
+    def channel_check(inter: AnyContext) -> bool:
+        channel = inter.channel
+
+        if isinstance(channel, disnake.DMChannel):
+            if not dm_channels_pass:
+                raise commands.NoPrivateMessage()
+
+            return True
+
+        assert isinstance(inter.author, disnake.Member)
+
+        if admins_bypass and inter.author.guild_permissions.administrator:
+            return True
+
+        if search(channel.name.lower()):
+            return True
+
+        raise ForbiddenChannel()
+
+    return commands.check(channel_check)
+
+
+async def scheduler(
+    client: disnake.Client,
+    events: t.Iterable[str],
+    check: t.Callable[..., bool] | t.Iterable[t.Callable[..., bool]],
+    timeout: float | None = None,
+    return_when: t.Literal["FIRST_COMPLETED", "FIRST_EXCEPTION", "ALL_COMPLETED"] = "FIRST_COMPLETED"
+) -> set[tuple[t.Any, str]]:
+    """Wrapper for `Client.wait_for` accepting multiple events. Returns the outcome of the event and its name."""
+    if isinstance(check, t.Iterable):
+        tasks = {asyncio.create_task(client.wait_for(event, check=_check), name=event) for event, _check in zip(events, check)}
+
+    else:
+        tasks = {asyncio.create_task(client.wait_for(event, check=check), name=event) for event in events}
+
+    if not tasks:
+        raise ValueError("No events to await")
+
+    done, pending = await asyncio.wait(tasks, timeout=timeout, return_when=return_when)
+
+    if not done:
+        raise asyncio.TimeoutError
+
+    for task in pending:
+        task.cancel()
+
+    return {(await task, task.get_name()) for task in done}
+
+
+def str_to_file(fp: str | bytes | io.BufferedIOBase, filename: str | None = "file.txt") -> disnake.File:
+    """Creates a disnake.File from a string, bytes or IO object."""
+    match fp:
+        case str():
+            file = io.BytesIO(fp.encode())
+
+        case bytes():
+            file = io.BytesIO(fp)
+
+        case _:
+            file = fp
+
+    return disnake.File(file, filename)
+
+
+class FileRecord(logging.LogRecord):
+    """LogRecord with extra file attribute"""
+
+    def __init__(self, *args: t.Any, file: disnake.File | None = None, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.file = file
+
+
+class ChannelHandler(logging.Handler):
+    """Handler instance dispatching logging events to a discord channel."""
+
+    def __init__(self, channel_id: int, client: disnake.Client, level: int = logging.NOTSET) -> None:
+        super().__init__(level)
+        self.dest: disnake.abc.Messageable = MISSING
+        self.queue: deque[FileRecord] = deque()
+
+        def setter(future: asyncio.Future[None]) -> None:
+            channel = client.get_channel(channel_id)
+
+            if not isinstance(channel, disnake.abc.Messageable):
+                raise TypeError("Channel is not Messengable")
+
+            self.dest = channel
+
+            while self.queue:
+                self.emit(self.queue.popleft())
+
+        asyncio.ensure_future(client.wait_until_ready()).add_done_callback(setter)
+
+    @staticmethod
+    def format(record: FileRecord) -> str:
+        msg = record.getMessage()
+
+        if record.exc_info:
+            if not record.exc_text:
+                with io.StringIO() as sio:
+                    traceback.print_exception(*record.exc_info, file=sio)
+                    stack = sio.getvalue()
+
+                record.exc_text = stack
+
+            if len(record.exc_text) + len(msg) + 8 > 2000:
+                record.file = str_to_file(record.exc_text, "traceback.py")
+
+            else:
+                if not msg.endswith("\n"):
+                    msg += "\n"
+
+                msg += "```py\n"
+                msg += record.exc_text
+                msg += "```"
+
+        return msg
+
+    def fallback_emit(self, record: FileRecord) -> t.Callable[[asyncio.Future[t.Any]], None]:
+        """Ensures the log is logged even in case of failure of sending to channel."""
+        def emit(future: asyncio.Future[t.Any]) -> None:
+            if future.exception():
+                print(super().format(record))
+
+            return
+
+        return emit
+
+    def emit(self, record: FileRecord) -> None:
+        if self.dest is MISSING:
+            self.queue.append(record)
+            return
+
+        msg = self.format(record)
+
+        if record.file is None:
+            task = self.dest.send(msg, allowed_mentions=disnake.AllowedMentions.none())
+
+        else:
+            task = self.dest.send(msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none())
+
+        asyncio.ensure_future(task).add_done_callback(self.fallback_emit(record))
