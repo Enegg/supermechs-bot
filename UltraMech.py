@@ -51,7 +51,11 @@ if DB_FEATURES:
         engine = AIOEngine()
 
     else:
-        engine = AIOEngine(AsyncIOMotorClient(DB_TOKEN, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where()))
+        engine = AIOEngine(AsyncIOMotorClient(
+            DB_TOKEN,
+            serverSelectionTimeoutMS=5000,
+            tlsCAFile=certifi.where()
+        ))
 
 else:
     engine = None
@@ -60,7 +64,9 @@ else:
 
 
 class SMBot(commands.InteractionBot):
-    def __init__(self, hosted: bool = False, engine: AIOEngine | None = None, **options: Any) -> None:
+    def __init__(
+        self, hosted: bool = False, engine: AIOEngine | None = None, **options: Any
+    ) -> None:
         options.setdefault("sync_permissions", True)
         super().__init__(**options)
         self.hosted = hosted
@@ -80,15 +86,34 @@ class SMBot(commands.InteractionBot):
             case commands.UserInputError() | commands.CheckFailure():
                 await inter.send(error, ephemeral=True)
 
+            case commands.MaxConcurrencyReached():
+                if error.per is commands.BucketType.user:
+                    text = "Your previous invocation of this command has not finished executing."
+
+                else:
+                    text = str(error)
+
+                await inter.send(text, ephemeral=True)
+
             case _:
+                arguments = ', '.join(
+                    f'`{option}`: `{value}`'
+                    for option, value
+                    in inter.filled_options.items()
+                ) or 'None'
+
                 text = (
                     f"{error}"
+                    f"\nUser: {inter.author.mention} ({inter.author.display_name})"
                     f"\nCommand: `{inter.application_command.qualified_name}`"
-                    f"\nArguments: {', '.join(f'`{option}`: `{value}`' for option, value in inter.filled_options.items()) or 'None'}"
+                    f"\nArguments: {arguments}"
                     f"\nPlace: {inter.guild or inter.channel}")
 
                 logger.exception(text, exc_info=error)
-                await inter.send("Command executed with an error...", ephemeral=True)
+                await inter.send(
+                    "Command executed with an error...",
+                    allowed_mentions=disnake.AllowedMentions.none(),
+                    ephemeral=True)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         self.run_time = datetime.now()
@@ -115,7 +140,7 @@ bot = SMBot(
     activity=disnake.Game("under maintenance" if LOCAL else "SuperMechs"),
     guild_ids=TEST_GUILDS if LOCAL else None)
 
-# ----------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 
 handler = ChannelHandler(LOGS_CHANNEL, bot, level=logging.INFO)
 logger.addHandler(handler)
@@ -246,7 +271,9 @@ class Misc(commands.Cog):
     @commands.slash_command()
     async def invite(self, inter: disnake.MessageCommandInteraction) -> None:
         """Sends an invite link for this bot to the channel"""
-        await inter.send(disnake.utils.oauth_url(inter.bot.user.id, scopes=("bot", "applications.commands")))
+        await inter.send(
+            disnake.utils.oauth_url(inter.bot.user.id, scopes=("bot", "applications.commands"))
+        )
 
     @commands.slash_command(name="self")
     async def self_info(self, inter: disnake.MessageCommandInteraction) -> None:
@@ -266,28 +293,30 @@ class Misc(commands.Cog):
         hh, mm = divmod(mm, 60)
 
         time_data: list[str] = []
-        if uptime.days:
+        if uptime.days != 0:
             time_data.append(f'{uptime.days} day{"s" * (uptime.days != 1)}')
 
-        if hh:
-            time_data.append(f'{hh} hour{"s" * (hh != 1)}')
+        if hh != 0:
+            time_data.append(f"{hh}h")
 
-        if mm:
-            time_data.append(f'{mm} minute{"s" * (mm != 1)}')
+        if mm != 0:
+            time_data.append(f"{mm}min")
 
-        if ss:
-            time_data.append(f'{ss} second{"s" * (ss != 1)}')
-
-        embed = disnake.Embed(title="Bot info", description=desc, color=inter.me.color)
+        if ss != 0:
+            time_data.append(f"{ss}s")
 
         tech_field = (
             f"Python build: {'.'.join(map(str, sys.version_info[:3]))} {sys.version_info.releaselevel}"
             f"\ndisnake version: {disnake.__version__}"
             f"\nUptime: {' '.join(time_data)}"
         )
-        embed.set_thumbnail(url=bot.user.display_avatar.url)
-        embed.add_field(name="Technical", value=tech_field)
-        embed.set_footer(text="Created")
+
+        embed = (
+            disnake.Embed(title="Bot info", description=desc, color=inter.me.color)
+            .set_thumbnail(url=bot.user.display_avatar.url)
+            .add_field(name="Technical", value=tech_field)
+            .set_footer(text="Created")
+            )
         embed.timestamp = bot.user.created_at
 
         await inter.send(embed=embed, ephemeral=True)
