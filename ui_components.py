@@ -57,6 +57,9 @@ trans_table = {
     "mod8": "module"}
 
 
+EMPTY_OPTION = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
+
+
 def translate_type(_type: str) -> str:
     if _type.startswith(("side", "top")):
         return ("TOP_" if _type.startswith("top") else "SIDE_") + (
@@ -71,9 +74,6 @@ def translate_type(_type: str) -> str:
 async def no_op(*args: Any, **kwargs: Any) -> None:
     """Awaitable that does nothing."""
     return
-
-
-EMPTY_OPTION = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
 
 
 class ToggleButton(Button[V]):
@@ -133,7 +133,6 @@ class TrinaryButton(ToggleButton[V], Generic[V, T]):
         self.item = item
 
     def toggle(self) -> None:
-        """Toggles the state of the button between on and off."""
         if self.style is not self.style_on:
             self.style = self.style_on
 
@@ -143,12 +142,7 @@ class TrinaryButton(ToggleButton[V], Generic[V, T]):
         else:
             self.style = self.style_off
 
-    @property
-    def on(self) -> bool:
-        """Whether the button is currently on."""
-        return self.style is self.style_on
-
-    @on.setter
+    @ToggleButton.on.setter
     def on(self, value: bool) -> None:
         self.style = self.style_on if value else self.style_item if self.item else self.style_off
 
@@ -426,8 +420,12 @@ class MechView(PaginatorView):
         assert self.active is not None
         self.active.item = item
 
-        if item is not None:
-            item = InvItem.from_item(item) # type: ignore
+        if item is not None:  # HACK
+            item = InvItem.from_item(item)  # type: ignore
+
+        if self.active.custom_id == "torso":  # if torso removed, edit embed's color
+
+            pass
 
         self.mech[self.active.custom_id] = item
 
@@ -436,8 +434,7 @@ class MechView(PaginatorView):
         self.embed.set_field_at(
             0,
             name="Stats:",
-            value=self.mech.print_stats(
-                self.buffs if self.buffs_button.on else None))
+            value=self.mech.print_stats(self.buffs if self.buffs_button.on else None))
 
         if self.mech.torso is not None:
             self.embed.color = self.mech.torso.element.color
