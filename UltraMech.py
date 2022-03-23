@@ -16,7 +16,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 from config import HOME_GUILD_ID, LOGS_CHANNEL, OWNER_ID, TEST_GUILDS
-from utils import ChannelHandler, FileRecord, str_to_file
+from utils import MISSING, ChannelHandler, FileRecord, str_to_file
 
 parser = ArgumentParser()
 parser.add_argument("--local", action="store_true")
@@ -58,12 +58,13 @@ else:
 
 # ------------------------------------------ Bot init ------------------------------------------
 
+
 class SMBot(commands.InteractionBot):
     def __init__(self, hosted: bool = False, engine: AIOEngine | None = None, **options: Any) -> None:
         options.setdefault("sync_permissions", True)
         super().__init__(**options)
         self.hosted = hosted
-        self.run_time = datetime.now()
+        self.run_time = MISSING
 
         self.engine = engine
 
@@ -89,6 +90,10 @@ class SMBot(commands.InteractionBot):
                 logger.exception(text, exc_info=error)
                 await inter.send("Command executed with an error...", ephemeral=True)
 
+    async def start(self, token: str, *, reconnect: bool = True) -> None:
+        self.run_time = datetime.now()
+        await super().start(token, reconnect=reconnect)
+
     async def on_ready(self) -> None:
         text = f"{bot.user.name} is online"
         print(text, "-" * len(text), sep="\n")
@@ -104,7 +109,7 @@ class SMBot(commands.InteractionBot):
 
 bot = SMBot(
     hosted=LOCAL,
-    engine = engine,
+    engine=engine,
     owner_id=OWNER_ID,
     intents=disnake.Intents(guilds=True),
     activity=disnake.Game("under maintenance" if LOCAL else "SuperMechs"),
