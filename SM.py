@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import logging
 import random
 from itertools import zip_longest
+from json import JSONDecodeError
 from typing import TYPE_CHECKING, Iterable, Optional, cast
 
 import aiohttp
@@ -16,6 +18,8 @@ from utils import random_str, search_for
 
 if TYPE_CHECKING:
     from UltraMech import SMBot
+
+logger = logging.getLogger("channel_logs")
 
 # helper functions for ,stats
 MAX_BUFFS = ArenaBuffs.maxed()
@@ -155,13 +159,20 @@ class SuperMechs(commands.Cog):
         return self.bot.session
 
     async def cog_load(self) -> None:
-        await self.load_item_pack(DEFAULT_PACK_URL)
+        try:
+            await self.load_item_pack(DEFAULT_PACK_URL)
+
+        except (JSONDecodeError, aiohttp.ClientResponseError) as e:
+            logger.warning("Error while fetching items")
+            raise commands.ExtensionFailed(self.__cog_name__, e)
+
         self.abbrevs = self.abbreviate_names(self.items_dict)
         Item.loader = lambda name: self.items_dict[name]
 
     async def load_item_pack(self, pack_url: str, /) -> None:
         """Loads an item pack from url and sets it as active pack."""
         async with self.session.get(pack_url) as response:
+            response.raise_for_status()
             pack: ItemPack = await response.json(encoding="utf-8", content_type=None)
 
         self.items_dict = {
@@ -204,7 +215,9 @@ class SuperMechs(commands.Cog):
 
         return abbrevs
 
-    def get_player(self, data: disnake.User | disnake.Member | commands.Context | disnake.Interaction | int, /) -> Player:
+    def get_player(
+        self, data: disnake.User | disnake.Member | commands.Context | disnake.Interaction | int, /
+    ) -> Player:
         """Return a Player object from object containing user ID."""
         match data:
             case disnake.User() | disnake.Member():
@@ -224,7 +237,7 @@ class SuperMechs(commands.Cog):
 
         return self.players[id]
 
-    # ------------------------------------------ Commands ------------------------------------------
+    # ----------------------------------------- Commands -----------------------------------------
 
     @commands.slash_command()
     @commands.is_owner()
