@@ -1,4 +1,4 @@
-disnake>=2.3
+disnake==2.3.*
 Pillow
 python-dotenv
 pymongo[srv]
