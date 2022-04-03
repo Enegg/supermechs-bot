@@ -60,7 +60,7 @@ if DB_FEATURES:
 else:
     engine = None
 
-# ------------------------------------------ Bot init ------------------------------------------
+# ------------------------------------------- Bot init -------------------------------------------
 
 
 class SMBot(commands.InteractionBot):
@@ -97,23 +97,20 @@ class SMBot(commands.InteractionBot):
 
             case _:
                 arguments = ', '.join(
-                    f'`{option}`: `{value}`'
+                    f'`{option}: {value}`'
                     for option, value
                     in inter.filled_options.items()
                 ) or 'None'
 
                 text = (
                     f"{error}"
-                    f"\nUser: {inter.author.mention} ({inter.author.display_name})"
-                    f"\nCommand: `{inter.application_command.qualified_name}`"
-                    f"\nArguments: {arguments}"
-                    f"\nPlace: {inter.guild or inter.channel}")
+                    f"\nPlace: `{inter.guild or inter.channel}`"
+                    f"\nCommand invocation: {inter.author.mention} ({inter.author.display_name})"
+                    f" `/{inter.application_command.qualified_name}` {arguments}"
+                )
 
                 logger.exception(text, exc_info=error)
-                await inter.send(
-                    "Command executed with an error...",
-                    allowed_mentions=disnake.AllowedMentions.none(),
-                    ephemeral=True)
+                await inter.send("Command executed with an error...", ephemeral=True)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         self.run_time = datetime.now()
@@ -175,10 +172,10 @@ class Setup(commands.Cog):
 
             ext = self.last_ext
 
-        funcs = {
-            "load":   bot.load_extension,
-            "reload": bot.reload_extension,
-            "unload": bot.unload_extension}
+        funcs = dict(
+            load  =bot.load_extension,
+            reload=bot.reload_extension,
+            unload=bot.unload_extension)
 
         try:
             funcs[action](ext)
@@ -210,7 +207,12 @@ class Setup(commands.Cog):
 
     @commands.guild_permissions(HOME_GUILD_ID, owner=True)
     @commands.slash_command(name="raise", default_permission=False, guild_ids=[HOME_GUILD_ID])
-    async def force_error(self, inter: disnake.MessageCommandInteraction, exception: str, arguments: Optional[str] = None) -> None:
+    async def force_error(
+        self,
+        inter: disnake.MessageCommandInteraction,
+        exception: str,
+        arguments: Optional[str] = None
+    ) -> None:
         """Explicitly raises provided exception
 
         Parameters
@@ -231,7 +233,9 @@ class Setup(commands.Cog):
             await inter.send("Success", ephemeral=True)
 
     @force_error.autocomplete("exception")
-    async def raise_autocomp(self, inter: disnake.MessageCommandInteraction, input: str) -> list[str]:
+    async def raise_autocomp(
+        self, inter: disnake.MessageCommandInteraction, input: str
+    ) -> list[str]:
         if len(input) < 2:
             return ["Start typing to get options..."]
 
@@ -242,6 +246,10 @@ class Setup(commands.Cog):
     @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
     async def database(self, inter: disnake.MessageCommandInteraction) -> None:
         """Show info about the database"""
+        if not DB_FEATURES:
+            await inter.send("Database is disabled.")
+            return
+
         await inter.response.defer()
 
         assert bot.engine is not None
@@ -305,8 +313,10 @@ class Misc(commands.Cog):
         if ss != 0:
             time_data.append(f"{ss}s")
 
+        python_version = '.'.join(map(str, sys.version_info[:3]))
+
         tech_field = (
-            f"Python build: {'.'.join(map(str, sys.version_info[:3]))} {sys.version_info.releaselevel}"
+            f"Python build: {python_version} {sys.version_info.releaselevel}"
             f"\ndisnake version: {disnake.__version__}"
             f"\nUptime: {' '.join(time_data)}"
         )
