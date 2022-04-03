@@ -59,7 +59,9 @@ def common_items(*items: t.Iterable[SupportsSet]) -> set[SupportsSet]:
     return result
 
 
-def search_for(phrase: str, iterable: t.Iterable[str], *, case_sensitive: bool = False) -> t.Iterator[str]:
+def search_for(
+    phrase: str, iterable: t.Iterable[str], *, case_sensitive: bool = False
+) -> t.Iterator[str]:
     """Helper func capable of finding a specific string(s) in iterable.
     It is considered a match if every word in phrase appears in the name
     and in the same order. For example, both `burn scop` & `half scop`
@@ -91,7 +93,10 @@ def js_format(string: str, /, **kwargs: t.Any) -> str:
 
 
 def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
-    return (f'{item}{f" x{count}" * (count > 1)}' for item, count in Counter(filter(None, it)).items())
+    return (
+        f'{item}{f" x{count}" * (count > 1)}'
+        for item, count
+        in Counter(filter(None, it)).items())
 
 
 def random_str(length: int) -> str:
@@ -174,12 +179,19 @@ async def scheduler(
     timeout: float | None = None,
     return_when: t.Literal["FIRST_COMPLETED", "FIRST_EXCEPTION", "ALL_COMPLETED"] = "FIRST_COMPLETED"
 ) -> set[tuple[t.Any, str]]:
-    """Wrapper for `Client.wait_for` accepting multiple events. Returns the outcome of the event and its name."""
+    """Wrapper for `Client.wait_for` accepting multiple events.
+    Returns the outcome of the event and its name."""
     if isinstance(check, t.Iterable):
-        tasks = {asyncio.create_task(client.wait_for(event, check=_check), name=event) for event, _check in zip(events, check)}
+        tasks = {
+            asyncio.create_task(client.wait_for(event, check=_check), name=event)
+            for event, _check
+            in zip(events, check)}
 
     else:
-        tasks = {asyncio.create_task(client.wait_for(event, check=check), name=event) for event in events}
+        tasks = {
+            asyncio.create_task(client.wait_for(event, check=check), name=event)
+            for event
+            in events}
 
     if not tasks:
         raise ValueError("No events to await")
@@ -195,7 +207,9 @@ async def scheduler(
     return {(await task, task.get_name()) for task in done}
 
 
-def str_to_file(fp: str | bytes | io.BufferedIOBase, filename: str | None = "file.txt") -> disnake.File:
+def str_to_file(
+    fp: str | bytes | io.BufferedIOBase, filename: str | None = "file.txt"
+) -> disnake.File:
     """Creates a disnake.File from a string, bytes or IO object."""
     match fp:
         case str():
@@ -221,7 +235,9 @@ class FileRecord(logging.LogRecord):
 class ChannelHandler(logging.Handler):
     """Handler instance dispatching logging events to a discord channel."""
 
-    def __init__(self, channel_id: int, client: disnake.Client, level: int = logging.NOTSET) -> None:
+    def __init__(
+        self, channel_id: int, client: disnake.Client, level: int = logging.NOTSET
+    ) -> None:
         super().__init__(level)
         self.dest: disnake.abc.Messageable = MISSING
         self.queue: deque[FileRecord] = deque()
@@ -285,6 +301,7 @@ class ChannelHandler(logging.Handler):
             task = self.dest.send(msg, allowed_mentions=disnake.AllowedMentions.none())
 
         else:
-            task = self.dest.send(msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none())
+            task = self.dest.send(
+                msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none())
 
         asyncio.ensure_future(task).add_done_callback(self.fallback_emit(record))
