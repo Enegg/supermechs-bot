@@ -5,10 +5,10 @@ import logging
 import os
 import sys
 import traceback
+import typing as t
 from argparse import ArgumentParser
 from datetime import datetime
 from functools import cached_property, partial
-from typing import Any, Final, Literal, Optional
 
 import aiohttp
 import disnake
@@ -23,7 +23,7 @@ parser.add_argument("--local", action="store_true")
 parser.add_argument("--db_enabled", action="store_true")
 parser.add_argument("--log-file", action="store_true")
 args = parser.parse_args()
-LOCAL: Final[bool] = args.local
+LOCAL: t.Final[bool] = args.local
 DB_FEATURES: bool = args.db_enabled
 
 logging.setLogRecordFactory(FileRecord)
@@ -65,7 +65,7 @@ else:
 
 class SMBot(commands.InteractionBot):
     def __init__(
-        self, hosted: bool = False, engine: AIOEngine | None = None, **options: Any
+        self, hosted: bool = False, engine: AIOEngine | None = None, **options: t.Any
     ) -> None:
         options.setdefault("sync_permissions", True)
         super().__init__(**options)
@@ -154,8 +154,8 @@ class Setup(commands.Cog):
     async def extensions(
         self,
         inter: disnake.MessageCommandInteraction,
-        action: Literal["load", "reload", "unload"] = "reload",
-        ext: Optional[str] = None
+        action: t.Literal["load", "reload", "unload"] = "reload",
+        ext: t.Optional[str] = None
     ) -> None:
         """Extension manager
 
@@ -173,7 +173,7 @@ class Setup(commands.Cog):
             ext = self.last_ext
 
         funcs = dict(
-            load  =bot.load_extension,
+            load=bot.load_extension,
             reload=bot.reload_extension,
             unload=bot.unload_extension)
 
@@ -211,7 +211,7 @@ class Setup(commands.Cog):
         self,
         inter: disnake.MessageCommandInteraction,
         exception: str,
-        arguments: Optional[str] = None
+        arguments: t.Optional[str] = None
     ) -> None:
         """Explicitly raises provided exception
 
@@ -234,7 +234,7 @@ class Setup(commands.Cog):
 
     @force_error.autocomplete("exception")
     async def raise_autocomp(
-        self, inter: disnake.MessageCommandInteraction, input: str
+        self, _: disnake.MessageCommandInteraction, input: str
     ) -> list[str]:
         if len(input) < 2:
             return ["Start typing to get options..."]
@@ -326,7 +326,7 @@ class Misc(commands.Cog):
             .set_thumbnail(url=bot.user.display_avatar.url)
             .add_field(name="Technical", value=tech_field)
             .set_footer(text="Created")
-            )
+        )
         embed.timestamp = bot.user.created_at
 
         await inter.send(embed=embed, ephemeral=True)

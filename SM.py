@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 import random
+import typing as t
 from itertools import zip_longest
 from json import JSONDecodeError
-from typing import TYPE_CHECKING, Iterable, Optional, cast
 
 import aiohttp
 import disnake
@@ -16,7 +16,7 @@ from SM_classes import STAT_NAMES, AnyItem, ArenaBuffs, Item, ItemPack, Player
 from ui_components import ArenaBuffsView, ItemView, MechView
 from utils import random_str, search_for
 
-if TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from UltraMech import SMBot
 
 logger = logging.getLogger("channel_logs")
@@ -65,7 +65,7 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
 
         # number range handler
         if not isinstance(stat_value, list):
-            value, diff = buff_difference(stat, buffs_enabled, cast(int, stat_value))
+            value, diff = buff_difference(stat, buffs_enabled, t.cast(int, stat_value))
             change = f" **{diff:+}**" if diff else ""
 
         elif stat_value[0] == stat_value[1]:
@@ -108,7 +108,7 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool) -> N
 
     for stat, stat_value in item.stats.items():
         if not isinstance(stat_value, list):
-            value = buff(stat, buffs_enabled, cast(int, stat_value))
+            value = buff(stat, buffs_enabled, t.cast(int, stat_value))
 
         elif stat_value[0] == stat_value[1]:
             value = buff(stat, buffs_enabled, stat_value[0])
@@ -180,7 +180,7 @@ class SuperMechs(commands.Cog):
             for item_dict in pack["items"]}
 
     @staticmethod
-    def abbreviate_names(names: Iterable[str], /) -> dict[str, set[str]]:
+    def abbreviate_names(names: t.Iterable[str], /) -> dict[str, set[str]]:
         """Returns dict of abbrevs:
         Energy Free Armor => EFA"""
         abbrevs: dict[str, set[str]] = {}
@@ -319,7 +319,7 @@ class SuperMechs(commands.Cog):
         pass
 
     @mech.sub_command()
-    async def show(self, inter: disnake.ApplicationCommandInteraction, name: Optional[str] = None) -> None:
+    async def show(self, inter: disnake.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
         """Displays your mech and its stats
 
         Parameters
@@ -387,7 +387,7 @@ class SuperMechs(commands.Cog):
 
     @mech.sub_command()
     @commands.max_concurrency(1, commands.BucketType.user)
-    async def build(self, inter: disnake.ApplicationCommandInteraction, name: Optional[str] = None) -> None:
+    async def build(self, inter: disnake.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
         """Interactive UI for modifying a mech build.
 
         Parameters

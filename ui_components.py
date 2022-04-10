@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from typing import Any, Callable, Coroutine, Generic, TypeVar
+import typing as t
 
 import aiohttp
 import disnake
@@ -12,26 +12,29 @@ from disnake.ui.item import DecoratedItem
 from disnake.ui.item import Item as UIItem
 from disnake.ui.item import ItemCallbackType
 from disnake.utils import MISSING
+from typing_extensions import Self
 
-from enums import STAT_NAMES, Elements, Icons
+from enums import STAT_NAMES, Element, Icon
 from images import image_to_file
 from SM_classes import AnyItem, ArenaBuffs, InvItem, Mech
 from utils import random_str
 
-T = TypeVar("T")
-I = TypeVar("I", bound=UIItem)
-V = TypeVar("V", bound=View, covariant=True)
+T = t.TypeVar("T")
+I = t.TypeVar("I", bound=UIItem)
+V = t.TypeVar("V", bound=View, covariant=True)
 
-Callback = Callable[[I, disnake.MessageInteraction], Coroutine[Any, Any, None]]
+Callback = t.Callable[[I, disnake.MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
 
 
-def button_cls(*, cls: type[I] = Button, **kwargs: Any) -> Callable[[ItemCallbackType[I]], DecoratedItem[I]]:
+def button_cls(
+    *, cls: type[I] = Button, **kwargs: t.Any
+) -> t.Callable[[ItemCallbackType[I]], DecoratedItem[I]]:
     """A decorator that works like `disnake.ui.button`,
     but allows for custom Button subclasses."""
 
     def decorator(func: ItemCallbackType[I]) -> DecoratedItem[I]:
         if not inspect.iscoroutinefunction(func):
-            raise TypeError("button function must be a coroutine function")
+            raise TypeError("button callback must be a coroutine function")
 
         func.__discord_ui_model_type__ = cls
         func.__discord_ui_model_kwargs__ = kwargs
@@ -71,7 +74,7 @@ def translate_type(_type: str) -> str:
     return _type.upper()
 
 
-async def no_op(*args: Any, **kwargs: Any) -> None:
+async def no_op(*args: t.Any, **kwargs: t.Any) -> None:
     """Awaitable that does nothing."""
     return
 
@@ -86,9 +89,9 @@ class ToggleButton(Button[V]):
         *,
         style_off: ButtonStyle = ButtonStyle.secondary,
         style_on:  ButtonStyle = ButtonStyle.success,
-        callback: Callback[ToggleButton[V]] = no_op,
+        callback: Callback[Self] = no_op,
         on: bool = False,
-        **kwargs: Any
+        **kwargs: t.Any
     ) -> None:
         kwargs.setdefault("style", style_on if on else style_off)
         super().__init__(**kwargs)
@@ -113,7 +116,7 @@ class ToggleButton(Button[V]):
         await self.call(self, inter)
 
 
-class TrinaryButton(ToggleButton[V], Generic[V, T]):
+class TrinaryButton(ToggleButton[V], t.Generic[V, T]):
     """A tri-state button."""
     item: T
 
@@ -125,7 +128,7 @@ class TrinaryButton(ToggleButton[V], Generic[V, T]):
         style_on:   ButtonStyle = ButtonStyle.primary,
         style_item: ButtonStyle = ButtonStyle.success,
         on: bool = False,
-        **kwargs: Any
+        **kwargs: t.Any
     ) -> None:
         kwargs.setdefault("style", style_on if on else style_item if item else style_off)
         super().__init__(**kwargs, style_on=style_on, style_off=style_off, on=on)
@@ -142,7 +145,12 @@ class TrinaryButton(ToggleButton[V], Generic[V, T]):
         else:
             self.style = self.style_off
 
-    @ToggleButton.on.setter
+    @property
+    def on(self) -> bool:
+        """Whether the button is currently on."""
+        return self.style is self.style_on
+
+    @on.setter
     def on(self, value: bool) -> None:
         self.style = self.style_on if value else self.style_item if self.item else self.style_off
 
@@ -150,7 +158,9 @@ class TrinaryButton(ToggleButton[V], Generic[V, T]):
 class OptionPaginator:
     """Paginator of `SelectOption`s for Select menus"""
 
-    def __init__(self, up: SelectOption, down: SelectOption, options: list[SelectOption] = MISSING) -> None:
+    def __init__(
+        self, up: SelectOption, down: SelectOption, options: list[SelectOption] = MISSING
+    ) -> None:
         self.all_options = options or []
         self.page = 0
         self.up = up
@@ -208,7 +218,9 @@ class PaginatorView(PersonalView):
     """View implementing simple button pagination."""
     buttons: list[list[Button[PaginatorView]]]
 
-    def __init__(self, *, user_id: int, timeout: float | None = 180, columns_per_page: int = 3) -> None:
+    def __init__(
+        self, *, user_id: int, timeout: float | None = 180, columns_per_page: int = 3
+    ) -> None:
         super().__init__(user_id=user_id, timeout=timeout)
         self.active: Button[PaginatorView] | None = None
         self.columns_per_page = int(columns_per_page)
@@ -227,7 +239,7 @@ class PaginatorView(PersonalView):
         offset = width * self.page
 
         for row in self.buttons:
-            for button in row[offset:width+offset]:
+            for button in row[offset: width+offset]:
                 self.add_item(button)
                 self.visible.append(button)
 
@@ -237,7 +249,7 @@ class ItemView(View):
         self,
         embed: disnake.Embed,
         item: AnyItem,
-        callback: Callable[[disnake.Embed, AnyItem, bool], None],
+        callback: t.Callable[[disnake.Embed, AnyItem, bool], None],
         *,
         timeout: float | None = 180
     ) -> None:
@@ -248,8 +260,10 @@ class ItemView(View):
 
         callback(embed, item, False)
 
-    @button_cls(label="Buffs", cls=ToggleButton["ItemView"])
-    async def buff_button(self, button: ToggleButton[ItemView], inter: disnake.MessageInteraction) -> None:
+    @button_cls(label="Buffs", cls=ToggleButton[Self])
+    async def buff_button(
+        self, button: ToggleButton[Self], inter: disnake.MessageInteraction
+    ) -> None:
         button.toggle()
         self.embed.clear_fields()
         self.call(self.embed, self.item, button.on)
@@ -257,7 +271,7 @@ class ItemView(View):
         await inter.edit_original_message(embed=self.embed, view=self)
 
     @button(label="Quit", style=disnake.ButtonStyle.red)
-    async def quit_button(self, button: Button[ItemView], inter: disnake.MessageInteraction) -> None:
+    async def quit_button(self, button: Button[Self], inter: disnake.MessageInteraction) -> None:
         self.stop()
         await inter.response.defer()
 
@@ -283,7 +297,7 @@ class MechView(PaginatorView):
         self.buffs = arena_buffs
         self.session = session
 
-        self.active: TrinaryButton[MechView, AnyItem | None] | None = None
+        self.active: TrinaryButton[Self, AnyItem | None] | None = None
         self.image_update_task = asyncio.Future()
 
         self.paginator = OptionPaginator(
@@ -298,10 +312,10 @@ class MechView(PaginatorView):
                 emoji="🔽",
                 description="Click to show more items"))
 
-        self.buttons: list[list[Button[MechView]]] = [
+        self.buttons: list[list[Button[Self]]] = [
             [
                 TrinaryButton(
-                    emoji=Icons[translate_type(id)].emoji,
+                    emoji=Icon[translate_type(id)].emoji,
                     row=pos,
                     custom_id=id,
                     item=getattr(mech, id),
@@ -319,7 +333,8 @@ class MechView(PaginatorView):
         super().__init__(user_id=user_id, timeout=timeout, columns_per_page=4)
 
         for i in range(4):
-            self.buttons[2].append(Button(label="⠀", custom_id=f"button:no_op{i}", disabled=True, row=2))
+            self.buttons[2].append(
+                Button(label="⠀", custom_id=f"button:no_op{i}", disabled=True, row=2))
 
         self.persistent_buttons = (
             self.modules_button,
@@ -343,9 +358,10 @@ class MechView(PaginatorView):
             module=[])
 
         for item in items.values():
-            self.item_type_ref[item.type.lower()].append(SelectOption(label=item.name, emoji=item.element.emoji))
+            self.item_type_ref[item.type.lower()].append(
+                SelectOption(label=item.name, emoji=item.element.emoji))
 
-        ref = [element.emoji for element in Elements]
+        ref = [element.emoji for element in Element]
 
         for item_list in self.item_type_ref.values():
             item_list.sort(key=lambda option: (ref.index(str(option.emoji)), option.label))
@@ -359,31 +375,38 @@ class MechView(PaginatorView):
             self.add_item(button)
             self.visible.append(button)
 
-    async def slot_button_cb(self, button: TrinaryButton[MechView, AnyItem | None], inter: disnake.MessageInteraction) -> None:
+    async def slot_button_cb(
+        self, button: TrinaryButton[Self, AnyItem | None], inter: disnake.MessageInteraction
+    ) -> None:
         self.update_style(button)
         await inter.response.edit_message(view=self)
 
-    @button_cls(emoji=Icons.MODULE.emoji, custom_id="button:modules", row=0, cls=Button["MechView"])
-    async def modules_button(self, button: Button[MechView], inter: disnake.MessageInteraction) -> None:
+    @button_cls(emoji=Icon.MODULE.emoji, custom_id="button:modules", row=0, cls=Button[Self])
+    async def modules_button(
+        self, button: Button[Self], inter: disnake.MessageInteraction
+    ) -> None:
         self.page ^= 1
-        button.emoji = Icons.TORSO.emoji if self.page else Icons.MODULE.emoji
+        button.emoji = Icon.TORSO.emoji if self.page else Icon.MODULE.emoji
 
         self.update_page()
         await inter.response.edit_message(view=self)
 
-    @button_cls(label="Filters", custom_id="button:filters", row=2, cls=ToggleButton["MechView"])
-    async def filters_button(self, button: ToggleButton[MechView], inter: disnake.MessageInteraction) -> None:
+    @button_cls(label="Filters", custom_id="button:filters", row=2, cls=TrinaryButton[Self, t.Any])
+    async def filters_button(
+        self, button: TrinaryButton[Self, t.Any], inter: disnake.MessageInteraction
+    ) -> None:
         button.toggle()
         self.toggle_menus()
         await inter.response.edit_message(view=self)
 
-    @button_cls(label="Buffs", custom_id="button:buffs", row=1, cls=ToggleButton["MechView"])
-    async def buffs_button(self, button: ToggleButton[MechView], inter: disnake.MessageInteraction) -> None:
+    @button_cls(label="Buffs", custom_id="button:buffs", row=1, cls=ToggleButton[Self])
+    async def buffs_button(
+        self, button: ToggleButton[Self], inter: disnake.MessageInteraction
+    ) -> None:
         if self.buffs.is_at_zero:
             await inter.send(
                 "This won't show any effect because all your buffs are at level zero.\n"
-                "You can change that using `/buffs` command."
-                , ephemeral=True)
+                "You can change that using `/buffs` command.", ephemeral=True)
             return
 
         button.toggle()
@@ -399,8 +422,13 @@ class MechView(PaginatorView):
 
         await inter.response.edit_message(embed=self.embed, view=self)
 
-    @select(placeholder="Choose slot", custom_id="select:item", options=[EMPTY_OPTION], disabled=True, row=3)
-    async def item_select(self, select: Select[MechView], inter: disnake.MessageInteraction) -> None:
+    @select(
+        placeholder="Choose slot",
+        custom_id="select:item",
+        options=[EMPTY_OPTION],
+        disabled=True,
+        row=3)
+    async def item_select(self, select: Select[Self], inter: disnake.MessageInteraction) -> None:
         item_name, = select.values
 
         if item_name in {"option:up", "option:down"}:
@@ -441,12 +469,19 @@ class MechView(PaginatorView):
 
         await inter.response.edit_message(embed=self.embed, view=self)
 
-    @select(custom_id="select:filters", placeholder="Select filters", min_values=0, max_values=4, row=4, options=[
-        SelectOption(label="Physical items",  value="type:PHYS", emoji=Elements.PHYS.emoji),
-        SelectOption(label="Explosive items", value="type:HEAT", emoji=Elements.HEAT.emoji),
-        SelectOption(label="Electric items",  value="type:ELEC", emoji=Elements.ELEC.emoji),
-        SelectOption(label="Combined items",  value="type:COMB", emoji=Elements.COMB.emoji)])
-    async def filters_select(self, select: Select[MechView], inter: disnake.MessageInteraction) -> None:
+    @select(
+        custom_id="select:filters",
+        placeholder="Select filters",
+        min_values=0,
+        max_values=4,
+        row=4,
+        options=[
+            SelectOption(label="Physical items",  value="type:PHYS", emoji=Element.PHYS.emoji),
+            SelectOption(label="Explosive items", value="type:HEAT", emoji=Element.HEAT.emoji),
+            SelectOption(label="Electric items",  value="type:ELEC", emoji=Element.ELEC.emoji),
+            SelectOption(label="Combined items",  value="type:COMB", emoji=Element.COMB.emoji)]
+    )
+    async def filters_select(self, select: Select[Self], inter: disnake.MessageInteraction) -> None:
         values = set(select.values)
 
         for option in select.options:
@@ -482,7 +517,10 @@ class MechView(PaginatorView):
 
         types = {str(option.emoji) for option in self.filters_select.options if option.default}
 
-        new_options.extend(filter(lambda item: str(item.emoji) in types, all_options) if types else all_options)
+        new_options.extend(
+            filter(lambda item: str(item.emoji) in types, all_options)
+            if types else
+            all_options)
         return new_options
 
     def toggle_menus(self) -> None:
@@ -506,8 +544,9 @@ class MechView(PaginatorView):
 
             self.modules_button.disabled = False
 
-    def update_style(self, button: TrinaryButton[MechView, AnyItem | None], /) -> None:
-        """Changes active button, alters its and passed button's style, updates dropdown description"""
+    def update_style(self, button: TrinaryButton[Self, AnyItem | None], /) -> None:
+        """Changes active button, alters its and passed button's style,
+        updates dropdown description"""
         button.toggle()
 
         if self.active is button:
@@ -539,15 +578,22 @@ class MechView(PaginatorView):
 
 class ArenaBuffsView(PaginatorView):
     MAXED_BUFFS = ArenaBuffs.maxed()
-    active: TrinaryButton[ArenaBuffsView, bool | None] | None
+    active: TrinaryButton[Self, bool | None] | None
 
-    def __init__(self, buffs_ref: ArenaBuffs, user_id: int, *, columns_per_page: int = 3, timeout: float | None = 180) -> None:
+    def __init__(
+        self,
+        buffs_ref: ArenaBuffs,
+        user_id: int,
+        *,
+        columns_per_page: int = 3,
+        timeout: float | None = 180
+    ) -> None:
         self.buttons = [
             [
                 TrinaryButton(
                     item=buffs_ref[id] == self.MAXED_BUFFS[id] or None,
                     callback=self.button_callback,
-                    label=f"{buffs_ref.buff_as_str_aware(id)}".rjust(4, "⠀"),
+                    label=f"{buffs_ref.buff_as_str_aware(id):⠀>4}",
                     custom_id=id,
                     emoji=STAT_NAMES[id].emoji,
                     row=pos)
@@ -562,18 +608,22 @@ class ArenaBuffsView(PaginatorView):
         self.buffs = buffs_ref
         self.update_page()
 
-    async def button_callback(self, button: TrinaryButton[ArenaBuffsView, bool | None], inter: disnake.MessageInteraction) -> None:
+    async def button_callback(
+        self, button: TrinaryButton[Self, bool | None], inter: disnake.MessageInteraction
+    ) -> None:
         self.toggle_style(button)
         await inter.response.edit_message(view=self)
 
     @button(label="Quit", style=ButtonStyle.red, row=3)
-    async def quit_button(self, button: Button[ArenaBuffsView], inter: disnake.MessageInteraction) -> None:
+    async def quit_button(self, _: Button[Self], inter: disnake.MessageInteraction) -> None:
         self.before_stop()
         self.stop()
         await inter.response.edit_message(view=self)
 
     @button(emoji="⬅️", style=ButtonStyle.blurple, row=3, disabled=True)
-    async def left_button(self, button: Button[ArenaBuffsView], interaction: disnake.MessageInteraction) -> None:
+    async def left_button(
+        self, button: Button[Self], interaction: disnake.MessageInteraction
+    ) -> None:
         """Callback for left button"""
         self.page -= 1
         self.update_page()
@@ -585,7 +635,9 @@ class ArenaBuffsView(PaginatorView):
         await interaction.response.edit_message(view=self)
 
     @button(emoji="➡️", style=ButtonStyle.blurple, row=3)
-    async def right_button(self, button: Button[ArenaBuffsView], interaction: disnake.MessageInteraction) -> None:
+    async def right_button(
+        self, button: Button[Self], interaction: disnake.MessageInteraction
+    ) -> None:
         """Callback for right button"""
         self.page += 1
         self.update_page()
@@ -597,7 +649,7 @@ class ArenaBuffsView(PaginatorView):
         await interaction.response.edit_message(view=self)
 
     @select(options=[EMPTY_OPTION], disabled=True, row=4)
-    async def dropdown(self, select: Select[ArenaBuffsView], interaction: disnake.MessageInteraction) -> None:
+    async def dropdown(self, select: Select[Self], interaction: disnake.MessageInteraction) -> None:
         level = int(select.values[0])
 
         active = self.active
@@ -616,7 +668,7 @@ class ArenaBuffsView(PaginatorView):
 
         await interaction.response.edit_message(view=self)
 
-    def toggle_style(self, button: TrinaryButton[ArenaBuffsView, bool | None]) -> None:
+    def toggle_style(self, button: TrinaryButton[Self, bool | None]) -> None:
         button.toggle()
 
         if self.active is button:
@@ -650,14 +702,16 @@ class ArenaBuffsView(PaginatorView):
 
 
 class CompareView(View):
-    def __init__(self, embed: disnake.Embed, item_a: AnyItem, item_b: AnyItem, *, timeout: float | None = 180):
+    def __init__(
+        self, embed: disnake.Embed, item_a: AnyItem, item_b: AnyItem, *, timeout: float | None = 180
+    ) -> None:
         super().__init__(timeout=timeout)
         self.embed = embed
         self.item_a = item_a
         self.item_b = item_b
 
     @button(label="Buffs A")
-    async def buff_button_A(self, button: Button[CompareView], inter: disnake.MessageInteraction) -> None:
+    async def buff_button_A(self, button: Button[Self], inter: disnake.MessageInteraction) -> None:
         if was_off := button.style is ButtonStyle.gray:
             button.style = ButtonStyle.green
 
