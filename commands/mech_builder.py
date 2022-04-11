@@ -15,7 +15,7 @@ from SuperMechs.images import image_to_file
 from SuperMechs.inv_item import InvItem
 from SuperMechs.item import AnyItem
 from SuperMechs.mech import Mech
-from SuperMechs.sm_base import ArenaBuffs
+from SuperMechs.core import ArenaBuffs
 from typing_extensions import Self
 from ui import PaginatorView, ToggleButton, TrinaryButton, button
 from utils import EMPTY_OPTION, OptionPaginator, random_str

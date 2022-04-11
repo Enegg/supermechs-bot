@@ -7,7 +7,7 @@ from utils import MISSING, random_str
 
 from .inv_item import AnyInvItem
 from .mech import Mech
-from .sm_base import ArenaBuffs
+from .core import ArenaBuffs
 
 
 @dataclass
