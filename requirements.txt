@@ -1,0 +1,6 @@
+disnake==2.4.*
+Pillow
+python-dotenv
+pymongo[srv]
+odmantic
+certifi
