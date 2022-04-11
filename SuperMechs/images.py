@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import typing as t
 from io import BytesIO
-from typing import *
 
 import aiohttp
 import disnake
 from PIL import Image
 
-if TYPE_CHECKING:
-    from SM_classes import Attachment, Attachments, Item
+if t.TYPE_CHECKING:
+    from .item import Item
+    from .types import Attachment, Attachments
 
 
 async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
@@ -36,6 +37,7 @@ class MechRenderer:
 
     def __init__(self, torso: Item[Attachments]) -> None:
         self.torso_image = torso.image
+        # how many pixels the complete image extends beyond torso image canvas
         self.pixels_left = 0
         self.pixels_right = 0
         self.pixels_above = 0

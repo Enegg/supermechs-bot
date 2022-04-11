@@ -15,7 +15,10 @@ from functools import partial
 from string import ascii_letters
 
 import disnake
+from disnake import SelectOption
 from disnake.ext import commands
+
+from lib_types import ForbiddenChannel
 
 SupportsSet = t.TypeVar("SupportsSet", bound=t.Hashable)
 T = t.TypeVar("T")
@@ -43,6 +46,12 @@ class _MissingSentinel:
 
 
 MISSING: t.Final[t.Any] = _MissingSentinel()
+EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
+
+
+async def no_op(*args: t.Any, **kwargs: t.Any) -> None:
+    """Awaitable that does nothing."""
+    return
 
 
 def common_items(*items: t.Iterable[SupportsSet]) -> set[SupportsSet]:
@@ -104,13 +113,6 @@ def random_str(length: int) -> str:
     return "".join(random.sample(ascii_letters, length))
 
 
-class ForbiddenChannel(commands.CheckFailure):
-    """Exception raised when command is used from invalid channel."""
-
-    def __init__(self, message: str | None = None, *args: t.Any) -> None:
-        super().__init__(message=message or "You cannot use this command here.", *args)
-
-
 def channel_lock(
     words: t.Iterable[str] | None = None,
     regex: str | re.Pattern[str] | None = None,
@@ -123,7 +125,7 @@ def channel_lock(
     Parameters:
     ------------
     words:
-        t.Iterable of words a channel name should have one of to be considered "spam" channel.
+        Iterable of words a channel name should have one of to be considered "spam" channel.
         Defaults to ["bot", "spam"]
     regex:
         A regex to match channel name with.
@@ -305,3 +307,87 @@ class ChannelHandler(logging.Handler):
                 msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none())
 
         asyncio.ensure_future(task).add_done_callback(self.fallback_emit(record))
+
+
+class OptionPaginator:
+    """Paginator of `SelectOption`s for Select menus"""
+
+    def __init__(
+        self, up: SelectOption, down: SelectOption, options: list[SelectOption] = MISSING
+    ) -> None:
+        self.all_options = options or []
+        self.page = 0
+        self.up = up
+        self.down = down
+
+    def __len__(self) -> int:
+        base = len(self.all_options)
+
+        if base <= 25:
+            return 1
+
+        elif base <= 48:
+            return 2
+
+        full, part = divmod(base - 48, 23)
+
+        return 2 + full + bool(part)
+
+    def get_options(self) -> list[SelectOption]:
+        """Returns a list of `SelectOption`s that should appear at current page."""
+        if len(self) == 1:
+            return self.all_options
+
+        if self.page == 0:
+            return self.all_options[:24] + [self.down]
+
+        if self.page == len(self) - 1:
+            return [self.up] + self.all_options[self.page*23 + 1:]
+
+        return [self.up] + self.all_options[self.page*23 + 1:self.page*23 + 24] + [self.down]
+
+    @property
+    def options(self) -> list[SelectOption]:
+        """All underlying `SelectOption`s"""
+        return self.all_options
+
+    @options.setter
+    def options(self, new: list[SelectOption]) -> None:
+        self.page = 0
+        self.all_options = new
+
+
+def abbreviate_names(names: t.Iterable[str], /) -> dict[str, set[str]]:
+    """Returns dict of abbrevs:
+    Energy Free Armor => EFA"""
+    abbrevs: dict[str, set[str]] = {}
+
+    for name in names:
+        if len(name) < 8:
+            continue
+
+        is_single_word = " " not in name
+
+        if (IsNotPascal := not name.isupper() and name[1:].islower()) and is_single_word:
+            continue
+
+        abbrev = {"".join(a for a in name if a.isupper()).lower()}
+
+        if not is_single_word:
+            abbrev.add(name.replace(" ", "").lower())  # Fire Fly => firefly
+
+        if not IsNotPascal and is_single_word:  # takes care of PascalCase names
+            last = 0
+            for i, a in enumerate(name):
+                if a.isupper():
+                    if string := name[last:i].lower():
+                        abbrev.add(string)
+
+                    last = i
+
+            abbrev.add(name[last:].lower())
+
+        for abb in abbrev:
+            abbrevs.setdefault(abb, {name}).add(name)
+
+    return abbrevs
