@@ -9,7 +9,7 @@ from utils import MISSING, format_count
 from .enums import STAT_NAMES, WORKSHOP_STATS
 from .images import MechRenderer, get_image_size
 from .inv_item import AnyInvItem, InvItem
-from .sm_base import DEFAULT_VARS, ArenaBuffs, GameVars
+from .core import DEFAULT_VARS, ArenaBuffs, GameVars
 from .types import AnyStats, Attachment, Attachments
 
 if t.TYPE_CHECKING:

@@ -10,7 +10,7 @@ from disnake import ButtonStyle, SelectOption
 from disnake.ext import commands
 from disnake.ui import Button, Select, select
 from SuperMechs.enums import STAT_NAMES
-from SuperMechs.sm_base import ArenaBuffs
+from SuperMechs.core import ArenaBuffs
 from typing_extensions import Self
 from ui import PaginatorView, TrinaryButton, button
 from utils import EMPTY_OPTION

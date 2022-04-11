@@ -10,7 +10,7 @@ from disnake import ButtonStyle
 from disnake.ext import commands
 from SuperMechs.enums import STAT_NAMES
 from SuperMechs.item import AnyItem
-from SuperMechs.sm_base import MAX_BUFFS
+from SuperMechs.core import MAX_BUFFS
 from SuperMechs.types import AnyStats
 from typing_extensions import Self
 from ui.buttons import Button, ToggleButton, button
