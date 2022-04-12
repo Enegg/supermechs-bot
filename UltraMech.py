@@ -58,7 +58,7 @@ bot = SMBot(
     engine=engine,
     owner_id=OWNER_ID,
     intents=disnake.Intents(guilds=True),
-    activity=disnake.Game("under maintenance" if LOCAL else "SuperMechs"),
+    activity=disnake.Game("SuperMechs"),
     guild_ids=TEST_GUILDS if LOCAL else None)
 
 logger.addHandler(ChannelHandler(LOGS_CHANNEL, bot, level=logging.WARNING))
