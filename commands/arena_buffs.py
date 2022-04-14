@@ -8,12 +8,11 @@ import lib_types
 from config import TEST_GUILDS
 from disnake import ButtonStyle, SelectOption
 from disnake.ext import commands
-from disnake.ui import Button, Select, select
-from SuperMechs.enums import STAT_NAMES
 from SuperMechs.core import ArenaBuffs
+from SuperMechs.enums import STAT_NAMES
 from typing_extensions import Self
-from ui import PaginatorView, TrinaryButton, button
-from utils import EMPTY_OPTION
+from ui import (EMPTY_OPTION, Button, PaginatorView, Select, TrinaryButton,
+                button, select)
 
 if t.TYPE_CHECKING:
     from bot import SMBot

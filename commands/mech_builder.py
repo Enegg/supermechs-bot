@@ -9,16 +9,16 @@ import disnake
 import lib_types
 from disnake import SelectOption
 from disnake.ext import commands
-from disnake.ui import Button, Select, select
+from SuperMechs.core import ArenaBuffs
 from SuperMechs.enums import Element, Icon
 from SuperMechs.images import image_to_file
 from SuperMechs.inv_item import InvItem
 from SuperMechs.item import AnyItem
 from SuperMechs.mech import Mech
-from SuperMechs.core import ArenaBuffs
 from typing_extensions import Self
-from ui import PaginatorView, ToggleButton, TrinaryButton, button
-from utils import EMPTY_OPTION, OptionPaginator, random_str
+from ui import (EMPTY_OPTION, Button, PaginatedSelect, PaginatorView, Select,
+                ToggleButton, TrinaryButton, button, select)
+from utils import random_str
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -77,18 +77,6 @@ class MechView(PaginatorView):
 
         self.active: TrinaryButton[Self, AnyItem | None] | None = None
         self.image_update_task = asyncio.Future()
-
-        self.paginator = OptionPaginator(
-            SelectOption(
-                label="Previous items",
-                value="option:up",
-                emoji="🔼",
-                description="Click to show previous items"),
-            SelectOption(
-                label="More items",
-                value="option:down",
-                emoji="🔽",
-                description="Click to show more items"))
 
         self.buttons: list[list[Button[Self]]] = [
             [
@@ -201,24 +189,26 @@ class MechView(PaginatorView):
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @select(
+        cls=PaginatedSelect[Self],
+        up=SelectOption(
+                label="Previous items",
+                value="option:up",
+                emoji="🔼",
+                description="Click to show previous items"),
+        down=SelectOption(
+                label="More items",
+                value="option:down",
+                emoji="🔽",
+                description="Click to show more items"),
         placeholder="Choose slot",
         custom_id="select:item",
         options=[EMPTY_OPTION],
         disabled=True,
         row=3)
-    async def item_select(self, select: Select[Self], inter: disnake.MessageInteraction) -> None:
+    async def item_select(
+        self, select: PaginatedSelect[Self], inter: disnake.MessageInteraction
+    ) -> None:
         item_name, = select.values
-
-        if item_name in {"option:up", "option:down"}:
-            if item_name == "option:up":
-                self.paginator.page -= 1
-
-            else:
-                self.paginator.page += 1
-
-            select._underlying.options = self.paginator.get_options()
-            await inter.response.edit_message(view=self)
-            return
 
         select.placeholder = item_name
         item = None if item_name == "empty" else self.items[item_name]
@@ -229,9 +219,8 @@ class MechView(PaginatorView):
         if item is not None:  # HACK
             item = InvItem.from_item(item)  # type: ignore
 
-        if self.active.custom_id == "torso":  # if torso removed, edit embed's color
-
-            pass
+        if self.active.custom_id == "torso" and item is None:
+            self.embed.color = inter.author.color
 
         self.mech[self.active.custom_id] = item
 
@@ -248,6 +237,7 @@ class MechView(PaginatorView):
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @select(
+        cls=Select[Self],
         custom_id="select:filters",
         placeholder="Select filters",
         min_values=0,
@@ -266,7 +256,12 @@ class MechView(PaginatorView):
             option.default = option.value in values
 
         if self.active is not None:
-            self.update_paginator(self.active.custom_id)
+            id = self.active.custom_id
+
+            if id in trans_table:
+                id = trans_table[id]
+
+            self.item_select.options = self.filter_options(id)
 
         self.filters_button.on = False
         self.toggle_menus()
@@ -342,16 +337,14 @@ class MechView(PaginatorView):
         else:
             self.active.toggle()
 
-        self.update_paginator(button.custom_id)
+        id = button.custom_id
+
+        if id in trans_table:
+            id = trans_table[id]
+
+        self.item_select.options = self.filter_options(id)
         self.item_select.placeholder = button.item.name if button.item else "empty"
         self.active = button
-
-    def update_paginator(self, item_type: str) -> None:
-        if item_type in trans_table:
-            item_type = trans_table[item_type]
-
-        self.paginator.options = self.filter_options(item_type)
-        self.item_select._underlying.options = self.paginator.get_options()
 
 
 @commands.slash_command()

@@ -7,7 +7,7 @@ import disnake
 from disnake import ButtonStyle
 from disnake.ui.button import Button, V
 from disnake.ui.item import DecoratedItem
-from typing_extensions import ParamSpec, Self
+from typing_extensions import Self
 from utils import MISSING, no_op
 
 if t.TYPE_CHECKING:
@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:
 
 T = t.TypeVar("T")
 B = t.TypeVar("B", bound=Button, covariant=True)
-P = ParamSpec("P")
+P = t.ParamSpec("P")
 
 Callback = t.Callable[[B, disnake.MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
 
