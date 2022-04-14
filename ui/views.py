@@ -8,13 +8,18 @@ __all__ = ("View", "PersonalView", "PaginatorView")
 
 class PersonalView(View):
     """View which does not respond to interactions of anyone but the invoker."""
+    response = "This message is for someone else."
 
     def __init__(self, *, user_id: int, timeout: float | None = 180):
         super().__init__(timeout=timeout)
         self.user_id = user_id
 
     async def interaction_check(self, inter: disnake.MessageInteraction) -> bool:
-        return inter.author.id == self.user_id
+        if inter.author.id != self.user_id:
+            await inter.send(self.response, ephemeral=True)
+            return False
+
+        return True
 
 
 class PaginatorView(PersonalView):
