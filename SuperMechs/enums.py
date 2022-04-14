@@ -18,15 +18,27 @@ class TierData(t.NamedTuple):
     color: int
     emoji: str
 
+    def __str__(self) -> str:
+        return self.emoji
+
+    def __int__(self) -> int:
+        return self.level
+
 
 class ElementData(t.NamedTuple):
     color: int
     emoji: str
 
+    def __str__(self) -> str:
+        return self.emoji
+
 
 class IconData(t.NamedTuple):
-    URL: str
+    image_url: str
     emoji: str
+
+    def __str__(self) -> str:
+        return self.emoji
 
 
 # fmt: off
@@ -67,10 +79,8 @@ STAT_NAMES = dict(
 # fmt: on
 
 
-class Rarity(Enum):
+class Rarity(TierData, Enum):
     """Enumeration of item tiers"""
-    value: TierData
-
     # fmt: off
     COMMON    = C = TierData(0, 0xB1B1B1, "⚪")
     RARE      = R = TierData(1, 0x55ACEE, "🔵")
@@ -80,36 +90,6 @@ class Rarity(Enum):
     DIVINE    = D = TierData(5, 0xFFFFFF, "⚪")
     PERK      = P = TierData(6, 0xFFFF33, "🟡")
     # fmt: on
-
-    def __str__(self) -> str:
-        return self.emoji
-
-    def __int__(self) -> int:
-        return self.level
-
-    @property
-    def level(self) -> int:
-        return self.value.level
-
-    @property
-    def color(self) -> int:
-        return self.value.color
-
-    @property
-    def emoji(self) -> str:
-        return self.value.emoji
-
-    def __gt__(self, o: object) -> bool:
-        if not isinstance(o, Rarity):
-            return NotImplemented
-
-        return self.level > o.level
-
-    def __lt__(self, o: object) -> bool:
-        if not isinstance(o, Rarity):
-            return NotImplemented
-
-        return self.level < o.level
 
 
 class RarityRange:
@@ -196,10 +176,8 @@ class RarityRange:
         return self.TIERS[self.TIERS.index(current) + 1]
 
 
-class Element(Enum):
+class Element(ElementData, Enum):
     """Enumeration of item elements"""
-    value: ElementData
-
     # fmt: off
     PHYSICAL  = PHYS = ElementData(0xffb800, STAT_NAMES["phyDmg"].emoji)
     EXPLOSIVE = HEAT = ElementData(0xb71010, STAT_NAMES["expDmg"].emoji)
@@ -208,22 +186,9 @@ class Element(Enum):
     OMNI =             ElementData(0x000000, "<a:energyball:731885130594910219>")
     # fmt: on
 
-    def __str__(self) -> str:
-        return self.emoji
 
-    @property
-    def color(self) -> int:
-        return self.value.color
-
-    @property
-    def emoji(self) -> str:
-        return self.value.emoji
-
-
-class Icon(Enum):
+class Icon(IconData, Enum):
     """Enumeration of item types"""
-    value: IconData
-
     # fmt: off
     TORSO       = IconData("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>")
     LEGS        = IconData("https://i.imgur.com/6NBLOhU.png",   "<:legs:730115699397361827>")
@@ -243,14 +208,3 @@ class Icon(Enum):
     TELEPORTER = TELE
     # SHIELD, PERK, KIT?
     # fmt: on
-
-    def __str__(self) -> str:
-        return self.emoji
-
-    @property
-    def URL(self) -> str:
-        return self.value.URL
-
-    @property
-    def emoji(self) -> str:
-        return self.value.emoji
