@@ -8,9 +8,9 @@ import lib_types
 from config import TEST_GUILDS
 from disnake import ButtonStyle
 from disnake.ext import commands
+from SuperMechs.core import MAX_BUFFS
 from SuperMechs.enums import STAT_NAMES
 from SuperMechs.item import AnyItem
-from SuperMechs.core import MAX_BUFFS
 from SuperMechs.types import AnyStats
 from typing_extensions import Self
 from ui.buttons import Button, ToggleButton, button
@@ -276,7 +276,7 @@ async def item(
     if compact:
         embed = (disnake.Embed(
             color=item.element.color)
-            .set_author(name=item.name, icon_url=item.icon.URL)
+            .set_author(name=item.name, icon_url=item.icon.image_url)
             .set_thumbnail(url=item.image_url))
         view = ItemView(embed, item, compact_embed, user_id=inter.author.id)
 
@@ -286,7 +286,7 @@ async def item(
             description=f"{item.element.name.capitalize()} "
                         f"{item.type.replace('_', ' ').lower()}",
             color=item.element.color)
-            .set_thumbnail(url=item.icon.URL)
+            .set_thumbnail(url=item.icon.image_url)
             .set_image(url=item.image_url))
         view = ItemView(embed, item, default_embed, user_id=inter.author.id)
 

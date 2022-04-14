@@ -191,15 +191,15 @@ class MechView(PaginatorView):
     @select(
         cls=PaginatedSelect[Self],
         up=SelectOption(
-                label="Previous items",
-                value="option:up",
-                emoji="🔼",
-                description="Click to show previous items"),
+            label="Previous items",
+            value="option:up",
+            emoji="🔼",
+            description="Click to show previous items"),
         down=SelectOption(
-                label="More items",
-                value="option:down",
-                emoji="🔽",
-                description="Click to show more items"),
+            label="More items",
+            value="option:down",
+            emoji="🔽",
+            description="Click to show more items"),
         placeholder="Choose slot",
         custom_id="select:item",
         options=[EMPTY_OPTION],
