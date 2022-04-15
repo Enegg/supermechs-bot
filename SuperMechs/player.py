@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 
 from utils import MISSING, random_str
 
+from .core import ArenaBuffs
 from .inv_item import AnyInvItem
 from .mech import Mech
-from .core import ArenaBuffs
 
 
 @dataclass
