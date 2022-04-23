@@ -4,7 +4,7 @@ import typing as t
 from itertools import zip_longest
 
 import disnake
-import lib_types
+import lib_helpers
 from config import TEST_GUILDS
 from disnake import ButtonStyle
 from disnake.ext import commands
@@ -247,7 +247,7 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
 
 @commands.slash_command()
 async def item(
-    inter: lib_types.ApplicationCommandInteraction,
+    inter: lib_helpers.ApplicationCommandInteraction,
     name: str,
     compact: bool = False,
     invisible: bool = True,
@@ -355,7 +355,7 @@ def compare_stats(a: AnyStats, b: AnyStats):
 
 
 @commands.slash_command(guild_ids=TEST_GUILDS)
-async def compare(inter: lib_types.ApplicationCommandInteraction, item1: str, item2: str) -> None:
+async def compare(inter: lib_helpers.ApplicationCommandInteraction, item1: str, item2: str) -> None:
     """Shows an interactive comparison of two items.
 
     Parameters
@@ -378,7 +378,7 @@ async def compare(inter: lib_types.ApplicationCommandInteraction, item1: str, it
 @item.autocomplete("name")
 @compare.autocomplete("item1")
 @compare.autocomplete("item2")
-async def item_autocomplete(inter: lib_types.ApplicationCommandInteraction, input: str) -> list[str]:
+async def item_autocomplete(inter: lib_helpers.ApplicationCommandInteraction, input: str) -> list[str]:
     """Autocomplete for items"""
     if len(input) < 2:
         return ["Start typing to get suggestions..."]

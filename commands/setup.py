@@ -6,10 +6,9 @@ import traceback
 import typing as t
 
 import disnake
-import lib_types
+import lib_helpers
 from config import HOME_GUILD_ID, TEST_GUILDS
 from disnake.ext import commands
-from utils import str_to_file
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -26,7 +25,7 @@ class Setup(commands.Cog):
     @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
     async def extensions(
         self,
-        inter: lib_types.ApplicationCommandInteraction,
+        inter: lib_helpers.ApplicationCommandInteraction,
         action: t.Literal["load", "reload", "unload"] = "reload",
         ext: t.Optional[str] = None
     ) -> None:
@@ -66,14 +65,14 @@ class Setup(commands.Cog):
 
     @extensions.autocomplete("ext")
     async def ext_autocomplete(
-        self, inter: lib_types.ApplicationCommandInteraction, input: str
+        self, inter: lib_helpers.ApplicationCommandInteraction, input: str
     ) -> list[str]:
         input = input.lower()
         return [ext for ext in inter.bot.extensions if input in ext.lower()]
 
     @commands.guild_permissions(HOME_GUILD_ID, owner=True)
     @commands.slash_command(default_permission=False, guild_ids=[HOME_GUILD_ID])
-    async def shutdown(self, inter: lib_types.ApplicationCommandInteraction) -> None:
+    async def shutdown(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
         """Terminates the bot connection."""
         await inter.send("I will be back", ephemeral=True)
         await inter.bot.close()
@@ -82,7 +81,7 @@ class Setup(commands.Cog):
     @commands.slash_command(name="raise", default_permission=False, guild_ids=[HOME_GUILD_ID])
     async def force_error(
         self,
-        inter: lib_types.ApplicationCommandInteraction,
+        inter: lib_helpers.ApplicationCommandInteraction,
         exception: str,
         arguments: t.Optional[str] = None
     ) -> None:
@@ -115,7 +114,7 @@ class Setup(commands.Cog):
 
     @commands.guild_permissions(HOME_GUILD_ID, owner=True)
     @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
-    async def database(self, inter: lib_types.ApplicationCommandInteraction) -> None:
+    async def database(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
         """Show info about the database"""
         if inter.bot.engine is None:
             await inter.send("Database is disabled.")
@@ -135,7 +134,7 @@ class Setup(commands.Cog):
         data = str(data)
 
         if len(data) > 2000:
-            await inter.send(file=str_to_file(data))
+            await inter.send(file=lib_helpers.str_to_file(data))
 
         else:
             await inter.send(data)

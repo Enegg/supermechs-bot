@@ -4,7 +4,7 @@ import logging
 import typing as t
 
 import disnake
-import lib_types
+import lib_helpers
 from config import TEST_GUILDS
 from disnake import ButtonStyle, SelectOption
 from disnake.ext import commands
@@ -147,7 +147,7 @@ class ArenaBuffsView(PaginatorView):
 
 @commands.slash_command()
 @commands.max_concurrency(1, commands.BucketType.user)
-async def buffs(inter: lib_types.ApplicationCommandInteraction) -> None:
+async def buffs(inter: lib_helpers.ApplicationCommandInteraction) -> None:
     """Interactive UI for modifying your arena buffs"""
     player = inter.bot.get_player(inter)
     view = ArenaBuffsView(player.arena_buffs, inter.author.id)
@@ -163,7 +163,7 @@ async def buffs(inter: lib_types.ApplicationCommandInteraction) -> None:
 
 @commands.slash_command(guild_ids=TEST_GUILDS)
 @commands.is_owner()
-async def maxed(inter: lib_types.ApplicationCommandInteraction) -> None:
+async def maxed(inter: lib_helpers.ApplicationCommandInteraction) -> None:
     """Maxes out your buffs"""
     me = inter.bot.get_player(inter)
     me.arena_buffs.levels.update(ArenaBuffs.maxed().levels)

@@ -11,10 +11,11 @@ import disnake
 from disnake.ext import commands
 
 from config import DEFAULT_PACK_URL
+from SuperMechs.core import abbreviate_names
 from SuperMechs.item import AnyItem, Item
 from SuperMechs.player import Player
 from SuperMechs.types import ItemPack, PackConfig
-from utils import MISSING, abbreviate_names
+from utils import MISSING
 
 if t.TYPE_CHECKING:
     from odmantic import AIOEngine

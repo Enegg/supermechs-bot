@@ -6,7 +6,7 @@ import typing as t
 
 import aiohttp
 import disnake
-import lib_types
+import lib_helpers
 from disnake import SelectOption
 from disnake.ext import commands
 from SuperMechs.core import ArenaBuffs
@@ -348,12 +348,12 @@ class MechView(PaginatorView):
 
 
 @commands.slash_command()
-async def mech(_: lib_types.ApplicationCommandInteraction) -> None:
+async def mech(_: lib_helpers.ApplicationCommandInteraction) -> None:
     pass
 
 
 @mech.sub_command()
-async def show(inter: lib_types.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
+async def show(inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
     """Displays your mech and its stats
 
     Parameters
@@ -398,7 +398,7 @@ async def show(inter: lib_types.ApplicationCommandInteraction, name: t.Optional[
 
 
 @mech.sub_command(name="list")
-async def browse(inter: lib_types.ApplicationCommandInteraction) -> None:
+async def browse(inter: lib_helpers.ApplicationCommandInteraction) -> None:
     """Displays a list of your builds"""
     player = inter.bot.get_player(inter)
 
@@ -422,7 +422,7 @@ async def browse(inter: lib_types.ApplicationCommandInteraction) -> None:
 
 @mech.sub_command()
 @commands.max_concurrency(1, commands.BucketType.user)
-async def build(inter: lib_types.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
+async def build(inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
     """Interactive UI for modifying a mech build.
 
     Parameters
@@ -475,7 +475,7 @@ async def build(inter: lib_types.ApplicationCommandInteraction, name: t.Optional
 
 @show.autocomplete("name")
 @build.autocomplete("name")
-async def build_autocomplete(inter: lib_types.ApplicationCommandInteraction, input: str) -> list[str]:
+async def build_autocomplete(inter: lib_helpers.ApplicationCommandInteraction, input: str) -> list[str]:
     """Autocomplete for player builds"""
     player = inter.bot.get_player(inter)
     input = input.lower()

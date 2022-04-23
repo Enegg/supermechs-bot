@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from bot import SMBot
 from config import LOGS_CHANNEL, OWNER_ID, TEST_GUILDS
-from utils import ChannelHandler, FileRecord
+from lib_helpers import ChannelHandler, FileRecord
 
 parser = ArgumentParser()
 parser.add_argument("--local", action="store_true")

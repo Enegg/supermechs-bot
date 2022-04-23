@@ -98,3 +98,42 @@ class ArenaBuffs:
 
 
 MAX_BUFFS = ArenaBuffs.maxed()
+
+
+def abbreviate_names(names: t.Iterable[str], /) -> dict[str, set[str]]:
+    """Returns dict of abbrevs:
+    Energy Free Armor => EFA"""
+    abbrevs: dict[str, set[str]] = {}
+
+    for name in names:
+        if len(name) < 8:
+            continue
+
+        is_single_word = " " not in name
+
+        if (
+            IsNotPascal := not name.isupper() and name[1:].islower()
+        ) and is_single_word:
+            continue
+
+        "".join(filter(str.isupper, name))
+        abbrev = {"".join(a for a in name if a.isupper()).lower()}
+
+        if not is_single_word:
+            abbrev.add(name.replace(" ", "").lower())  # Fire Fly => firefly
+
+        if not IsNotPascal and is_single_word:  # takes care of PascalCase names
+            last = 0
+            for i, a in enumerate(name):
+                if a.isupper():
+                    if string := name[last:i].lower():
+                        abbrev.add(string)
+
+                    last = i
+
+            abbrev.add(name[last:].lower())
+
+        for abb in abbrev:
+            abbrevs.setdefault(abb, {name}).add(name)
+
+    return abbrevs

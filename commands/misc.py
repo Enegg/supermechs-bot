@@ -7,7 +7,7 @@ import typing as t
 from datetime import datetime
 
 import disnake
-import lib_types
+import lib_helpers
 from disnake.ext import commands
 
 if t.TYPE_CHECKING:
@@ -17,7 +17,7 @@ logger = logging.getLogger("channel_logs")
 
 
 @commands.slash_command()
-async def frantic(inter: lib_types.ApplicationCommandInteraction) -> None:
+async def frantic(inter: lib_helpers.ApplicationCommandInteraction) -> None:
     """Humiliate frantic users"""
     frantics = [
         "https://i.imgur.com/Bbbf4AH.mp4",
@@ -29,19 +29,19 @@ async def frantic(inter: lib_types.ApplicationCommandInteraction) -> None:
 
 class Misc(commands.Cog):
     @commands.slash_command()
-    async def ping(self, inter: lib_types.ApplicationCommandInteraction) -> None:
+    async def ping(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
         """Shows bot latency"""
         await inter.send(f'Pong! {round(inter.bot.latency * 1000)}ms')
 
     @commands.slash_command()
-    async def invite(self, inter: lib_types.ApplicationCommandInteraction) -> None:
+    async def invite(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
         """Sends an invite link for this bot to the channel"""
         await inter.send(
             disnake.utils.oauth_url(inter.bot.user.id, scopes=("bot", "applications.commands"))
         )
 
     @commands.slash_command(name="self")
-    async def self_info(self, inter: lib_types.ApplicationCommandInteraction) -> None:
+    async def self_info(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
         """Displays information about the bot."""
         app = await inter.bot.application_info()
         desc = (
