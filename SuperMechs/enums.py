@@ -3,15 +3,6 @@ from __future__ import annotations
 import typing as t
 from enum import Enum
 
-WORKSHOP_STATS: t.Final = (
-    "weight", "health", "eneCap", "eneReg", "heaCap", "heaCol", "phyRes",
-    "expRes", "eleRes", "bulletCap", "rocketCap", "walk", "jump")
-
-
-class Stat(t.NamedTuple):
-    name: str
-    emoji: str
-
 
 class TierData(t.NamedTuple):
     level: int
@@ -39,44 +30,6 @@ class IconData(t.NamedTuple):
 
     def __str__(self) -> str:
         return self.emoji
-
-
-# fmt: off
-STAT_NAMES = dict(
-    weight   =Stat("Weight",                "<:weight:725870760484143174>"),
-    health   =Stat("HP",                    "<:health:725870887588462652>"),
-    eneCap   =Stat("Energy",                "<:energy:725870941883859054>"),
-    eneReg   =Stat("Regeneration",           "<:regen:725871003665825822>"),
-    heaCap   =Stat("Heat",                    "<:heat:725871043767435336>"),
-    heaCol   =Stat("Cooling",              "<:cooling:725871075778363422>"),
-    phyRes   =Stat("Physical resistance",   "<:phyres:725871121051811931>"),
-    expRes   =Stat("Explosive resistance",  "<:expres:725871136935772294>"),
-    eleRes   =Stat("Electric resistance",  "<:elecres:725871146716758077>"),
-    phyDmg   =Stat("Physical damage",       "<:phydmg:725871208830074929>"),
-    phyResDmg=Stat("Resistance drain",   "<:phyresdmg:725871259635679263>"),
-    expDmg   =Stat("Explosive damage",      "<:expdmg:725871223338172448>"),
-    heaDmg   =Stat("Heat damage",           "<:headmg:725871613639393290>"),
-    heaCapDmg=Stat("Max heat damage",   "<:heatcapdmg:725871478083551272>"),
-    heaColDmg=Stat("Cooling damage",    "<:coolingdmg:725871499281563728>"),
-    expResDmg=Stat("Resistance drain",   "<:expresdmg:725871281311842314>"),
-    eleDmg   =Stat("Electric damage",       "<:eledmg:725871233614479443>"),
-    eneDmg   =Stat("Energy damage",         "<:enedmg:725871599517171719>"),
-    eneCapDmg=Stat("Max energy damage",  "<:enecapdmg:725871420126789642>"),
-    eneRegDmg=Stat("Regeneration damage", "<:regendmg:725871443815956510>"),
-    eleResDmg=Stat("Resistance drain",   "<:eleresdmg:725871296381976629>"),
-    range    =Stat("Range",                  "<:range:725871752072134736>"),
-    push     =Stat("Knockback",               "<:push:725871716613488843>"),
-    pull     =Stat("Pull",                    "<:pull:725871734141616219>"),
-    recoil   =Stat("Recoil",                "<:recoil:725871778282340384>"),
-    retreat  =Stat("Retreat",              "<:retreat:725871804236955668>"),
-    advance  =Stat("Advance",              "<:advance:725871818115907715>"),
-    walk     =Stat("Walking",                 "<:walk:725871844581834774>"),
-    jump     =Stat("Jumping",                 "<:jump:725871869793796116>"),
-    uses     =Stat("Uses",                    "<:uses:725871917923303688>"),
-    backfire =Stat("Backfire",            "<:backfire:725871901062201404>"),
-    heaCost  =Stat("Heat cost",            "<:heatgen:725871674007879740>"),
-    eneCost  =Stat("Energy cost",         "<:eneusage:725871660237979759>"))
-# fmt: on
 
 
 class Rarity(TierData, Enum):
@@ -179,9 +132,9 @@ class RarityRange:
 class Element(ElementData, Enum):
     """Enumeration of item elements"""
     # fmt: off
-    PHYSICAL  = PHYS = ElementData(0xffb800, STAT_NAMES["phyDmg"].emoji)
-    EXPLOSIVE = HEAT = ElementData(0xb71010, STAT_NAMES["expDmg"].emoji)
-    ELECTRIC  = ELEC = ElementData(0x106ed8, STAT_NAMES["eleDmg"].emoji)
+    PHYSICAL  = PHYS = ElementData(0xffb800, "<:phydmg:725871208830074929>")
+    EXPLOSIVE = HEAT = ElementData(0xb71010, "<:expdmg:725871223338172448>")
+    ELECTRIC  = ELEC = ElementData(0x106ed8, "<:eledmg:725871233614479443>")
     COMBINED  = COMB = ElementData(0x211d1d, "🔰")
     OMNI =             ElementData(0x000000, "<a:energyball:731885130594910219>")
     # fmt: on

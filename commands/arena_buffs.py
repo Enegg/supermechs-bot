@@ -8,8 +8,7 @@ import lib_helpers
 from config import TEST_GUILDS
 from disnake import ButtonStyle, SelectOption
 from disnake.ext import commands
-from SuperMechs.core import ArenaBuffs
-from SuperMechs.enums import STAT_NAMES
+from SuperMechs.core import STAT_NAMES, ArenaBuffs
 from typing_extensions import Self
 from ui import (EMPTY_OPTION, Button, PaginatorView, Select, TrinaryButton,
                 button, select)

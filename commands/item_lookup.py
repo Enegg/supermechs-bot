@@ -8,8 +8,7 @@ import lib_helpers
 from config import TEST_GUILDS
 from disnake import ButtonStyle
 from disnake.ext import commands
-from SuperMechs.core import MAX_BUFFS
-from SuperMechs.enums import STAT_NAMES
+from SuperMechs.core import MAX_BUFFS, STAT_NAMES
 from SuperMechs.item import AnyItem
 from SuperMechs.types import AnyStats
 from typing_extensions import Self

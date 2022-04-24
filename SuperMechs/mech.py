@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 
 from utils import MISSING, format_count
 
-from .core import DEFAULT_VARS, ArenaBuffs, GameVars
-from .enums import STAT_NAMES, WORKSHOP_STATS
+from .core import (DEFAULT_VARS, STAT_NAMES, WORKSHOP_STATS, ArenaBuffs,
+                   GameVars)
 from .images import MechRenderer, get_image_size
 from .inv_item import AnyInvItem, InvItem
 from .types import AnyStats, Attachment, Attachments
