@@ -10,7 +10,7 @@ class PersonalView(View):
     """View which does not respond to interactions of anyone but the invoker."""
     response = "This message is for someone else."
 
-    def __init__(self, *, user_id: int, timeout: float | None = 180):
+    def __init__(self, *, user_id: int, timeout: float | None = 180) -> None:
         super().__init__(timeout=timeout)
         self.user_id = user_id
 
