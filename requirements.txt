@@ -1,5 +1,5 @@
 disnake==2.4.*
-Pillow==8.4.*
+Pillow==9.1.*
 python-dotenv==0.19.*
 pymongo[srv]==3.12.*
 odmantic==0.3.5
