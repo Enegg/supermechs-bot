@@ -33,8 +33,18 @@ def get_image_size(image: Image.Image) -> tuple[int, int]:
 
 
 class MechRenderer:
-    layer_order = ("drone", "side2", "side4", "top2", "leg2",
-                    "torso", "leg1", "top1", "side1", "side3")
+    layer_order = (
+        "drone",
+        "side2",
+        "side4",
+        "top2",
+        "leg2",
+        "torso",
+        "leg1",
+        "top1",
+        "side1",
+        "side3",
+    )
 
     def __init__(self, torso: Item[Attachments]) -> None:
         self.torso_image = torso.image
@@ -88,9 +98,10 @@ class MechRenderer:
             "RGBA",
             (
                 width + self.pixels_left + self.pixels_right,
-                height + self.pixels_above + self.pixels_below
+                height + self.pixels_above + self.pixels_below,
             ),
-            (0, 0, 0, 0))
+            (0, 0, 0, 0),
+        )
 
         for x, y, image in filter(None, self.images):
             canvas.alpha_composite(image, (x + self.pixels_left, y + self.pixels_above))

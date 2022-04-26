@@ -40,9 +40,7 @@ class SMBot(commands.InteractionBot):
         self.engine = engine
 
     async def on_slash_command_error(
-        self,
-        inter: disnake.ApplicationCommandInteraction,
-        error: commands.CommandError
+        self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError
     ) -> None:
         match error:
             case commands.NotOwner():
@@ -61,11 +59,12 @@ class SMBot(commands.InteractionBot):
                 await inter.send(text, ephemeral=True)
 
             case _:
-                arguments = ', '.join(
-                    f'`{option}: {value}`'
-                    for option, value
-                    in inter.filled_options.items()
-                ) or 'None'
+                arguments = (
+                    ", ".join(
+                        f"`{option}: {value}`" for option, value in inter.filled_options.items()
+                    )
+                    or "None"
+                )
 
                 text = (
                     f"{error}"
@@ -99,8 +98,8 @@ class SMBot(commands.InteractionBot):
     @cached_property
     def session(self) -> aiohttp.ClientSession:
         session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=30),
-            connector=self.http.connector)
+            timeout=aiohttp.ClientTimeout(total=30), connector=self.http.connector
+        )
         session._request = partial(session._request, proxy=self.http.proxy)
         return session
 
@@ -113,7 +112,8 @@ class SMBot(commands.InteractionBot):
         self.item_pack = pack["config"]
         self.items_cache = {
             item_dict["name"]: Item(**item_dict, pack=pack["config"])  # type: ignore[assignment]
-            for item_dict in pack["items"]}
+            for item_dict in pack["items"]
+        }
         logger.info(f"Item pack loaded: {self.item_pack['name']}")
 
     def get_player(

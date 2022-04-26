@@ -18,7 +18,7 @@ class InvItem(Item[AttachmentType]):
         underlying: Item[AttachmentType],
         tier: Rarity,
         power: int = 0,
-        UUID: uuid.UUID = MISSING
+        UUID: uuid.UUID = MISSING,
     ) -> None:
         self.underlying = underlying
         self.tier = tier
@@ -38,11 +38,15 @@ class InvItem(Item[AttachmentType]):
             return getattr(self.underlying, name)
 
         except AttributeError:
-            raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
+            raise AttributeError(
+                f'{type(self).__name__} object has no attribute "{name}"'
+            ) from None
 
     def __repr__(self) -> str:
-        return ("<InvItem item={0.underlying!r} tier={0.max_rarity}"
-                " power={0.power} UUID={0.UUID}>").format(self)
+        return (
+            f"<InvItem item={self.underlying!r} tier={self.max_rarity}"
+            f" power={self.power} UUID={self.UUID}>"
+        )
 
     def __hash__(self) -> int:
         return hash((self.UUID, self.underlying))

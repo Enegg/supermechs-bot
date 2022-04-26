@@ -34,6 +34,7 @@ class IconData(t.NamedTuple):
 
 class Rarity(TierData, Enum):
     """Enumeration of item tiers"""
+
     # fmt: off
     COMMON    = C = TierData(0, 0xB1B1B1, "⚪")
     RARE      = R = TierData(1, 0x55ACEE, "🔵")
@@ -67,7 +68,7 @@ class RarityRange:
 
             raise ValueError("rarities out of bounds")
 
-        self.range = range(lower, upper+1)
+        self.range = range(lower, upper + 1)
 
     def __str__(self) -> str:
         return "".join(rarity.emoji for rarity in self)
@@ -95,7 +96,7 @@ class RarityRange:
     @property
     def max(self) -> Rarity:
         """Upper rarity bound"""
-        return self.TIERS[self.range.stop-1]
+        return self.TIERS[self.range.stop - 1]
 
     @property
     def is_single(self) -> bool:
@@ -131,6 +132,7 @@ class RarityRange:
 
 class Element(ElementData, Enum):
     """Enumeration of item elements"""
+
     # fmt: off
     PHYSICAL  = PHYS = ElementData(0xffb800, "<:phydmg:725871208830074929>")
     EXPLOSIVE = HEAT = ElementData(0xb71010, "<:expdmg:725871223338172448>")
@@ -142,6 +144,7 @@ class Element(ElementData, Enum):
 
 class Icon(IconData, Enum):
     """Enumeration of item types"""
+
     # fmt: off
     TORSO       = IconData("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>")
     LEGS        = IconData("https://i.imgur.com/6NBLOhU.png",   "<:legs:730115699397361827>")

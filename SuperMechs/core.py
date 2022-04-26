@@ -3,8 +3,20 @@ from __future__ import annotations
 import typing as t
 
 WORKSHOP_STATS: t.Final = (
-    "weight", "health", "eneCap", "eneReg", "heaCap", "heaCol", "phyRes",
-    "expRes", "eleRes", "bulletCap", "rocketCap", "walk", "jump")
+    "weight",
+    "health",
+    "eneCap",
+    "eneReg",
+    "heaCap",
+    "heaCol",
+    "phyRes",
+    "expRes",
+    "eleRes",
+    "bulletCap",
+    "rocketCap",
+    "walk",
+    "jump",
+)
 
 
 class Stat(t.NamedTuple):
@@ -66,8 +78,22 @@ DEFAULT_VARS = GameVars()
 class ArenaBuffs:
     ref_def = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
     ref_hp = (0, +10, +30, +60, 90, 120, 150, 180, +220, +260, 300, 350)
-    stat_ref = ("eneCap", "eneReg", "eneDmg", "heaCap", "heaCol", "heaDmg", "phyDmg",
-                "expDmg", "eleDmg", "phyRes", "expRes", "eleRes", "health", "backfire")
+    stat_ref = (
+        "eneCap",
+        "eneReg",
+        "eneDmg",
+        "heaCap",
+        "heaCol",
+        "heaDmg",
+        "phyDmg",
+        "expDmg",
+        "eleDmg",
+        "phyRes",
+        "expRes",
+        "eleRes",
+        "health",
+        "backfire",
+    )
 
     def __init__(self, levels: dict[str, int] | None = None) -> None:
         self.levels = levels or dict.fromkeys(self.stat_ref, 0)
@@ -76,8 +102,11 @@ class ArenaBuffs:
         return self.levels[key]
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} " + \
-            ", ".join(f"{stat}={lvl}" for stat, lvl in self.levels.items()) + ">"
+        return (
+            f"<{type(self).__name__} "
+            + ", ".join(f"{stat}={lvl}" for stat, lvl in self.levels.items())
+            + ">"
+        )
 
     @property
     def is_at_zero(self) -> bool:
@@ -138,7 +167,7 @@ class ArenaBuffs:
     def maxed(cls) -> ArenaBuffs:
         self = cls.__new__(cls)
 
-        self.levels = dict.fromkeys(cls.stat_ref, len(cls.ref_def)-1)
+        self.levels = dict.fromkeys(cls.stat_ref, len(cls.ref_def) - 1)
         self.levels["health"] = len(cls.ref_hp) - 1
 
         return self
@@ -158,9 +187,7 @@ def abbreviate_names(names: t.Iterable[str], /) -> dict[str, set[str]]:
 
         is_single_word = " " not in name
 
-        if (
-            IsNotPascal := not name.isupper() and name[1:].islower()
-        ) and is_single_word:
+        if (IsNotPascal := not name.isupper() and name[1:].islower()) and is_single_word:
             continue
 
         "".join(filter(str.isupper, name))

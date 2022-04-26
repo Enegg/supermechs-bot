@@ -13,13 +13,14 @@ from .mech import Mech
 @dataclass
 class Player:
     """Represents a SuperMechs player."""
+
     id: int
     builds: dict[str, Mech] = field(default_factory=dict)
     arena_buffs: ArenaBuffs = field(default_factory=ArenaBuffs)
     inventory: dict[uuid.UUID, AnyInvItem] = field(default_factory=dict)
     active_build_name: str = MISSING
     level: int = 0
-    exp:   int = 0
+    exp: int = 0
 
     def __hash__(self) -> int:
         return hash(self.id)

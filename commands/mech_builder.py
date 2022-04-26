@@ -16,8 +16,17 @@ from SuperMechs.inv_item import InvItem
 from SuperMechs.item import AnyItem
 from SuperMechs.mech import Mech
 from typing_extensions import Self
-from ui import (EMPTY_OPTION, Button, PaginatedSelect, PaginatorView, Select,
-                ToggleButton, TrinaryButton, button, select)
+from ui import (
+    EMPTY_OPTION,
+    Button,
+    PaginatedSelect,
+    PaginatorView,
+    Select,
+    ToggleButton,
+    TrinaryButton,
+    button,
+    select,
+)
 from utils import random_str
 
 if t.TYPE_CHECKING:
@@ -40,13 +49,15 @@ trans_table = {
     "mod5": "module",
     "mod6": "module",
     "mod7": "module",
-    "mod8": "module"}
+    "mod8": "module",
+}
 
 
 def translate_type(_type: str) -> str:
     if _type.startswith(("side", "top")):
         return ("TOP_" if _type.startswith("top") else "SIDE_") + (
-            "LEFT" if int(_type[-1]) % 2 else "RIGHT")
+            "LEFT" if int(_type[-1]) % 2 else "RIGHT"
+        )
 
     if _type.startswith("mod"):
         return "MODULE"
@@ -56,6 +67,7 @@ def translate_type(_type: str) -> str:
 
 class MechView(PaginatorView):
     """Class implementing View for a button-based mech building"""
+
     bot_msg: disnake.Message
 
     def __init__(
@@ -67,7 +79,7 @@ class MechView(PaginatorView):
         session: aiohttp.ClientSession,
         *,
         user_id: int,
-        timeout: float | None = 180
+        timeout: float | None = 180,
     ) -> None:
         self.mech = mech
         self.embed = embed
@@ -85,27 +97,31 @@ class MechView(PaginatorView):
                     row=pos,
                     custom_id=id,
                     item=getattr(mech, id),
-                    callback=self.slot_button_cb
+                    callback=self.slot_button_cb,
                 )
                 for id in row
             ]
-            for pos, row in enumerate((
-                ("top1", "drone", "top2", "charge", "mod1", "mod2", "mod3", "mod4"),
-                ("side3", "torso", "side4", "tele", "mod5", "mod6", "mod7", "mod8"),
-                ("side1", "legs", "side2", "hook"),
-            ))
+            for pos, row in enumerate(
+                (
+                    ("top1", "drone", "top2", "charge", "mod1", "mod2", "mod3", "mod4"),
+                    ("side3", "torso", "side4", "tele", "mod5", "mod6", "mod7", "mod8"),
+                    ("side1", "legs", "side2", "hook"),
+                )
+            )
         ]
 
         super().__init__(user_id=user_id, timeout=timeout, columns_per_page=4)
 
         for i in range(4):
             self.buttons[2].append(
-                Button(label="⠀", custom_id=f"button:no_op{i}", disabled=True, row=2))
+                Button(label="⠀", custom_id=f"button:no_op{i}", disabled=True, row=2)
+            )
 
         self.persistent_buttons = (
             self.modules_button,
             self.filters_button,
-            self.buffs_button)
+            self.buffs_button,
+        )
 
         self.visible.extend(self.persistent_buttons)
         self.remove_item(self.filters_select)
@@ -121,11 +137,13 @@ class MechView(PaginatorView):
             charge=[],
             tele=[],
             hook=[],
-            module=[])
+            module=[],
+        )
 
         for item in items.values():
             self.item_type_ref[item.type.lower()].append(
-                SelectOption(label=item.name, emoji=item.element.emoji))
+                SelectOption(label=item.name, emoji=item.element.emoji)
+            )
 
         ref = [element.emoji for element in Element]
 
@@ -142,22 +160,27 @@ class MechView(PaginatorView):
             self.visible.append(button)
 
     async def slot_button_cb(
-        self, button: TrinaryButton[Self, AnyItem | None], inter: disnake.MessageInteraction
+        self,
+        button: TrinaryButton[Self, AnyItem | None],
+        inter: disnake.MessageInteraction,
     ) -> None:
         self.update_style(button)
         await inter.response.edit_message(view=self)
 
     @button(cls=Button[Self], emoji=Icon.MODULE.emoji, custom_id="button:modules", row=0)
-    async def modules_button(
-        self, button: Button[Self], inter: disnake.MessageInteraction
-    ) -> None:
+    async def modules_button(self, button: Button[Self], inter: disnake.MessageInteraction) -> None:
         self.page ^= 1
         button.emoji = Icon.TORSO.emoji if self.page else Icon.MODULE.emoji
 
         self.update_page()
         await inter.response.edit_message(view=self)
 
-    @button(label="Filters", custom_id="button:filters", row=2, cls=TrinaryButton[Self, t.Any])
+    @button(
+        label="Filters",
+        custom_id="button:filters",
+        row=2,
+        cls=TrinaryButton[Self, t.Any],
+    )
     async def filters_button(
         self, button: TrinaryButton[Self, t.Any], inter: disnake.MessageInteraction
     ) -> None:
@@ -165,23 +188,24 @@ class MechView(PaginatorView):
         self.toggle_menus()
         await inter.response.edit_message(view=self)
 
-    @button(label="Buffs", custom_id="button:buffs", row=1, cls=ToggleButton[Self])
+    @button(cls=ToggleButton[Self], label="Buffs", custom_id="button:buffs", row=1)
     async def buffs_button(
         self, button: ToggleButton[Self], inter: disnake.MessageInteraction
     ) -> None:
         if self.buffs.is_at_zero:
             await inter.send(
                 "This won't show any effect because all your buffs are at level zero.\n"
-                "You can change that using `/buffs` command.", ephemeral=True)
+                "You can change that using `/buffs` command.",
+                ephemeral=True,
+            )
             return
 
         button.toggle()
 
         mech = self.mech
         self.embed.set_field_at(
-            0,
-            name="Stats:",
-            value=mech.print_stats(self.buffs if button.on else None))
+            0, name="Stats:", value=mech.print_stats(self.buffs if button.on else None)
+        )
 
         if mech.torso is not None:
             self.embed.color = mech.torso.element.color
@@ -194,21 +218,24 @@ class MechView(PaginatorView):
             label="Previous items",
             value="option:up",
             emoji="🔼",
-            description="Click to show previous items"),
+            description="Click to show previous items",
+        ),
         down=SelectOption(
             label="More items",
             value="option:down",
             emoji="🔽",
-            description="Click to show more items"),
+            description="Click to show more items",
+        ),
         placeholder="Choose slot",
         custom_id="select:item",
         options=[EMPTY_OPTION],
         disabled=True,
-        row=3)
+        row=3,
+    )
     async def item_select(
         self, select: PaginatedSelect[Self], inter: disnake.MessageInteraction
     ) -> None:
-        item_name, = select.values
+        (item_name,) = select.values
 
         select.placeholder = item_name
         item = None if item_name == "empty" else self.items[item_name]
@@ -229,7 +256,8 @@ class MechView(PaginatorView):
         self.embed.set_field_at(
             0,
             name="Stats:",
-            value=self.mech.print_stats(self.buffs if self.buffs_button.on else None))
+            value=self.mech.print_stats(self.buffs if self.buffs_button.on else None),
+        )
 
         if self.mech.torso is not None:
             self.embed.color = self.mech.torso.element.color
@@ -244,10 +272,11 @@ class MechView(PaginatorView):
         max_values=4,
         row=4,
         options=[
-            SelectOption(label="Physical items",  value="type:PHYS", emoji=Element.PHYS.emoji),
+            SelectOption(label="Physical items", value="type:PHYS", emoji=Element.PHYS.emoji),
             SelectOption(label="Explosive items", value="type:HEAT", emoji=Element.HEAT.emoji),
-            SelectOption(label="Electric items",  value="type:ELEC", emoji=Element.ELEC.emoji),
-            SelectOption(label="Combined items",  value="type:COMB", emoji=Element.COMB.emoji)]
+            SelectOption(label="Electric items", value="type:ELEC", emoji=Element.ELEC.emoji),
+            SelectOption(label="Combined items", value="type:COMB", emoji=Element.COMB.emoji),
+        ],
     )
     async def filters_select(self, select: Select[Self], inter: disnake.MessageInteraction) -> None:
         values = set(select.values)
@@ -291,9 +320,8 @@ class MechView(PaginatorView):
         types = {str(option.emoji) for option in self.filters_select.options if option.default}
 
         new_options.extend(
-            filter(lambda item: str(item.emoji) in types, all_options)
-            if types else
-            all_options)
+            filter(lambda item: str(item.emoji) in types, all_options) if types else all_options
+        )
         return new_options
 
     def toggle_menus(self) -> None:
@@ -353,7 +381,9 @@ async def mech(_: lib_helpers.ApplicationCommandInteraction) -> None:
 
 
 @mech.sub_command()
-async def show(inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
+async def show(
+    inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None
+) -> None:
     """Displays your mech and its stats
 
     Parameters
@@ -377,7 +407,8 @@ async def show(inter: lib_helpers.ApplicationCommandInteraction, name: t.Optiona
     else:
         await inter.send(
             f'No build found named "{name}".',
-            allowed_mentions=disnake.AllowedMentions.none())
+            allowed_mentions=disnake.AllowedMentions.none(),
+        )
         return
 
     embed = disnake.Embed(title=f'Mech build "{name}"')
@@ -415,14 +446,17 @@ async def browse(inter: lib_helpers.ApplicationCommandInteraction) -> None:
         f", {len(tuple(filter(None, build.iter_weapons())))} weapon(s)"
         f", {len(tuple(filter(None, build.iter_modules())))} module(s)"
         f"; {build.weight} weight"
-        for name, build in player.builds.items())
+        for name, build in player.builds.items()
+    )
 
     await inter.send(string)
 
 
 @mech.sub_command()
 @commands.max_concurrency(1, commands.BucketType.user)
-async def build(inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
+async def build(
+    inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None
+) -> None:
     """Interactive UI for modifying a mech build.
 
     Parameters
@@ -451,7 +485,8 @@ async def build(inter: lib_helpers.ApplicationCommandInteraction, name: t.Option
         player.arena_buffs,
         inter.bot.session,
         user_id=inter.author.id,
-        timeout=100)
+        timeout=100,
+    )
 
     if mech.torso is None:
         await inter.send(embed=embed, view=view)
@@ -475,7 +510,9 @@ async def build(inter: lib_helpers.ApplicationCommandInteraction, name: t.Option
 
 @show.autocomplete("name")
 @build.autocomplete("name")
-async def build_autocomplete(inter: lib_helpers.ApplicationCommandInteraction, input: str) -> list[str]:
+async def build_autocomplete(
+    inter: lib_helpers.ApplicationCommandInteraction, input: str
+) -> list[str]:
     """Autocomplete for player builds"""
     player = inter.bot.get_player(inter)
     input = input.lower()

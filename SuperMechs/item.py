@@ -6,8 +6,7 @@ from utils import js_format
 
 from .enums import Element, Icon, RarityRange
 from .images import get_image, get_image_size
-from .types import (AnyStats, Attachment, Attachments, AttachmentType,
-                    PackConfig)
+from .types import AnyStats, Attachment, Attachments, AttachmentType, PackConfig
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -30,7 +29,7 @@ class Item(t.Generic[AttachmentType]):
         divine: AnyStats | None = None,
         element: str = "OMNI",
         attachment: AttachmentType = t.cast(AttachmentType, None),
-        **extra: t.Any
+        **extra: t.Any,
     ) -> None:
 
         self.id = id
@@ -41,7 +40,8 @@ class Item(t.Generic[AttachmentType]):
         self._image: Image | None = None
         self._cached: Image | None = None
 
-        self.icon = Icon[type.upper()]  # this will also validate if type is of correct type
+        # this will also validate if type is of correct type
+        self.icon = Icon[type.upper()]
         self.stats = stats
         self.divine = divine
 
@@ -55,20 +55,24 @@ class Item(t.Generic[AttachmentType]):
         return self.name
 
     def __repr__(self) -> str:
-        return ("<{0.__class__.__name__} {0.name!r}: element={0.element.name}"
-                " type={0.type} rarity={0.rarity!r} stats={0.stats}>").format(self)
+        return (
+            f"<{type(self).__name__} {self.name!r}: element={self.element.name}"
+            f" type={self.type} rarity={self.rarity!r} stats={self.stats}>"
+        )
 
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, type(self)):
             return False
 
-        return (o.id == self.id
-                and o.image_url == self.image_url
-                and o.name == self.name
-                and o.type == self.type
-                and o.stats == self.stats
-                and o.divine == self.divine
-                and o.rarity == self.rarity)
+        return (
+            o.id == self.id
+            and o.image_url == self.image_url
+            and o.name == self.name
+            and o.type == self.type
+            and o.stats == self.stats
+            and o.divine == self.divine
+            and o.rarity == self.rarity
+        )
 
     def __hash__(self) -> int:
         return hash((self.id, self.name, self.type, self.rarity, self.element, self.pack["key"]))
@@ -93,7 +97,7 @@ class Item(t.Generic[AttachmentType]):
             return self._cached
 
         if "width" in self.extra or "height" in self.extra:
-            new_width = self.extra.get("width",  0)
+            new_width = self.extra.get("width", 0)
             new_height = self.extra.get("height", 0)
 
             width, height = get_image_size(self._image)

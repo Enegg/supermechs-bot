@@ -20,6 +20,7 @@ EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remov
 
 __all__ = ("select", "Select", "PaginatedSelect", "S", "EMPTY_OPTION")
 
+
 def select(
     cls: t.Callable[P, S] = Select, *_: P.args, **kwargs: P.kwargs
 ) -> t.Callable[[ItemCallbackType[S]], DecoratedItem[S]]:
@@ -50,7 +51,7 @@ class PaginatedSelect(Select[V]):
         custom_id: str = D_MISSING,
         placeholder: str | None = None,
         disabled: bool = False,
-        row: int | None = None
+        row: int | None = None,
     ) -> None:
         super().__init__(custom_id=custom_id, placeholder=placeholder, disabled=disabled, row=row)
         self.all_options = options or []
@@ -88,15 +89,18 @@ class PaginatedSelect(Select[V]):
             self._underlying.options = self.all_options[:24] + [self.down]
 
         elif self.page == len(self) - 1:
-            self._underlying.options = [self.up] + self.all_options[self.page*23 + 1:]
+            self._underlying.options = [self.up] + self.all_options[self.page * 23 + 1 :]
 
         else:
             self._underlying.options = [
-                x for y in (
+                x
+                for y in (
                     (self.up,),
-                    self.all_options[self.page*23 + 1:self.page*23 + 24],
-                    (self.down,)
-                ) for x in y]
+                    self.all_options[self.page * 23 + 1 : self.page * 23 + 24],
+                    (self.down,),
+                )
+                for x in y
+            ]
 
     @property
     def options(self) -> list[SelectOption]:
@@ -118,10 +122,8 @@ class PaginatedSelect(Select[V]):
     ) -> None:
         self._callback = func
 
-    async def pre_invoke_callback(
-        self, inter: disnake.MessageInteraction
-    ) -> None:
-        option_id, = self.values
+    async def pre_invoke_callback(self, inter: disnake.MessageInteraction) -> None:
+        (option_id,) = self.values
 
         if option_id == self.up.value:
             self.page -= 1

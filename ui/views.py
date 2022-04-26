@@ -8,6 +8,7 @@ __all__ = ("View", "PersonalView", "PaginatorView")
 
 class PersonalView(View):
     """View which does not respond to interactions of anyone but the invoker."""
+
     response = "This message is for someone else."
 
     def __init__(self, *, user_id: int, timeout: float | None = 180) -> None:
@@ -24,6 +25,7 @@ class PersonalView(View):
 
 class PaginatorView(PersonalView):
     """View implementing simple button pagination."""
+
     buttons: list[list[Button[PaginatorView]]]
 
     def __init__(
@@ -47,6 +49,6 @@ class PaginatorView(PersonalView):
         offset = width * self.page
 
         for row in self.buttons:
-            for button in row[offset: width+offset]:
+            for button in row[offset : width + offset]:
                 self.add_item(button)
                 self.visible.append(button)

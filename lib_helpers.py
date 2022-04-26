@@ -51,9 +51,7 @@ def str_to_file(
 class FileRecord(logging.LogRecord):
     """LogRecord with extra file attribute"""
 
-    def __init__(
-        self, *args: t.Any, file: disnake.File | None = None, **kwargs: t.Any
-    ) -> None:
+    def __init__(self, *args: t.Any, file: disnake.File | None = None, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
         self.file = file
 
@@ -106,9 +104,7 @@ class ChannelHandler(logging.Handler):
 
         return msg
 
-    def fallback_emit(
-        self, record: FileRecord
-    ) -> t.Callable[[asyncio.Future[t.Any]], None]:
+    def fallback_emit(self, record: FileRecord) -> t.Callable[[asyncio.Future[t.Any]], None]:
         """Ensures the log is logged even in case of failure of sending to channel."""
 
         def emit(future: asyncio.Future[t.Any]) -> None:

@@ -19,6 +19,7 @@ logger = logging.getLogger("channel_logs")
 
 class Setup(commands.Cog):
     """Module management commands for development purposes."""
+
     last_ext = None
 
     @commands.guild_permissions(HOME_GUILD_ID, owner=True)
@@ -27,7 +28,7 @@ class Setup(commands.Cog):
         self,
         inter: lib_helpers.ApplicationCommandInteraction,
         action: t.Literal["load", "reload", "unload"] = "reload",
-        ext: t.Optional[str] = None
+        ext: t.Optional[str] = None,
     ) -> None:
         """Extension manager
 
@@ -45,7 +46,8 @@ class Setup(commands.Cog):
         funcs = dict(
             load=inter.bot.load_extension,
             reload=inter.bot.reload_extension,
-            unload=inter.bot.unload_extension)
+            unload=inter.bot.unload_extension,
+        )
 
         try:
             funcs[action](ext)
@@ -83,7 +85,7 @@ class Setup(commands.Cog):
         self,
         inter: lib_helpers.ApplicationCommandInteraction,
         exception: str,
-        arguments: t.Optional[str] = None
+        arguments: t.Optional[str] = None,
     ) -> None:
         """Explicitly raises provided exception
 

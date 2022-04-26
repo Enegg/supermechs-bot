@@ -10,8 +10,7 @@ from disnake import ButtonStyle, SelectOption
 from disnake.ext import commands
 from SuperMechs.core import STAT_NAMES, ArenaBuffs
 from typing_extensions import Self
-from ui import (EMPTY_OPTION, Button, PaginatorView, Select, TrinaryButton,
-                button, select)
+from ui import EMPTY_OPTION, Button, PaginatorView, Select, TrinaryButton, button, select
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -29,7 +28,7 @@ class ArenaBuffsView(PaginatorView):
         user_id: int,
         *,
         columns_per_page: int = 3,
-        timeout: float | None = 180
+        timeout: float | None = 180,
     ) -> None:
         self.buttons = [
             [
@@ -39,13 +38,17 @@ class ArenaBuffsView(PaginatorView):
                     label=f"{buffs_ref.buff_as_str_aware(id):⠀>4}",
                     custom_id=id,
                     emoji=STAT_NAMES[id].emoji,
-                    row=pos)
+                    row=pos,
+                )
                 for id in row
             ]
-            for pos, row in enumerate((
-                ("eneCap", "heaCap", "phyDmg", "phyRes", "health"),
-                ("eneReg", "heaCol", "expDmg", "expRes", "backfire"),
-                ("eneDmg", "heaDmg", "eleDmg", "eleRes")))
+            for pos, row in enumerate(
+                (
+                    ("eneCap", "heaCap", "phyDmg", "phyRes", "health"),
+                    ("eneReg", "heaCol", "expDmg", "expRes", "backfire"),
+                    ("eneDmg", "heaDmg", "eleDmg", "eleRes"),
+                )
+            )
         ]
         super().__init__(user_id=user_id, timeout=timeout, columns_per_page=columns_per_page)
         self.buffs = buffs_ref
@@ -130,7 +133,8 @@ class ArenaBuffsView(PaginatorView):
 
         self.dropdown.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
-            for level, buff in enumerate(self.buffs.iter_as_str(button.custom_id))]
+            for level, buff in enumerate(self.buffs.iter_as_str(button.custom_id))
+        ]
 
         self.active = button
 

@@ -87,8 +87,7 @@ def js_format(string: str, /, **kwargs: t.Any) -> str:
 
 def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
     return (
-        f'{item}{f" x{count}" * (count > 1)}'
-        for item, count in Counter(filter(None, it)).items()
+        f'{item}{f" x{count}" * (count > 1)}' for item, count in Counter(filter(None, it)).items()
     )
 
 

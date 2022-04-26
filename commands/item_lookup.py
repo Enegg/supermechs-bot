@@ -28,7 +28,7 @@ class ItemView(PersonalView):
         callback: t.Callable[[disnake.Embed, AnyItem, bool, bool], None],
         *,
         user_id: int,
-        timeout: float | None = 180
+        timeout: float | None = 180,
     ) -> None:
         super().__init__(user_id=user_id, timeout=timeout)
         self.call = callback
@@ -71,7 +71,7 @@ class CompareView(PersonalView):
         item_b: AnyItem,
         *,
         user_id: int,
-        timeout: float | None = 180
+        timeout: float | None = 180,
     ) -> None:
         super().__init__(user_id=user_id, timeout=timeout)
         self.embed = embed
@@ -237,10 +237,9 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
     else:
         div = 4
 
-    field_text = ("\n".join(lines[i:i+div]) for i in range(0, line_count, div))
-    name_field_zip = zip_longest((transform_range,), field_text, fillvalue="⠀")
+    field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
 
-    for name, field in name_field_zip:
+    for name, field in zip_longest((transform_range,), field_text, fillvalue="⠀"):
         embed.add_field(name=name, value=field)
 
 
@@ -250,7 +249,7 @@ async def item(
     name: str,
     compact: bool = False,
     invisible: bool = True,
-    raw: bool = False
+    raw: bool = False,
 ) -> None:
     """Finds an item and returns its stats
 
@@ -273,20 +272,24 @@ async def item(
         return
 
     if compact:
-        embed = (disnake.Embed(
-            color=item.element.color)
+        embed = (
+            disnake.Embed(color=item.element.color)
             .set_author(name=item.name, icon_url=item.icon.image_url)
-            .set_thumbnail(url=item.image_url))
+            .set_thumbnail(url=item.image_url)
+        )
         view = ItemView(embed, item, compact_embed, user_id=inter.author.id)
 
     else:
-        embed = (disnake.Embed(
-            title=item.name,
-            description=f"{item.element.name.capitalize()} "
-                        f"{item.type.replace('_', ' ').lower()}",
-            color=item.element.color)
+        embed = (
+            disnake.Embed(
+                title=item.name,
+                description=f"{item.element.name.capitalize()} "
+                f"{item.type.replace('_', ' ').lower()}",
+                color=item.element.color,
+            )
             .set_thumbnail(url=item.icon.image_url)
-            .set_image(url=item.image_url))
+            .set_image(url=item.image_url)
+        )
         view = ItemView(embed, item, default_embed, user_id=inter.author.id)
 
     await inter.send(embed=embed, view=view, ephemeral=invisible)
@@ -347,7 +350,7 @@ def compare_stats(a: AnyStats, b: AnyStats):
 
         if stat in a:
             value = a[stat]
-            right = (1)
+            right = 1
 
         else:
             left = ()
@@ -377,13 +380,16 @@ async def compare(inter: lib_helpers.ApplicationCommandInteraction, item1: str, 
 @item.autocomplete("name")
 @compare.autocomplete("item1")
 @compare.autocomplete("item2")
-async def item_autocomplete(inter: lib_helpers.ApplicationCommandInteraction, input: str) -> list[str]:
+async def item_autocomplete(
+    inter: lib_helpers.ApplicationCommandInteraction, input: str
+) -> list[str]:
     """Autocomplete for items"""
     if len(input) < 2:
         return ["Start typing to get suggestions..."]
 
     items = sorted(
-        set(search_for(input, inter.bot.items_cache)) | inter.bot.item_abbrevs.get(input.lower(), set())
+        set(search_for(input, inter.bot.items_cache))
+        | inter.bot.item_abbrevs.get(input.lower(), set())
     )
 
     if len(items) <= 25:

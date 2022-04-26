@@ -44,11 +44,9 @@ if DB_FEATURES:
         engine = AIOEngine()
 
     else:
-        engine = AIOEngine(AsyncIOMotorClient(
-            DB_TOKEN,
-            serverSelectionTimeoutMS=5000,
-            tlsCAFile=certifi.where()
-        ))
+        engine = AIOEngine(
+            AsyncIOMotorClient(DB_TOKEN, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
+        )
 
 else:
     engine = None
@@ -59,7 +57,8 @@ bot = SMBot(
     owner_id=OWNER_ID,
     intents=disnake.Intents(guilds=True),
     activity=disnake.Game("SuperMechs"),
-    guild_ids=TEST_GUILDS if LOCAL else None)
+    guild_ids=TEST_GUILDS if LOCAL else None,
+)
 
 logger.addHandler(ChannelHandler(LOGS_CHANNEL, bot, level=logging.WARNING))
 stream = logging.StreamHandler()

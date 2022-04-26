@@ -4,7 +4,9 @@ import typing as t
 
 from typing_extensions import NotRequired
 
-AnyType = t.Literal["TORSO", "LEGS", "DRONE", "SIDE_WEAPON", "TOP_WEAPON", "TELE", "CHARGE", "HOOK", "MODULE"]
+AnyType = t.Literal[
+    "TORSO", "LEGS", "DRONE", "SIDE_WEAPON", "TOP_WEAPON", "TELE", "CHARGE", "HOOK", "MODULE"
+]
 AnyElement = t.Literal["PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
 
 
@@ -62,12 +64,12 @@ class ItemDictBase(t.TypedDict):
     id: int
     name: str
     image: str
-    width:  NotRequired[int]
+    width: NotRequired[int]
     height: NotRequired[int]
     type: AnyType
     element: AnyElement
     transform_range: str
-    stats:  AnyStats
+    stats: AnyStats
     divine: NotRequired[AnyStats]
     tags: NotRequired[list[str]]
 

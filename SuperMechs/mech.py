@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 
 from utils import MISSING, format_count
 
-from .core import (DEFAULT_VARS, STAT_NAMES, WORKSHOP_STATS, ArenaBuffs,
-                   GameVars)
+from .core import DEFAULT_VARS, STAT_NAMES, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .images import MechRenderer, get_image_size
+from .item import AnyItem, Item
 from .inv_item import AnyInvItem, InvItem
 from .types import AnyStats, Attachment, Attachments
 
@@ -16,7 +16,7 @@ if t.TYPE_CHECKING:
     from aiohttp import ClientSession
     from PIL.Image import Image
 
-
+# fmt: off
 class _InvItems(t.TypedDict):
     torso:  InvItem[Attachments] | None
     legs:   InvItem[Attachment] | None
@@ -38,6 +38,7 @@ class _InvItems(t.TypedDict):
     mod6:   InvItem[None] | None
     mod7:   InvItem[None] | None
     mod8:   InvItem[None] | None
+# fmt: on
 
 
 @dataclass
@@ -45,10 +46,13 @@ class Mech:
     """Represents a mech build."""
 
     game_vars: GameVars = DEFAULT_VARS
-    _items: _InvItems = field(default_factory=lambda: t.cast(_InvItems, dict.fromkeys(_InvItems.__annotations__, None)))
+    _items: _InvItems = field(
+        default_factory=lambda: t.cast(_InvItems, dict.fromkeys(_InvItems.__annotations__, None))
+    )
     _stats: AnyStats = field(default_factory=AnyStats)
     _image: Image = MISSING
 
+    # fmt: off
     if t.TYPE_CHECKING:
         torso:  InvItem[Attachments] | None
         legs:   InvItem[Attachment] | None
@@ -70,16 +74,19 @@ class Mech:
         mod6:   InvItem[None] | None
         mod7:   InvItem[None] | None
         mod8:   InvItem[None] | None
+    # fmt: on
 
-    def __getattr__(self, name: t.Any):
+    def __getattr__(self, name: t.Any, /):
         try:
             return self._items[name]
 
         except KeyError:
-            raise AttributeError(f'{type(self).__name__} object has no attribute "{name}"') from None
+            raise AttributeError(
+                f'{type(self).__name__} object has no attribute "{name}"'
+            ) from None
 
-    def __setitem__(self, place: str | tuple[str, int], item: AnyInvItem | None) -> None:
-        if not isinstance(item, (InvItem, type(None))):
+    def __setitem__(self, place: str | tuple[str, int], item: AnyInvItem | None, /) -> None:
+        if not isinstance(item, (Item, type(None))):
             raise TypeError(f"Expected Item object or None, got {type(item)}")
 
         pos = None
@@ -102,7 +109,8 @@ class Mech:
         item_types: dict[str, tuple[str, int]] = {
             "module": ("mod", 8),
             "side_weapon": ("side", 4),
-            "top_weapon": ("top", 2)}
+            "top_weapon": ("top", 2),
+        }
 
         if item_type not in item_types:
             raise TypeError("Invalid item type passed")
@@ -119,27 +127,32 @@ class Mech:
     def __str__(self) -> str:
         string_parts = [
             f"{item.type.capitalize()}: {item}"
-            for item
-            in (self.torso, self.legs, self.drone)
-            if item is not None]
+            for item in (self.torso, self.legs, self.drone)
+            if item is not None
+        ]
 
         if weapon_string := ", ".join(format_count(self.iter_weapons())):
             string_parts.append("Weapons: " + weapon_string)
 
         string_parts.extend(
-            f"{item.type.capitalize()}: {item}"
-            for item
-            in self.iter_specials()
-            if item is not None)
+            f"{item.type.capitalize()}: {item}" for item in self.iter_specials() if item is not None
+        )
 
         if modules := ", ".join(format_count(self.iter_modules())):
             string_parts.append("Modules: " + modules)
 
         return "\n".join(string_parts)
 
+    def __format__(self, spec: str, /) -> str:
+        a = "{self:a}"
+        return str(self)
+
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} " + \
-            ", ".join(f"{slot}={item}" for slot, item in self._items.items()) + ">"
+        return (
+            f"<{type(self).__name__} "
+            + ", ".join(f"{slot}={item}" for slot, item in self._items.items())
+            + f" at 0x{id(self):016X}>"
+        )
 
     @property
     def weight(self) -> int:
@@ -147,10 +160,12 @@ class Mech:
 
     @property
     def is_valid(self) -> bool:
-        return (self.torso is not None
-                and self.legs is not None
-                and any(wep is not None for wep in self.iter_weapons())
-                and self.weight <= self.game_vars.MAX_OVERWEIGHT)
+        return (
+            self.torso is not None
+            and self.legs is not None
+            and any(wep is not None for wep in self.iter_weapons())
+            and self.weight <= self.game_vars.MAX_OVERWEIGHT
+        )
 
     @property
     def stats(self) -> AnyStats:
@@ -172,7 +187,9 @@ class Mech:
 
         if (weight := stats_cache.setdefault("weight", 0)) > self.game_vars.MAX_WEIGHT:
             for stat, pen in self.game_vars.PENALTIES.items():
-                stats_cache[stat] = stats_cache.get(stat, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
+                stats_cache[stat] = (
+                    stats_cache.get(stat, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
+                )
 
         self._stats = stats_cache
         return stats_cache
@@ -189,11 +206,11 @@ class Mech:
         for stat in sorted(stats, key=reference.index):
             yield stat, stats[stat]
 
-    def buffed_stats(self, buffs: ArenaBuffs) -> t.Iterator[tuple[str, int]]:
+    def buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
         for stat, value in self.sorted_stats:
             yield stat, buffs.total_buff(stat, value)
 
-    def print_stats(self, buffs: ArenaBuffs | None = None) -> str:
+    def print_stats(self, buffs: ArenaBuffs | None = None, /) -> str:
         if buffs is None:
             bank = self.sorted_stats
 
@@ -202,21 +219,22 @@ class Mech:
 
         weight, value = next(bank)
         name, icon = STAT_NAMES[weight]
-
-        emojis = ("🗿", "⚙️", "🆗", "👌", "❕", "⛔")
         vars = self.game_vars
 
-        cond = (
-            (value >= 0)
-            + (value >= vars.MAX_WEIGHT - 10)
-            + (value >= vars.MAX_WEIGHT)
-            + (value > vars.MAX_WEIGHT)
-            + (value > vars.MAX_OVERWEIGHT))
+        # fmt: off
+        emoji = (
+            "⛔"
+            if value >  vars.MAX_OVERWEIGHT   else "❕"
+            if value >  vars.MAX_WEIGHT       else "👌"
+            if value >= vars.MAX_WEIGHT       else "🆗"
+            if value >= vars.MAX_WEIGHT * .99 else "⚙️"
+            if value >= 0                     else "🗿"
+        )
+        # fmt: on
 
-        emoji = emojis[cond]
-
-        main_str = f"{icon} **{value}** {name} {emoji}\n" + \
-            "\n".join("{1} **{2}** {0}".format(*STAT_NAMES[stat], value) for stat, value in bank)
+        main_str = f"{icon} **{value}** {name} {emoji}\n" + "\n".join(
+            "{1} **{2}** {0}".format(*STAT_NAMES[stat], value) for stat, value in bank
+        )
 
         return main_str
 
@@ -230,25 +248,27 @@ class Mech:
         if self.torso is None:
             raise RuntimeError("Cannot create image without torso set")
 
-        canvas = MechRenderer(self.torso.underlying)
+        canvas = MechRenderer(self.torso)
 
         if self.legs is not None:
-            canvas.add_image(self.legs.underlying, "legs")
+            canvas.add_image(self.legs, "legs")
 
-        for item, layer in zip(self.iter_weapons(), ("side1", "side2", "side3", "side4", "top1", "top2")):
+        for item, layer in zip(
+            self.iter_weapons(), ("side1", "side2", "side3", "side4", "top1", "top2")
+        ):
             if item is None:
                 continue
 
-            canvas.add_image(item.underlying, layer)
+            canvas.add_image(item, layer)
 
         # drone is offset-relative so we need to handle that here
         if self.drone is not None:
             width, height = get_image_size(self.drone.image)
-            self.drone.underlying.attachment = Attachment(
-                x=canvas.pixels_left + width // 2,
-                y=canvas.pixels_above + height + 25)
+            self.drone.attachment = Attachment(
+                x=canvas.pixels_left + width // 2, y=canvas.pixels_above + height + 25
+            )
 
-            canvas.add_image(self.drone.underlying, "drone")
+            canvas.add_image(self.drone, "drone")
 
         self._image = canvas.finalize()
         return self._image
@@ -257,7 +277,7 @@ class Mech:
     def image(self) -> None:
         self._image = MISSING
 
-    def invalidate_image(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
+    def invalidate_image(self, new: AnyItem | None, old: AnyItem | None) -> None:
         if new is not None and new.displayable:
             del self.image
 
@@ -273,11 +293,11 @@ class Mech:
     async def load_images(self, session: ClientSession) -> None:
         """Bulk loads item images"""
         coros = {
-            item.underlying.load_image(session)
-            for item
-            in self.iter_items()
+            item.load_image(session)
+            for item in self.iter_items()
             if item is not None
-            if not item.has_image}
+            if not item.has_image
+        }
 
         if coros:
             await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
