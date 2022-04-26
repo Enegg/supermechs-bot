@@ -190,7 +190,6 @@ def abbreviate_names(names: t.Iterable[str], /) -> dict[str, set[str]]:
         if (IsNotPascal := not name.isupper() and name[1:].islower()) and is_single_word:
             continue
 
-        "".join(filter(str.isupper, name))
         abbrev = {"".join(a for a in name if a.isupper()).lower()}
 
         if not is_single_word:
