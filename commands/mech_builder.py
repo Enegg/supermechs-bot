@@ -12,7 +12,7 @@ from disnake.ext import commands
 from SuperMechs.core import ArenaBuffs
 from SuperMechs.enums import Element, Icon
 from SuperMechs.images import image_to_file
-from SuperMechs.inv_item import InvItem
+from SuperMechs.inv_item import AnyInvItem, InvItem
 from SuperMechs.item import AnyItem
 from SuperMechs.mech import Mech
 from typing_extensions import Self
@@ -83,7 +83,6 @@ class MechView(PaginatorView):
     ) -> None:
         self.mech = mech
         self.embed = embed
-        self.items = items
         self.buffs = arena_buffs
         self.session = session
 
@@ -207,9 +206,6 @@ class MechView(PaginatorView):
             0, name="Stats:", value=mech.print_stats(self.buffs if button.on else None)
         )
 
-        if mech.torso is not None:
-            self.embed.color = mech.torso.element.color
-
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @select(
@@ -233,18 +229,18 @@ class MechView(PaginatorView):
         row=3,
     )
     async def item_select(
-        self, select: PaginatedSelect[Self], inter: disnake.MessageInteraction
+        self, select: PaginatedSelect[Self], inter: lib_helpers.MessageInteraction
     ) -> None:
         (item_name,) = select.values
 
         select.placeholder = item_name
-        item = None if item_name == "empty" else self.items[item_name]
+        item = None if item_name == "empty" else inter.bot.items_cache[item_name]
 
         assert self.active is not None
         self.active.item = item
 
-        if item is not None:  # HACK
-            item = InvItem.from_item(item)  # type: ignore
+        if item is not None:
+            item = t.cast(AnyInvItem, InvItem.from_item(item))  # type: ignore
 
         if self.active.custom_id == "torso" and item is None:
             self.embed.color = inter.author.color
@@ -292,6 +288,9 @@ class MechView(PaginatorView):
 
             self.item_select.options = self.filter_options(id)
 
+        self.filters_button.item = (
+            True if any(option.default for option in select.options) else None
+        )
         self.filters_button.on = False
         self.toggle_menus()
         await inter.response.edit_message(view=self)
