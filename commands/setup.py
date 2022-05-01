@@ -6,7 +6,7 @@ import traceback
 import typing as t
 
 import disnake
-import lib_helpers
+from lib_helpers import ApplicationCommandInteraction, str_to_file
 from config import TEST_GUILDS
 from disnake.ext import commands
 
@@ -26,7 +26,7 @@ class Setup(commands.Cog):
     @commands.is_owner()
     async def ext(
         self,
-        inter: lib_helpers.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         action: t.Literal["load", "reload", "unload"] = "reload",
         ext: t.Optional[str] = None,
     ) -> None:
@@ -66,15 +66,13 @@ class Setup(commands.Cog):
             self.last_ext = ext
 
     @ext.autocomplete("ext")
-    async def ext_autocomplete(
-        self, inter: lib_helpers.ApplicationCommandInteraction, input: str
-    ) -> list[str]:
+    async def ext_autocomplete(self, inter: ApplicationCommandInteraction, input: str) -> list[str]:
         input = input.lower()
         return [ext for ext in inter.bot.extensions if input in ext.lower()]
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
     @commands.is_owner()
-    async def shutdown(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
+    async def shutdown(self, inter: ApplicationCommandInteraction) -> None:
         """Terminates the bot connection."""
         await inter.send("I will be back", ephemeral=True)
         await inter.bot.close()
@@ -83,7 +81,7 @@ class Setup(commands.Cog):
     @commands.is_owner()
     async def force_error(
         self,
-        inter: lib_helpers.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         exception: str,
         arguments: t.Optional[str] = None,
     ) -> None:
@@ -116,7 +114,7 @@ class Setup(commands.Cog):
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
     @commands.is_owner()
-    async def database(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
+    async def database(self, inter: ApplicationCommandInteraction) -> None:
         """Show info about the database"""
         if inter.bot.engine is None:
             await inter.send("Database is disabled.")
@@ -136,20 +134,20 @@ class Setup(commands.Cog):
         data = str(data)
 
         if len(data) > 2000:
-            await inter.send(file=lib_helpers.str_to_file(data))
+            await inter.send(file=str_to_file(data))
 
         else:
             await inter.send(data)
 
     @commands.slash_command(name="eval", guild_ids=TEST_GUILDS)
     @commands.is_owner()
-    async def eval_(self, inter: lib_helpers.ApplicationCommandInteraction, input: str) -> None:
+    async def eval_(self, inter: ApplicationCommandInteraction, input: str) -> None:
         """Evaluates the given input as code.
 
         Parameters
         ----------
         input: code to execute."""
-        input = input.strip("` ")
+        input = input.strip()
 
         out = io.StringIO()
 
@@ -157,12 +155,24 @@ class Setup(commands.Cog):
             print(*args, **kwargs, file=out)
 
         output = eval(input, globals() | {"bot": inter.bot, "inter": inter, "print": print_})
+        std = out.getvalue()
 
-        await inter.send(
-            f"```\n{output}```\n" f"stdout:\n```\n{out.getvalue()}```",
-            allowed_mentions=disnake.AllowedMentions.none(),
-            ephemeral=True,
-        )
+        if output is None or not std:
+            msg = f"```\n{std or output}```"
+
+        else:
+            msg = "```\n" f"{output}```\n" "**stdout:**\n" "```\n" f"{std}```"
+
+        if len(msg) > 2000:
+            file = str_to_file(msg.strip("` "))
+            await inter.send(file=file, ephemeral=True)
+
+        else:
+            await inter.send(
+                msg,
+                allowed_mentions=disnake.AllowedMentions.none(),
+                ephemeral=True,
+            )
 
 
 def setup(bot: SMBot) -> None:
