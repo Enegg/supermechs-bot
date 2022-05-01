@@ -262,6 +262,9 @@ async def item(
     """
 
     if name not in inter.bot.items_cache:
+        if name == "Start typing to get suggestions...":
+            raise commands.UserInputError("This is only an information and not an option")
+
         raise commands.UserInputError("Item not found.")
 
     item = inter.bot.items_cache[name]
