@@ -3,21 +3,19 @@ from __future__ import annotations
 import asyncio
 import typing as t
 
-import disnake
 from disnake import ButtonStyle
 from disnake.ui.button import Button, V
 from disnake.ui.item import DecoratedItem
 from typing_extensions import Self
+from lib_helpers import MessageInteraction
 from utils import MISSING, no_op
 
-if t.TYPE_CHECKING:
-    from disnake.ui.item import ItemCallbackType
-
-T = t.TypeVar("T")
 B = t.TypeVar("B", bound=Button, covariant=True)
 P = t.ParamSpec("P")
+T = t.TypeVar("T")
 
-Callback = t.Callable[[B, disnake.MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
+ItemCallbackType = t.Callable[[t.Any, B, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
+Callback = t.Callable[[B, MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
 
 __all__ = ("Button", "ToggleButton", "TrinaryButton", "button", "B")
 
@@ -73,7 +71,7 @@ class ToggleButton(Button[V]):
     def on(self, value: bool) -> None:
         self.style = self.style_on if value else self.style_off
 
-    async def callback(self, inter: disnake.MessageInteraction) -> None:
+    async def callback(self, inter: MessageInteraction) -> None:
         await self.call(self, inter)
 
 

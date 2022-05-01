@@ -3,8 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 
-import disnake
-import lib_helpers
+from lib_helpers import ApplicationCommandInteraction, MessageInteraction
 from config import TEST_GUILDS
 from disnake import ButtonStyle, SelectOption
 from disnake.ext import commands
@@ -55,21 +54,19 @@ class ArenaBuffsView(PaginatorView):
         self.update_page()
 
     async def button_callback(
-        self, button: TrinaryButton[Self, bool | None], inter: disnake.MessageInteraction
+        self, button: TrinaryButton[Self, bool | None], inter: MessageInteraction
     ) -> None:
         self.toggle_style(button)
         await inter.response.edit_message(view=self)
 
     @button(label="Quit", style=ButtonStyle.red, row=3)
-    async def quit_button(self, _: Button[Self], inter: disnake.MessageInteraction) -> None:
+    async def quit_button(self, _: Button[Self], inter: MessageInteraction) -> None:
         self.before_stop()
         self.stop()
         await inter.response.edit_message(view=self)
 
     @button(label="🡸", style=ButtonStyle.blurple, row=3, disabled=True)
-    async def left_button(
-        self, button: Button[Self], interaction: disnake.MessageInteraction
-    ) -> None:
+    async def left_button(self, button: Button[Self], interaction: MessageInteraction) -> None:
         """Callback for left button"""
         self.page -= 1
         self.update_page()
@@ -81,9 +78,7 @@ class ArenaBuffsView(PaginatorView):
         await interaction.response.edit_message(view=self)
 
     @button(label="🡺", style=ButtonStyle.blurple, row=3)
-    async def right_button(
-        self, button: Button[Self], interaction: disnake.MessageInteraction
-    ) -> None:
+    async def right_button(self, button: Button[Self], interaction: MessageInteraction) -> None:
         """Callback for right button"""
         self.page += 1
         self.update_page()
@@ -95,7 +90,7 @@ class ArenaBuffsView(PaginatorView):
         await interaction.response.edit_message(view=self)
 
     @select(options=[EMPTY_OPTION], disabled=True, row=4)
-    async def dropdown(self, select: Select[Self], interaction: disnake.MessageInteraction) -> None:
+    async def dropdown(self, select: Select[Self], interaction: MessageInteraction) -> None:
         level = int(select.values[0])
 
         active = self.active
@@ -150,7 +145,7 @@ class ArenaBuffsView(PaginatorView):
 
 @commands.slash_command()
 @commands.max_concurrency(1, commands.BucketType.user)
-async def buffs(inter: lib_helpers.ApplicationCommandInteraction) -> None:
+async def buffs(inter: ApplicationCommandInteraction) -> None:
     """Interactive UI for modifying your arena buffs"""
     player = inter.bot.get_player(inter)
     view = ArenaBuffsView(player.arena_buffs, inter.author.id)
@@ -166,7 +161,7 @@ async def buffs(inter: lib_helpers.ApplicationCommandInteraction) -> None:
 
 @commands.slash_command(guild_ids=TEST_GUILDS)
 @commands.is_owner()
-async def maxed(inter: lib_helpers.ApplicationCommandInteraction) -> None:
+async def maxed(inter: ApplicationCommandInteraction) -> None:
     """Maxes out your buffs"""
     me = inter.bot.get_player(inter)
     me.arena_buffs.levels.update(ArenaBuffs.maxed().levels)

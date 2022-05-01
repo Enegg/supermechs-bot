@@ -4,7 +4,7 @@ import typing as t
 from itertools import zip_longest
 
 import disnake
-import lib_helpers
+from lib_helpers import MessageInteraction, ApplicationCommandInteraction
 from config import TEST_GUILDS
 from disnake import ButtonStyle
 from disnake.ext import commands
@@ -38,9 +38,7 @@ class ItemView(PersonalView):
         callback(embed, item, False, False)
 
     @button(cls=ToggleButton[Self], label="Buffs")
-    async def buff_button(
-        self, button: ToggleButton[Self], inter: disnake.MessageInteraction
-    ) -> None:
+    async def buff_button(self, button: ToggleButton[Self], inter: MessageInteraction) -> None:
         button.toggle()
         self.embed.clear_fields()
         self.call(self.embed, self.item, button.on, self.avg_button.on)
@@ -48,9 +46,7 @@ class ItemView(PersonalView):
         await inter.edit_original_message(embed=self.embed, view=self)
 
     @button(cls=ToggleButton[Self], label="Show damage spread")
-    async def avg_button(
-        self, button: ToggleButton[Self], inter: disnake.MessageInteraction
-    ) -> None:
+    async def avg_button(self, button: ToggleButton[Self], inter: MessageInteraction) -> None:
         button.toggle()
         self.embed.clear_fields()
         self.call(self.embed, self.item, self.buff_button.on, button.on)
@@ -58,7 +54,7 @@ class ItemView(PersonalView):
         await inter.edit_original_message(embed=self.embed, view=self)
 
     @button(label="Quit", style=disnake.ButtonStyle.red)
-    async def quit_button(self, _: Button[Self], inter: disnake.MessageInteraction) -> None:
+    async def quit_button(self, _: Button[Self], inter: MessageInteraction) -> None:
         self.stop()
         await inter.response.defer()
 
@@ -79,7 +75,7 @@ class CompareView(PersonalView):
         self.item_b = item_b
 
     @button(label="Buffs A")
-    async def buff_button_A(self, button: Button[Self], inter: disnake.MessageInteraction) -> None:
+    async def buff_button_A(self, button: Button[Self], inter: MessageInteraction) -> None:
         if was_off := button.style is ButtonStyle.gray:
             button.style = ButtonStyle.green
 
@@ -245,7 +241,7 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
 
 @commands.slash_command()
 async def item(
-    inter: lib_helpers.ApplicationCommandInteraction,
+    inter: ApplicationCommandInteraction,
     name: str,
     compact: bool = False,
     invisible: bool = True,
@@ -360,7 +356,7 @@ def compare_stats(a: AnyStats, b: AnyStats):
 
 
 @commands.slash_command(guild_ids=TEST_GUILDS)
-async def compare(inter: lib_helpers.ApplicationCommandInteraction, item1: str, item2: str) -> None:
+async def compare(inter: ApplicationCommandInteraction, item1: str, item2: str) -> None:
     """Shows an interactive comparison of two items.
 
     Parameters
@@ -383,9 +379,7 @@ async def compare(inter: lib_helpers.ApplicationCommandInteraction, item1: str, 
 @item.autocomplete("name")
 @compare.autocomplete("item1")
 @compare.autocomplete("item2")
-async def item_autocomplete(
-    inter: lib_helpers.ApplicationCommandInteraction, input: str
-) -> list[str]:
+async def item_autocomplete(inter: ApplicationCommandInteraction, input: str) -> list[str]:
     """Autocomplete for items"""
     if len(input) < 2:
         return ["Start typing to get suggestions..."]

@@ -6,7 +6,7 @@ import typing as t
 
 import aiohttp
 import disnake
-import lib_helpers
+from lib_helpers import MessageInteraction, ApplicationCommandInteraction
 from disnake import SelectOption
 from disnake.ext import commands
 from SuperMechs.core import ArenaBuffs
@@ -161,13 +161,13 @@ class MechView(PaginatorView):
     async def slot_button_cb(
         self,
         button: TrinaryButton[Self, AnyItem | None],
-        inter: disnake.MessageInteraction,
+        inter: MessageInteraction,
     ) -> None:
         self.update_style(button)
         await inter.response.edit_message(view=self)
 
     @button(cls=Button[Self], emoji=Icon.MODULE.emoji, custom_id="button:modules", row=0)
-    async def modules_button(self, button: Button[Self], inter: disnake.MessageInteraction) -> None:
+    async def modules_button(self, button: Button[Self], inter: MessageInteraction) -> None:
         self.page ^= 1
         button.emoji = Icon.TORSO.emoji if self.page else Icon.MODULE.emoji
 
@@ -181,16 +181,14 @@ class MechView(PaginatorView):
         cls=TrinaryButton[Self, t.Any],
     )
     async def filters_button(
-        self, button: TrinaryButton[Self, t.Any], inter: disnake.MessageInteraction
+        self, button: TrinaryButton[Self, t.Any], inter: MessageInteraction
     ) -> None:
         button.toggle()
         self.toggle_menus()
         await inter.response.edit_message(view=self)
 
     @button(cls=ToggleButton[Self], label="Buffs", custom_id="button:buffs", row=1)
-    async def buffs_button(
-        self, button: ToggleButton[Self], inter: disnake.MessageInteraction
-    ) -> None:
+    async def buffs_button(self, button: ToggleButton[Self], inter: MessageInteraction) -> None:
         if self.buffs.is_at_zero:
             await inter.send(
                 "This won't show any effect because all your buffs are at level zero.\n"
@@ -228,9 +226,7 @@ class MechView(PaginatorView):
         disabled=True,
         row=3,
     )
-    async def item_select(
-        self, select: PaginatedSelect[Self], inter: lib_helpers.MessageInteraction
-    ) -> None:
+    async def item_select(self, select: PaginatedSelect[Self], inter: MessageInteraction) -> None:
         (item_name,) = select.values
 
         select.placeholder = item_name
@@ -274,7 +270,7 @@ class MechView(PaginatorView):
             SelectOption(label="Combined items", value="type:COMB", emoji=Element.COMB.emoji),
         ],
     )
-    async def filters_select(self, select: Select[Self], inter: disnake.MessageInteraction) -> None:
+    async def filters_select(self, select: Select[Self], inter: MessageInteraction) -> None:
         values = set(select.values)
 
         for option in select.options:
@@ -375,14 +371,12 @@ class MechView(PaginatorView):
 
 
 @commands.slash_command()
-async def mech(_: lib_helpers.ApplicationCommandInteraction) -> None:
+async def mech(_: ApplicationCommandInteraction) -> None:
     pass
 
 
 @mech.sub_command()
-async def show(
-    inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None
-) -> None:
+async def show(inter: ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
     """Displays your mech and its stats
 
     Parameters
@@ -428,7 +422,7 @@ async def show(
 
 
 @mech.sub_command(name="list")
-async def browse(inter: lib_helpers.ApplicationCommandInteraction) -> None:
+async def browse(inter: ApplicationCommandInteraction) -> None:
     """Displays a list of your builds"""
     player = inter.bot.get_player(inter)
 
@@ -453,9 +447,7 @@ async def browse(inter: lib_helpers.ApplicationCommandInteraction) -> None:
 
 @mech.sub_command()
 @commands.max_concurrency(1, commands.BucketType.user)
-async def build(
-    inter: lib_helpers.ApplicationCommandInteraction, name: t.Optional[str] = None
-) -> None:
+async def build(inter: ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
     """Interactive UI for modifying a mech build.
 
     Parameters
@@ -509,9 +501,7 @@ async def build(
 
 @show.autocomplete("name")
 @build.autocomplete("name")
-async def build_autocomplete(
-    inter: lib_helpers.ApplicationCommandInteraction, input: str
-) -> list[str]:
+async def build_autocomplete(inter: ApplicationCommandInteraction, input: str) -> list[str]:
     """Autocomplete for player builds"""
     player = inter.bot.get_player(inter)
     input = input.lower()

@@ -3,18 +3,17 @@ from __future__ import annotations
 import asyncio
 import typing as t
 
-import disnake
 from disnake import SelectOption
 from disnake.ui.item import DecoratedItem
 from disnake.ui.select import Select, V
 from disnake.utils import MISSING as D_MISSING
+from lib_helpers import MessageInteraction
 from utils import MISSING, no_op
-
-if t.TYPE_CHECKING:
-    from disnake.ui.item import ItemCallbackType
 
 S = t.TypeVar("S", bound=Select, covariant=True)
 P = t.ParamSpec("P")
+
+ItemCallbackType = t.Callable[[t.Any, S, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
 
 EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
 
@@ -113,16 +112,16 @@ class PaginatedSelect(Select[V]):
         self.page = 0
 
     @property
-    def callback(self) -> t.Callable[[disnake.MessageInteraction], t.Coroutine[t.Any, t.Any, None]]:
+    def callback(self) -> t.Callable[[MessageInteraction], t.Coroutine[t.Any, t.Any, None]]:
         return self.pre_invoke_callback
 
     @callback.setter
     def callback(
-        self, func: t.Callable[[disnake.MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
+        self, func: t.Callable[[MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
     ) -> None:
         self._callback = func
 
-    async def pre_invoke_callback(self, inter: disnake.MessageInteraction) -> None:
+    async def pre_invoke_callback(self, inter: MessageInteraction) -> None:
         (option_id,) = self.values
 
         if option_id == self.up.value:
