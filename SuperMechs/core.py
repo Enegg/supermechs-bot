@@ -105,7 +105,7 @@ class ArenaBuffs:
         return (
             f"<{type(self).__name__} "
             + ", ".join(f"{stat}={lvl}" for stat, lvl in self.levels.items())
-            + ">"
+            + f" at 0x{id(self):016X}>"
         )
 
     @property
