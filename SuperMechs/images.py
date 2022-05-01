@@ -19,17 +19,12 @@ async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
 
 
 def image_to_file(image: Image.Image, filename: str | None = None) -> disnake.File:
-    with BytesIO() as stream:
-        image.save(stream, format="png")
-        stream.seek(0)
-        return disnake.File(stream, filename)
-
-
-def get_image_size(image: Image.Image) -> tuple[int, int]:
-    bbox = image.getbbox()
-    assert bbox is not None
-    x, y, a, b = bbox
-    return a - x, b - y
+    """Creates a `disnake.File` object from `PIL.Image.Image`."""
+    # not using with as the stream is closed by the File object
+    stream = BytesIO()
+    image.save(stream, format="png")
+    stream.seek(0)
+    return disnake.File(stream, filename)
 
 
 class MechRenderer:
@@ -57,6 +52,13 @@ class MechRenderer:
 
         self.images: list[tuple[int, int, Image.Image] | None] = [None] * 10
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} "
+            f"offsets={(self.pixels_left, self.pixels_right, self.pixels_above, self.pixels_below)}"
+            f" images={self.images} at 0x{id(self):016X}>"
+        )
+
     def add_image(self, item: Item[Attachment], layer: str) -> None:
         if layer == "legs":
             self.add_image(item, "leg1")
@@ -78,13 +80,10 @@ class MechRenderer:
         self.put_image(item.image, layer, x, y)
 
     def adjust_offsets(self, image: Image.Image, x: int, y: int) -> None:
-        i_width, i_height = get_image_size(image)
-        t_width, t_height = get_image_size(self.torso_image)
-
         self.pixels_left = max(self.pixels_left, -x)
         self.pixels_above = max(self.pixels_above, -y)
-        self.pixels_right = max(self.pixels_right, x + i_width - t_width)
-        self.pixels_below = max(self.pixels_below, y + i_height - t_height)
+        self.pixels_right = max(self.pixels_right, x + image.width - self.torso_image.width)
+        self.pixels_below = max(self.pixels_below, y + image.height - self.torso_image.height)
 
     def put_image(self, image: Image.Image, layer: str, x: int, y: int) -> None:
         self.images[self.layer_order.index(layer)] = (x, y, image)
@@ -92,13 +91,11 @@ class MechRenderer:
     def finalize(self) -> Image.Image:
         self.put_image(self.torso_image, "torso", 0, 0)
 
-        width, height = get_image_size(self.torso_image)
-
         canvas = Image.new(
             "RGBA",
             (
-                width + self.pixels_left + self.pixels_right,
-                height + self.pixels_above + self.pixels_below,
+                self.torso_image.width + self.pixels_left + self.pixels_right,
+                self.torso_image.height + self.pixels_above + self.pixels_below,
             ),
             (0, 0, 0, 0),
         )
