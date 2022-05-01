@@ -7,7 +7,7 @@ import typing as t
 
 import disnake
 import lib_helpers
-from config import HOME_GUILD_ID, TEST_GUILDS
+from config import TEST_GUILDS
 from disnake.ext import commands
 
 if t.TYPE_CHECKING:
@@ -22,9 +22,9 @@ class Setup(commands.Cog):
 
     last_ext = None
 
-    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
-    @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
-    async def extensions(
+    @commands.slash_command(guild_ids=TEST_GUILDS)
+    @commands.is_owner()
+    async def ext(
         self,
         inter: lib_helpers.ApplicationCommandInteraction,
         action: t.Literal["load", "reload", "unload"] = "reload",
@@ -65,22 +65,22 @@ class Setup(commands.Cog):
 
             self.last_ext = ext
 
-    @extensions.autocomplete("ext")
+    @ext.autocomplete("ext")
     async def ext_autocomplete(
         self, inter: lib_helpers.ApplicationCommandInteraction, input: str
     ) -> list[str]:
         input = input.lower()
         return [ext for ext in inter.bot.extensions if input in ext.lower()]
 
-    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
-    @commands.slash_command(default_permission=False, guild_ids=[HOME_GUILD_ID])
+    @commands.slash_command(guild_ids=TEST_GUILDS)
+    @commands.is_owner()
     async def shutdown(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
         """Terminates the bot connection."""
         await inter.send("I will be back", ephemeral=True)
         await inter.bot.close()
 
-    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
-    @commands.slash_command(name="raise", default_permission=False, guild_ids=[HOME_GUILD_ID])
+    @commands.slash_command(name="raise", guild_ids=TEST_GUILDS)
+    @commands.is_owner()
     async def force_error(
         self,
         inter: lib_helpers.ApplicationCommandInteraction,
@@ -114,8 +114,8 @@ class Setup(commands.Cog):
         input = input.lower()
         return [exc for exc in commands.errors.__all__ if input in exc.lower()][:25]
 
-    @commands.guild_permissions(HOME_GUILD_ID, owner=True)
-    @commands.slash_command(default_permission=False, guild_ids=TEST_GUILDS)
+    @commands.slash_command(guild_ids=TEST_GUILDS)
+    @commands.is_owner()
     async def database(self, inter: lib_helpers.ApplicationCommandInteraction) -> None:
         """Show info about the database"""
         if inter.bot.engine is None:
@@ -140,6 +140,29 @@ class Setup(commands.Cog):
 
         else:
             await inter.send(data)
+
+    @commands.slash_command(name="eval", guild_ids=TEST_GUILDS)
+    @commands.is_owner()
+    async def eval_(self, inter: lib_helpers.ApplicationCommandInteraction, input: str) -> None:
+        """Evaluates the given input as code.
+
+        Parameters
+        ----------
+        input: code to execute."""
+        input = input.strip("` ")
+
+        out = io.StringIO()
+
+        def print_(*args: t.Any, **kwargs: t.Any) -> None:
+            print(*args, **kwargs, file=out)
+
+        output = eval(input, globals() | {"bot": inter.bot, "inter": inter, "print": print_})
+
+        await inter.send(
+            f"```\n{output}```\n" f"stdout:\n```\n{out.getvalue()}```",
+            allowed_mentions=disnake.AllowedMentions.none(),
+            ephemeral=True,
+        )
 
 
 def setup(bot: SMBot) -> None:
