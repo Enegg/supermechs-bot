@@ -163,11 +163,13 @@ class MechView(PaginatorView):
         button: TrinaryButton[Self, AnyItem | None],
         inter: MessageInteraction,
     ) -> None:
+        """Callback shared by all of the item slot buttons."""
         self.update_style(button)
         await inter.response.edit_message(view=self)
 
     @button(cls=Button[Self], emoji=Icon.MODULE.emoji, custom_id="button:modules", row=0)
     async def modules_button(self, button: Button[Self], inter: MessageInteraction) -> None:
+        """Button swapping mech editor with modules and vice versa."""
         self.page ^= 1
         button.emoji = Icon.TORSO.emoji if self.page else Icon.MODULE.emoji
 
@@ -183,12 +185,14 @@ class MechView(PaginatorView):
     async def filters_button(
         self, button: TrinaryButton[Self, t.Any], inter: MessageInteraction
     ) -> None:
+        """Button toggling item dropdown for filters and vice versa."""
         button.toggle()
         self.toggle_menus()
         await inter.response.edit_message(view=self)
 
     @button(cls=ToggleButton[Self], label="Buffs", custom_id="button:buffs", row=1)
     async def buffs_button(self, button: ToggleButton[Self], inter: MessageInteraction) -> None:
+        """Button toggling arena buffs being applied to mech's stats."""
         if self.buffs.is_at_zero:
             await inter.send(
                 "This won't show any effect because all your buffs are at level zero.\n"
@@ -227,6 +231,7 @@ class MechView(PaginatorView):
         row=3,
     )
     async def item_select(self, select: PaginatedSelect[Self], inter: MessageInteraction) -> None:
+        """Dropdown menu with all the items."""
         (item_name,) = select.values
 
         select.placeholder = item_name
@@ -271,6 +276,7 @@ class MechView(PaginatorView):
         ],
     )
     async def filters_select(self, select: Select[Self], inter: MessageInteraction) -> None:
+        """Multi-choice dropdown menu allowing to select filters to apply."""
         values = set(select.values)
 
         for option in select.options:
@@ -292,7 +298,7 @@ class MechView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     async def update_image(self) -> None:
-        """Updates embed's image and the message"""
+        """Background task to update embed's image."""
         if self.mech.has_image_cached:
             return
 
