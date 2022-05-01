@@ -38,8 +38,10 @@ def button(
 
     return decorator
 
+
 class ToggleButton(Button[V]):
     """A two-state button."""
+
     custom_id: str
     view: V
 
@@ -47,10 +49,10 @@ class ToggleButton(Button[V]):
         self,
         *,
         style_off: ButtonStyle = ButtonStyle.secondary,
-        style_on:  ButtonStyle = ButtonStyle.success,
+        style_on: ButtonStyle = ButtonStyle.success,
         callback: Callback[Self] = no_op,
         on: bool = False,
-        **kwargs: t.Any
+        **kwargs: t.Any,
     ) -> None:
         kwargs.setdefault("style", style_on if on else style_off)
         super().__init__(**kwargs)
@@ -77,17 +79,18 @@ class ToggleButton(Button[V]):
 
 class TrinaryButton(ToggleButton[V], t.Generic[V, T]):
     """A tri-state button."""
+
     item: T
 
     def __init__(
         self,
         *,
         item: T = MISSING,
-        style_off:  ButtonStyle = ButtonStyle.gray,
-        style_on:   ButtonStyle = ButtonStyle.primary,
+        style_off: ButtonStyle = ButtonStyle.gray,
+        style_on: ButtonStyle = ButtonStyle.primary,
         style_item: ButtonStyle = ButtonStyle.success,
         on: bool = False,
-        **kwargs: t.Any
+        **kwargs: t.Any,
     ) -> None:
         kwargs.setdefault("style", style_on if on else style_item if item else style_off)
         super().__init__(**kwargs, style_on=style_on, style_off=style_off, on=on)
