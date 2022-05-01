@@ -59,11 +59,8 @@ class SMBot(commands.InteractionBot):
                 await inter.send(text, ephemeral=True)
 
             case _:
-                arguments = (
-                    ", ".join(
-                        f"`{option}: {value}`" for option, value in inter.filled_options.items()
-                    )
-                    or "None"
+                arguments = ", ".join(
+                    f"`{option}: {value}`" for option, value in inter.filled_options.items()
                 )
 
                 text = (
@@ -111,7 +108,7 @@ class SMBot(commands.InteractionBot):
 
         self.item_pack = pack["config"]
         self.items_cache = {
-            item_dict["name"]: Item(**item_dict, pack=pack["config"])  # type: ignore[assignment]
+            item_dict["name"]: Item.from_json(item_dict, pack=pack["config"])
             for item_dict in pack["items"]
         }
         logger.info(f"Item pack loaded: {self.item_pack['name']}")
