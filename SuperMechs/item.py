@@ -1,78 +1,53 @@
 from __future__ import annotations
 
 import typing as t
+from dataclasses import dataclass, InitVar, field
+from typing_extensions import Self
 
 from utils import js_format
 
 from .enums import Element, Icon, RarityRange
-from .images import get_image, get_image_size
-from .types import AnyStats, Attachment, Attachments, AttachmentType, PackConfig
+from .images import get_image
+from .types import (
+    AnyStats,
+    Attachment,
+    Attachments,
+    AttachmentType,
+    PackConfig,
+    ItemDict,
+)
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
     from PIL.Image import Image
 
 
+@dataclass(slots=True)
 class Item(t.Generic[AttachmentType]):
     """Represents a single item."""
 
-    def __init__(
-        self,
-        *,
-        id: int,
-        name: str,
-        image: str,
-        type: str,
-        stats: AnyStats,
-        transform_range: str,
-        pack: PackConfig,
-        divine: AnyStats | None = None,
-        element: str = "OMNI",
-        attachment: AttachmentType = t.cast(AttachmentType, None),
-        **extra: t.Any,
-    ) -> None:
+    id: int
+    name: str
+    pack: PackConfig
+    image_url: str
+    icon: Icon
+    rarity: RarityRange
+    stats: AnyStats
+    element: Element = Element.OMNI
+    attachment: AttachmentType = t.cast(AttachmentType, None)
 
-        self.id = id
-        self.name = str(name)
+    width: InitVar[int] = 0
+    height: InitVar[int] = 0
+    extra: dict[str, t.Any] = field(default_factory=dict)
+    _image: Image | None = field(default=None, init=False, repr=False)
+    _image_resize: tuple[int, int] = field(init=False, repr=False)
 
-        self.image_url = js_format(image, url=pack["base_url"])
-        self.pack = pack
-        self._image: Image | None = None
-        self._cached: Image | None = None
-
-        # this will also validate if type is of correct type
-        self.icon = Icon[type.upper()]
-        self.stats = stats
-        self.divine = divine
-
-        self.rarity = RarityRange.from_string(transform_range)
-        self.element = Element[element]
-
-        self.attachment = attachment
-        self.extra = extra
+    def __post_init__(self, width: int, height: int) -> None:
+        self.image_url = js_format(self.image_url, url=self.pack["base_url"])
+        self._image_resize = (width, height)
 
     def __str__(self) -> str:
         return self.name
-
-    def __repr__(self) -> str:
-        return (
-            f"<{type(self).__name__} {self.name!r}: element={self.element.name}"
-            f" type={self.type} rarity={self.rarity!r} stats={self.stats}>"
-        )
-
-    def __eq__(self, o: object) -> bool:
-        if not isinstance(o, type(self)):
-            return False
-
-        return (
-            o.id == self.id
-            and o.image_url == self.image_url
-            and o.name == self.name
-            and o.type == self.type
-            and o.stats == self.stats
-            and o.divine == self.divine
-            and o.rarity == self.rarity
-        )
 
     def __hash__(self) -> int:
         return hash((self.id, self.name, self.type, self.rarity, self.element, self.pack["key"]))
@@ -88,31 +63,12 @@ class Item(t.Generic[AttachmentType]):
 
     @property
     def image(self) -> Image:
-        """Returns a copy of image for this item.
-        Before this property is ever retrieved, load_image has to be called."""
+        """Returns the `PIL.Image.Image` object for this item.
+        Before this property is ever retrieved, `load_image` must be called."""
         if self._image is None:
             raise RuntimeError("load_image was never called")
 
-        if self._cached is not None:
-            return self._cached
-
-        if "width" in self.extra or "height" in self.extra:
-            new_width = self.extra.get("width", 0)
-            new_height = self.extra.get("height", 0)
-
-            width, height = get_image_size(self._image)
-            width = new_width or width
-            height = new_height or height
-
-            self._cached = self._image.resize((width, height))
-            return self._cached
-
-        self._cached = self._image.copy()
-        return self._cached
-
-    @image.deleter
-    def image(self) -> None:
-        self._cached = None
+        return self._image
 
     @property
     def has_image(self) -> bool:
@@ -131,10 +87,33 @@ class Item(t.Generic[AttachmentType]):
         if self.has_image and not force:
             return
 
-        if self.image_url is None:
-            raise ValueError("Image URL was not set")
+        raw = await get_image(self.image_url, session)
 
-        self._image = await get_image(self.image_url, session)
+        new_width, new_height = self._image_resize
+
+        if new_width or new_height:
+            width = new_width or raw.width
+            height = new_height or raw.height
+
+            self._image = raw.convert("RGBA").resize((width, height))
+
+        else:
+            self._image = raw.convert("RGBA")
+
+    @classmethod
+    def from_json(cls, json: ItemDict, pack: PackConfig) -> Self:
+        return cls(
+            id=json.pop("id"),
+            name=json.pop("name"),
+            pack=pack,
+            image_url=json.pop("image"),
+            icon=Icon[json.pop("type").upper()],
+            rarity=RarityRange.from_string(json.pop("transform_range")),
+            stats=json.pop("stats"),
+            element=Element[json.pop("element")],
+            attachment=json.pop("attachment", None),  # type: ignore
+            extra=t.cast(dict, json),
+        )
 
 
 AnyItem = Item[Attachment] | Item[Attachments] | Item[None]
