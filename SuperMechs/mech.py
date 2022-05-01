@@ -4,11 +4,11 @@ import asyncio
 import typing as t
 from dataclasses import dataclass, field
 
-from utils import MISSING, format_count
+from utils import format_count
 
 from .core import DEFAULT_VARS, STAT_NAMES, WORKSHOP_STATS, ArenaBuffs, GameVars
-from .images import MechRenderer, get_image_size
-from .item import AnyItem, Item
+from .images import MechRenderer
+from .item import AnyItem
 from .inv_item import AnyInvItem, InvItem
 from .types import AnyStats, Attachment, Attachments
 
@@ -47,10 +47,11 @@ class Mech:
 
     game_vars: GameVars = DEFAULT_VARS
     _items: _InvItems = field(
-        default_factory=lambda: t.cast(_InvItems, dict.fromkeys(_InvItems.__annotations__, None))
+        default_factory=lambda: t.cast(_InvItems, dict.fromkeys(_InvItems.__annotations__, None)),
+        init=False,
     )
-    _stats: AnyStats = field(default_factory=AnyStats)
-    _image: Image = MISSING
+    _stats: AnyStats = field(default_factory=AnyStats, init=False)
+    _image: Image | None = field(default=None, init=False)
 
     # fmt: off
     if t.TYPE_CHECKING:
@@ -86,7 +87,7 @@ class Mech:
             ) from None
 
     def __setitem__(self, place: str | tuple[str, int], item: AnyInvItem | None, /) -> None:
-        if not isinstance(item, (Item, type(None))):
+        if not isinstance(item, (InvItem, type(None))):
             raise TypeError(f"Expected Item object or None, got {type(item)}")
 
         pos = None
@@ -149,8 +150,8 @@ class Mech:
 
     def __repr__(self) -> str:
         return (
-            f"<{type(self).__name__} "
-            + ", ".join(f"{slot}={item}" for slot, item in self._items.items())
+            f"<{type(self).__name__} vars={self.game_vars} "
+            + ", ".join(f"{slot}={item!r}" for slot, item in self._items.items())
             + f" at 0x{id(self):016X}>"
         )
 
@@ -242,7 +243,7 @@ class Mech:
     def image(self) -> Image:
         """Returns `Image` object merging all item images.
         Requires the torso to be set, otherwise raises `RuntimeError`"""
-        if self._image is not MISSING:
+        if self._image is not None:
             return self._image
 
         if self.torso is None:
@@ -263,7 +264,8 @@ class Mech:
 
         # drone is offset-relative so we need to handle that here
         if self.drone is not None:
-            width, height = get_image_size(self.drone.image)
+            width = self.drone.image.width
+            height = self.drone.image.height
             self.drone.attachment = Attachment(
                 x=canvas.pixels_left + width // 2, y=canvas.pixels_above + height + 25
             )
@@ -275,7 +277,7 @@ class Mech:
 
     @image.deleter
     def image(self) -> None:
-        self._image = MISSING
+        self._image = None
 
     def invalidate_image(self, new: AnyItem | None, old: AnyItem | None) -> None:
         if new is not None and new.displayable:
@@ -288,7 +290,7 @@ class Mech:
     def has_image_cached(self) -> bool:
         """Returns True if the image is in cache, False otherwise.
         Does not check if the cache has been changed."""
-        return self._image is not MISSING
+        return self._image is not None
 
     async def load_images(self, session: ClientSession) -> None:
         """Bulk loads item images"""
