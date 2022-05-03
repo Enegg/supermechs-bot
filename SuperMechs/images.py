@@ -28,6 +28,8 @@ def image_to_file(image: Image.Image, filename: str | None = None) -> disnake.Fi
 
 
 class MechRenderer:
+    """Class responsible for creating mech image."""
+
     layer_order = (
         "drone",
         "side2",
@@ -59,36 +61,59 @@ class MechRenderer:
             f" images={self.images} at 0x{id(self):016X}>"
         )
 
-    def add_image(self, item: Item[Attachment], layer: str) -> None:
-        if layer == "legs":
-            self.add_image(item, "leg1")
-            self.add_image(item, "leg2")
-            return
+    @t.overload
+    def add_image(self, item: Item[None], layer: str, x_pos: int, y_pos: int) -> None:
+        ...
 
-        item_x = item.attachment["x"]
-        item_y = item.attachment["y"]
+    @t.overload
+    def add_image(
+        self, item: Item[Attachment], layer: str, x_pos: int | None = ..., y_pos: int | None = ...
+    ) -> None:
+        ...
 
-        if layer == "drone":
-            x, y = -item_x, -item_y
+    def add_image(
+        self,
+        item: Item[Attachment] | Item[None],
+        layer: str,
+        x_pos: int | None = None,
+        y_pos: int | None = None,
+    ) -> None:
+        """Adds the image of the item to the canvas."""
+        if item.attachment is None:
+            if x_pos is None or y_pos is None:
+                raise TypeError("For item without attachment both x_pos and y_pos are needed")
+
+            item_x = x_pos
+            item_y = y_pos
 
         else:
+            item_x = item.attachment["x"]
+            item_y = item.attachment["y"]
+
+        if layer in self.torso_attachments:
             offset = self.torso_attachments[layer]
             x = offset["x"] - item_x
             y = offset["y"] - item_y
+
+        else:
+            x, y = -item_x, -item_y
 
         self.adjust_offsets(item.image, x, y)
         self.put_image(item.image, layer, x, y)
 
     def adjust_offsets(self, image: Image.Image, x: int, y: int) -> None:
+        """Resizes the canvas if the image does not fit."""
         self.pixels_left = max(self.pixels_left, -x)
         self.pixels_above = max(self.pixels_above, -y)
         self.pixels_right = max(self.pixels_right, x + image.width - self.torso_image.width)
         self.pixels_below = max(self.pixels_below, y + image.height - self.torso_image.height)
 
     def put_image(self, image: Image.Image, layer: str, x: int, y: int) -> None:
+        """Place the image on the canvas."""
         self.images[self.layer_order.index(layer)] = (x, y, image)
 
     def finalize(self) -> Image.Image:
+        """Merges all images and returns resulting image."""
         self.put_image(self.torso_image, "torso", 0, 0)
 
         canvas = Image.new(

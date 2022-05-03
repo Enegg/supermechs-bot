@@ -8,7 +8,6 @@ from utils import format_count
 
 from .core import DEFAULT_VARS, STAT_NAMES, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .images import MechRenderer
-from .item import AnyItem
 from .inv_item import AnyInvItem, InvItem
 from .types import AnyStats, Attachment, Attachments
 
@@ -57,7 +56,7 @@ class Mech:
     if t.TYPE_CHECKING:
         torso:  InvItem[Attachments] | None
         legs:   InvItem[Attachment] | None
-        drone:  InvItem[Attachment] | None
+        drone:  InvItem[None] | None
         side1:  InvItem[Attachment] | None
         side2:  InvItem[Attachment] | None
         side3:  InvItem[Attachment] | None
@@ -249,28 +248,25 @@ class Mech:
         if self.torso is None:
             raise RuntimeError("Cannot create image without torso set")
 
-        canvas = MechRenderer(self.torso)
+        canvas = MechRenderer(self.torso.underlying)
 
         if self.legs is not None:
-            canvas.add_image(self.legs, "legs")
+            canvas.add_image(self.legs.underlying, "leg1")
+            canvas.add_image(self.legs.underlying, "leg2")
 
-        for item, layer in zip(
-            self.iter_weapons(), ("side1", "side2", "side3", "side4", "top1", "top2")
-        ):
+        for item, layer in self.iter_weapon_slots():
             if item is None:
                 continue
 
-            canvas.add_image(item, layer)
+            canvas.add_image(item.underlying, layer)
 
-        # drone is offset-relative so we need to handle that here
         if self.drone is not None:
-            width = self.drone.image.width
-            height = self.drone.image.height
-            self.drone.attachment = Attachment(
-                x=canvas.pixels_left + width // 2, y=canvas.pixels_above + height + 25
+            canvas.add_image(
+                self.drone.underlying,
+                "drone",
+                canvas.pixels_left + self.drone.image.width // 2,
+                canvas.pixels_above + self.drone.image.height + 25,
             )
-
-            canvas.add_image(self.drone, "drone")
 
         self._image = canvas.finalize()
         return self._image
@@ -279,11 +275,11 @@ class Mech:
     def image(self) -> None:
         self._image = None
 
-    def invalidate_image(self, new: AnyItem | None, old: AnyItem | None) -> None:
-        if new is not None and new.displayable:
+    def invalidate_image(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
+        if new is not None and new.underlying.displayable:
             del self.image
 
-        elif old is not None and old.displayable:
+        elif old is not None and old.underlying.displayable:
             del self.image
 
     @property
@@ -295,14 +291,22 @@ class Mech:
     async def load_images(self, session: ClientSession) -> None:
         """Bulk loads item images"""
         coros = {
-            item.load_image(session)
+            item.underlying.load_image(session)
             for item in self.iter_items()
             if item is not None
-            if not item.has_image
+            if not item.underlying.has_image
         }
 
         if coros:
             await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
+
+    def iter_weapon_slots(self) -> t.Iterator[tuple[InvItem[Attachment] | None, str]]:
+        """Iterator over mech's side and top weapons"""
+        items = self._items
+        slots = ("side1", "side2", "side3", "side4", "top1", "top2")
+
+        for slot in slots:
+            yield items[slot], slot
 
     def iter_weapons(self) -> t.Iterator[InvItem[Attachment] | None]:
         """Iterator over mech's side and top weapons"""
