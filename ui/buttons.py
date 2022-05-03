@@ -14,14 +14,20 @@ B = t.TypeVar("B", bound=Button, covariant=True)
 P = t.ParamSpec("P")
 T = t.TypeVar("T")
 
+
+class Object(t.Protocol[B, P]):
+    def __init__(*args: P.args, **kwargs: P.kwargs) -> None:
+        ...
+
+
 ItemCallbackType = t.Callable[[t.Any, B, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
 Callback = t.Callable[[B, MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
 
-__all__ = ("Button", "ToggleButton", "TrinaryButton", "button", "B")
+__all__ = ("button", "Button", "ToggleButton", "TrinaryButton", "B")
 
 
 def button(
-    cls: t.Callable[P, B] = Button, *_: P.args, **kwargs: P.kwargs
+    cls: type[Object[B, P]] = Button, *_: P.args, **kwargs: P.kwargs
 ) -> t.Callable[[ItemCallbackType[B]], DecoratedItem[B]]:
     """A decorator that works like `disnake.ui.button`,
     but allows for custom Button subclasses."""

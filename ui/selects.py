@@ -13,6 +13,12 @@ from utils import MISSING, no_op
 S = t.TypeVar("S", bound=Select, covariant=True)
 P = t.ParamSpec("P")
 
+
+class Object(t.Protocol[S, P]):
+    def __init__(*args: P.args, **kwargs: P.kwargs) -> None:
+        ...
+
+
 ItemCallbackType = t.Callable[[t.Any, S, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
 
 EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
@@ -21,7 +27,7 @@ __all__ = ("select", "Select", "PaginatedSelect", "S", "EMPTY_OPTION")
 
 
 def select(
-    cls: t.Callable[P, S] = Select, *_: P.args, **kwargs: P.kwargs
+    cls: type[Object[S, P]] = Select, *_: P.args, **kwargs: P.kwargs
 ) -> t.Callable[[ItemCallbackType[S]], DecoratedItem[S]]:
     """A decorator that works like `disnake.ui.select`,
     but allows for custom Select subclasses."""
