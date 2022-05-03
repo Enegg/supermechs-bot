@@ -1,11 +1,8 @@
-from __future__ import annotations
-
 import random
 import re
 import typing as t
 from collections import Counter
 from string import ascii_letters
-from typing_extensions import Self
 
 SupportsSet = t.TypeVar("SupportsSet", bound=t.Hashable)
 T = t.TypeVar("T")
@@ -32,42 +29,38 @@ class _MissingSentinel:
 
 
 MISSING: t.Final[t.Any] = _MissingSentinel()
+Proxied = t.Annotated[T, MISSING]
 
 
-class ProxyType(type):
-    """Metaclass for creating false inheritance objects.
-    The point of such action is to avoid repeating code and simply using `__getattr__`
-    to do the hard work, while retaining all the static typing benefits."""
+def proxy(slot: str, /) -> t.Callable[[type[T]], type[T]]:
+    """Creates a __getattr__ for given slot and removes Proxied fields from object"""
 
-    def __new__(
-        cls,
-        name: str,
-        bases: tuple[type, ...],
-        dict: dict[str, t.Any],
-        /,
-        **kwargs: t.Any,
-    ) -> Self:
-        if "__orig_bases__" in dict:
-            bases = (t.Generic,)
+    def wrap(cls: type[T]) -> type[T]:
+        for ann, tp in tuple(cls.__annotations__.items()):
+            match t.get_origin(tp), t.get_args(tp):
+                case t.Annotated, (_, _MissingSentinel()):
+                    del cls.__annotations__[ann]
+                    delattr(cls, ann)
 
-        else:
-            bases = ()
+                case t.ClassVar, (t.Annotated as tp,) if t.get_args(tp)[1] is MISSING:
+                    del cls.__annotations__[ann]
 
-        if "var" in kwargs:
-            attribute = kwargs.pop("var")
+                case _:
+                    pass
 
-            def __getattr__(self: Self, name: t.Any) -> t.Any:
-                try:
-                    return getattr(getattr(self, attribute), name)
+        def __getattr__(self: T, name: str) -> t.Any:
+            try:
+                return getattr(getattr(self, slot), name)
 
-                except AttributeError:
-                    raise AttributeError(
-                        f'{type(self).__name__} object has no attribute "{name}"'
-                    ) from None
+            except AttributeError:
+                raise AttributeError(
+                    f'{type(self).__name__} object has no attribute "{name}"'
+                ) from None
 
-            dict["__getattr__"] = __getattr__
+        cls.__getattr__ = __getattr__  # type: ignore
+        return cls
 
-        return super().__new__(cls, name, bases, dict, **kwargs)
+    return wrap
 
 
 async def no_op(*args: t.Any, **kwargs: t.Any) -> None:

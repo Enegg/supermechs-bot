@@ -1,15 +1,16 @@
-from __future__ import annotations
-
 import csv
+from dataclasses import dataclass, field
 import typing as t
 import uuid
 
-from utils import ProxyType, binary_find_near_index
+from utils import Proxied, binary_find_near_index, proxy
 
-from .enums import Rarity
+from .enums import Element, Rarity, RarityRange
 from .errors import MaxPowerReached, MaxTierReached
 from .item import Item
 from .types import Attachment, Attachments, AttachmentType
+
+from PIL.Image import Image
 
 with (
     open("SuperMechs/GameData/default_powers.csv", newline="") as file1,
@@ -35,42 +36,30 @@ with (
 REDUCED_COST_ITEMS = {"Archimonde", "Armor Annihilator"}
 
 
-class InvItem(Item[AttachmentType], metaclass=ProxyType, var="underlying"):
+@dataclass(slots=True)
+@proxy("underlying")
+class InvItem(t.Generic[AttachmentType]):
     """Represents item inside inventory."""
 
-    def __init__(
-        self,
-        underlying: Item[AttachmentType],
-        tier: Rarity,
-        power: int = 0,
-        UUID: uuid.UUID | None = None,
-    ) -> None:
-        self.underlying = underlying
-        self.tier = tier
-        self.power = power
-        self.maxed = tier is Rarity.DIVINE or power >= self.max_power
-        self._level: int | None = None
+    underlying: Item[AttachmentType]
 
-        if isinstance(UUID, uuid.UUID):
-            self.UUID = UUID
+    name: t.ClassVar[Proxied[str]]
+    rarity: t.ClassVar[Proxied[RarityRange]]
+    element: t.ClassVar[Proxied[Element]]
+    type: t.ClassVar[Proxied[str]]
+    image: t.ClassVar[Proxied[Image]]
 
-        elif UUID is None:
-            self.UUID = uuid.uuid4()
+    tier: Rarity = field(hash=False)
+    power: int = field(default=0, hash=False)
+    UUID: uuid.UUID = field(default_factory=uuid.uuid4)
+    _level: int | None = field(default=None, init=False, hash=False)
+    maxed: bool = field(init=False, hash=False)
 
-        else:
-            raise TypeError("Invalid type for UUID passed")
+    def __post_init__(self) -> None:
+        self.maxed = self.tier is Rarity.DIVINE or self.power >= self.max_power
 
-    def __repr__(self) -> str:
-        return (
-            f"<InvItem item={self.underlying!r} tier={self.tier}"
-            f" power={self.power} UUID={self.UUID} at 0x{id(self):016X}>"
-        )
-
-    def __hash__(self) -> int:
-        # we don't take into account level, power etc. as there shouldn't ever be
-        # two items with same UUID
-        # technically could exclude the underlying item too
-        return hash((self.UUID, self.underlying))
+    def __str__(self) -> str:
+        return f"{self.underlying}, {self.tier}, lvl {self.level}"
 
     def add_power(self, power: int) -> None:
         """Adds power to the item"""
@@ -148,7 +137,7 @@ class InvItem(Item[AttachmentType], metaclass=ProxyType, var="underlying"):
         return DEFAULT_POWERS
 
     @classmethod
-    def from_item(cls, item: Item[AttachmentType]) -> InvItem[AttachmentType]:
+    def from_item(cls, item: Item[AttachmentType]) -> "InvItem[AttachmentType]":
         return cls(underlying=item, tier=item.rarity.max)
 
 
