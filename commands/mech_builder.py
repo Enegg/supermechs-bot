@@ -53,18 +53,6 @@ trans_table = {
 }
 
 
-def translate_type(_type: str) -> str:
-    if _type.startswith(("side", "top")):
-        return ("TOP_" if _type.startswith("top") else "SIDE_") + (
-            "LEFT" if int(_type[-1]) % 2 else "RIGHT"
-        )
-
-    if _type.startswith("mod"):
-        return "MODULE"
-
-    return _type.upper()
-
-
 class MechView(PaginatorView):
     """Class implementing View for a button-based mech building"""
 
@@ -92,10 +80,10 @@ class MechView(PaginatorView):
         self.buttons: list[list[Button[Self]]] = [
             [
                 TrinaryButton(
-                    emoji=Icon[translate_type(id)].emoji,
+                    item=(item := mech[id]),
+                    emoji=item.icon.emoji,
                     row=pos,
                     custom_id=id,
-                    item=getattr(mech, id),
                     callback=self.slot_button_cb,
                 )
                 for id in row

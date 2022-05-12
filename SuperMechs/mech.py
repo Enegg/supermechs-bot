@@ -124,6 +124,16 @@ class Mech:
         self.invalidate_image(item, self._items[item_type])
         self._items[item_type] = item
 
+    def __getitem__(self, place: str) -> AnyInvItem:
+        if not isinstance(place, str):
+            raise TypeError("Only string indexing supported")
+
+        try:
+            return self._items[place]
+
+        except KeyError:
+            raise KeyError(f'"{place}" is not a valid item slot') from None
+
     def __str__(self) -> str:
         string_parts = [
             f"{item.type.capitalize()}: {item}"
@@ -199,12 +209,9 @@ class Mech:
         t.cast(dict, self._stats).clear()
 
     @property
-    def sorted_stats(self) -> t.Iterator[tuple[str, int]]:
-        stats = self.stats
-        reference = tuple(WORKSHOP_STATS)
+    def sorted_stats(self) -> list[tuple[str, int]]:
+        return sorted(self.stats.items(), key=lambda stat: WORKSHOP_STATS.index(stat[0]))  # type: ignore
 
-        for stat in sorted(stats, key=reference.index):
-            yield stat, stats[stat]
 
     def buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
         for stat, value in self.sorted_stats:
@@ -212,7 +219,7 @@ class Mech:
 
     def print_stats(self, buffs: ArenaBuffs | None = None, /) -> str:
         if buffs is None:
-            bank = self.sorted_stats
+            bank = iter(self.sorted_stats)
 
         else:
             bank = self.buffed_stats(buffs)
@@ -222,7 +229,7 @@ class Mech:
         vars = self.game_vars
 
         # fmt: off
-        emoji = (
+        weight_usage = (
             "⛔"
             if value >  vars.MAX_OVERWEIGHT   else "❕"
             if value >  vars.MAX_WEIGHT       else "👌"
@@ -232,11 +239,10 @@ class Mech:
         )
         # fmt: on
 
-        main_str = f"{icon} **{value}** {name} {emoji}\n" + "\n".join(
-            "{1} **{2}** {0}".format(*STAT_NAMES[stat], value) for stat, value in bank
+        return f"{icon} **{value}** {name} {weight_usage}\n" + "\n".join(
+            "{0.emoji} **{1}** {0.name}".format(STAT_NAMES[stat], value)
+            for stat, value in bank
         )
-
-        return main_str
 
     @property
     def image(self) -> Image:

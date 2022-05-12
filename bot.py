@@ -108,7 +108,7 @@ class SMBot(commands.InteractionBot):
 
         self.item_pack = pack["config"]
         self.items_cache = {
-            item_dict["name"]: Item.from_json(item_dict, pack=pack["config"])
+            item_dict["name"]: Item.from_json_v1(item_dict, pack=pack["config"])
             for item_dict in pack["items"]
         }
         logger.info(f"Item pack loaded: {self.item_pack['name']}")

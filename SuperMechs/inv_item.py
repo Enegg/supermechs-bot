@@ -5,7 +5,7 @@ import uuid
 
 from utils import Proxied, binary_find_near_index, proxy
 
-from .enums import Element, Rarity, RarityRange
+from .enums import Element, Icon, Rarity, RarityRange
 from .errors import MaxPowerReached, MaxTierReached
 from .item import Item
 from .types import Attachment, Attachments, AttachmentType
@@ -46,6 +46,7 @@ class InvItem(t.Generic[AttachmentType]):
     name: t.ClassVar[Proxied[str]]
     rarity: t.ClassVar[Proxied[RarityRange]]
     element: t.ClassVar[Proxied[Element]]
+    icon: t.ClassVar[Proxied[Icon]]
     type: t.ClassVar[Proxied[str]]
     image: t.ClassVar[Proxied[Image]]
 

@@ -5,7 +5,15 @@ import typing as t
 from typing_extensions import NotRequired
 
 AnyType = t.Literal[
-    "TORSO", "LEGS", "DRONE", "SIDE_WEAPON", "TOP_WEAPON", "TELE", "CHARGE", "HOOK", "MODULE"
+    "TORSO",
+    "LEGS",
+    "DRONE",
+    "SIDE_WEAPON",
+    "TOP_WEAPON",
+    "TELEPORTER",
+    "CHARGE_ENGINE",
+    "GRAPPLING_HOOK",
+    "MODULE",
 ]
 AnyElement = t.Literal["PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
 
@@ -63,15 +71,14 @@ AttachmentType = t.TypeVar("AttachmentType", Attachment, Attachments, None)
 class ItemDictBase(t.TypedDict):
     id: int
     name: str
-    image: str
+    image: NotRequired[str]
     width: NotRequired[int]
     height: NotRequired[int]
     type: AnyType
     element: AnyElement
     transform_range: str
     stats: AnyStats
-    divine: NotRequired[AnyStats]
-    tags: NotRequired[list[str]]
+    tags: NotRequired[list[t.Literal["sword", "melee", "roller"]]]
 
 
 class ItemDictAttachment(ItemDictBase):
@@ -112,3 +119,13 @@ class ItemPackv2(t.TypedDict):
     spritesSheet: str
     spritesMap: dict[str, SpritePosition]
     items: list[ItemDict]
+
+
+class TagsDict(t.TypedDict):
+    premium: bool
+    sword: bool
+    melee: bool
+    roller: bool
+    legacy: bool
+    require_jump: bool
+    custom: bool

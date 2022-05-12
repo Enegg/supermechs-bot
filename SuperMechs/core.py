@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+from .types import AnyStats
+
 WORKSHOP_STATS: t.Final = (
     "weight",
     "health",
@@ -133,6 +135,7 @@ class ArenaBuffs:
 
     @classmethod
     def get_percent(cls, stat: str, level: int) -> int:
+        """Returns an int representing the precentage for the stat's increase."""
         match stat:
             case "health":
                 raise TypeError('"Health" stat has absolute increase, not percent')
@@ -148,12 +151,14 @@ class ArenaBuffs:
 
     @classmethod
     def buff_as_str(cls, stat: str, level: int) -> str:
+        """Returns a formatted string representation of the stat's value at the given level."""
         if stat == "health":
             return f"+{cls.ref_hp[level]}"
 
         return f"{cls.get_percent(stat, level):+}%"
 
     def buff_as_str_aware(self, stat: str) -> str:
+        """Returns a formatted string representation of the stat's value."""
         return self.buff_as_str(stat, self.levels[stat])
 
     @classmethod
@@ -165,12 +170,30 @@ class ArenaBuffs:
 
     @classmethod
     def maxed(cls) -> ArenaBuffs:
+        """Create an ArenaBuffs object with all levels maxed."""
         self = cls.__new__(cls)
 
         self.levels = dict.fromkeys(cls.stat_ref, len(cls.ref_def) - 1)
         self.levels["health"] = len(cls.ref_hp) - 1
 
         return self
+
+    def buff_stats(self, stats: AnyStats, /, *, buff_health: bool = False) -> AnyStats:
+        """Returns the buffed stats."""
+        buffed: AnyStats = {}
+
+        for key, value in stats.items():
+            if key == "health" and not buff_health:
+                buffed[key] = t.cast(int, value)
+
+            elif isinstance(value, list):
+                buffed[key] = [self.total_buff(key, v) for v in value]
+
+            else:
+                value = self.total_buff(key, t.cast(int, value))
+                buffed[key] = value
+
+        return buffed
 
 
 MAX_BUFFS = ArenaBuffs.maxed()

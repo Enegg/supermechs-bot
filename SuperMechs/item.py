@@ -1,25 +1,49 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass, InitVar, field
+from dataclasses import InitVar, dataclass, field
+
 from typing_extensions import Self
+from utils import MISSING, js_format
 
-from utils import js_format
-
-from .enums import Element, Icon, RarityRange
+from .core import MAX_BUFFS
+from .enums import Element, Icon, Rarity, RarityRange
 from .images import get_image
 from .types import (
     AnyStats,
     Attachment,
     Attachments,
     AttachmentType,
-    PackConfig,
     ItemDict,
+    ItemPackv2,
+    PackConfig,
+    TagsDict,
 )
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
     from PIL.Image import Image
+
+@dataclass(slots=True)
+class Tags:
+    premium: bool = False
+    sword: bool = False
+    melee: bool = False
+    roller: bool = False
+    legacy: bool = False
+    require_jump: bool = False
+    custom: bool = False
+
+    def to_dict(self) -> TagsDict:
+        return TagsDict(
+            premium=self.premium,
+            sword=self.sword,
+            melee=self.melee,
+            roller=self.roller,
+            legacy=self.legacy,
+            require_jump=self.require_jump,
+            custom=self.custom,
+        )
 
 
 @dataclass(slots=True)
@@ -28,29 +52,30 @@ class Item(t.Generic[AttachmentType]):
 
     id: int
     name: str
-    pack: PackConfig
-    image_url: str
+    pack_key: str
     icon: Icon
     rarity: RarityRange
     stats: AnyStats
+    image_url: str = MISSING
     element: Element = Element.OMNI
     attachment: AttachmentType = t.cast(AttachmentType, None)
 
     width: InitVar[int] = 0
     height: InitVar[int] = 0
-    extra: dict[str, t.Any] = field(default_factory=dict)
+    tags: Tags = Tags()
     _image: Image | None = field(default=None, init=False, repr=False)
     _image_resize: tuple[int, int] = field(init=False, repr=False)
 
     def __post_init__(self, width: int, height: int) -> None:
-        self.image_url = js_format(self.image_url, url=self.pack["base_url"])
         self._image_resize = (width, height)
+        self.tags.premium = self.rarity.min > Rarity.EPIC
+        self.tags.require_jump = "advance" in self.stats or "retreat" in self.stats
 
     def __str__(self) -> str:
         return self.name
 
     def __hash__(self) -> int:
-        return hash((self.id, self.name, self.type, self.rarity, self.element, self.pack["key"]))
+        return hash((self.id, self.name, self.type, self.rarity, self.element, self.pack_key))
 
     @property
     def type(self) -> str:
@@ -101,19 +126,39 @@ class Item(t.Generic[AttachmentType]):
             self._image = raw.convert("RGBA")
 
     @classmethod
-    def from_json(cls, json: ItemDict, pack: PackConfig) -> Self:
-        return cls(
+    def from_json_v1(cls, json: ItemDict, pack: PackConfig) -> Self:
+        self = cls(
             id=json.pop("id"),
             name=json.pop("name"),
-            pack=pack,
-            image_url=json.pop("image"),
+            pack_key=pack["key"],
+            image_url=js_format(json.pop("image"), url=pack["base_url"]),
             icon=Icon[json.pop("type").upper()],
             rarity=RarityRange.from_string(json.pop("transform_range")),
             stats=json.pop("stats"),
             element=Element[json.pop("element")],
             attachment=json.pop("attachment", None),  # type: ignore
-            extra=t.cast(dict, json),
         )
+        tags = json.pop("tags", [])
+        self.tags.melee = "melee" in tags
+        return self
+
+    @classmethod
+    def from_json_v2(cls, json: ItemDict, pack: ItemPackv2) -> Self:
+        self = cls(
+            id=json.pop("id"),
+            name=json.pop("name"),
+            pack_key=pack["key"],
+            icon=Icon[json.pop("type").upper()],
+            rarity=RarityRange.from_string(json.pop("transform_range")),
+            stats=json.pop("stats"),
+            element=Element[json.pop("element")],
+            attachment=json.pop("attachment", None),  # type: ignore
+        )
+        tags = json.pop("tags", [])
+        self.tags.melee = "melee" in tags
+        self.tags.roller = "roller" in tags
+        self.tags.sword = "sword" in tags
+        return self
 
 
 AnyItem = Item[Attachment] | Item[Attachments] | Item[None]

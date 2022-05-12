@@ -76,6 +76,9 @@ class RarityRange:
     def __repr__(self) -> str:
         return f"RarityRange(Rarity.{self.min.name}, Rarity.{self.max.name})"
 
+    def __hash__(self) -> int:
+        return hash((self.min, self.max))
+
     def __iter__(self) -> t.Iterator[Rarity]:
         return (self.TIERS[n] for n in self.range)
 
