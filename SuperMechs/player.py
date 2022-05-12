@@ -8,6 +8,7 @@ from utils import MISSING, random_str
 from .core import ArenaBuffs
 from .inv_item import AnyInvItem
 from .mech import Mech
+from .types import WUSerialized
 
 
 @dataclass
@@ -101,3 +102,18 @@ class Player:
             raise ValueError("Build not found")
 
         del self.builds[name]
+
+    def build_to_json(self, player_name: str, build_name: str | None = None) -> WUSerialized:
+        """Parses a build to WU acceptable JSON format."""
+
+        name = self.active_build_name or build_name
+
+        if name is None:
+            raise ValueError("Player has no active build and name was not passed.")
+
+        build = self.builds.get(name)
+
+        if build is None:
+            raise TypeError(f"Player does not have a build {name}.")
+
+        return build.wu_serialize(name, player_name)

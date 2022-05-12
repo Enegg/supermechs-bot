@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import typing as t
 from dataclasses import dataclass, field
 
@@ -9,7 +11,7 @@ from utils import format_count
 from .core import DEFAULT_VARS, STAT_NAMES, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .images import MechRenderer
 from .inv_item import AnyInvItem, InvItem
-from .types import AnyStats, Attachment, Attachments
+from .types import AnyStats, Attachment, Attachments, WUSerialized
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -45,6 +47,7 @@ class Mech:
     """Represents a mech build."""
 
     game_vars: GameVars = DEFAULT_VARS
+    is_custom: bool = True
     _items: _InvItems = field(
         default_factory=lambda: t.cast(_InvItems, dict.fromkeys(_InvItems.__annotations__, None)),
         init=False,
@@ -341,3 +344,49 @@ class Mech:
     def iter_items(self) -> t.Iterator[AnyInvItem | None]:
         """Iterator over all mech's items"""
         yield from self._items.values()  # type: ignore
+
+    def wu_serialize(self, build_name: str, player_name: str) -> WUSerialized:
+        if self.is_custom:
+            raise TypeError("Cannot serialize a custom mech into WU format")
+
+        def wu_compat_order():
+            yield self.torso
+            yield self.legs
+            yield from self.iter_weapons()
+            yield self.drone
+            yield self.charge
+            yield self.tele
+            yield self.hook
+            yield from self.iter_modules()
+
+        slot_names = [
+            "torso",
+            "legs",
+            "sideWeapon1",
+            "sideWeapon2",
+            "sideWeapon3",
+            "sideWeapon4",
+            "topWeapon1",
+            "topWeapon2",
+            "drone",
+            "teleporter",
+            "chargeEngine",
+            "grapplingHook",
+        ]
+
+        serialized_items = [
+            None if item is None else item.underlying.wu_serialize(slot)
+            for slot, item in zip(slot_names, wu_compat_order())
+        ]
+
+        json_string = json.dumps(serialized_items, indent=None)
+        hash = hashlib.sha256(json_string.encode()).hexdigest()
+
+        return {
+            "name": str(player_name),
+            "itemsHash": hash,
+            "mech": {
+                "name": str(build_name),
+                "setup": [item.underlying.id if item else 0 for item in wu_compat_order()],
+            },
+        }

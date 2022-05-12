@@ -129,3 +129,25 @@ class TagsDict(t.TypedDict):
     legacy: bool
     require_jump: bool
     custom: bool
+
+
+class ItemSerialized(t.TypedDict):
+    slotName: str
+    id: int
+    name: str
+    type: str
+    stats: AnyStats
+    tags: TagsDict
+    element: str
+    timesUsed: t.Literal[0]
+
+
+class MechSerialized(t.TypedDict):
+    name: str
+    setup: list[int]
+
+
+class WUSerialized(t.TypedDict):
+    name: str
+    itemsHash: str
+    mech: MechSerialized

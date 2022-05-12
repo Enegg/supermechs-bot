@@ -16,6 +16,7 @@ from .types import (
     AttachmentType,
     ItemDict,
     ItemPackv2,
+    ItemSerialized,
     PackConfig,
     TagsDict,
 )
@@ -159,6 +160,18 @@ class Item(t.Generic[AttachmentType]):
         self.tags.roller = "roller" in tags
         self.tags.sword = "sword" in tags
         return self
+
+    def wu_serialize(self, slot_name: str) -> ItemSerialized:
+        return {
+            "slotName": slot_name,
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "stats": MAX_BUFFS.buff_stats(self.stats),
+            "tags": self.tags.to_dict(),
+            "element": self.element.name,
+            "timesUsed": 0,
+        }
 
 
 AnyItem = Item[Attachment] | Item[Attachments] | Item[None]
