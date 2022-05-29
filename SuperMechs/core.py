@@ -27,7 +27,7 @@ class Stat(t.NamedTuple):
 
 
 # fmt: off
-STAT_NAMES = dict(
+STATS = dict(
     weight   =Stat("Weight",                "<:weight:725870760484143174>"),
     health   =Stat("HP",                    "<:health:725870887588462652>"),
     eneCap   =Stat("Energy",                "<:energy:725870941883859054>"),

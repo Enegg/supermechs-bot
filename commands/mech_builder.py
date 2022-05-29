@@ -9,8 +9,7 @@ import disnake
 from lib_helpers import MessageInteraction, ApplicationCommandInteraction
 from disnake import SelectOption
 from disnake.ext import commands
-from SuperMechs.core import ArenaBuffs
-from SuperMechs.enums import Element, Icon
+from SuperMechs.enums import Element, IconData, Type
 from SuperMechs.images import image_to_file
 from SuperMechs.inv_item import AnyInvItem, InvItem
 from SuperMechs.item import AnyItem

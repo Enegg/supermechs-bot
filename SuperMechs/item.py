@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import InitVar, dataclass, field
+from dataclasses import KW_ONLY, InitVar, dataclass, field
 
 from typing_extensions import Self
 from utils import MISSING, js_format
 
 from .core import MAX_BUFFS
-from .enums import Element, Icon, Rarity, RarityRange
+from .enums import Element, Type, Rarity, RarityRange
 from .images import get_image
 from .types import (
     AnyStats,
@@ -51,21 +51,22 @@ class Tags:
 class Item(t.Generic[AttachmentType]):
     """Represents a single item."""
 
+    _: KW_ONLY
     id: int
     name: str
     pack_key: str
-    icon: Icon
+    type: Type
     rarity: RarityRange
-    stats: AnyStats
-    image_url: str = MISSING
     element: Element = Element.OMNI
-    attachment: AttachmentType = t.cast(AttachmentType, None)
+    stats: AnyStats = field(hash=False)
+    image_url: str = field(default=MISSING, hash=False)
+    attachment: AttachmentType = field(default=t.cast(AttachmentType, None), hash=False)
 
     width: InitVar[int] = 0
     height: InitVar[int] = 0
-    tags: Tags = Tags()
-    _image: Image | None = field(default=None, init=False, repr=False)
-    _image_resize: tuple[int, int] = field(init=False, repr=False)
+    tags: Tags = field(default_factory=Tags, hash=False)
+    _image: Image | None = field(default=None, init=False, repr=False, hash=False)
+    _image_resize: tuple[int, int] = field(init=False, repr=False, hash=False)
 
     def __post_init__(self, width: int, height: int) -> None:
         self._image_resize = (width, height)
@@ -75,17 +76,14 @@ class Item(t.Generic[AttachmentType]):
     def __str__(self) -> str:
         return self.name
 
-    def __hash__(self) -> int:
-        return hash((self.id, self.name, self.type, self.rarity, self.element, self.pack_key))
-
     @property
-    def type(self) -> str:
-        return self.icon.name
+    def type_name(self) -> str:
+        return self.type.name
 
     @property
     def displayable(self) -> bool:
         """Returns True if the item can be rendered on the mech, False otherwise"""
-        return self.type not in {"TELE", "CHARGE", "HOOK", "MODULE"}
+        return self.type.name not in {"TELE", "CHARGE", "HOOK", "MODULE"}
 
     @property
     def image(self) -> Image:
@@ -133,7 +131,7 @@ class Item(t.Generic[AttachmentType]):
             name=json.pop("name"),
             pack_key=pack["key"],
             image_url=js_format(json.pop("image"), url=pack["base_url"]),
-            icon=Icon[json.pop("type").upper()],
+            type=Type[json.pop("type").upper()],
             rarity=RarityRange.from_string(json.pop("transform_range")),
             stats=json.pop("stats"),
             element=Element[json.pop("element")],
@@ -149,7 +147,7 @@ class Item(t.Generic[AttachmentType]):
             id=json.pop("id"),
             name=json.pop("name"),
             pack_key=pack["key"],
-            icon=Icon[json.pop("type").upper()],
+            type=Type[json.pop("type").upper()],
             rarity=RarityRange.from_string(json.pop("transform_range")),
             stats=json.pop("stats"),
             element=Element[json.pop("element")],
@@ -166,7 +164,7 @@ class Item(t.Generic[AttachmentType]):
             "slotName": slot_name,
             "id": self.id,
             "name": self.name,
-            "type": self.type,
+            "type": self.type.name,
             "stats": MAX_BUFFS.buff_stats(self.stats),
             "tags": self.tags.to_dict(),
             "element": self.element.name,

@@ -8,7 +8,7 @@ from lib_helpers import MessageInteraction, ApplicationCommandInteraction
 from config import TEST_GUILDS
 from disnake import ButtonStyle
 from disnake.ext import commands
-from SuperMechs.core import MAX_BUFFS, STAT_NAMES
+from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.item import AnyItem
 from SuperMechs.types import AnyStats
 from typing_extensions import Self

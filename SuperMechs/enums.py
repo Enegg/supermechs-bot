@@ -3,6 +3,8 @@ from __future__ import annotations
 import typing as t
 from enum import Enum
 
+from utils import MISSING
+
 
 class TierData(t.NamedTuple):
     level: int
@@ -27,6 +29,7 @@ class ElementData(t.NamedTuple):
 class IconData(t.NamedTuple):
     image_url: str
     emoji: str
+    alt: IconData = MISSING
 
     def __str__(self) -> str:
         return self.emoji
@@ -145,25 +148,23 @@ class Element(ElementData, Enum):
     # fmt: on
 
 
-class Icon(IconData, Enum):
+class Type(IconData, Enum):
     """Enumeration of item types"""
 
     # fmt: off
     TORSO       = IconData("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>")
     LEGS        = IconData("https://i.imgur.com/6NBLOhU.png",   "<:legs:730115699397361827>")
     DRONE       = IconData("https://i.imgur.com/oqQmXTF.png",  "<:drone:730115574763618394>")
-    SIDE_WEAPON = IconData("https://i.imgur.com/CBbvOnQ.png",  "<:sider:730115747799629940>")
-    SIDE_LEFT   = IconData("https://i.imgur.com/UuyYCrw.png",  "<:sidel:730115729365663884>")
-    TOP_WEAPON  = IconData("https://i.imgur.com/LW7ZCGZ.png",   "<:topr:730115786735091762>")
-    TOP_LEFT    = IconData("https://i.imgur.com/1xlnVgK.png",   "<:topl:730115768431280238>")
-    TELE        = IconData("https://i.imgur.com/Fnq035A.png",   "<:tele:730115603683213423>")
+    SIDE_WEAPON = IconData("https://i.imgur.com/CBbvOnQ.png",  "<:sider:730115747799629940>",
+                  IconData("https://i.imgur.com/UuyYCrw.png",  "<:sidel:730115729365663884>"))
+    TOP_WEAPON  = IconData("https://i.imgur.com/LW7ZCGZ.png",   "<:topr:730115786735091762>",
+                  IconData("https://i.imgur.com/1xlnVgK.png",   "<:topl:730115768431280238>"))
+    TELEPORTER  = IconData("https://i.imgur.com/Fnq035A.png",   "<:tele:730115603683213423>")
     CHARGE      = IconData("https://i.imgur.com/UnDqJx8.png", "<:charge:730115557239685281>")
     HOOK        = IconData("https://i.imgur.com/8oAoPcJ.png",   "<:hook:730115622347735071>")
     MODULE      = IconData("https://i.imgur.com/dQR8UgN.png",    "<:mod:730115649866694686>")
-    SIDE_RIGHT = SIDE_WEAPON
-    TOP_RIGHT = TOP_WEAPON
     CHARGE_ENGINE = CHARGE
     GRAPPLING_HOOK = HOOK
-    TELEPORTER = TELE
+    TELE = TELEPORTER
     # SHIELD, PERK, KIT?
     # fmt: on

@@ -8,10 +8,11 @@ from dataclasses import dataclass, field
 
 from utils import format_count
 
-from .core import DEFAULT_VARS, STAT_NAMES, WORKSHOP_STATS, ArenaBuffs, GameVars
+from .core import DEFAULT_VARS, STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .images import MechRenderer
 from .inv_item import AnyInvItem, InvItem
 from .types import AnyStats, Attachment, Attachments, WUSerialized
+from .enums import Type
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -57,26 +58,26 @@ class Mech:
 
     # fmt: off
     if t.TYPE_CHECKING:
-        torso:  InvItem[Attachments] | None
-        legs:   InvItem[Attachment] | None
-        drone:  InvItem[None] | None
-        side1:  InvItem[Attachment] | None
-        side2:  InvItem[Attachment] | None
-        side3:  InvItem[Attachment] | None
-        side4:  InvItem[Attachment] | None
-        top1:   InvItem[Attachment] | None
-        top2:   InvItem[Attachment] | None
-        tele:   InvItem[None] | None
-        charge: InvItem[None] | None
-        hook:   InvItem[None] | None
-        mod1:   InvItem[None] | None
-        mod2:   InvItem[None] | None
-        mod3:   InvItem[None] | None
-        mod4:   InvItem[None] | None
-        mod5:   InvItem[None] | None
-        mod6:   InvItem[None] | None
-        mod7:   InvItem[None] | None
-        mod8:   InvItem[None] | None
+        torso:  t.ClassVar[InvItem[Attachments] | None]
+        legs:   t.ClassVar[InvItem[Attachment] | None]
+        drone:  t.ClassVar[InvItem[None] | None]
+        side1:  t.ClassVar[InvItem[Attachment] | None]
+        side2:  t.ClassVar[InvItem[Attachment] | None]
+        side3:  t.ClassVar[InvItem[Attachment] | None]
+        side4:  t.ClassVar[InvItem[Attachment] | None]
+        top1:   t.ClassVar[InvItem[Attachment] | None]
+        top2:   t.ClassVar[InvItem[Attachment] | None]
+        tele:   t.ClassVar[InvItem[None] | None]
+        charge: t.ClassVar[InvItem[None] | None]
+        hook:   t.ClassVar[InvItem[None] | None]
+        mod1:   t.ClassVar[InvItem[None] | None]
+        mod2:   t.ClassVar[InvItem[None] | None]
+        mod3:   t.ClassVar[InvItem[None] | None]
+        mod4:   t.ClassVar[InvItem[None] | None]
+        mod5:   t.ClassVar[InvItem[None] | None]
+        mod6:   t.ClassVar[InvItem[None] | None]
+        mod7:   t.ClassVar[InvItem[None] | None]
+        mod8:   t.ClassVar[InvItem[None] | None]
     # fmt: on
 
     def __getattr__(self, name: t.Any, /):
@@ -88,26 +89,36 @@ class Mech:
                 f'{type(self).__name__} object has no attribute "{name}"'
             ) from None
 
-    def __setitem__(self, place: str | tuple[str, int], item: AnyInvItem | None, /) -> None:
+    def __setitem__(
+        self, slot: str | Type | tuple[str | Type, int], item: AnyInvItem | None, /
+    ) -> None:
         if not isinstance(item, (InvItem, type(None))):
             raise TypeError(f"Expected Item object or None, got {type(item)}")
 
+        match slot:
+            case (str() as _slot, int() as pos):
+                slot = _slot.lower()
+
+            case (Type() as _slot, int() as pos):
+                slot = _slot.name.lower()
+
+            case Type():
+                slot = slot.name.lower()
         pos = None
 
-        if isinstance(place, tuple):
-            place, pos = place
+            case str() as _slot:
+                slot = _slot.lower()
+                pos = None
+
+            case _:
+                raise TypeError(f"Invalid type {type(slot)}")
 
         del self.stats
 
-        item_type = place.lower()
-
-        if item_type in self._items:
-            self.invalidate_image(item, self._items[item_type])
-            self._items[item_type] = item
+        if slot in self._items:
+            self.invalidate_image(item, self._items[slot])
+            self._items[slot] = item
             return
-
-        if pos is None:
-            raise TypeError(f'"{item_type}" requires pos passed')
 
         item_types: dict[str, tuple[str, int]] = {
             "module": ("mod", 8),
@@ -115,19 +126,22 @@ class Mech:
             "top_weapon": ("top", 2),
         }
 
-        if item_type not in item_types:
-            raise TypeError("Invalid item type passed")
+        if slot not in item_types:
+            raise TypeError(f"{slot!r} is not a valid slot")
 
-        slug, limit = item_types[item_type]
+        if pos is None:
+            raise TypeError(f'"{slot}" requires pos passed')
+
+        slug, limit = item_types[slot]
 
         if not 0 < pos <= limit:
             raise ValueError(f"Position outside range 1-{limit}")
 
-        item_type = slug + str(pos)
-        self.invalidate_image(item, self._items[item_type])
-        self._items[item_type] = item
+        slot = slug + str(pos)
+        self.invalidate_image(item, self._items[slot])
+        self._items[slot] = item
 
-    def __getitem__(self, place: str) -> AnyInvItem:
+    def __getitem__(self, place: str) -> AnyInvItem | None:
         if not isinstance(place, str):
             raise TypeError("Only string indexing supported")
 
@@ -215,7 +229,6 @@ class Mech:
     def sorted_stats(self) -> list[tuple[str, int]]:
         return sorted(self.stats.items(), key=lambda stat: WORKSHOP_STATS.index(stat[0]))  # type: ignore
 
-
     def buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
         for stat, value in self.sorted_stats:
             yield stat, buffs.total_buff(stat, value)
@@ -228,7 +241,7 @@ class Mech:
             bank = self.buffed_stats(buffs)
 
         weight, value = next(bank)
-        name, icon = STAT_NAMES[weight]
+        name, icon = STATS[weight]
         vars = self.game_vars
 
         # fmt: off
@@ -243,8 +256,7 @@ class Mech:
         # fmt: on
 
         return f"{icon} **{value}** {name} {weight_usage}\n" + "\n".join(
-            "{0.emoji} **{1}** {0.name}".format(STAT_NAMES[stat], value)
-            for stat, value in bank
+            "{0.emoji} **{1}** {0.name}".format(STATS[stat], value) for stat, value in bank
         )
 
     @property
