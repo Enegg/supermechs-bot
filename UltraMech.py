@@ -58,12 +58,15 @@ bot = SMBot(
     intents=disnake.Intents(guilds=True),
     activity=disnake.Game("SuperMechs"),
     guild_ids=TEST_GUILDS if LOCAL else None,
+    # sync_commands_debug=True,
 )
 
 logger.addHandler(ChannelHandler(LOGS_CHANNEL, bot, level=logging.WARNING))
 stream = logging.StreamHandler()
 stream.level = logging.INFO
 logger.addHandler(stream)
+
 bot.load_extensions("commands")
+bot.i18n.load("locale/")
 
 bot.run(TOKEN)

@@ -380,7 +380,7 @@ class MechBuilder(commands.Cog):
 
     Parameters
     -----------
-    name: Name of build to show. If not passed, it will be your most recent build.
+        name: Name of build to show. If not passed, it will be your most recent build. {{ MECH_SHOW_NAME }}
     """
     if name is None:
         mech = player.active_build
@@ -443,12 +443,12 @@ class MechBuilder(commands.Cog):
     async def build(
         self, inter: CommandInteraction, player: Player, name: str | None = None
     ) -> None:
+        """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
 
     Parameters
     -----------
-    name: The name of existing build or one to create. If not passed, it will be randomized.
+        name: The name of existing build or one to create. If not passed, it will be randomized. {{ MECH_BUILD_NAME }}
     """
-    player = inter.bot.get_player(inter)
 
     if name is None:
         mech = player.get_or_create_build()

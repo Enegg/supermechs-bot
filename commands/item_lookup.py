@@ -245,14 +245,13 @@ async def item(
     compact: bool = False,
     invisible: bool = True,
 ) -> None:
-    """Finds an item and returns its stats
+    """Finds an item and returns its stats {{ ITEM }}
 
     Parameters
     -----------
-    name: The name of the item or an abbreviation of it
-    compact: Whether the embed sent back should be compact (breaks on mobile)
-    invisible: Whether the bot response is visible only to you
-    raw: Whether not to format the embed and send raw data instead
+    name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+    compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
+    invisible: Whether the bot response is visible only to you {{ ITEM_VISIBILITY }}
     """
 
     if name not in inter.bot.items_cache:
@@ -373,8 +372,8 @@ async def compare(inter: CommandInteraction, item1: str, item2: str) -> None:
 
     Parameters
     -----------
-    item1: First item to compare.
-    item2: Second item to compare.
+    item1: First item to compare. {{ COMPARE_FIRST }}
+    item2: Second item to compare. {{ COMPARE_SECOND }}
     """
     item_a = inter.bot.items_cache.get(item1)
     item_b = inter.bot.items_cache.get(item2)
