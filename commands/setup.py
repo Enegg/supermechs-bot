@@ -6,9 +6,9 @@ import traceback
 import typing as t
 
 import disnake
-from lib_helpers import ApplicationCommandInteraction, str_to_file
 from config import TEST_GUILDS
 from disnake.ext import commands
+from lib_helpers import str_to_file
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -22,11 +22,14 @@ class Setup(commands.Cog):
 
     last_ext = None
 
+    def __init__(self, bot: SMBot) -> None:
+        self.bot = bot
+
     @commands.slash_command(guild_ids=TEST_GUILDS)
     @commands.is_owner()
     async def ext(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: disnake.CommandInteraction,
         action: t.Literal["load", "reload", "unload"] = "reload",
         ext: t.Optional[str] = None,
     ) -> None:
@@ -44,9 +47,9 @@ class Setup(commands.Cog):
             ext = self.last_ext
 
         funcs = dict(
-            load=inter.bot.load_extension,
-            reload=inter.bot.reload_extension,
-            unload=inter.bot.unload_extension,
+            load=self.bot.load_extension,
+            reload=self.bot.reload_extension,
+            unload=self.bot.unload_extension,
         )
 
         try:
@@ -66,22 +69,22 @@ class Setup(commands.Cog):
             self.last_ext = ext
 
     @ext.autocomplete("ext")
-    async def ext_autocomplete(self, inter: ApplicationCommandInteraction, input: str) -> list[str]:
+    async def ext_autocomplete(self, inter: disnake.CommandInteraction, input: str) -> list[str]:
         input = input.lower()
-        return [ext for ext in inter.bot.extensions if input in ext.lower()]
+        return [ext for ext in self.bot.extensions if input in ext.lower()]
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
     @commands.is_owner()
-    async def shutdown(self, inter: ApplicationCommandInteraction) -> None:
+    async def shutdown(self, inter: disnake.CommandInteraction) -> None:
         """Terminates the bot connection."""
         await inter.send("I will be back", ephemeral=True)
-        await inter.bot.close()
+        await self.bot.close()
 
     @commands.slash_command(name="raise", guild_ids=TEST_GUILDS)
     @commands.is_owner()
     async def force_error(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: disnake.CommandInteraction,
         exception: str,
         arguments: t.Optional[str] = None,
     ) -> None:
@@ -103,45 +106,43 @@ class Setup(commands.Cog):
             await inter.send("Success", ephemeral=True)
 
     @force_error.autocomplete("exception")
-    async def raise_autocomplete(
-        self, _: disnake.ApplicationCommandInteraction, input: str
-    ) -> list[str]:
+    async def raise_autocomplete(self, _: disnake.CommandInteraction, input: str) -> list[str]:
         if len(input) < 2:
             return ["Start typing to get options..."]
 
         input = input.lower()
         return [exc for exc in commands.errors.__all__ if input in exc.lower()][:25]
 
-    @commands.slash_command(guild_ids=TEST_GUILDS)
-    @commands.is_owner()
-    async def database(self, inter: ApplicationCommandInteraction) -> None:
-        """Show info about the database"""
-        if inter.bot.engine is None:
-            await inter.send("Database is disabled.")
-            return
+    # @commands.slash_command(guild_ids=TEST_GUILDS)
+    # @commands.is_owner()
+    # async def database(self, inter: disnake.CommandInteraction) -> None:
+    #     """Show info about the database"""
+    #     if self.bot.engine is None:
+    #         await inter.send("Database is disabled.")
+    #         return
 
-        from pymongo.errors import PyMongoError
+    #     from pymongo.errors import PyMongoError
 
-        await inter.response.defer()
+    #     await inter.response.defer()
 
-        try:
-            data = await inter.bot.engine.client.server_info()
+    #     try:
+    #         data = await self.bot.engine.client.server_info()
 
-        except PyMongoError:
-            await inter.send("Unable to connect.")
-            raise
+    #     except PyMongoError:
+    #         await inter.send("Unable to connect.")
+    #         raise
 
-        data = str(data)
+    #     data = str(data)
 
-        if len(data) > 2000:
-            await inter.send(file=str_to_file(data))
+    #     if len(data) > 2000:
+    #         await inter.send(file=str_to_file(data))
 
-        else:
-            await inter.send(data)
+    #     else:
+    #         await inter.send(data)
 
     @commands.slash_command(name="eval", guild_ids=TEST_GUILDS)
     @commands.is_owner()
-    async def eval_(self, inter: ApplicationCommandInteraction, input: str) -> None:
+    async def eval_(self, inter: disnake.CommandInteraction, input: str) -> None:
         """Evaluates the given input as code.
 
         Parameters
@@ -154,7 +155,7 @@ class Setup(commands.Cog):
         def print_(*args: t.Any, **kwargs: t.Any) -> None:
             print(*args, **kwargs, file=out)
 
-        output = eval(input, globals() | {"bot": inter.bot, "inter": inter, "print": print_})
+        output = eval(input, globals() | {"bot": self.bot, "inter": inter, "print": print_})
         std = out.getvalue()
 
         if output is None or not std:
@@ -176,4 +177,4 @@ class Setup(commands.Cog):
 
 
 def setup(bot: SMBot) -> None:
-    bot.add_cog(Setup())
+    bot.add_cog(Setup(bot))

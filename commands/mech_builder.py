@@ -6,14 +6,15 @@ import typing as t
 
 import aiohttp
 import disnake
-from lib_helpers import MessageInteraction, ApplicationCommandInteraction
-from disnake import SelectOption
+from config import TEST_GUILDS
+from disnake import CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands
 from SuperMechs.enums import Element, IconData, Type
 from SuperMechs.images import image_to_file
 from SuperMechs.inv_item import AnyInvItem, InvItem
 from SuperMechs.item import AnyItem
 from SuperMechs.mech import Mech
+from SuperMechs.player import Player
 from typing_extensions import Self
 from ui import (
     EMPTY_OPTION,
@@ -154,11 +155,11 @@ class MechView(PaginatorView):
         self.update_style(button)
         await inter.response.edit_message(view=self)
 
-    @button(cls=Button[Self], emoji=Icon.MODULE.emoji, custom_id="button:modules", row=0)
-    async def modules_button(self, button: Button[Self], inter: MessageInteraction) -> None:
+    @button(cls=Button, emoji=Type.MODULE.emoji, custom_id="button:modules", row=0)
+    async def modules_button(self, button: Button, inter: MessageInteraction) -> None:
         """Button swapping mech editor with modules and vice versa."""
         self.page ^= 1
-        button.emoji = Icon.TORSO.emoji if self.page else Icon.MODULE.emoji
+        button.emoji = Type.TORSO.emoji if self.page else Type.MODULE.emoji
 
         self.update_page()
         await inter.response.edit_message(view=self)
@@ -363,21 +364,24 @@ class MechView(PaginatorView):
         self.active = button
 
 
+class MechBuilder(commands.Cog):
+    def __init__(self, bot: SMBot) -> None:
+        self.bot = bot
+
 @commands.slash_command()
-async def mech(_: ApplicationCommandInteraction) -> None:
+    async def mech(self, _: CommandInteraction) -> None:
     pass
 
-
 @mech.sub_command()
-async def show(inter: ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
-    """Displays your mech and its stats
+    async def show(
+        self, inter: CommandInteraction, player: Player, name: str | None = None
+    ) -> None:
+        """Displays your mech and its stats. {{ MECH_SHOW }}
 
     Parameters
     -----------
     name: Name of build to show. If not passed, it will be your most recent build.
     """
-    player = inter.bot.get_player(inter)
-
     if name is None:
         mech = player.active_build
 
@@ -409,16 +413,13 @@ async def show(inter: ApplicationCommandInteraction, name: t.Optional[str] = Non
     filename = f"{name}.png"
     embed.set_image(url=f"attachment://{filename}")
 
-    await mech.load_images(inter.bot.session)
+        await mech.load_images(self.bot.session)
     file = image_to_file(mech.image, filename)
     await inter.send(embed=embed, file=file)
 
-
 @mech.sub_command(name="list")
-async def browse(inter: ApplicationCommandInteraction) -> None:
-    """Displays a list of your builds"""
-    player = inter.bot.get_player(inter)
-
+    async def browse(self, inter: CommandInteraction, player: Player) -> None:
+        """Displays a list of your builds. {{ MECH_BROWSE }}"""
     if not player.builds:
         await inter.send("You do not have any builds.", ephemeral=True)
         return
@@ -437,11 +438,11 @@ async def browse(inter: ApplicationCommandInteraction) -> None:
 
     await inter.send(string)
 
-
 @mech.sub_command()
 @commands.max_concurrency(1, commands.BucketType.user)
-async def build(inter: ApplicationCommandInteraction, name: t.Optional[str] = None) -> None:
-    """Interactive UI for modifying a mech build.
+    async def build(
+        self, inter: CommandInteraction, player: Player, name: str | None = None
+    ) -> None:
 
     Parameters
     -----------
@@ -478,7 +479,7 @@ async def build(inter: ApplicationCommandInteraction, name: t.Optional[str] = No
     else:
         embed.color = mech.torso.element.color
 
-        await mech.load_images(inter.bot.session)
+            await mech.load_images(self.bot.session)
         filename = random_str(8) + ".png"
 
         file = image_to_file(mech.image, filename)
@@ -494,16 +495,12 @@ async def build(inter: ApplicationCommandInteraction, name: t.Optional[str] = No
 
 @show.autocomplete("name")
 @build.autocomplete("name")
-async def build_autocomplete(inter: ApplicationCommandInteraction, input: str) -> list[str]:
+    async def build_autocomplete(self, inter: CommandInteraction, input: str) -> list[str]:
     """Autocomplete for player builds"""
-    player = inter.bot.get_player(inter)
+        player = self.bot.get_player(inter)
     input = input.lower()
     return [name for name in player.builds if name.lower().startswith(input)]
 
 
 def setup(bot: SMBot) -> None:
-    bot.add_slash_command(mech)
-
-
-def teardown(bot: SMBot) -> None:
-    bot.remove_slash_command("mech")
+    bot.add_cog(MechBuilder(bot))

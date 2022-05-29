@@ -17,8 +17,8 @@ from SuperMechs.player import Player
 from SuperMechs.types import ItemPack, PackConfig
 from utils import MISSING
 
-if t.TYPE_CHECKING:
-    from odmantic import AIOEngine
+from lib_helpers import CommandInteraction
+
 
 logger = logging.getLogger("channel_logs")
 
@@ -28,16 +28,11 @@ class SMBot(commands.InteractionBot):
     item_abbrevs: dict[str, set[str]]
     item_pack: PackConfig
 
-    def __init__(
-        self, hosted: bool = False, engine: AIOEngine | None = None, **options: t.Any
-    ) -> None:
-        options.setdefault("sync_permissions", True)
+    def __init__(self, hosted: bool = False, **options: t.Any) -> None:
         super().__init__(**options)
         self.hosted = hosted
         self.run_time = MISSING
         self.players: dict[int, Player] = {}
-
-        self.engine = engine
 
     async def on_slash_command_error(
         self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError
@@ -47,7 +42,7 @@ class SMBot(commands.InteractionBot):
                 await inter.send("This is a developer-only command.", ephemeral=True)
 
             case commands.UserInputError() | commands.CheckFailure():
-                await inter.send(error, ephemeral=True)
+                await inter.send(str(error), ephemeral=True)
 
             case commands.MaxConcurrencyReached():
                 if error.per is commands.BucketType.user:
@@ -134,3 +129,8 @@ class SMBot(commands.InteractionBot):
             self.players[id] = Player(id=id)
 
         return self.players[id]
+
+
+@commands.register_injection
+def get_player(inter: CommandInteraction) -> Player:
+    return inter.bot.get_player(inter)

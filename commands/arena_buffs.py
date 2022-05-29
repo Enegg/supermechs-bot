@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 
-from lib_helpers import ApplicationCommandInteraction, MessageInteraction
+from lib_helpers import CommandInteraction, MessageInteraction
 from config import TEST_GUILDS
 from disnake import ButtonStyle, SelectOption
 from disnake.ext import commands
@@ -161,7 +161,7 @@ async def buffs(inter: ApplicationCommandInteraction) -> None:
 
 @commands.slash_command(guild_ids=TEST_GUILDS)
 @commands.is_owner()
-async def maxed(inter: ApplicationCommandInteraction) -> None:
+async def maxed(inter: CommandInteraction) -> None:
     """Maxes out your buffs"""
     me = inter.bot.get_player(inter)
     me.arena_buffs.levels.update(ArenaBuffs.maxed().levels)

@@ -1,3 +1,4 @@
+import os
 import random
 import re
 import typing as t
@@ -17,6 +18,9 @@ class _MissingSentinel:
 
     def __repr__(self) -> str:
         return "..."
+
+    def __hash__(self) -> int:
+        return hash((None,))
 
     def __copy__(self: T) -> T:
         return self
@@ -124,6 +128,11 @@ def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
 def random_str(length: int) -> str:
     """Generates a random string of given length from ascii letters"""
     return "".join(random.sample(ascii_letters, length))
+
+
+def unique_id() -> str:
+    """Creates an unique id"""
+    return os.urandom(16).hex()
 
 
 def binary_find_near_index(container: t.Sequence[int], value: int, start: int, end: int) -> int:

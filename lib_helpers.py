@@ -20,7 +20,7 @@ class MessageInteraction(disnake.MessageInteraction):
     bot: SMBot
 
 
-class ApplicationCommandInteraction(disnake.ApplicationCommandInteraction):
+class CommandInteraction(disnake.ApplicationCommandInteraction):
     bot: SMBot
 
 

@@ -4,9 +4,8 @@ import typing as t
 from itertools import zip_longest
 
 import disnake
-from lib_helpers import MessageInteraction, ApplicationCommandInteraction
+from lib_helpers import MessageInteraction, CommandInteraction
 from config import TEST_GUILDS
-from disnake import ButtonStyle
 from disnake.ext import commands
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.item import AnyItem
@@ -177,15 +176,15 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
             text = f"{v1}-{v2}"
             change = f" **{d1:+} {d2:+}**" if d1 or d2 else ""
 
-        name, emoji = STAT_NAMES[stat]
+        name, emoji = STATS[stat]
 
         if stat == "uses":
             name = "Use" if value == 1 else "Uses"
 
         item_stats += f"{emoji} **{text}** {name}{change}\n"
 
-    if "advance" in item.stats or "retreat" in item.stats:
-        item_stats += f"{STAT_NAMES['jump'].emoji} **Jumping required**"
+    if item.tags.require_jump:
+        item_stats += f"{STATS['jump'].emoji} **Jumping required**"
 
     embed.add_field(name="Stats:", value=item_stats, inline=False)
 
@@ -214,10 +213,10 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
         else:
             text = f"{value[0]}-{diff[0]}"
 
-        lines.append(f"{STAT_NAMES[stat].emoji} **{text}**")
+        lines.append(f"{STATS[stat].emoji} **{text}**")
 
-    if "advance" in item.stats or "retreat" in item.stats:
-        lines.append(f"{STAT_NAMES['jump'].emoji}❗")
+    if item.tags.require_jump:
+        lines.append(f"{STATS['jump'].emoji}❗")
 
     line_count = len(lines)
 
@@ -241,11 +240,10 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
 
 @commands.slash_command()
 async def item(
-    inter: ApplicationCommandInteraction,
+    inter: CommandInteraction,
     name: str,
     compact: bool = False,
     invisible: bool = True,
-    raw: bool = False,
 ) -> None:
     """Finds an item and returns its stats
 
@@ -265,15 +263,10 @@ async def item(
 
     item = inter.bot.items_cache[name]
 
-    # debug flag
-    if raw:
-        await inter.send(f"`{item!r}`", ephemeral=invisible)
-        return
-
     if compact:
         embed = (
             disnake.Embed(color=item.element.color)
-            .set_author(name=item.name, icon_url=item.icon.image_url)
+            .set_author(name=item.name, icon_url=item.type.image_url)
             .set_thumbnail(url=item.image_url)
         )
         view = ItemView(embed, item, compact_embed, user_id=inter.author.id)
@@ -283,13 +276,32 @@ async def item(
             disnake.Embed(
                 title=item.name,
                 description=f"{item.element.name.capitalize()} "
-                f"{item.type.replace('_', ' ').lower()}",
+                f"{item.type.name.replace('_', ' ').lower()}",
                 color=item.element.color,
             )
-            .set_thumbnail(url=item.icon.image_url)
+            .set_thumbnail(url=item.type.image_url)
             .set_image(url=item.image_url)
         )
-        view = ItemView(embed, item, default_embed, user_id=inter.author.id)
+
+
+@commands.slash_command(guild_ids=TEST_GUILDS)
+async def item_raw(inter: CommandInteraction, name: str) -> None:
+    """Finds an item and returns its raw stats {{ ITEM }}
+
+    Parameters
+    -----------
+    name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+    """
+
+    if name not in inter.bot.items_cache:
+        if name == "Start typing to get suggestions...":
+            raise commands.UserInputError("This is only an information and not an option")
+
+        raise commands.UserInputError("Item not found.")
+
+    item = inter.bot.items_cache[name]
+
+    await inter.send(f"`{item!r}`", ephemeral=True)
 
     await inter.send(embed=embed, view=view, ephemeral=invisible)
     await view.wait()
@@ -356,8 +368,8 @@ def compare_stats(a: AnyStats, b: AnyStats):
 
 
 @commands.slash_command(guild_ids=TEST_GUILDS)
-async def compare(inter: ApplicationCommandInteraction, item1: str, item2: str) -> None:
-    """Shows an interactive comparison of two items.
+async def compare(inter: CommandInteraction, item1: str, item2: str) -> None:
+    """Shows an interactive comparison of two items. {{ COMPARE }}
 
     Parameters
     -----------
@@ -377,9 +389,10 @@ async def compare(inter: ApplicationCommandInteraction, item1: str, item2: str) 
 
 
 @item.autocomplete("name")
+@item_raw.autocomplete("name")
 @compare.autocomplete("item1")
 @compare.autocomplete("item2")
-async def item_autocomplete(inter: ApplicationCommandInteraction, input: str) -> list[str]:
+async def item_autocomplete(inter: CommandInteraction, input: str) -> list[str]:
     """Autocomplete for items"""
     if len(input) < 2:
         return ["Start typing to get suggestions..."]
@@ -397,9 +410,11 @@ async def item_autocomplete(inter: ApplicationCommandInteraction, input: str) ->
 
 def setup(bot: SMBot) -> None:
     bot.add_slash_command(item)
+    bot.add_slash_command(item_raw)
     bot.add_slash_command(compare)
 
 
 def teardown(bot: SMBot) -> None:
     bot.remove_slash_command("item")
+    bot.remove_slash_command("item_raw")
     bot.remove_slash_command("compare")
