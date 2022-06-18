@@ -4,22 +4,14 @@ import typing as t
 from dataclasses import KW_ONLY, InitVar, dataclass, field
 
 from typing_extensions import Self
+
 from utils import MISSING, js_format
 
 from .core import MAX_BUFFS
-from .enums import Element, Type, Rarity, RarityRange
+from .enums import Element, Rarity, RarityRange, Type
 from .images import get_image
-from .types import (
-    AnyStats,
-    Attachment,
-    Attachments,
-    AttachmentType,
-    ItemDict,
-    ItemPackv2,
-    ItemSerialized,
-    PackConfig,
-    TagsDict,
-)
+from .types import (AnyStats, Attachment, Attachments, AttachmentType, ItemDict, ItemPackv2,
+                    ItemSerialized, PackConfig, TagsDict)
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -134,7 +126,7 @@ class Item(t.Generic[AttachmentType]):
             type=Type[json.pop("type").upper()],
             rarity=RarityRange.from_string(json.pop("transform_range")),
             stats=json.pop("stats"),
-            element=Element[json.pop("element")],
+            element=Element[json.pop("element").upper()],
             attachment=json.pop("attachment", None),  # type: ignore
         )
         tags = json.pop("tags", [])
@@ -150,7 +142,7 @@ class Item(t.Generic[AttachmentType]):
             type=Type[json.pop("type").upper()],
             rarity=RarityRange.from_string(json.pop("transform_range")),
             stats=json.pop("stats"),
-            element=Element[json.pop("element")],
+            element=Element[json.pop("element").upper()],
             attachment=json.pop("attachment", None),  # type: ignore
         )
         tags = json.pop("tags", [])

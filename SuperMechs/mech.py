@@ -9,10 +9,10 @@ from dataclasses import dataclass, field
 from utils import format_count
 
 from .core import DEFAULT_VARS, STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
+from .enums import Type
 from .images import MechRenderer
 from .inv_item import AnyInvItem, InvItem
 from .types import AnyStats, Attachment, Attachments, WUSerialized
-from .enums import Type
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -41,6 +41,11 @@ class _InvItems(t.TypedDict):
     mod7:   InvItem[None] | None
     mod8:   InvItem[None] | None
 # fmt: on
+
+
+class Slot(t.NamedTuple):
+    type_name: str
+    wu_format: str = ""
 
 
 @dataclass
@@ -104,7 +109,7 @@ class Mech:
 
             case Type():
                 slot = slot.name.lower()
-        pos = None
+                pos = None
 
             case str() as _slot:
                 slot = _slot.lower()

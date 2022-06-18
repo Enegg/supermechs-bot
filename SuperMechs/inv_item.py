@@ -1,16 +1,16 @@
 import csv
-from dataclasses import dataclass, field
 import typing as t
 import uuid
+from dataclasses import dataclass, field
+
+from PIL.Image import Image
 
 from utils import Proxied, binary_find_near_index, proxy
 
-from .enums import Element, Type, Rarity, RarityRange
+from .enums import Element, Rarity, RarityRange, Type
 from .errors import MaxPowerReached, MaxTierReached
 from .item import Item
 from .types import Attachment, Attachments, AttachmentType
-
-from PIL.Image import Image
 
 with (
     open("SuperMechs/GameData/default_powers.csv", newline="") as file1,

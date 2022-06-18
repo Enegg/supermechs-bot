@@ -5,9 +5,10 @@ import logging
 import traceback
 import typing as t
 
-import disnake
-from config import TEST_GUILDS
+from disnake import AllowedMentions, CommandInteraction
 from disnake.ext import commands
+
+from config import TEST_GUILDS
 from lib_helpers import str_to_file
 
 if t.TYPE_CHECKING:
@@ -26,10 +27,11 @@ class Setup(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
+    @commands.default_member_permissions(administrator=True)
     @commands.is_owner()
     async def ext(
         self,
-        inter: disnake.CommandInteraction,
+        inter: CommandInteraction,
         action: t.Literal["load", "reload", "unload"] = "reload",
         ext: t.Optional[str] = None,
     ) -> None:
@@ -69,22 +71,24 @@ class Setup(commands.Cog):
             self.last_ext = ext
 
     @ext.autocomplete("ext")
-    async def ext_autocomplete(self, inter: disnake.CommandInteraction, input: str) -> list[str]:
+    async def ext_autocomplete(self, inter: CommandInteraction, input: str) -> list[str]:
         input = input.lower()
         return [ext for ext in self.bot.extensions if input in ext.lower()]
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
+    @commands.default_member_permissions(administrator=True)
     @commands.is_owner()
-    async def shutdown(self, inter: disnake.CommandInteraction) -> None:
+    async def shutdown(self, inter: CommandInteraction) -> None:
         """Terminates the bot connection."""
         await inter.send("I will be back", ephemeral=True)
         await self.bot.close()
 
     @commands.slash_command(name="raise", guild_ids=TEST_GUILDS)
+    @commands.default_member_permissions(administrator=True)
     @commands.is_owner()
     async def force_error(
         self,
-        inter: disnake.CommandInteraction,
+        inter: CommandInteraction,
         exception: str,
         arguments: t.Optional[str] = None,
     ) -> None:
@@ -106,7 +110,7 @@ class Setup(commands.Cog):
             await inter.send("Success", ephemeral=True)
 
     @force_error.autocomplete("exception")
-    async def raise_autocomplete(self, _: disnake.CommandInteraction, input: str) -> list[str]:
+    async def raise_autocomplete(self, _: CommandInteraction, input: str) -> list[str]:
         if len(input) < 2:
             return ["Start typing to get options..."]
 
@@ -141,8 +145,9 @@ class Setup(commands.Cog):
     #         await inter.send(data)
 
     @commands.slash_command(name="eval", guild_ids=TEST_GUILDS)
+    @commands.default_member_permissions(administrator=True)
     @commands.is_owner()
-    async def eval_(self, inter: disnake.CommandInteraction, input: str) -> None:
+    async def eval_(self, inter: CommandInteraction, input: str) -> None:
         """Evaluates the given input as code.
 
         Parameters
@@ -171,7 +176,7 @@ class Setup(commands.Cog):
         else:
             await inter.send(
                 msg,
-                allowed_mentions=disnake.AllowedMentions.none(),
+                allowed_mentions=AllowedMentions.none(),
                 ephemeral=True,
             )
 
