@@ -43,11 +43,6 @@ class _InvItems(t.TypedDict):
 # fmt: on
 
 
-class Slot(t.NamedTuple):
-    type_name: str
-    wu_format: str = ""
-
-
 @dataclass
 class Mech:
     """Represents a mech build."""
