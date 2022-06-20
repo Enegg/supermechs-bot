@@ -29,7 +29,7 @@ class SMBot(commands.InteractionBot):
     def __init__(self, hosted: bool = False, **options: t.Any) -> None:
         super().__init__(**options)
         self.hosted = hosted
-        self.run_time = MISSING
+        self.run_time: datetime = MISSING
         self.players: dict[int, Player] = {}
 
     async def on_slash_command_error(
