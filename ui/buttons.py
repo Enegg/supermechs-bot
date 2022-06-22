@@ -85,7 +85,8 @@ class ToggleButton(Button):
     @property
     def custom_id(self) -> str:
         """The ID of the button that gets received during an interaction."""
-        assert (custom_id := super().custom_id) is not None
+        custom_id = super().custom_id
+        assert custom_id is not None
         return custom_id
 
     def toggle(self) -> None:
