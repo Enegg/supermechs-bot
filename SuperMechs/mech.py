@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import Counter
 import hashlib
 import json
 import typing as t
@@ -9,7 +10,7 @@ from dataclasses import dataclass, field
 from utils import format_count
 
 from .core import DEFAULT_VARS, STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
-from .enums import Type
+from .enums import Element, Type
 from .images import MechRenderer
 from .inv_item import AnyInvItem, InvItem
 from .types import AnyStats, Attachment, Attachments, WUSerialized
@@ -402,3 +403,24 @@ class Mech:
                 "setup": [item.underlying.id if item else 0 for item in wu_compat_order()],
             },
         }
+
+    def figure_dominant_element(self) -> Element | None:
+        """Guesses the mech type by equipped items."""
+        excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER, Type.MODULE}
+        elements = Counter(
+            item.element
+            for item in self.iter_items()
+            if item is not None
+            if item.element not in excluded
+        ).most_common()
+
+        # there's only one element
+        if len(elements) == 1:
+            return elements[0][0]
+
+        # there's no elements or the difference between two most common is small
+        elif len(elements) == 0 or elements[0][1] - elements[1][1] < 2:
+            return None
+
+        # return most common
+        return elements[0][0]

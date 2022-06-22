@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import typing as t
-from collections import Counter
 
 from disnake import AllowedMentions, CommandInteraction, Embed, MessageInteraction, SelectOption
 from disnake.ext import commands
@@ -71,7 +70,7 @@ class MechView(PaginatorView, InteractionCheck):
         self.user_id = player.id
 
         self.active: TrinaryButton[AnyItem] | None = None
-        self.dominant: Element | None = self.figure_dominant_element()
+        self.dominant: Element | None = mech.figure_dominant_element()
         self.image_update_task = asyncio.Future()
 
         for pos, row in enumerate(
@@ -193,7 +192,7 @@ class MechView(PaginatorView, InteractionCheck):
 
         self.mech[self.active.custom_id] = item
 
-        self.dominant = self.figure_dominant_element()
+        self.dominant = self.mech.figure_dominant_element()
 
         if self.dominant is not None:
             self.embed.color = self.dominant.color
@@ -226,27 +225,6 @@ class MechView(PaginatorView, InteractionCheck):
         self.embed.set_image(url=f"attachment://{filename}")
         file = image_to_file(self.mech.image, filename)
         await self.bot_msg.edit(embed=self.embed, file=file, attachments=[])
-
-    def figure_dominant_element(self) -> Element | None:
-        """Guesses the mech type by equipped items."""
-        excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER, Type.MODULE}
-        elements = Counter(
-            item.element
-            for item in self.mech.iter_items()
-            if item is not None
-            if item.element not in excluded
-        ).most_common()
-
-        # there's only one element
-        if len(elements) == 1:
-            return elements[0][0]
-
-        # there's no elements or the difference between two most common is small
-        elif len(elements) == 0 or elements[0][1] - elements[1][1] < 2:
-            return None
-
-        # return most common
-        return elements[0][0]
 
     def resort_options(self, item_type: Type) -> list[SelectOption]:
         """Returns a list of `SelectOption`s filtered by type"""
