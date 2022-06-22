@@ -242,7 +242,8 @@ class Mech:
             bank = self.buffed_stats(buffs)
 
         weight, value = next(bank)
-        name, icon = STATS[weight]
+        name = STATS[weight].name
+        icon = STATS[weight].emoji
         vars = self.game_vars
 
         # fmt: off

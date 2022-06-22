@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import typing as t
+from json import load
 
-from .types import AnyStats
+from typing_extensions import Self
+
+from utils import MISSING
+
+from .types import AnyStatKey, AnyStats, StatDict
 
 WORKSHOP_STATS: t.Final = (
     "weight",
@@ -21,47 +26,53 @@ WORKSHOP_STATS: t.Final = (
 )
 
 
+class Name(t.NamedTuple):
+    default: str
+    in_game: str = MISSING
+    short: str = MISSING
+
+    def __str__(self) -> str:
+        return self.default
+
+    def __format__(self, __format_spec: str, /) -> str:
+        return self.default.__format__(__format_spec)
+
+    @property
+    def game_name(self) -> str:
+        return self.default if self.in_game is MISSING else self.in_game
+
+    @property
+    def short_name(self) -> str:
+        if self.short is not MISSING:
+            return self.short
+
+        return self.default if len(self.default) <= len(self.game_name) else self.game_name
+
+
 class Stat(t.NamedTuple):
-    name: str
-    emoji: str
+    name: Name
+    emoji: str = "❔"
+    beneficial: bool = True
+    buff: tuple[str, int] | None = None
+
+    @classmethod
+    def from_dict(cls, json: StatDict) -> Self:
+        buff = json.get("buff", None)
+        new = {
+            "name": Name(**json["names"]),
+            "beneficial": "beneficial" not in json,
+            "buff": None if buff is None else (buff["mode"], buff["range"]),
+        }
+        if emoji := json.get("emoji"):
+            new["emoji"] = emoji
+
+        return cls(**new)
 
 
-# fmt: off
-STATS = dict(
-    weight   =Stat("Weight",                "<:weight:725870760484143174>"),
-    health   =Stat("HP",                    "<:health:725870887588462652>"),
-    eneCap   =Stat("Energy",                "<:energy:725870941883859054>"),
-    eneReg   =Stat("Regeneration",           "<:regen:725871003665825822>"),
-    heaCap   =Stat("Heat",                    "<:heat:725871043767435336>"),
-    heaCol   =Stat("Cooling",              "<:cooling:725871075778363422>"),
-    phyRes   =Stat("Physical resistance",   "<:phyres:725871121051811931>"),
-    expRes   =Stat("Explosive resistance",  "<:expres:725871136935772294>"),
-    eleRes   =Stat("Electric resistance",  "<:elecres:725871146716758077>"),
-    phyDmg   =Stat("Physical damage",       "<:phydmg:725871208830074929>"),
-    phyResDmg=Stat("Resistance drain",   "<:phyresdmg:725871259635679263>"),
-    expDmg   =Stat("Explosive damage",      "<:expdmg:725871223338172448>"),
-    heaDmg   =Stat("Heat damage",           "<:headmg:725871613639393290>"),
-    heaCapDmg=Stat("Max heat damage",   "<:heatcapdmg:725871478083551272>"),
-    heaColDmg=Stat("Cooling damage",    "<:coolingdmg:725871499281563728>"),
-    expResDmg=Stat("Resistance drain",   "<:expresdmg:725871281311842314>"),
-    eleDmg   =Stat("Electric damage",       "<:eledmg:725871233614479443>"),
-    eneDmg   =Stat("Energy damage",         "<:enedmg:725871599517171719>"),
-    eneCapDmg=Stat("Max energy damage",  "<:enecapdmg:725871420126789642>"),
-    eneRegDmg=Stat("Regeneration damage", "<:regendmg:725871443815956510>"),
-    eleResDmg=Stat("Resistance drain",   "<:eleresdmg:725871296381976629>"),
-    range    =Stat("Range",                  "<:range:725871752072134736>"),
-    push     =Stat("Knockback",               "<:push:725871716613488843>"),
-    pull     =Stat("Pull",                    "<:pull:725871734141616219>"),
-    recoil   =Stat("Recoil",                "<:recoil:725871778282340384>"),
-    retreat  =Stat("Retreat",              "<:retreat:725871804236955668>"),
-    advance  =Stat("Advance",              "<:advance:725871818115907715>"),
-    walk     =Stat("Walking",                 "<:walk:725871844581834774>"),
-    jump     =Stat("Jumping",                 "<:jump:725871869793796116>"),
-    uses     =Stat("Uses",                    "<:uses:725871917923303688>"),
-    backfire =Stat("Backfire",            "<:backfire:725871901062201404>"),
-    heaCost  =Stat("Heat cost",            "<:heatgen:725871674007879740>"),
-    eneCost  =Stat("Energy cost",         "<:eneusage:725871660237979759>"))
-# fmt: on
+with open("SuperMechs/GameData/StatData.json") as file:
+    json: dict[AnyStatKey, StatDict] = load(file)
+
+    STATS = {stat_key: Stat.from_dict(value) for stat_key, value in json.items()}
 
 
 class GameVars(t.NamedTuple):
@@ -78,24 +89,14 @@ DEFAULT_VARS = GameVars()
 
 
 class ArenaBuffs:
+    # fmt: off
     ref_def = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
     ref_hp = (0, +10, +30, +60, 90, 120, 150, 180, +220, +260, 300, 350)
     stat_ref = (
-        "eneCap",
-        "eneReg",
-        "eneDmg",
-        "heaCap",
-        "heaCol",
-        "heaDmg",
-        "phyDmg",
-        "expDmg",
-        "eleDmg",
-        "phyRes",
-        "expRes",
-        "eleRes",
-        "health",
-        "backfire",
+        "eneCap", "eneReg", "eneDmg", "heaCap", "heaCol", "heaDmg", "phyDmg",
+        "expDmg", "eleDmg", "phyRes", "expRes", "eleRes", "health", "backfire"
     )
+    # fmt: on
 
     def __init__(self, levels: dict[str, int] | None = None) -> None:
         self.levels = levels or dict.fromkeys(self.stat_ref, 0)

@@ -202,12 +202,12 @@ def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
             text = f"{v1}-{v2}"
             change = f" **{d1:+} {d2:+}**" if d1 or d2 else ""
 
-        name, emoji = STATS[stat]
+        name = STATS[stat].name
 
         if stat == "uses":
             name = "Use" if value == 1 else "Uses"
 
-        item_stats += f"{emoji} **{text}** {name}{change}\n"
+        item_stats += f"{STATS[stat].emoji} **{text}** {name}{change}\n"
 
     if item.tags.require_jump:
         item_stats += f"{STATS['jump'].emoji} **Jumping required**"

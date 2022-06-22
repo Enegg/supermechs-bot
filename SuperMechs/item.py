@@ -17,6 +17,7 @@ if t.TYPE_CHECKING:
     from aiohttp import ClientSession
     from PIL.Image import Image
 
+
 @dataclass(slots=True)
 class Tags:
     premium: bool = False
@@ -119,33 +120,33 @@ class Item(t.Generic[AttachmentType]):
     @classmethod
     def from_json_v1(cls, json: ItemDict, pack: PackConfig) -> Self:
         self = cls(
-            id=json.pop("id"),
-            name=json.pop("name"),
+            id=json["id"],
+            name=json["name"],
             pack_key=pack["key"],
             image_url=js_format(json.pop("image"), url=pack["base_url"]),
-            type=Type[json.pop("type").upper()],
-            rarity=RarityRange.from_string(json.pop("transform_range")),
-            stats=json.pop("stats"),
-            element=Element[json.pop("element").upper()],
-            attachment=json.pop("attachment", None),  # type: ignore
+            type=Type[json["type"].upper()],
+            rarity=RarityRange.from_string(json["transform_range"]),
+            stats=json["stats"],
+            element=Element[json["element"].upper()],
+            attachment=json.get("attachment", None),  # type: ignore
         )
-        tags = json.pop("tags", [])
+        tags = json.get("tags", [])
         self.tags.melee = "melee" in tags
         return self
 
     @classmethod
     def from_json_v2(cls, json: ItemDict, pack: ItemPackv2) -> Self:
         self = cls(
-            id=json.pop("id"),
-            name=json.pop("name"),
+            id=json["id"],
+            name=json["name"],
             pack_key=pack["key"],
-            type=Type[json.pop("type").upper()],
-            rarity=RarityRange.from_string(json.pop("transform_range")),
-            stats=json.pop("stats"),
-            element=Element[json.pop("element").upper()],
-            attachment=json.pop("attachment", None),  # type: ignore
+            type=Type[json["type"].upper()],
+            rarity=RarityRange.from_string(json["transform_range"]),
+            stats=json["stats"],
+            element=Element[json["element"].upper()],
+            attachment=json.get("attachment", None),  # type: ignore
         )
-        tags = json.pop("tags", [])
+        tags = json.get("tags", [])
         self.tags.melee = "melee" in tags
         self.tags.roller = "roller" in tags
         self.tags.sword = "sword" in tags
