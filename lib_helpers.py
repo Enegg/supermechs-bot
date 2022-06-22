@@ -5,12 +5,9 @@ import io
 import logging
 import traceback
 import typing as t
-from collections import deque
 
 import disnake
 from disnake.ext import commands
-
-from utils import MISSING
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -32,12 +29,12 @@ class ForbiddenChannel(commands.CheckFailure):
 
 
 def str_to_file(
-    fp: str | bytes | io.BufferedIOBase, filename: str | None = "file.txt"
+    fp: str | bytes | io.TextIOBase | io.BufferedIOBase, filename: str | None = "file.txt"
 ) -> disnake.File:
     """Creates a disnake.File from a string, bytes or IO object."""
     match fp:
         case str():
-            file = io.BytesIO(fp.encode())
+            file = io.StringIO(fp)
 
         case bytes():
             file = io.BytesIO(fp)
@@ -59,25 +56,9 @@ class FileRecord(logging.LogRecord):
 class ChannelHandler(logging.Handler):
     """Handler instance dispatching logging events to a discord channel."""
 
-    def __init__(
-        self, channel_id: int, client: disnake.Client, level: int = logging.NOTSET
-    ) -> None:
+    def __init__(self, channel: disnake.abc.Messageable, level: int = logging.NOTSET) -> None:
         super().__init__(level)
-        self.dest: disnake.abc.Messageable = MISSING
-        self.queue: deque[FileRecord] = deque()
-
-        def setter(future: asyncio.Future[None]) -> None:
-            channel = client.get_channel(channel_id)
-
-            if not isinstance(channel, disnake.abc.Messageable):
-                raise TypeError("Channel is not Messengable")
-
-            self.dest = channel
-
-            while self.queue:
-                self.emit(self.queue.popleft())
-
-        asyncio.ensure_future(client.wait_until_ready()).add_done_callback(setter)
+        self.destination = channel
 
     @staticmethod
     def format(record: FileRecord) -> str:
@@ -116,17 +97,13 @@ class ChannelHandler(logging.Handler):
         return emit
 
     def emit(self, record: FileRecord) -> None:
-        if self.dest is MISSING:
-            self.queue.append(record)
-            return
-
         msg = self.format(record)
 
         if record.file is None:
-            task = self.dest.send(msg, allowed_mentions=disnake.AllowedMentions.none())
+            task = self.destination.send(msg, allowed_mentions=disnake.AllowedMentions.none())
 
         else:
-            task = self.dest.send(
+            task = self.destination.send(
                 msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none()
             )
 

@@ -18,7 +18,9 @@ from ui.views import InteractionCheck, PaginatorView, positioned
 if t.TYPE_CHECKING:
     from bot import SMBot
 
-logger = logging.getLogger("channel_logs")
+logger = logging.getLogger(f"main.{__name__}")
+
+# TODO: create mock tests for the commands to ensure nothing breaks for the nth time
 
 
 class ArenaBuffsView(PaginatorView, InteractionCheck):
@@ -160,3 +162,4 @@ class ArenaBuffsCog(commands.Cog):
 
 def setup(bot: SMBot) -> None:
     bot.add_cog(ArenaBuffsCog(bot))
+    logger.info('Cog "ArenaBuffsCog" loaded')

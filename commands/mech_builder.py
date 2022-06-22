@@ -26,7 +26,7 @@ if t.TYPE_CHECKING:
 
     from bot import SMBot
 
-logger = logging.getLogger("channel_logs")
+logger = logging.getLogger(f"main.{__name__}")
 
 
 def id_to_type(id: str) -> Type:
@@ -43,8 +43,8 @@ def id_to_type(id: str) -> Type:
 
 
 def id_to_slot(id: str) -> IconData:
-    if id.startswith(("top", "side")):
-        return id_to_type(id).alt if int(id[-1]) % 2 else id_to_type(id)
+    if id.startswith(("top", "side")) and int(id[-1]) % 2 == 1:
+        return id_to_type(id).alt
 
     return id_to_type(id)
 
@@ -323,13 +323,13 @@ class MechBuilder(commands.Cog):
 
         else:
             await inter.send(
-                f'No build found named "{name}".',
+                f'No build named "{name}" found.',
                 allowed_mentions=AllowedMentions.none(),
             )
             return
 
         embed = Embed(title=f'Mech build "{name}"')
-        embed.add_field(name="Stats:", value=mech.print_stats(player.arena_buffs))
+        embed.add_field("Stats:", mech.print_stats(player.arena_buffs))
 
         if mech.torso is None:
             embed.color = inter.author.color
@@ -337,12 +337,10 @@ class MechBuilder(commands.Cog):
             return
 
         embed.color = mech.torso.element.color
-        filename = f"{name}.png"
-        embed.set_image(url=f"attachment://{filename}")
 
         await mech.load_images(self.bot.session)
-        file = image_to_file(mech.image, filename)
-        await inter.send(embed=embed, file=file)
+        embed.set_image(file=image_to_file(mech.image, f"{name}.png"))
+        await inter.send(embed=embed)
 
     @mech.sub_command(name="list")
     async def browse(self, inter: CommandInteraction, player: Player) -> None:
@@ -422,3 +420,4 @@ class MechBuilder(commands.Cog):
 
 def setup(bot: SMBot) -> None:
     bot.add_cog(MechBuilder(bot))
+    logger.info('Cog "MechBuilder" loaded')

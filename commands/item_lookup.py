@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from itertools import zip_longest
 
@@ -20,6 +21,8 @@ if t.TYPE_CHECKING:
 
 T = t.TypeVar("T")
 
+logger = logging.getLogger(f"main.{__name__}")
+
 
 class ItemView(SaneView, InteractionCheck):
     def __init__(
@@ -36,6 +39,9 @@ class ItemView(SaneView, InteractionCheck):
         self.call = callback
         self.embed = embed
         self.item = item
+
+        if not {"phyDmg", "eleDmg", "ExpDmg"} & set(item.stats):
+            self.remove_item(self.avg_button, 0)
 
         callback(embed, item, False, False)
 
@@ -83,7 +89,7 @@ class ItemCompareView(SaneView, InteractionCheck):
         self.prepare()
 
     @positioned(0, 0)
-    @button(ToggleButton, label="Arena buffs", custom_id="button:buffs")
+    @button(cls=ToggleButton, label="Arena buffs", custom_id="button:buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.prepare()
@@ -432,7 +438,7 @@ def try_shorten(name: str) -> str:
     return "".join(s for s in name if s.isupper())
 
 
-class ItemLookupCog(commands.Cog):
+class ItemLookup(commands.Cog):
     def __init__(self, bot: SMBot) -> None:
         self.bot = bot
 
@@ -577,4 +583,5 @@ class ItemLookupCog(commands.Cog):
 
 
 def setup(bot: SMBot) -> None:
-    bot.add_cog(ItemLookupCog(bot))
+    bot.add_cog(ItemLookup(bot))
+    logger.info('Cog "ItemLookupCog" loaded')

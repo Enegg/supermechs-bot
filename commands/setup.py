@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import io
 import logging
-import traceback
 import typing as t
+from traceback import print_exception
 
 from disnake import AllowedMentions, CommandInteraction
 from disnake.ext import commands
@@ -14,17 +14,15 @@ from lib_helpers import str_to_file
 if t.TYPE_CHECKING:
     from bot import SMBot
 
-
-logger = logging.getLogger("channel_logs")
+logger = logging.getLogger(f"main.{__name__}")
 
 
 class Setup(commands.Cog):
     """Module management commands for development purposes."""
 
-    last_ext = None
-
     def __init__(self, bot: SMBot) -> None:
         self.bot = bot
+        self.last_ext: str | None = None
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
     @commands.default_member_permissions(administrator=True)
@@ -33,7 +31,7 @@ class Setup(commands.Cog):
         self,
         inter: CommandInteraction,
         action: t.Literal["load", "reload", "unload"] = "reload",
-        ext: t.Optional[str] = None,
+        ext: str | None = None,
     ) -> None:
         """Extension manager
 
@@ -59,11 +57,10 @@ class Setup(commands.Cog):
 
         except commands.ExtensionError as error:
             with io.StringIO() as sio:
-                sio.write("```py\n")
-                traceback.print_exception(type(error), error, error.__traceback__, file=sio)
+                sio.write("An error occured:\n```py\n")
+                print_exception(type(error), error, error.__traceback__, file=sio)
                 sio.write("```")
-                error_block = sio.getvalue()
-            await inter.send(f"An error occured:\n{error_block}", ephemeral=True)
+            await inter.send(sio.getvalue(), ephemeral=True)
 
         else:
             await inter.send("Success", ephemeral=True)
@@ -90,7 +87,7 @@ class Setup(commands.Cog):
         self,
         inter: CommandInteraction,
         exception: str,
-        arguments: t.Optional[str] = None,
+        arguments: str | None = None,
     ) -> None:
         """Explicitly raises provided exception
 
@@ -117,33 +114,6 @@ class Setup(commands.Cog):
         input = input.lower()
         return [exc for exc in commands.errors.__all__ if input in exc.lower()][:25]
 
-    # @commands.slash_command(guild_ids=TEST_GUILDS)
-    # @commands.is_owner()
-    # async def database(self, inter: disnake.CommandInteraction) -> None:
-    #     """Show info about the database"""
-    #     if self.bot.engine is None:
-    #         await inter.send("Database is disabled.")
-    #         return
-
-    #     from pymongo.errors import PyMongoError
-
-    #     await inter.response.defer()
-
-    #     try:
-    #         data = await self.bot.engine.client.server_info()
-
-    #     except PyMongoError:
-    #         await inter.send("Unable to connect.")
-    #         raise
-
-    #     data = str(data)
-
-    #     if len(data) > 2000:
-    #         await inter.send(file=str_to_file(data))
-
-    #     else:
-    #         await inter.send(data)
-
     @commands.slash_command(name="eval", guild_ids=TEST_GUILDS)
     @commands.default_member_permissions(administrator=True)
     @commands.is_owner()
@@ -167,7 +137,7 @@ class Setup(commands.Cog):
             msg = f"```\n{std or output}```"
 
         else:
-            msg = "```\n" f"{output}```\n" "**stdout:**\n" "```\n" f"{std}```"
+            msg = f"```\n{output}```\n**stdout:**\n```\n{std}```"
 
         if len(msg) > 2000:
             file = str_to_file(msg.strip("` "))
@@ -183,3 +153,4 @@ class Setup(commands.Cog):
 
 def setup(bot: SMBot) -> None:
     bot.add_cog(Setup(bot))
+    logger.info('Cog "Setup" loaded')

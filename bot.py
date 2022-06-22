@@ -7,18 +7,20 @@ from functools import cached_property, partial
 from json import JSONDecodeError
 
 import aiohttp
-import disnake
+from disnake import CommandInteraction, Interaction, Member, User
+from disnake.abc import Messageable
 from disnake.ext import commands
 
 from config import DEFAULT_PACK_URL
-from lib_helpers import CommandInteraction
+from lib_helpers import ChannelHandler
+from lib_helpers import CommandInteraction as SMCommandInteraction
 from SuperMechs.core import abbreviate_names
 from SuperMechs.item import AnyItem, Item
 from SuperMechs.player import Player
 from SuperMechs.types import ItemPack, PackConfig
 from utils import MISSING
 
-logger = logging.getLogger("channel_logs")
+logger = logging.getLogger(f"main.{__name__}")
 
 
 class SMBot(commands.InteractionBot):
@@ -26,14 +28,17 @@ class SMBot(commands.InteractionBot):
     item_abbrevs: dict[str, set[str]]
     item_pack: PackConfig
 
-    def __init__(self, hosted: bool = False, **options: t.Any) -> None:
+    def __init__(
+        self, test_mode: bool = False, logs_channel_id: int | None = None, **options: t.Any
+    ) -> None:
         super().__init__(**options)
-        self.hosted = hosted
+        self.test_mode = test_mode
         self.run_time: datetime = MISSING
         self.players: dict[int, Player] = {}
+        self.logs_channel = logs_channel_id
 
     async def on_slash_command_error(
-        self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError
+        self, inter: CommandInteraction, error: commands.CommandError
     ) -> None:
         match error:
             case commands.NotOwner():
@@ -70,6 +75,15 @@ class SMBot(commands.InteractionBot):
         self.run_time = datetime.now()
         await self.login(token)
 
+        if self.logs_channel is not None:
+            channel = await self.fetch_channel(self.logs_channel)
+
+            if not isinstance(channel, Messageable):
+                raise TypeError("Channel is not Messageable")
+
+            logger.addHandler(ChannelHandler(channel, logging.WARNING))
+            logger.info("Warnings & errors redirected to logs channel")
+
         try:
             await self.load_item_pack(DEFAULT_PACK_URL)
 
@@ -82,19 +96,20 @@ class SMBot(commands.InteractionBot):
         await self.connect(reconnect=reconnect)
 
     async def on_ready(self) -> None:
-        text = f"{self.user.name} is online"
-        print(text, "-" * len(text), sep="\n")
+        logger.info(f"{self.user.name} is online")
 
     @cached_property
     def session(self) -> aiohttp.ClientSession:
         session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=30), connector=self.http.connector
+            connector=self.http.connector, timeout=aiohttp.ClientTimeout(total=30)
         )
         session._request = partial(session._request, proxy=self.http.proxy)
         return session
 
     async def load_item_pack(self, pack_url: str, /) -> None:
         """Loads an item pack from url and sets it as active pack."""
+        logger.info("Fetching item pack")
+
         async with self.session.get(pack_url) as response:
             response.raise_for_status()
             pack: ItemPack = await response.json(encoding="utf-8", content_type=None)
@@ -106,15 +121,13 @@ class SMBot(commands.InteractionBot):
         }
         logger.info(f"Item pack loaded: {self.item_pack['name']}")
 
-    def get_player(
-        self, data: disnake.User | disnake.Member | commands.Context | disnake.Interaction | int, /
-    ) -> Player:
+    def get_player(self, data: User | Member | commands.Context | Interaction | int, /) -> Player:
         """Return a Player object from object containing user ID."""
         match data:
-            case disnake.User() | disnake.Member():
+            case User() | Member():
                 id = data.id
 
-            case commands.Context() | disnake.Interaction():
+            case commands.Context() | Interaction():
                 id = data.author.id
 
             case int():
@@ -124,11 +137,13 @@ class SMBot(commands.InteractionBot):
                 raise TypeError(f"Invalid type: {type(data)}")
 
         if id not in self.players:
+            logger.info("New player created: %d", id)
             self.players[id] = Player(id=id)
 
         return self.players[id]
 
 
+# due to disnake bug this cannot be Bot method
 @commands.register_injection
-def get_player(inter: CommandInteraction) -> Player:
+def player_injector(inter: SMCommandInteraction) -> Player:
     return inter.bot.get_player(inter)
