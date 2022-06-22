@@ -126,6 +126,150 @@ class ItemCompareView(SaneView, InteractionCheck):
         modify(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
 
+class ItemLookup(commands.Cog):
+    def __init__(self, bot: SMBot) -> None:
+        self.bot = bot
+
+    @commands.slash_command()
+    async def item(
+        self,
+        inter: CommandInteraction,
+        name: str,
+        compact: bool = False,
+        invisible: bool = True,
+    ) -> None:
+        """Finds an item and returns its stats {{ ITEM }}
+
+        Parameters
+        -----------
+        name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+        compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
+        invisible: Whether the bot response is visible only to you {{ ITEM_VISIBILITY }}
+        """
+
+        if name not in self.bot.items_cache:
+            if name == "Start typing to get suggestions...":
+                raise commands.UserInputError("This is only an information and not an option")
+
+            raise commands.UserInputError("Item not found.")
+
+        item = self.bot.items_cache[name]
+
+        if compact:
+            embed = (
+                Embed(color=item.element.color)
+                .set_author(name=item.name, icon_url=item.type.image_url)
+                .set_thumbnail(url=item.image_url)
+            )
+            embed_preset = compact_embed
+
+        else:
+            embed = (
+                Embed(
+                    title=item.name,
+                    description=f"{item.element.name.capitalize()} "
+                    f"{item.type.name.replace('_', ' ').lower()}",
+                    color=item.element.color,
+                )
+                .set_thumbnail(url=item.type.image_url)
+                .set_image(url=item.image_url)
+            )
+            embed_preset = default_embed
+
+        view = ItemView(embed, item, embed_preset, user_id=inter.author.id)
+        await inter.send(embed=embed, view=view, ephemeral=invisible)
+
+        await view.wait()
+        await inter.edit_original_message(view=None)
+
+    @commands.slash_command(guild_ids=TEST_GUILDS)
+    async def item_raw(self, inter: CommandInteraction, name: str) -> None:
+        """Finds an item and returns its raw stats {{ ITEM }}
+
+        Parameters
+        -----------
+        name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+        """
+
+        if name not in self.bot.items_cache:
+            if name == "Start typing to get suggestions...":
+                raise commands.UserInputError("This is only an information and not an option")
+
+            raise commands.UserInputError("Item not found.")
+
+        item = self.bot.items_cache[name]
+
+        await inter.send(f"`{item!r}`", ephemeral=True)
+
+    @commands.slash_command()
+    async def compare(self, inter: CommandInteraction, item1: str, item2: str) -> None:
+        """Shows an interactive comparison of two items. {{ COMPARE }}
+
+        Parameters
+        -----------
+        item1: First item to compare. {{ COMPARE_FIRST }}
+        item2: Second item to compare. {{ COMPARE_SECOND }}
+        """
+        item_a = self.bot.items_cache.get(item1)
+        item_b = self.bot.items_cache.get(item2)
+
+        if item_a is None or item_b is None:
+            raise commands.UserInputError("Either of specified items not found.")
+
+        if item_a.type is item_b.type:
+            desc = (
+                f"{item_a.element.name.capitalize()} {item_a.type.name.replace('_', ' ').lower()}"
+            )
+
+            if not desc.endswith("s"):
+                desc += "s"
+
+        else:
+            desc = (
+                f"{item_a.element.name.capitalize()} "
+                f"{item_a.type.name.replace('_', ' ').lower()}"
+                " | "
+                f"{item_b.element.name.capitalize()} "
+                f"{item_b.type.name.replace('_', ' ').lower()}"
+            )
+
+        embed = Embed(
+            title=f"{item_a.name} vs {item_b.name}",
+            description=desc,
+        )
+
+        if item_a.element is item_b.element:
+            embed.color = item_a.element.color
+
+        else:
+            embed.color = inter.author.color
+
+        view = ItemCompareView(embed, item_a, item_b, user_id=inter.author.id)
+        await inter.send(embed=embed, view=view, ephemeral=True)
+
+        await view.wait()
+        await inter.edit_original_message(view=None)
+
+    @item.autocomplete("name")
+    @item_raw.autocomplete("name")
+    @compare.autocomplete("item1")
+    @compare.autocomplete("item2")
+    async def item_autocomplete(self, inter: CommandInteraction, input: str) -> list[str]:
+        """Autocomplete for items"""
+        if len(input) < 2:
+            return ["Start typing to get suggestions..."]
+
+        items = sorted(
+            set(search_for(input, self.bot.items_cache))
+            | self.bot.item_abbrevs.get(input.lower(), set())
+        )
+
+        if len(items) <= 25:
+            return items
+
+        return items[:25]
+
+
 def avg_and_deviation(a: int | tuple[int, int], b: int | None = None) -> tuple[float, float]:
     if isinstance(a, tuple):
         a, b = a
@@ -436,150 +580,6 @@ def try_shorten(name: str) -> str:
         return name
 
     return "".join(s for s in name if s.isupper())
-
-
-class ItemLookup(commands.Cog):
-    def __init__(self, bot: SMBot) -> None:
-        self.bot = bot
-
-    @commands.slash_command()
-    async def item(
-        self,
-        inter: CommandInteraction,
-        name: str,
-        compact: bool = False,
-        invisible: bool = True,
-    ) -> None:
-        """Finds an item and returns its stats {{ ITEM }}
-
-        Parameters
-        -----------
-        name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
-        compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
-        invisible: Whether the bot response is visible only to you {{ ITEM_VISIBILITY }}
-        """
-
-        if name not in self.bot.items_cache:
-            if name == "Start typing to get suggestions...":
-                raise commands.UserInputError("This is only an information and not an option")
-
-            raise commands.UserInputError("Item not found.")
-
-        item = self.bot.items_cache[name]
-
-        if compact:
-            embed = (
-                Embed(color=item.element.color)
-                .set_author(name=item.name, icon_url=item.type.image_url)
-                .set_thumbnail(url=item.image_url)
-            )
-            embed_preset = compact_embed
-
-        else:
-            embed = (
-                Embed(
-                    title=item.name,
-                    description=f"{item.element.name.capitalize()} "
-                    f"{item.type.name.replace('_', ' ').lower()}",
-                    color=item.element.color,
-                )
-                .set_thumbnail(url=item.type.image_url)
-                .set_image(url=item.image_url)
-            )
-            embed_preset = default_embed
-
-        view = ItemView(embed, item, embed_preset, user_id=inter.author.id)
-        await inter.send(embed=embed, view=view, ephemeral=invisible)
-
-        await view.wait()
-        await inter.edit_original_message(view=None)
-
-    @commands.slash_command(guild_ids=TEST_GUILDS)
-    async def item_raw(self, inter: CommandInteraction, name: str) -> None:
-        """Finds an item and returns its raw stats {{ ITEM }}
-
-        Parameters
-        -----------
-        name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
-        """
-
-        if name not in self.bot.items_cache:
-            if name == "Start typing to get suggestions...":
-                raise commands.UserInputError("This is only an information and not an option")
-
-            raise commands.UserInputError("Item not found.")
-
-        item = self.bot.items_cache[name]
-
-        await inter.send(f"`{item!r}`", ephemeral=True)
-
-    @commands.slash_command()
-    async def compare(self, inter: CommandInteraction, item1: str, item2: str) -> None:
-        """Shows an interactive comparison of two items. {{ COMPARE }}
-
-        Parameters
-        -----------
-        item1: First item to compare. {{ COMPARE_FIRST }}
-        item2: Second item to compare. {{ COMPARE_SECOND }}
-        """
-        item_a = self.bot.items_cache.get(item1)
-        item_b = self.bot.items_cache.get(item2)
-
-        if item_a is None or item_b is None:
-            raise commands.UserInputError("Either of specified items not found.")
-
-        if item_a.type is item_b.type:
-            desc = (
-                f"{item_a.element.name.capitalize()} {item_a.type.name.replace('_', ' ').lower()}"
-            )
-
-            if not desc.endswith("s"):
-                desc += "s"
-
-        else:
-            desc = (
-                f"{item_a.element.name.capitalize()} "
-                f"{item_a.type.name.replace('_', ' ').lower()}"
-                " | "
-                f"{item_b.element.name.capitalize()} "
-                f"{item_b.type.name.replace('_', ' ').lower()}"
-            )
-
-        embed = Embed(
-            title=f"{item_a.name} vs {item_b.name}",
-            description=desc,
-        )
-
-        if item_a.element is item_b.element:
-            embed.color = item_a.element.color
-
-        else:
-            embed.color = inter.author.color
-
-        view = ItemCompareView(embed, item_a, item_b, user_id=inter.author.id)
-        await inter.send(embed=embed, view=view, ephemeral=True)
-
-        await view.wait()
-        await inter.edit_original_message(view=None)
-
-    @item.autocomplete("name")
-    @item_raw.autocomplete("name")
-    @compare.autocomplete("item1")
-    @compare.autocomplete("item2")
-    async def item_autocomplete(self, inter: CommandInteraction, input: str) -> list[str]:
-        """Autocomplete for items"""
-        if len(input) < 2:
-            return ["Start typing to get suggestions..."]
-
-        items = sorted(
-            set(search_for(input, self.bot.items_cache))
-            | self.bot.item_abbrevs.get(input.lower(), set())
-        )
-
-        if len(items) <= 25:
-            return items
-
-        return items[:25]
 
 
 def setup(bot: SMBot) -> None:
