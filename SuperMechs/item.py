@@ -7,7 +7,7 @@ from typing_extensions import Self
 
 from utils import MISSING, js_format
 
-from .core import MAX_BUFFS
+from .core import ArenaBuffs
 from .enums import Element, Rarity, RarityRange, Type
 from .images import get_image
 from .types import (AnyStats, Attachment, Attachments, AttachmentType, ItemDict, ItemPackv2,
@@ -47,9 +47,9 @@ class Item(t.Generic[AttachmentType]):
     _: KW_ONLY
     id: int
     name: str
-    pack_key: str
     type: Type
     rarity: RarityRange
+    pack_key: str = field(compare=False)
     element: Element = Element.OMNI
     stats: AnyStats = field(hash=False)
     image_url: str = field(default=MISSING, hash=False)
@@ -70,13 +70,9 @@ class Item(t.Generic[AttachmentType]):
         return self.name
 
     @property
-    def type_name(self) -> str:
-        return self.type.name
-
-    @property
     def displayable(self) -> bool:
         """Returns True if the item can be rendered on the mech, False otherwise"""
-        return self.type.name not in {"TELE", "CHARGE", "HOOK", "MODULE"}
+        return self.type not in {Type.TELE, Type.CHARGE, Type.HOOK, Type.MODULE}
 
     @property
     def image(self) -> Image:
@@ -158,7 +154,7 @@ class Item(t.Generic[AttachmentType]):
             "id": self.id,
             "name": self.name,
             "type": self.type.name,
-            "stats": MAX_BUFFS.buff_stats(self.stats),
+            "stats": ArenaBuffs.maxed().buff_stats(self.stats),
             "tags": self.tags.to_dict(),
             "element": self.element.name,
             "timesUsed": 0,

@@ -28,6 +28,11 @@ class ForbiddenChannel(commands.CheckFailure):
         super().__init__(message=message or "You cannot use this command here.", *args)
 
 
+class DesyncError(commands.CommandError):
+    """Exception raised when due to external factors command's state goes out of sync"""
+    pass
+
+
 def str_to_file(
     fp: str | bytes | io.TextIOBase | io.BufferedIOBase, filename: str | None = "file.txt"
 ) -> disnake.File:

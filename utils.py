@@ -21,7 +21,7 @@ class SupportsComparison(t.Protocol[T_CO]):
 
 
 class _MissingSentinel:
-    def __eq__(self, other: t.Any) -> bool:
+    def __eq__(self, _: t.Any) -> bool:
         return False
 
     def __bool__(self) -> bool:
@@ -146,7 +146,7 @@ def unique_id() -> str:
     return os.urandom(16).hex()
 
 
-def binary_find_near_index(
+def find_near_index(
     container: t.Sequence[SupportsComparison[T_CO]],
     value: SupportsComparison[T_CO],
     start: int,
@@ -163,9 +163,18 @@ def binary_find_near_index(
 
     # tail recursion even though python does not optimize for it
     if container[index] > value:
-        return binary_find_near_index(container, value, start, index)
+        return find_near_index(container, value, start, index)
 
     if container[index] < value:
-        return binary_find_near_index(container, value, index, end)
+        return find_near_index(container, value, index, end)
 
     return index
+
+
+KT = t.TypeVar("KT")
+VT = t.TypeVar("VT")
+
+
+def dict_items_as(value_type: type[VT], obj: t.Mapping[KT, t.Any]) -> t.ItemsView[KT, VT]:
+    """Helper function to aid iterating over TypedDict.items()"""
+    return obj.items()

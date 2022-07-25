@@ -8,6 +8,7 @@ from disnake import AllowedMentions, CommandInteraction, Embed, MessageInteracti
 from disnake.ext import commands
 from typing_extensions import Self
 
+from lib_helpers import DesyncError
 from SuperMechs.enums import Element, IconData, Type
 from SuperMechs.images import image_to_file
 from SuperMechs.inv_item import AnyInvItem, InvItem
@@ -48,7 +49,7 @@ def id_to_slot(id: str) -> IconData:
     return id_to_type(id)
 
 
-class MechView(PaginatorView, InteractionCheck):
+class MechView(InteractionCheck, PaginatorView):
     """Class implementing View for a button-based mech building"""
 
     bot_msg: Message
@@ -175,17 +176,21 @@ class MechView(PaginatorView, InteractionCheck):
     )
     async def item_select(self, select: PaginatedSelect, inter: MessageInteraction) -> None:
         """Dropdown menu with all the items."""
+        assert self.active is not None
         (item_name,) = select.values
 
         if select.check_option(item_name):
             await inter.response.edit_message(view=self)
             return
 
-        select.placeholder = item_name
         item = None if item_name == "empty" else self.bot.items_cache[item_name]
 
-        assert self.active is not None
+        # sanity check if the item is actually valid
+        if item is not None and item.type is not id_to_type(self.active.custom_id):
+            raise DesyncError()
+
         self.active.item = item
+        select.placeholder = item_name
 
         if item is not None:
             item = t.cast(AnyInvItem, InvItem.from_item(item))  # type: ignore
@@ -377,10 +382,8 @@ class MechBuilder(commands.Cog):
             await mech.load_images(self.bot.session)
             filename = random_str(8) + ".png"
 
-            file = image_to_file(mech.image, filename)
-            embed.set_image(url=f"attachment://{filename}")
-
-            await inter.send(embed=embed, view=view, file=file)
+            embed.set_image(file=image_to_file(mech.image, filename))
+            await inter.send(embed=embed, view=view)
 
         view.bot_msg = await inter.original_message()
 

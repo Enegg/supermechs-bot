@@ -15,6 +15,8 @@ from .types import WUSerialized
 class Player:
     """Represents a SuperMechs player."""
 
+    # TODO: add mech teams, and commands related to managing them
+
     id: int
     builds: dict[str, Mech] = field(default_factory=dict)
     arena_buffs: ArenaBuffs = field(default_factory=ArenaBuffs)

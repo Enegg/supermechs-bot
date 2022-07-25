@@ -5,10 +5,11 @@ from json import load
 
 from typing_extensions import Self
 
-from utils import MISSING
+from utils import MISSING, dict_items_as
 
-from .types import AnyStatKey, AnyStats, StatDict
+from .types import AnyMechStats, AnyStatKey, AnyStats, StatDict
 
+# order reference
 WORKSHOP_STATS: t.Final = (
     "weight",
     "health",
@@ -78,11 +79,15 @@ with open("SuperMechs/GameData/StatData.json") as file:
 class GameVars(t.NamedTuple):
     MAX_WEIGHT: int = 1000
     OVERWEIGHT: int = 10
-    PENALTIES: dict[str, int] = {"health": 15}
+    PENALTIES: AnyMechStats = { "health": 15 }
 
     @property
     def MAX_OVERWEIGHT(self) -> int:
         return self.MAX_WEIGHT + self.OVERWEIGHT
+
+    @staticmethod
+    def default() -> GameVars:
+        return DEFAULT_VARS
 
 
 DEFAULT_VARS = GameVars()
@@ -90,19 +95,18 @@ DEFAULT_VARS = GameVars()
 
 class ArenaBuffs:
     # fmt: off
-    ref_def = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
-    ref_hp = (0, +10, +30, +60, 90, 120, 150, 180, +220, +260, 300, 350)
-    stat_ref = (
+    BASE_PERCENT = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
+    HP_INCREASES = (0, +10, +30, +60, 90, 120, 150, 180, +220, +260, 300, 350)
+    STATS_REFERENCE = (
         "eneCap", "eneReg", "eneDmg", "heaCap", "heaCol", "heaDmg", "phyDmg",
         "expDmg", "eleDmg", "phyRes", "expRes", "eleRes", "health", "backfire"
     )
     # fmt: on
 
     def __init__(self, levels: dict[str, int] | None = None) -> None:
-        self.levels = levels or dict.fromkeys(self.stat_ref, 0)
+        self.levels = levels or dict.fromkeys(self.STATS_REFERENCE, 0)
 
-    def __getitem__(self, key: str) -> int:
-        return self.levels[key]
+        self.__getitem__ = self.levels.__getitem__
 
     def __repr__(self) -> str:
         return (
@@ -124,7 +128,7 @@ class ArenaBuffs:
         level = self.levels[stat]
 
         if stat == "health":
-            return value + self.ref_hp[level]
+            return value + self.HP_INCREASES[level]
 
         return round(value * (1 + self.get_percent(stat, level) / 100))
 
@@ -135,63 +139,66 @@ class ArenaBuffs:
         return buffed, buffed - value
 
     @classmethod
-    def get_percent(cls, stat: str, level: int) -> int:
+    def get_percent(cls, stat_name: str, level: int) -> int:
         """Returns an int representing the precentage for the stat's increase."""
-        match stat:
+        match stat_name:
             case "health":
                 raise TypeError('"Health" stat has absolute increase, not percent')
 
             case "backfire":
-                return -cls.ref_def[level]
+                return -cls.BASE_PERCENT[level]
 
             case "expRes" | "eleRes" | "phyRes":
-                return cls.ref_def[level] * 2
+                return cls.BASE_PERCENT[level] * 2
 
             case _:
-                return cls.ref_def[level]
+                return cls.BASE_PERCENT[level]
 
     @classmethod
-    def buff_as_str(cls, stat: str, level: int) -> str:
+    def buff_as_str(cls, stat_name: str, level: int) -> str:
         """Returns a formatted string representation of the stat's value at the given level."""
-        if stat == "health":
-            return f"+{cls.ref_hp[level]}"
+        if stat_name == "health":
+            return f"+{cls.HP_INCREASES[level]}"
 
-        return f"{cls.get_percent(stat, level):+}%"
+        return f"{cls.get_percent(stat_name, level):+}%"
 
     def buff_as_str_aware(self, stat: str) -> str:
         """Returns a formatted string representation of the stat's value."""
         return self.buff_as_str(stat, self.levels[stat])
 
     @classmethod
-    def iter_as_str(cls, stat: str) -> t.Iterator[str]:
-        levels = len(cls.ref_hp) if stat == "health" else len(cls.ref_def)
+    def iter_as_str(cls, stat_name: str) -> t.Iterator[str]:
+        levels = len(cls.HP_INCREASES) if stat_name == "health" else len(cls.BASE_PERCENT)
 
         for n in range(levels):
-            yield cls.buff_as_str(stat, n)
+            yield cls.buff_as_str(stat_name, n)
 
     @classmethod
     def maxed(cls) -> ArenaBuffs:
-        """Create an ArenaBuffs object with all levels maxed."""
-        self = cls.__new__(cls)
+        """Returns an ArenaBuffs object with all levels maxed."""
 
-        self.levels = dict.fromkeys(cls.stat_ref, len(cls.ref_def) - 1)
-        self.levels["health"] = len(cls.ref_hp) - 1
+        levels = dict.fromkeys(cls.STATS_REFERENCE, len(cls.BASE_PERCENT) - 1)
+        levels["health"] = len(cls.HP_INCREASES) - 1
+        max_buffs = cls(levels)
 
-        return self
+        setattr(cls, "maxed", staticmethod(lambda: max_buffs))
+
+        return max_buffs
 
     def buff_stats(self, stats: AnyStats, /, *, buff_health: bool = False) -> AnyStats:
         """Returns the buffed stats."""
         buffed: AnyStats = {}
 
-        for key, value in stats.items():
+        for key, value in dict_items_as(int | list[int], stats):
             if key == "health" and not buff_health:
-                buffed[key] = t.cast(int, value)
+                assert type(value) is int
+                buffed[key] = value
 
             elif isinstance(value, list):
                 buffed[key] = [self.total_buff(key, v) for v in value]
 
             else:
-                value = self.total_buff(key, t.cast(int, value))
+                value = self.total_buff(key, value)
                 buffed[key] = value
 
         return buffed

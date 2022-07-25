@@ -23,7 +23,7 @@ logger = logging.getLogger(f"main.{__name__}")
 # TODO: create mock tests for the commands to ensure nothing breaks for the nth time
 
 
-class ArenaBuffsView(PaginatorView, InteractionCheck):
+class ArenaBuffsView(InteractionCheck, PaginatorView):
     def __init__(self, buffs: ArenaBuffs, *, user_id: int, timeout: float = 180) -> None:
         super().__init__(timeout=timeout, columns=3)
         self.user_id = user_id

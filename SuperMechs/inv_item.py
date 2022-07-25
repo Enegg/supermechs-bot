@@ -3,14 +3,15 @@ import typing as t
 import uuid
 from dataclasses import dataclass, field
 
-from PIL.Image import Image
-
-from utils import Proxied, binary_find_near_index, proxy
+from utils import Proxied, find_near_index, proxy
 
 from .enums import Element, Rarity, RarityRange, Type
 from .errors import MaxPowerReached, MaxTierReached
 from .item import Item
-from .types import Attachment, Attachments, AttachmentType
+from .types import AnyStats, Attachment, Attachments, AttachmentType
+
+if t.TYPE_CHECKING:
+    from PIL.Image import Image
 
 with (
     open("SuperMechs/GameData/default_powers.csv", newline="") as file1,
@@ -39,16 +40,17 @@ REDUCED_COST_ITEMS = {"Archimonde", "Armor Annihilator"}
 @dataclass(slots=True)
 @proxy("underlying")
 class InvItem(t.Generic[AttachmentType]):
-    """Represents item inside inventory."""
+    """Represents an item inside inventory."""
 
     underlying: Item[AttachmentType]
 
-    name: t.ClassVar[Proxied[str]]
-    rarity: t.ClassVar[Proxied[RarityRange]]
+    # fmt: off
+    name:    t.ClassVar[Proxied[str]]
+    rarity:  t.ClassVar[Proxied[RarityRange]]
     element: t.ClassVar[Proxied[Element]]
-    icon: t.ClassVar[Proxied[Type]]
-    type: t.ClassVar[Proxied[str]]
-    image: t.ClassVar[Proxied[Image]]
+    type:    t.ClassVar[Proxied[Type]]
+    image:   t.ClassVar[Proxied["Image"]]
+    # fmt: on
 
     tier: Rarity = field(hash=False)
     power: int = field(default=0, hash=False)
@@ -60,7 +62,7 @@ class InvItem(t.Generic[AttachmentType]):
         self.maxed = self.tier is Rarity.DIVINE or self.power >= self.max_power
 
     def __str__(self) -> str:
-        return f"{self.underlying}, {self.tier}, lvl {self.level}"
+        return f"{self.underlying}, {self.tier}, lvl {'max' if self.maxed else self.level}"
 
     def add_power(self, power: int) -> None:
         """Adds power to the item"""
@@ -71,20 +73,18 @@ class InvItem(t.Generic[AttachmentType]):
         if power < 0:
             raise ValueError("Power cannot be negative")
 
-        if (result := self.power + power) >= self.max_power:
-            result = self.max_power
+        del self.level
+        result = min(self.power + power, self.max_power)
+
+        if result == self.max_power:
             self.maxed = True
 
-        del self.level
         self.power = result
 
     def can_transform(self) -> bool:
         """Returns True if item has enough power to transform
         and hasn't reached max transform tier, False otherwise"""
-        if not self.maxed:
-            return False
-
-        return self.tier < self.rarity.max
+        return self.maxed and self.tier < self.rarity.max
 
     def transform(self) -> None:
         """Transforms the item to higher tier, if it has enough power"""
@@ -99,14 +99,22 @@ class InvItem(t.Generic[AttachmentType]):
         self.maxed = self.tier is not Rarity.DIVINE
 
     @property
+    def stats(self) -> AnyStats:
+        # TODO: InvItem should calculate its own stats based on its level and tier
+        return self.underlying.stats
+
+    @property
     def level(self) -> int:
-        """The level the item is currently at"""
+        """The level this item is currently at"""
 
         if self._level is not None:
             return self._level
 
+        if self.tier is Rarity.DIVINE:
+            return 0
+
         levels = self.get_bank()[self.tier]
-        self._level = binary_find_near_index(levels, self.power, 0, len(levels))
+        self._level = find_near_index(levels, self.power, 0, len(levels))
         return self._level
 
     @level.deleter
@@ -138,8 +146,9 @@ class InvItem(t.Generic[AttachmentType]):
         return DEFAULT_POWERS
 
     @classmethod
-    def from_item(cls, item: Item[AttachmentType]) -> "InvItem[AttachmentType]":
+    def from_item(cls, item: Item[AttachmentType], /) -> "InvItem[AttachmentType]":
         return cls(underlying=item, tier=item.rarity.max)
 
 
 AnyInvItem = InvItem[Attachment] | InvItem[Attachments] | InvItem[None]
+InvItemSlot = InvItem[AttachmentType] | None

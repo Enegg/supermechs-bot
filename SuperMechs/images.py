@@ -30,7 +30,7 @@ def image_to_file(image: Image.Image, filename: str | None = None) -> disnake.Fi
 class MechRenderer:
     """Class responsible for creating mech image."""
 
-    layer_order = (
+    LAYER_ORDER = (
         "drone",
         "side2",
         "side4",
@@ -67,7 +67,7 @@ class MechRenderer:
 
     @t.overload
     def add_image(
-        self, item: Item[Attachment], layer: str, x_pos: int | None = ..., y_pos: int | None = ...
+        self, item: Item[Attachment], layer: str, x_pos: int = ..., y_pos: int = ...
     ) -> None:
         ...
 
@@ -110,7 +110,7 @@ class MechRenderer:
 
     def put_image(self, image: Image.Image, layer: str, x: int, y: int) -> None:
         """Place the image on the canvas."""
-        self.images[self.layer_order.index(layer)] = (x, y, image)
+        self.images[self.LAYER_ORDER.index(layer)] = (x, y, image)
 
     def finalize(self) -> Image.Image:
         """Merges all images and returns resulting image."""

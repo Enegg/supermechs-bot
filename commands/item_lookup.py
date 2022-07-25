@@ -14,7 +14,7 @@ from SuperMechs.item import AnyItem
 from SuperMechs.types import AnyStats
 from ui.buttons import Button, ToggleButton, button
 from ui.views import InteractionCheck, SaneView, positioned
-from utils import search_for
+from utils import dict_items_as, search_for
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -24,7 +24,7 @@ T = t.TypeVar("T")
 logger = logging.getLogger(f"main.{__name__}")
 
 
-class ItemView(SaneView, InteractionCheck):
+class ItemView(InteractionCheck, SaneView):
     def __init__(
         self,
         embed: Embed,
@@ -70,7 +70,7 @@ class ItemView(SaneView, InteractionCheck):
         await inter.response.defer()
 
 
-class ItemCompareView(SaneView, InteractionCheck):
+class ItemCompareView(InteractionCheck, SaneView):
     def __init__(
         self,
         embed: Embed,
@@ -216,7 +216,7 @@ class ItemLookup(commands.Cog):
         if item_a is None or item_b is None:
             raise commands.UserInputError("Either of specified items not found.")
 
-        if item_a.type is item_b.type:
+        if item_a.type is item_b.type and item_a.element is item_b.element:
             desc = (
                 f"{item_a.element.name.capitalize()} {item_a.type.name.replace('_', ' ').lower()}"
             )
@@ -236,13 +236,8 @@ class ItemLookup(commands.Cog):
         embed = Embed(
             title=f"{item_a.name} vs {item_b.name}",
             description=desc,
+            color=item_a.element.color if item_a.element is item_b.element else inter.author.color,
         )
-
-        if item_a.element is item_b.element:
-            embed.color = item_a.element.color
-
-        else:
-            embed.color = inter.author.color
 
         view = ItemCompareView(embed, item_a, item_b, user_id=inter.author.id)
         await inter.send(embed=embed, view=view, ephemeral=True)
@@ -285,22 +280,23 @@ def avg_and_deviation(a: int | tuple[int, int], b: int | None = None) -> tuple[f
 def buffed_stats(
     item: AnyItem, buffs_enabled: bool
 ) -> t.Iterator[tuple[str, tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]]]:
-    m_buff = MAX_BUFFS.total_buff_difference if buffs_enabled else lambda _, value: (value, 0)
+    apply_buff = MAX_BUFFS.total_buff_difference if buffs_enabled else lambda _, value: (value, 0)
 
-    for stat, value in item.stats.items():
+    for stat, value in dict_items_as(int | list[int], item.stats):
         if stat == "health":
-            yield stat, (t.cast(int, value), 0)
+            assert type(value) is int
+            yield stat, (value, 0)
             continue
 
         match value:
             case int():
-                yield stat, m_buff(stat, value)
+                yield stat, apply_buff(stat, value)
 
             case [int() as x, y] if x == y:
-                yield stat, m_buff(stat, x)
+                yield stat, apply_buff(stat, x)
 
-            case [int() as x, int() as y]:
-                yield stat, (m_buff(stat, x), m_buff(stat, y))
+            case [x, y]:
+                yield stat, (apply_buff(stat, x), apply_buff(stat, y))
 
 
 def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
@@ -412,12 +408,12 @@ tuple_of_tuples = tuple[tuple[T, T], tuple[T, T]]
 
 
 @t.overload
-def cmp_num(x: int, y: int, lower_is_better: bool = ...) -> tuple_of_tuples[int]:
+def cmp_num(x: int, y: int, lower_is_better: bool = False) -> tuple_of_tuples[int]:
     ...
 
 
 @t.overload
-def cmp_num(x: float, y: float, lower_is_better: bool = ...) -> tuple_of_tuples[float]:
+def cmp_num(x: float, y: float, lower_is_better: bool = False) -> tuple_of_tuples[float]:
     ...
 
 
@@ -529,7 +525,7 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
         match (stat_name, long_boy):
             case ("range", ((a1, a2), (b1, b2))):
                 first_item.append(f"**{a1}-{a2}**" if a1 is not None else "")
-                second_item.append(f"**{b1}-{b2}**" if a2 is not None else "")
+                second_item.append(f"**{b1}-{b2}**" if b1 is not None else "")
 
             case (_, ((_, _), (_, _)) as tup):
                 for (value, diff), field in zip(tup, (first_item, second_item)):

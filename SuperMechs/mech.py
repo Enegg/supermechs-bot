@@ -1,94 +1,68 @@
 from __future__ import annotations
 
 import asyncio
-from collections import Counter
-import hashlib
-import json
+import re
 import typing as t
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
-from utils import format_count
+from utils import dict_items_as, format_count
 
-from .core import DEFAULT_VARS, STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
+from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, Type
 from .images import MechRenderer
-from .inv_item import AnyInvItem, InvItem
-from .types import AnyStats, Attachment, Attachments, WUSerialized
+from .inv_item import AnyInvItem, InvItem, InvItemSlot
+from .types import Attachment, Attachments, WUSerialized
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
     from PIL.Image import Image
 
+
 # fmt: off
-class _InvItems(t.TypedDict):
-    torso:  InvItem[Attachments] | None
-    legs:   InvItem[Attachment] | None
-    drone:  InvItem[Attachment] | None
-    side1:  InvItem[Attachment] | None
-    side2:  InvItem[Attachment] | None
-    side3:  InvItem[Attachment] | None
-    side4:  InvItem[Attachment] | None
-    top1:   InvItem[Attachment] | None
-    top2:   InvItem[Attachment] | None
-    tele:   InvItem[None] | None
-    charge: InvItem[None] | None
-    hook:   InvItem[None] | None
-    mod1:   InvItem[None] | None
-    mod2:   InvItem[None] | None
-    mod3:   InvItem[None] | None
-    mod4:   InvItem[None] | None
-    mod5:   InvItem[None] | None
-    mod6:   InvItem[None] | None
-    mod7:   InvItem[None] | None
-    mod8:   InvItem[None] | None
+_slots = (
+    "torso", "legs", "drone", "side1",
+    "side2", "side3", "side4", "top1",
+    "top2", "tele", "charge", "hook",
+    "mod1", "mod2", "mod3", "mod4",
+    "mod5", "mod6", "mod7", "mod8"
+)
 # fmt: on
+
+_slots_set = frozenset(_slots)
 
 
 @dataclass
 class Mech:
     """Represents a mech build."""
 
-    game_vars: GameVars = DEFAULT_VARS
-    is_custom: bool = True
-    _items: _InvItems = field(
-        default_factory=lambda: t.cast(_InvItems, dict.fromkeys(_InvItems.__annotations__, None)),
-        init=False,
-    )
-    _stats: AnyStats = field(default_factory=AnyStats, init=False)
+    game_vars: GameVars = GameVars.default()
+    is_custom: bool = False
+    _stats: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
     _image: Image | None = field(default=None, init=False)
 
     # fmt: off
-    if t.TYPE_CHECKING:
-        torso:  t.ClassVar[InvItem[Attachments] | None]
-        legs:   t.ClassVar[InvItem[Attachment] | None]
-        drone:  t.ClassVar[InvItem[None] | None]
-        side1:  t.ClassVar[InvItem[Attachment] | None]
-        side2:  t.ClassVar[InvItem[Attachment] | None]
-        side3:  t.ClassVar[InvItem[Attachment] | None]
-        side4:  t.ClassVar[InvItem[Attachment] | None]
-        top1:   t.ClassVar[InvItem[Attachment] | None]
-        top2:   t.ClassVar[InvItem[Attachment] | None]
-        tele:   t.ClassVar[InvItem[None] | None]
-        charge: t.ClassVar[InvItem[None] | None]
-        hook:   t.ClassVar[InvItem[None] | None]
-        mod1:   t.ClassVar[InvItem[None] | None]
-        mod2:   t.ClassVar[InvItem[None] | None]
-        mod3:   t.ClassVar[InvItem[None] | None]
-        mod4:   t.ClassVar[InvItem[None] | None]
-        mod5:   t.ClassVar[InvItem[None] | None]
-        mod6:   t.ClassVar[InvItem[None] | None]
-        mod7:   t.ClassVar[InvItem[None] | None]
-        mod8:   t.ClassVar[InvItem[None] | None]
+    torso:  InvItem[Attachments] | None = None
+    legs:   InvItem[Attachment] | None = None
+    drone:  InvItem[None] | None = None
+    side1:  InvItem[Attachment] | None = None
+    side2:  InvItem[Attachment] | None = None
+    side3:  InvItem[Attachment] | None = None
+    side4:  InvItem[Attachment] | None = None
+    top1:   InvItem[Attachment] | None = None
+    top2:   InvItem[Attachment] | None = None
+    tele:   InvItem[None] | None = None
+    charge: InvItem[None] | None = None
+    hook:   InvItem[None] | None = None
+    mod1:   InvItem[None] | None = None
+    mod2:   InvItem[None] | None = None
+    mod3:   InvItem[None] | None = None
+    mod4:   InvItem[None] | None = None
+    mod5:   InvItem[None] | None = None
+    mod6:   InvItem[None] | None = None
+    mod7:   InvItem[None] | None = None
+    mod8:   InvItem[None] | None = None
     # fmt: on
-
-    def __getattr__(self, name: t.Any, /):
-        try:
-            return self._items[name]
-
-        except KeyError:
-            raise AttributeError(
-                f'{type(self).__name__} object has no attribute "{name}"'
-            ) from None
 
     def __setitem__(
         self, slot: str | Type | tuple[str | Type, int], item: AnyInvItem | None, /
@@ -116,9 +90,9 @@ class Mech:
 
         del self.stats
 
-        if slot in self._items:
-            self.invalidate_image(item, self._items[slot])
-            self._items[slot] = item
+        if slot in _slots_set:
+            self.invalidate_image(item, self[slot])
+            setattr(self, slot, item)
             return
 
         item_types: dict[str, tuple[str, int]] = {
@@ -139,22 +113,21 @@ class Mech:
             raise ValueError(f"Position outside range 1-{limit}")
 
         slot = slug + str(pos)
-        self.invalidate_image(item, self._items[slot])
-        self._items[slot] = item
+        self.invalidate_image(item, self[slot])
+        setattr(self, slot, item)
 
     def __getitem__(self, place: str) -> AnyInvItem | None:
         if not isinstance(place, str):
             raise TypeError("Only string indexing supported")
 
-        try:
-            return self._items[place]
+        if place not in _slots_set:
+            raise KeyError(f'"{place}" is not a valid item slot')
 
-        except KeyError:
-            raise KeyError(f'"{place}" is not a valid item slot') from None
+        return getattr(self, place)
 
     def __str__(self) -> str:
         string_parts = [
-            f"{item.type.capitalize()}: {item}"
+            f"{item.type.name.capitalize()}: {item}"
             for item in (self.torso, self.legs, self.drone)
             if item is not None
         ]
@@ -163,7 +136,9 @@ class Mech:
             string_parts.append("Weapons: " + weapon_string)
 
         string_parts.extend(
-            f"{item.type.capitalize()}: {item}" for item in self.iter_specials() if item is not None
+            f"{item.type.name.capitalize()}: {item}"
+            for item in self.iter_specials()
+            if item is not None
         )
 
         if modules := ", ".join(format_count(self.iter_modules())):
@@ -174,13 +149,6 @@ class Mech:
     def __format__(self, spec: str, /) -> str:
         a = "{self:a}"
         return str(self)
-
-    def __repr__(self) -> str:
-        return (
-            f"<{type(self).__name__} vars={self.game_vars} "
-            + ", ".join(f"{slot}={item!r}" for slot, item in self._items.items())
-            + f" at 0x{id(self):016X}>"
-        )
 
     @property
     def weight(self) -> int:
@@ -196,39 +164,30 @@ class Mech:
         )
 
     @property
-    def stats(self) -> AnyStats:
+    def stats(self) -> defaultdict[str, int]:
         if self._stats:
             return self._stats
 
         stats_cache = self._stats
 
-        for item in self.iter_items():
-            if item is None:
-                continue
-
+        for item in filter(None, self.iter_items()):
             for key in WORKSHOP_STATS:
-                if key in item.underlying.stats:
-                    if key not in stats_cache:
-                        stats_cache[key] = 0
+                if key in item.stats:
+                    stats_cache[key] += item.stats[key]
 
-                    stats_cache[key] += item.underlying.stats[key]
+        if (weight := stats_cache["weight"]) > self.game_vars.MAX_WEIGHT:
+            for stat, pen in dict_items_as(int, self.game_vars.PENALTIES):
+                stats_cache[stat] -= (weight - self.game_vars.MAX_WEIGHT) * pen
 
-        if (weight := stats_cache.setdefault("weight", 0)) > self.game_vars.MAX_WEIGHT:
-            for stat, pen in self.game_vars.PENALTIES.items():
-                stats_cache[stat] = (
-                    stats_cache.get(stat, 0) - (weight - self.game_vars.MAX_WEIGHT) * pen
-                )
-
-        self._stats = stats_cache
         return stats_cache
 
     @stats.deleter
     def stats(self) -> None:
-        t.cast(dict, self._stats).clear()
+        self._stats.clear()
 
     @property
     def sorted_stats(self) -> list[tuple[str, int]]:
-        return sorted(self.stats.items(), key=lambda stat: WORKSHOP_STATS.index(stat[0]))  # type: ignore
+        return sorted(self.stats.items(), key=lambda stat: WORKSHOP_STATS.index(stat[0]))
 
     def buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
         for stat, value in self.sorted_stats:
@@ -277,7 +236,7 @@ class Mech:
             canvas.add_image(self.legs.underlying, "leg1")
             canvas.add_image(self.legs.underlying, "leg2")
 
-        for item, layer in self.iter_weapon_slots():
+        for item, layer in self.iter_weapons(True):
             if item is None:
                 continue
 
@@ -323,41 +282,48 @@ class Mech:
         if coros:
             await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
 
-    def iter_weapon_slots(self) -> t.Iterator[tuple[InvItem[Attachment] | None, str]]:
+    @t.overload
+    def iter_weapons(self) -> t.Iterator[InvItemSlot[Attachment]]:
+        ...
+
+    @t.overload
+    def iter_weapons(
+        self, slots: t.Literal[True]
+    ) -> t.Iterator[tuple[InvItemSlot[Attachment], str]]:
+        ...
+
+    def iter_weapons(
+        self, slots: bool = False
+    ) -> t.Iterator[tuple[InvItemSlot[Attachment], str] | InvItemSlot[Attachment]]:
         """Iterator over mech's side and top weapons"""
-        items = self._items
-        slots = ("side1", "side2", "side3", "side4", "top1", "top2")
+        weapon_slots = ("side1", "side2", "side3", "side4", "top1", "top2")
 
-        for slot in slots:
-            yield items[slot], slot
+        if slots:
+            for weapon in weapon_slots:
+                yield getattr(self, weapon), weapon
 
-    def iter_weapons(self) -> t.Iterator[InvItem[Attachment] | None]:
-        """Iterator over mech's side and top weapons"""
-        items = self._items
-        yield items["side1"]
-        yield items["side2"]
-        yield items["side3"]
-        yield items["side4"]
-        yield items["top1"]
-        yield items["top2"]
+        else:
+            for weapon in weapon_slots:
+                yield getattr(self, weapon)
 
-    def iter_modules(self) -> t.Iterator[InvItem[None] | None]:
+    def iter_modules(self) -> t.Iterator[InvItemSlot[None]]:
         """Iterator over mech's modules"""
-        items = self._items
+        for i in range(1, 9):
+            yield getattr(self, f"mod{i}")
 
-        for n in range(1, 9):
-            yield items[f"mod{n}"]
-
-    def iter_specials(self) -> t.Iterator[InvItem[None] | None]:
+    def iter_specials(self) -> t.Iterator[InvItemSlot[None]]:
         """Iterator over mech's specials, in order: tele, charge, hook"""
-        items = self._items
-        yield items["tele"]
-        yield items["charge"]
-        yield items["hook"]
+        for special in ("tele", "charge", "hook"):
+            yield getattr(self, special)
 
     def iter_items(self) -> t.Iterator[AnyInvItem | None]:
         """Iterator over all mech's items"""
-        yield from self._items.values()  # type: ignore
+        yield self.torso
+        yield self.legs
+        yield self.drone
+        yield from self.iter_weapons()
+        yield from self.iter_specials()
+        yield from self.iter_modules()
 
     def wu_serialize(self, build_name: str, player_name: str) -> WUSerialized:
         if self.is_custom:
@@ -392,7 +358,8 @@ class Mech:
             None if item is None else item.underlying.wu_serialize(slot)
             for slot, item in zip(slot_names, wu_compat_order())
         ]
-
+        # lazy import
+        import hashlib, json
         json_string = json.dumps(serialized_items, indent=None)
         hash = hashlib.sha256(json_string.encode()).hexdigest()
 
@@ -412,8 +379,8 @@ class Mech:
             item.element
             for item in self.iter_items()
             if item is not None
-            if item.element not in excluded
-        ).most_common()
+            if item.type not in excluded
+        ).most_common(2)
 
         # there's only one element
         if len(elements) == 1:
