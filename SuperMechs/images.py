@@ -6,10 +6,20 @@ from io import BytesIO
 from .types import Attachment, Attachments, AttachmentType
 
 if t.TYPE_CHECKING:
-    from .item import Item
-    from .types import Attachment, Attachments
+    from aiohttp import ClientSession
+    from aiohttp.typedefs import StrOrURL
+    from PIL.Image import Image
 
 
+class HasImage(t.Protocol[AttachmentType]):
+    attachment: AttachmentType
+
+    @property
+    def image(self) -> Image:
+        ...
+
+
+async def get_image(link: StrOrURL, session: ClientSession) -> Image:
     from PIL.Image import open
 
     async with session.get(link) as response:
@@ -33,16 +43,16 @@ class MechRenderer:
         "side3",
     )
 
-    def __init__(self, torso: Item[Attachments]) -> None:
+    def __init__(self, torso: HasImage[Attachments]) -> None:
         self.torso_image = torso.image
-        # how many pixels the complete image extends beyond torso image canvas
+        # how many pixels the complete image extends beyond torso image boundaries
         self.pixels_left = 0
         self.pixels_right = 0
         self.pixels_above = 0
         self.pixels_below = 0
         self.torso_attachments = torso.attachment
 
-        self.images: list[tuple[int, int, Image.Image] | None] = [None] * 10
+        self.images: list[tuple[int, int, Image] | None] = [None] * 10
 
     def __repr__(self) -> str:
         return (
@@ -52,18 +62,18 @@ class MechRenderer:
         )
 
     @t.overload
-    def add_image(self, item: Item[None], layer: str, x_pos: int, y_pos: int) -> None:
+    def add_image(self, item: HasImage[None], layer: str, x_pos: int, y_pos: int) -> None:
         ...
 
     @t.overload
     def add_image(
-        self, item: Item[Attachment], layer: str, x_pos: int = ..., y_pos: int = ...
+        self, item: HasImage[Attachment], layer: str, x_pos: int = ..., y_pos: int = ...
     ) -> None:
         ...
 
     def add_image(
         self,
-        item: Item[Attachment] | Item[None],
+        item: HasImage[Attachment] | HasImage[None],
         layer: str,
         x_pos: int | None = None,
         y_pos: int | None = None,
@@ -91,22 +101,24 @@ class MechRenderer:
         self.adjust_offsets(item.image, x, y)
         self.put_image(item.image, layer, x, y)
 
-    def adjust_offsets(self, image: Image.Image, x: int, y: int) -> None:
+    def adjust_offsets(self, image: Image, x: int, y: int) -> None:
         """Resizes the canvas if the image does not fit."""
         self.pixels_left = max(self.pixels_left, -x)
         self.pixels_above = max(self.pixels_above, -y)
         self.pixels_right = max(self.pixels_right, x + image.width - self.torso_image.width)
         self.pixels_below = max(self.pixels_below, y + image.height - self.torso_image.height)
 
-    def put_image(self, image: Image.Image, layer: str, x: int, y: int) -> None:
+    def put_image(self, image: Image, layer: str, x: int, y: int) -> None:
         """Place the image on the canvas."""
         self.images[self.LAYER_ORDER.index(layer)] = (x, y, image)
 
-    def finalize(self) -> Image.Image:
-        """Merges all images and returns resulting image."""
+    def finalize(self) -> Image:
+        """Merges all images into one and returns it."""
         self.put_image(self.torso_image, "torso", 0, 0)
 
-        canvas = Image.new(
+        from PIL.Image import new
+
+        canvas = new(
             "RGBA",
             (
                 self.torso_image.width + self.pixels_left + self.pixels_right,

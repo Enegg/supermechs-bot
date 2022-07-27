@@ -24,6 +24,7 @@ class InteractionCheck:
     """Mixin to add an interaction_check which locks interactions to user_id.
     Note: remember to place this class before the view class, otherwise the view
     will overwrite the method."""
+
     user_id: int
     response = "This message is for someone else."
 

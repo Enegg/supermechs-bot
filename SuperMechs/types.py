@@ -114,7 +114,9 @@ class Attachment(t.TypedDict):
 
 
 Attachments = dict[str, Attachment]
-AttachmentType = t.TypeVar("AttachmentType", bound=Attachment | Attachments | None)
+AnyAttachment = Attachment | Attachments | None
+AttachmentType = t.TypeVar("AttachmentType", bound=AnyAttachment)
+
 
 
 

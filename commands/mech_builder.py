@@ -4,7 +4,8 @@ import asyncio
 import logging
 import typing as t
 
-from disnake import AllowedMentions, CommandInteraction, Embed, MessageInteraction, SelectOption
+from disnake import (AllowedMentions, CommandInteraction, Embed, Message, MessageInteraction,
+                     SelectOption)
 from disnake.ext import commands
 from typing_extensions import Self
 
@@ -21,8 +22,6 @@ from ui.views import InteractionCheck, PaginatorView, positioned
 from utils import random_str
 
 if t.TYPE_CHECKING:
-    from disnake import Message
-
     from bot import SMBot
 
 logger = logging.getLogger(f"main.{__name__}")
@@ -70,8 +69,8 @@ class MechView(InteractionCheck, PaginatorView):
         self.user_id = player.id
 
         self.active: TrinaryButton[AnyItem] | None = None
-        self.dominant: Element | None = mech.figure_dominant_element()
-        self.image_update_task = asyncio.Future()
+        self.dominant = mech.figure_dominant_element()
+        self.image_update_task = asyncio.Future[None]()
 
         for pos, row in enumerate(
             (
@@ -94,7 +93,7 @@ class MechView(InteractionCheck, PaginatorView):
             )
 
         self.rows[2].extend_page_items(
-            Button[Self](label="⠀", custom_id=f"button:no_op{i}", disabled=True, row=2)
+            Button(label="⠀", custom_id=f"button:no_op{i}", disabled=True, row=2)
             for i in range(6)
         )
 

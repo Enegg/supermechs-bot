@@ -33,6 +33,7 @@ class ForbiddenChannel(commands.CheckFailure):
 
 class DesyncError(commands.CommandError):
     """Exception raised when due to external factors command's state goes out of sync"""
+
     pass
 
 
@@ -50,6 +51,7 @@ def str_to_file(
         case _:
             file = fp
 
+    return disnake.File(file, filename)  # type: ignore
 
 
 def image_to_file(image: Image, filename: str | None = None) -> File:
@@ -101,7 +103,8 @@ class ChannelHandler(logging.Handler):
 
         return msg
 
-    def fallback_emit(self, record: FileRecord) -> t.Callable[[asyncio.Future[t.Any]], None]:
+    @staticmethod
+    def fallback_emit(record: FileRecord) -> t.Callable[[asyncio.Future[t.Any]], None]:
         """Ensures the log is logged even in case of failure of sending to channel."""
 
         def emit(future: asyncio.Future[t.Any]) -> None:

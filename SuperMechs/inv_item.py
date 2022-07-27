@@ -50,6 +50,7 @@ class InvItem(t.Generic[AttachmentType]):
     element: t.ClassVar[Proxied[Element]]
     type:    t.ClassVar[Proxied[Type]]
     image:   t.ClassVar[Proxied["Image"]]
+    attachment: t.ClassVar[Proxied[AttachmentType]]  # type: ignore
     # fmt: on
 
     tier: Rarity = field(hash=False)

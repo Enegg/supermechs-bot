@@ -230,21 +230,21 @@ class Mech:
         if self.torso is None:
             raise RuntimeError("Cannot create image without torso set")
 
-        canvas = MechRenderer(self.torso.underlying)
+        canvas = MechRenderer(self.torso)
 
         if self.legs is not None:
-            canvas.add_image(self.legs.underlying, "leg1")
-            canvas.add_image(self.legs.underlying, "leg2")
+            canvas.add_image(self.legs, "leg1")
+            canvas.add_image(self.legs, "leg2")
 
         for item, layer in self.iter_weapons(True):
             if item is None:
                 continue
 
-            canvas.add_image(item.underlying, layer)
+            canvas.add_image(item, layer)
 
         if self.drone is not None:
             canvas.add_image(
-                self.drone.underlying,
+                self.drone,
                 "drone",
                 canvas.pixels_left + self.drone.image.width // 2,
                 canvas.pixels_above + self.drone.image.height + 25,
@@ -339,7 +339,7 @@ class Mech:
             yield self.hook
             yield from self.iter_modules()
 
-        slot_names = [
+        slot_names = (
             "torso",
             "legs",
             "sideWeapon1",
@@ -349,17 +349,19 @@ class Mech:
             "topWeapon1",
             "topWeapon2",
             "drone",
-            "teleporter",
             "chargeEngine",
+            "teleporter",
             "grapplingHook",
-        ]
+        )
 
         serialized_items = [
             None if item is None else item.underlying.wu_serialize(slot)
             for slot, item in zip(slot_names, wu_compat_order())
         ]
         # lazy import
-        import hashlib, json
+        import hashlib
+        import json
+
         json_string = json.dumps(serialized_items, indent=None)
         hash = hashlib.sha256(json_string.encode()).hexdigest()
 
@@ -382,13 +384,10 @@ class Mech:
             if item.type not in excluded
         ).most_common(2)
 
-        # there's only one element
-        if len(elements) == 1:
-            return elements[0][0]
-
-        # there's no elements or the difference between two most common is small
-        elif len(elements) == 0 or elements[0][1] - elements[1][1] < 2:
+        # return None when there are no elements
+        # or the difference between the two most common is small
+        if len(elements) == 0 or (len(elements) == 2 and elements[0][1] - elements[1][1] < 2):
             return None
 
-        # return most common
+        # otherwise just return the most common one
         return elements[0][0]
