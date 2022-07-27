@@ -289,6 +289,10 @@ class Mech:
             await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
 
     @t.overload
+    def iter_items(self) -> t.Iterator[AnyInvItem | None]:
+        ...
+
+    @t.overload
     def iter_items(
         self,
         *,
@@ -360,7 +364,7 @@ class Mech:
         If all fields are set to False, it will iterate over all items.
         If slots is True, it'll yield pairs of (Item, slot_name)"""
 
-        if not body or weapons or specials or modules:
+        if not (body or weapons or specials or modules):
             body = weapons = specials = modules = True
 
         from functools import partial
