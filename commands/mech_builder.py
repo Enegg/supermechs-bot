@@ -13,38 +13,17 @@ from lib_helpers import DesyncError, image_to_file
 from SuperMechs.enums import Element, Type
 from SuperMechs.inv_item import AnyInvItem, InvItem
 from SuperMechs.item import AnyItem
-from SuperMechs.mech import Mech
+from SuperMechs.mech import Mech, icon_data_for_slot, type_for_slot
 from SuperMechs.player import Player
 from ui.buttons import Button, ToggleButton, TrinaryButton, button
 from ui.item import add_callback
 from ui.selects import EMPTY_OPTION, PaginatedSelect, select
 from ui.views import InteractionCheck, PaginatorView, positioned
-from utils import random_str
 
 if t.TYPE_CHECKING:
     from bot import SMBot
 
 logger = logging.getLogger(f"main.{__name__}")
-
-
-def id_to_type(id: str) -> Type:
-    if id.startswith("top"):
-        return Type.TOP_WEAPON
-
-    if id.startswith("side"):
-        return Type.SIDE_WEAPON
-
-    if id.startswith("mod"):
-        return Type.MODULE
-
-    return Type[id.upper()]
-
-
-def id_to_slot(id: str) -> IconData:
-    if id.startswith(("top", "side")) and int(id[-1]) % 2 == 1:
-        return id_to_type(id).alt
-
-    return id_to_type(id)
 
 
 class MechView(InteractionCheck, PaginatorView):
@@ -84,7 +63,7 @@ class MechView(InteractionCheck, PaginatorView):
                     TrinaryButton(
                         custom_id=id,
                         item=mech[id],
-                        emoji=id_to_slot(id).emoji,
+                        emoji=icon_data_for_slot(id).emoji,
                         row=pos,
                     ),
                     self.slot_button_cb,
@@ -184,7 +163,7 @@ class MechView(InteractionCheck, PaginatorView):
         item = None if item_name == "empty" else self.bot.items_cache[item_name]
 
         # sanity check if the item is actually valid
-        if item is not None and item.type is not id_to_type(self.active.custom_id):
+        if item is not None and item.type is not type_for_slot(self.active.custom_id):
             raise DesyncError()
 
         self.active.item = item
@@ -224,7 +203,7 @@ class MechView(InteractionCheck, PaginatorView):
         # load images while waiting
         await asyncio.gather(asyncio.sleep(2.0), self.mech.load_images(self.bot.session))
 
-        filename = random_str(8) + ".png"
+        filename = f"{self.mech:id}.png"
         self.embed.set_image(url=f"attachment://{filename}")
         file = image_to_file(self.mech.image, filename)
         await self.bot_msg.edit(embed=self.embed, file=file, attachments=[])
@@ -267,7 +246,7 @@ class MechView(InteractionCheck, PaginatorView):
         else:
             self.active.toggle()
 
-        self.item_select.options = self.resort_options(id_to_type(button.custom_id))
+        self.item_select.options = self.resort_options(type_for_slot(button.custom_id))
         self.item_select.placeholder = button.item.name if button.item else "empty"
         self.active = button
 
@@ -336,8 +315,8 @@ class MechBuilder(commands.Cog):
             f"**{name}**:\n"
             f'{build.torso or "No torso"}'
             f', {build.legs or "no legs"}'
-            f", {len(tuple(filter(None, build.iter_weapons())))} weapon(s)"
-            f", {len(tuple(filter(None, build.iter_modules())))} module(s)"
+            f", {len(tuple(filter(None, build.iter_items(weapons=True))))} weapon(s)"
+            f", {len(tuple(filter(None, build.iter_items(modules=True))))} module(s)"
             f"; {build.weight} weight"
             for name, build in player.builds.items()
         )
@@ -378,7 +357,7 @@ class MechBuilder(commands.Cog):
             embed.color = mech.torso.element.color
 
             await mech.load_images(self.bot.session)
-            filename = random_str(8) + ".png"
+            filename = f"{self.mech:id}.png"
 
             embed.set_image(file=image_to_file(mech.image, filename))
             await inter.send(embed=embed, view=view)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 import typing as t
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -9,27 +8,68 @@ from dataclasses import dataclass, field
 from utils import dict_items_as, format_count
 
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
-from .enums import Element, Type
+from .enums import Element, IconData, Type
 from .images import MechRenderer
-from .inv_item import AnyInvItem, InvItem, InvItemSlot
+from .inv_item import AnyInvItem, InvItem
 from .types import Attachment, Attachments, WUSerialized
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
     from PIL.Image import Image
 
+T = t.TypeVar("T")
+T2 = t.TypeVar("T2")
+XOrTupleXY = T | tuple[T, T2]
 
-# fmt: off
-_slots = (
-    "torso", "legs", "drone", "side1",
-    "side2", "side3", "side4", "top1",
-    "top2", "tele", "charge", "hook",
-    "mod1", "mod2", "mod3", "mod4",
-    "mod5", "mod6", "mod7", "mod8"
+BODY_SLOTS = ("torso", "legs", "drone")
+WEAPON_SLOTS = ("side1", "side2", "side3", "side4", "top1", "top2")
+SPECIAL_SLOTS = ("tele", "charge", "hook")
+MODULE_SLOTS = ("mod1", "mod2", "mod3", "mod4", "mod5", "mod6", "mod7", "mod8")
+
+_SLOTS_SET = (
+    frozenset(BODY_SLOTS)
+    | frozenset(WEAPON_SLOTS)
+    | frozenset(SPECIAL_SLOTS)
+    | frozenset(MODULE_SLOTS)
 )
-# fmt: on
 
-_slots_set = frozenset(_slots)
+
+def type_for_slot(slot: str) -> Type:
+    if slot.startswith("top"):
+        return Type.TOP_WEAPON
+
+    if slot.startswith("side"):
+        return Type.SIDE_WEAPON
+
+    if slot.startswith("mod"):
+        return Type.MODULE
+
+    return Type[slot.upper()]
+
+
+def icon_data_for_slot(slot: str) -> IconData:
+    if slot.startswith(("top", "side")) and int(slot[-1]) % 2 == 1:
+        return type_for_slot(slot).alt
+
+    return type_for_slot(slot)
+
+
+def parse_slot(slot: XOrTupleXY[str | Type, int], /) -> str:
+    match slot:
+        case (str() as _slot, int() as pos):
+            return _slot.lower() + str(pos)
+
+        case (Type() as _slot, int() as pos):
+            return _slot.name.lower() + str(pos)
+
+        case Type():
+            return slot.name.lower()
+
+        case str() as _slot:
+            return _slot.lower()
+
+        case _:
+            raise TypeError(f"{slot!r} is not a valid slot")
 
 
 @dataclass
@@ -64,90 +104,56 @@ class Mech:
     mod8:   InvItem[None] | None = None
     # fmt: on
 
-    def __setitem__(
-        self, slot: str | Type | tuple[str | Type, int], item: AnyInvItem | None, /
-    ) -> None:
+    def __setitem__(self, slot: XOrTupleXY[str | Type, int], item: AnyInvItem | None, /) -> None:
         if not isinstance(item, (InvItem, type(None))):
             raise TypeError(f"Expected Item object or None, got {type(item)}")
 
-        match slot:
-            case (str() as _slot, int() as pos):
-                slot = _slot.lower()
+        slot = parse_slot(slot)
 
-            case (Type() as _slot, int() as pos):
-                slot = _slot.name.lower()
+        if slot not in _SLOTS_SET:
+            raise TypeError("Invalid slot passed")
 
-            case Type():
-                slot = slot.name.lower()
-                pos = None
-
-            case str() as _slot:
-                slot = _slot.lower()
-                pos = None
-
-            case _:
-                raise TypeError(f"Invalid type {type(slot)}")
+        if item is not None and item.type is not type_for_slot(slot):
+            raise TypeError("Invalid item type for specified slot")
 
         del self.stats
 
-        if slot in _slots_set:
-            self.invalidate_image(item, self[slot])
-            setattr(self, slot, item)
-            return
-
-        item_types: dict[str, tuple[str, int]] = {
-            "module": ("mod", 8),
-            "side_weapon": ("side", 4),
-            "top_weapon": ("top", 2),
-        }
-
-        if slot not in item_types:
-            raise TypeError(f"{slot!r} is not a valid slot")
-
-        if pos is None:
-            raise TypeError(f'"{slot}" requires pos passed')
-
-        slug, limit = item_types[slot]
-
-        if not 0 < pos <= limit:
-            raise ValueError(f"Position outside range 1-{limit}")
-
-        slot = slug + str(pos)
         self.invalidate_image(item, self[slot])
         setattr(self, slot, item)
 
-    def __getitem__(self, place: str) -> AnyInvItem | None:
-        if not isinstance(place, str):
-            raise TypeError("Only string indexing supported")
+    def __getitem__(self, slot: XOrTupleXY[str | Type, int]) -> AnyInvItem | None:
+        slot = parse_slot(slot)
 
-        if place not in _slots_set:
-            raise KeyError(f'"{place}" is not a valid item slot')
+        if slot not in _SLOTS_SET:
+            raise KeyError("Invalid slot passed")
 
-        return getattr(self, place)
+        return getattr(self, slot)
 
     def __str__(self) -> str:
         string_parts = [
             f"{item.type.name.capitalize()}: {item}"
-            for item in (self.torso, self.legs, self.drone)
+            for item in self.iter_items(body=True)
             if item is not None
         ]
 
-        if weapon_string := ", ".join(format_count(self.iter_weapons())):
+        if weapon_string := ", ".join(format_count(self.iter_items(weapons=True))):
             string_parts.append("Weapons: " + weapon_string)
 
         string_parts.extend(
             f"{item.type.name.capitalize()}: {item}"
-            for item in self.iter_specials()
+            for item in self.iter_items(specials=True)
             if item is not None
         )
 
-        if modules := ", ".join(format_count(self.iter_modules())):
+        if modules := ", ".join(format_count(self.iter_items(modules=True))):
             string_parts.append("Modules: " + modules)
 
         return "\n".join(string_parts)
 
     def __format__(self, spec: str, /) -> str:
-        a = "{self:a}"
+        if spec == "id":
+            return "_".join(str(item.underlying.id) if item else "0" for item in self.iter_items())
+
         return str(self)
 
     @property
@@ -159,7 +165,7 @@ class Mech:
         return (
             self.torso is not None
             and self.legs is not None
-            and any(wep is not None for wep in self.iter_weapons())
+            and any(wep is not None for wep in self.iter_items(weapons=True))
             and self.weight <= self.game_vars.MAX_OVERWEIGHT
         )
 
@@ -236,7 +242,7 @@ class Mech:
             canvas.add_image(self.legs, "leg1")
             canvas.add_image(self.legs, "leg2")
 
-        for item, layer in self.iter_weapons(True):
+        for item, layer in self.iter_items(weapons=True, slots=True):
             if item is None:
                 continue
 
@@ -283,47 +289,97 @@ class Mech:
             await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
 
     @t.overload
-    def iter_weapons(self) -> t.Iterator[InvItemSlot[Attachment]]:
+    def iter_items(
+        self,
+        *,
+        weapons: bool = True,
+    ) -> t.Iterator[InvItem[Attachment] | None]:
         ...
 
     @t.overload
-    def iter_weapons(
-        self, slots: t.Literal[True]
-    ) -> t.Iterator[tuple[InvItemSlot[Attachment], str]]:
+    def iter_items(
+        self,
+        *,
+        weapons: bool = True,
+        slots: t.Literal[True] = True,
+    ) -> t.Iterator[tuple[InvItem[Attachment] | None, str]]:
         ...
 
-    def iter_weapons(
-        self, slots: bool = False
-    ) -> t.Iterator[tuple[InvItemSlot[Attachment], str] | InvItemSlot[Attachment]]:
-        """Iterator over mech's side and top weapons"""
-        weapon_slots = ("side1", "side2", "side3", "side4", "top1", "top2")
+    @t.overload
+    def iter_items(
+        self,
+        *,
+        modules: bool = ...,
+        specials: bool = ...,
+    ) -> t.Iterator[InvItem[None] | None]:
+        ...
+
+    @t.overload
+    def iter_items(
+        self,
+        *,
+        modules: bool = ...,
+        specials: bool = ...,
+        slots: t.Literal[True] = True,
+    ) -> t.Iterator[tuple[InvItem[None] | None, str]]:
+        ...
+
+    @t.overload
+    def iter_items(
+        self,
+        *,
+        body: bool = ...,
+        weapons: bool = ...,
+        specials: bool = ...,
+        modules: bool = ...,
+    ) -> t.Iterator[AnyInvItem | None]:
+        ...
+
+    @t.overload
+    def iter_items(
+        self,
+        *,
+        body: bool = ...,
+        weapons: bool = ...,
+        specials: bool = ...,
+        modules: bool = ...,
+        slots: t.Literal[True] = True,
+    ) -> t.Iterator[tuple[AnyInvItem | None, str]]:
+        ...
+
+    def iter_items(
+        self,
+        *,
+        body: bool = False,
+        weapons: bool = False,
+        specials: bool = False,
+        modules: bool = False,
+        slots: bool = False,
+    ) -> t.Iterator[AnyInvItem | None | tuple[AnyInvItem | None, str]]:
+        """Iterator over mech's selected items.
+        If all fields are set to False, it will iterate over all items.
+        If slots is True, it'll yield pairs of (Item, slot_name)"""
+
+        if not body or weapons or specials or modules:
+            body = weapons = specials = modules = True
+
+        from functools import partial
+        from itertools import compress
 
         if slots:
-            for weapon in weapon_slots:
-                yield getattr(self, weapon), weapon
+
+            def factory(slot: str):
+                return (getattr(self, slot), slot)
 
         else:
-            for weapon in weapon_slots:
-                yield getattr(self, weapon)
+            factory = partial(getattr, self)
 
-    def iter_modules(self) -> t.Iterator[InvItemSlot[None]]:
-        """Iterator over mech's modules"""
-        for i in range(1, 9):
-            yield getattr(self, f"mod{i}")
-
-    def iter_specials(self) -> t.Iterator[InvItemSlot[None]]:
-        """Iterator over mech's specials, in order: tele, charge, hook"""
-        for special in ("tele", "charge", "hook"):
-            yield getattr(self, special)
-
-    def iter_items(self) -> t.Iterator[AnyInvItem | None]:
-        """Iterator over all mech's items"""
-        yield self.torso
-        yield self.legs
-        yield self.drone
-        yield from self.iter_weapons()
-        yield from self.iter_specials()
-        yield from self.iter_modules()
+        for slot_set in compress(
+            (BODY_SLOTS, WEAPON_SLOTS, SPECIAL_SLOTS, MODULE_SLOTS),
+            (body, weapons, specials, modules),
+        ):
+            for slot in slot_set:
+                yield factory(slot)
 
     def wu_serialize(self, build_name: str, player_name: str) -> WUSerialized:
         if self.is_custom:
@@ -332,12 +388,12 @@ class Mech:
         def wu_compat_order():
             yield self.torso
             yield self.legs
-            yield from self.iter_weapons()
+            yield from self.iter_items(weapons=True)
             yield self.drone
             yield self.charge
             yield self.tele
             yield self.hook
-            yield from self.iter_modules()
+            yield from self.iter_items(modules=True)
 
         slot_names = (
             "torso",
