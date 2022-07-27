@@ -7,9 +7,12 @@ import traceback
 import typing as t
 
 import disnake
+from disnake import File
 from disnake.ext import commands
 
 if t.TYPE_CHECKING:
+    from PIL.Image import Image
+
     from bot import SMBot
 
 
@@ -47,7 +50,15 @@ def str_to_file(
         case _:
             file = fp
 
-    return disnake.File(file, filename)
+
+
+def image_to_file(image: Image, filename: str | None = None) -> File:
+    """Creates a `disnake.File` object from `PIL.Image.Image`."""
+    # not using with as the stream is closed by the File object
+    stream = io.BytesIO()
+    image.save(stream, format="png")
+    stream.seek(0)
+    return File(stream, filename)
 
 
 class FileRecord(logging.LogRecord):

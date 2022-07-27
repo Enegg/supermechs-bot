@@ -3,28 +3,18 @@ from __future__ import annotations
 import typing as t
 from io import BytesIO
 
-import aiohttp
-import disnake
-from PIL import Image
+from .types import Attachment, Attachments, AttachmentType
 
 if t.TYPE_CHECKING:
     from .item import Item
     from .types import Attachment, Attachments
 
 
-async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:
+    from PIL.Image import open
+
     async with session.get(link) as response:
         response.raise_for_status()
-        return Image.open(BytesIO(await response.content.read()))
-
-
-def image_to_file(image: Image.Image, filename: str | None = None) -> disnake.File:
-    """Creates a `disnake.File` object from `PIL.Image.Image`."""
-    # not using with as the stream is closed by the File object
-    stream = BytesIO()
-    image.save(stream, format="png")
-    stream.seek(0)
-    return disnake.File(stream, filename)
+        return open(BytesIO(await response.content.read()))
 
 
 class MechRenderer:

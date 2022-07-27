@@ -8,9 +8,8 @@ from disnake import AllowedMentions, CommandInteraction, Embed, MessageInteracti
 from disnake.ext import commands
 from typing_extensions import Self
 
-from lib_helpers import DesyncError
-from SuperMechs.enums import Element, IconData, Type
-from SuperMechs.images import image_to_file
+from lib_helpers import DesyncError, image_to_file
+from SuperMechs.enums import Element, Type
 from SuperMechs.inv_item import AnyInvItem, InvItem
 from SuperMechs.item import AnyItem
 from SuperMechs.mech import Mech
