@@ -106,14 +106,15 @@ class ArenaBuffs:
     def __init__(self, levels: dict[str, int] | None = None) -> None:
         self.levels = levels or dict.fromkeys(self.STATS_REFERENCE, 0)
 
-        self.__getitem__ = self.levels.__getitem__
-
     def __repr__(self) -> str:
         return (
             f"<{type(self).__name__} "
             + ", ".join(f"{stat}={lvl}" for stat, lvl in self.levels.items())
             + f" at 0x{id(self):016X}>"
         )
+
+    def __getitem__(self, item: str) -> int:
+        return self.levels[item]
 
     @property
     def is_at_zero(self) -> bool:
