@@ -357,7 +357,7 @@ class MechBuilder(commands.Cog):
             embed.color = mech.torso.element.color
 
             await mech.load_images(self.bot.session)
-            filename = f"{self.mech:id}.png"
+            filename = f"{mech:id}.png"
 
             embed.set_image(file=image_to_file(mech.image, filename))
             await inter.send(embed=embed, view=view)
