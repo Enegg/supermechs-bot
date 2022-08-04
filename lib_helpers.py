@@ -5,14 +5,14 @@ import io
 import logging
 import traceback
 import typing as t
-from collections import deque
 
 import disnake
+from disnake import File
 from disnake.ext import commands
 
-from utils import MISSING
-
 if t.TYPE_CHECKING:
+    from PIL.Image import Image
+
     from bot import SMBot
 
 
@@ -31,13 +31,19 @@ class ForbiddenChannel(commands.CheckFailure):
         super().__init__(message=message or "You cannot use this command here.", *args)
 
 
+class DesyncError(commands.CommandError):
+    """Exception raised when due to external factors command's state goes out of sync"""
+
+    pass
+
+
 def str_to_file(
-    fp: str | bytes | io.BufferedIOBase, filename: str | None = "file.txt"
+    fp: str | bytes | io.TextIOBase | io.BufferedIOBase, filename: str | None = "file.txt"
 ) -> disnake.File:
     """Creates a disnake.File from a string, bytes or IO object."""
     match fp:
         case str():
-            file = io.BytesIO(fp.encode())
+            file = io.StringIO(fp)
 
         case bytes():
             file = io.BytesIO(fp)
@@ -45,7 +51,16 @@ def str_to_file(
         case _:
             file = fp
 
-    return disnake.File(file, filename)
+    return disnake.File(file, filename)  # type: ignore
+
+
+def image_to_file(image: Image, filename: str | None = None) -> File:
+    """Creates a `disnake.File` object from `PIL.Image.Image`."""
+    # not using with as the stream is closed by the File object
+    stream = io.BytesIO()
+    image.save(stream, format="png")
+    stream.seek(0)
+    return File(stream, filename)
 
 
 class FileRecord(logging.LogRecord):
@@ -59,25 +74,9 @@ class FileRecord(logging.LogRecord):
 class ChannelHandler(logging.Handler):
     """Handler instance dispatching logging events to a discord channel."""
 
-    def __init__(
-        self, channel_id: int, client: disnake.Client, level: int = logging.NOTSET
-    ) -> None:
+    def __init__(self, channel: disnake.abc.Messageable, level: int = logging.NOTSET) -> None:
         super().__init__(level)
-        self.dest: disnake.abc.Messageable = MISSING
-        self.queue: deque[FileRecord] = deque()
-
-        def setter(future: asyncio.Future[None]) -> None:
-            channel = client.get_channel(channel_id)
-
-            if not isinstance(channel, disnake.abc.Messageable):
-                raise TypeError("Channel is not Messengable")
-
-            self.dest = channel
-
-            while self.queue:
-                self.emit(self.queue.popleft())
-
-        asyncio.ensure_future(client.wait_until_ready()).add_done_callback(setter)
+        self.destination = channel
 
     @staticmethod
     def format(record: FileRecord) -> str:
@@ -104,7 +103,8 @@ class ChannelHandler(logging.Handler):
 
         return msg
 
-    def fallback_emit(self, record: FileRecord) -> t.Callable[[asyncio.Future[t.Any]], None]:
+    @staticmethod
+    def fallback_emit(record: FileRecord) -> t.Callable[[asyncio.Future[t.Any]], None]:
         """Ensures the log is logged even in case of failure of sending to channel."""
 
         def emit(future: asyncio.Future[t.Any]) -> None:
@@ -116,17 +116,13 @@ class ChannelHandler(logging.Handler):
         return emit
 
     def emit(self, record: FileRecord) -> None:
-        if self.dest is MISSING:
-            self.queue.append(record)
-            return
-
         msg = self.format(record)
 
         if record.file is None:
-            task = self.dest.send(msg, allowed_mentions=disnake.AllowedMentions.none())
+            task = self.destination.send(msg, allowed_mentions=disnake.AllowedMentions.none())
 
         else:
-            task = self.dest.send(
+            task = self.destination.send(
                 msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none()
             )
 

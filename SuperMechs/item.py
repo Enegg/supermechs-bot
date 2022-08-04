@@ -4,26 +4,19 @@ import typing as t
 from dataclasses import KW_ONLY, InitVar, dataclass, field
 
 from typing_extensions import Self
+
 from utils import MISSING, js_format
 
-from .core import MAX_BUFFS
-from .enums import Element, Type, Rarity, RarityRange
+from .core import ArenaBuffs
+from .enums import Element, Rarity, RarityRange, Type
+from .game_types import (AnyStats, Attachment, Attachments, AttachmentType, ItemDict, ItemPackv2,
+                         ItemSerialized, PackConfig, TagsDict)
 from .images import get_image
-from .game_types import (
-    AnyStats,
-    Attachment,
-    Attachments,
-    AttachmentType,
-    ItemDict,
-    ItemPackv2,
-    ItemSerialized,
-    PackConfig,
-    TagsDict,
-)
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
     from PIL.Image import Image
+
 
 @dataclass(slots=True)
 class Tags:
@@ -54,9 +47,9 @@ class Item(t.Generic[AttachmentType]):
     _: KW_ONLY
     id: int
     name: str
-    pack_key: str
     type: Type
     rarity: RarityRange
+    pack_key: str = field(compare=False)
     element: Element = Element.OMNI
     stats: AnyStats = field(hash=False)
     image_url: str = field(default=MISSING, hash=False)
@@ -77,13 +70,9 @@ class Item(t.Generic[AttachmentType]):
         return self.name
 
     @property
-    def type_name(self) -> str:
-        return self.type.name
-
-    @property
     def displayable(self) -> bool:
         """Returns True if the item can be rendered on the mech, False otherwise"""
-        return self.type.name not in {"TELE", "CHARGE", "HOOK", "MODULE"}
+        return self.type not in {Type.TELE, Type.CHARGE, Type.HOOK, Type.MODULE}
 
     @property
     def image(self) -> Image:
@@ -127,33 +116,33 @@ class Item(t.Generic[AttachmentType]):
     @classmethod
     def from_json_v1(cls, json: ItemDict, pack: PackConfig) -> Self:
         self = cls(
-            id=json.pop("id"),
-            name=json.pop("name"),
+            id=json["id"],
+            name=json["name"],
             pack_key=pack["key"],
             image_url=js_format(json.pop("image"), url=pack["base_url"]),
-            type=Type[json.pop("type").upper()],
-            rarity=RarityRange.from_string(json.pop("transform_range")),
-            stats=json.pop("stats"),
-            element=Element[json.pop("element")],
-            attachment=json.pop("attachment", None),  # type: ignore
+            type=Type[json["type"].upper()],
+            rarity=RarityRange.from_string(json["transform_range"]),
+            stats=json["stats"],
+            element=Element[json["element"].upper()],
+            attachment=json.get("attachment", None),  # type: ignore
         )
-        tags = json.pop("tags", [])
+        tags = json.get("tags", [])
         self.tags.melee = "melee" in tags
         return self
 
     @classmethod
     def from_json_v2(cls, json: ItemDict, pack: ItemPackv2) -> Self:
         self = cls(
-            id=json.pop("id"),
-            name=json.pop("name"),
+            id=json["id"],
+            name=json["name"],
             pack_key=pack["key"],
-            type=Type[json.pop("type").upper()],
-            rarity=RarityRange.from_string(json.pop("transform_range")),
-            stats=json.pop("stats"),
-            element=Element[json.pop("element")],
-            attachment=json.pop("attachment", None),  # type: ignore
+            type=Type[json["type"].upper()],
+            rarity=RarityRange.from_string(json["transform_range"]),
+            stats=json["stats"],
+            element=Element[json["element"].upper()],
+            attachment=json.get("attachment", None),  # type: ignore
         )
-        tags = json.pop("tags", [])
+        tags = json.get("tags", [])
         self.tags.melee = "melee" in tags
         self.tags.roller = "roller" in tags
         self.tags.sword = "sword" in tags
@@ -165,7 +154,7 @@ class Item(t.Generic[AttachmentType]):
             "id": self.id,
             "name": self.name,
             "type": self.type.name,
-            "stats": MAX_BUFFS.buff_stats(self.stats),
+            "stats": ArenaBuffs.maxed().buff_stats(self.stats),
             "tags": self.tags.to_dict(),
             "element": self.element.name,
             "timesUsed": 0,

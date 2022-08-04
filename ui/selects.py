@@ -1,59 +1,28 @@
-from __future__ import annotations
-
-import asyncio
 import typing as t
 
 from disnake import SelectOption
-from disnake.ui.item import DecoratedItem
-from disnake.ui.select import Select, V
-from disnake.utils import MISSING as D_MISSING
-from lib_helpers import MessageInteraction
-from utils import MISSING, no_op
+from disnake.ui.select import Select, select
+from disnake.utils import MISSING
 
-S = t.TypeVar("S", bound=Select, covariant=True)
-P = t.ParamSpec("P")
+S_CO = t.TypeVar("S_CO", bound=Select, covariant=True)
 
-
-class Object(t.Protocol[S, P]):
-    def __init__(*args: P.args, **kwargs: P.kwargs) -> None:
-        ...
-
-
-ItemCallbackType = t.Callable[[t.Any, S, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
 
 EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
 
-__all__ = ("select", "Select", "PaginatedSelect", "S", "EMPTY_OPTION")
+__all__ = ("select", "Select", "PaginatedSelect", "S_CO", "EMPTY_OPTION")
 
 
-def select(
-    cls: type[Object[S, P]] = Select, *_: P.args, **kwargs: P.kwargs
-) -> t.Callable[[ItemCallbackType[S]], DecoratedItem[S]]:
-    """A decorator that works like `disnake.ui.select`,
-    but allows for custom Select subclasses."""
-
-    def decorator(func: ItemCallbackType[S]) -> DecoratedItem[S]:
-        if not asyncio.iscoroutinefunction(func):
-            raise TypeError("select callback must be a coroutine function")
-
-        func.__discord_ui_model_type__ = cls
-        func.__discord_ui_model_kwargs__ = kwargs
-        return t.cast(DecoratedItem[S], func)
-
-    return decorator
-
-
-class PaginatedSelect(Select[V]):
+class PaginatedSelect(Select):
     """Select which paginates options into chunks of 23-25 and registers two
     `SelectOption`s to move between chunks."""
 
     def __init__(
         self,
+        *,
         up: SelectOption,
         down: SelectOption,
+        custom_id: str,
         options: list[SelectOption] = MISSING,
-        *,
-        custom_id: str = D_MISSING,
         placeholder: str | None = None,
         disabled: bool = False,
         row: int | None = None,
@@ -63,7 +32,6 @@ class PaginatedSelect(Select[V]):
         self.up = up
         self.down = down
         self.page = 0  # calls property to set options
-        self._callback = no_op
 
     def __len__(self) -> int:
         base = len(self.all_options)
@@ -117,26 +85,13 @@ class PaginatedSelect(Select[V]):
         self.all_options = new
         self.page = 0
 
-    @property
-    def callback(self) -> t.Callable[[MessageInteraction], t.Coroutine[t.Any, t.Any, None]]:
-        return self.pre_invoke_callback
-
-    @callback.setter
-    def callback(
-        self, func: t.Callable[[MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
-    ) -> None:
-        self._callback = func
-
-    async def pre_invoke_callback(self, inter: MessageInteraction) -> None:
-        (option_id,) = self.values
-
+    def check_option(self, option_id: str) -> bool:
         if option_id == self.up.value:
             self.page -= 1
-            await inter.response.edit_message(view=self.view)
+            return True
 
         elif option_id == self.down.value:
             self.page += 1
-            await inter.response.edit_message(view=self.view)
+            return True
 
-        else:
-            await self._callback(inter)
+        return False

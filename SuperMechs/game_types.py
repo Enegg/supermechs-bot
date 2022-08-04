@@ -17,6 +17,38 @@ AnyType = t.Literal[
 ]
 AnyElement = t.Literal["PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
 
+# fmt: off
+AnyMechStatKey = t.Literal[
+    "weight",    "health", "eneCap", "eneReg", "heaCap", "heaCol", "bulletCap",
+    "rocketCap", "phyRes", "expRes", "eleRes", "walk",   "jump"
+]
+
+AnyStatKey = AnyMechStatKey | t.Literal[
+    "phyDmg", "phyResDmg", "expDmg", "heaDmg", "heaCapDmg", "heaColDmg",
+    "expResDmg", "eleDmg", "eneDmg", "eneCapDmg", "eneRegDmg", "eleResDmg",
+    "range", "push", "pull", "recoil", "retreat", "advance", "walk",
+    "jump", "uses", "backfire",  "heaCost", "eneCost", "bulletCost", "rocketCost"
+]
+# fmt: on
+
+
+class StatName(t.TypedDict):
+    default: str
+    in_game: NotRequired[str]
+    short: NotRequired[str]
+
+
+class StatBuff(t.TypedDict):
+    mode: t.Literal["+", "+%", "-%", "+2%"]
+    range: t.Literal[11, 12]
+
+
+class StatDict(t.TypedDict):
+    names: StatName
+    emoji: NotRequired[str]
+    beneficial: NotRequired[t.Literal[False]]
+    buff: NotRequired[StatBuff]
+
 
 class AnyStats(t.TypedDict, total=False):
     # stats sorted in order they appear in-game
@@ -59,13 +91,33 @@ class AnyStats(t.TypedDict, total=False):
     rocketCost: int
 
 
+class AnyMechStats(t.TypedDict, total=False):
+    weight: int
+    health: int
+    eneCap: int
+    eneReg: int
+    heaCap: int
+    heaCol: int
+    bulletCap: int
+    rocketCap: int
+    phyRes: int
+    expRes: int
+    eleRes: int
+    # walk & jump appear after expResDmg
+    walk: int
+    jump: int
+
+
 class Attachment(t.TypedDict):
     x: int
     y: int
 
 
 Attachments = dict[str, Attachment]
-AttachmentType = t.TypeVar("AttachmentType", Attachment, Attachments, None)
+AnyAttachment = Attachment | Attachments | None
+AttachmentType = t.TypeVar("AttachmentType", bound=AnyAttachment)
+
+
 
 
 class ItemDictBase(t.TypedDict):

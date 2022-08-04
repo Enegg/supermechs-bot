@@ -1,103 +1,268 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from itertools import zip_longest
 
-import disnake
-from lib_helpers import MessageInteraction, CommandInteraction
-from config import TEST_GUILDS
+from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands
-from SuperMechs.core import MAX_BUFFS, STATS, Stat
-from SuperMechs.item import AnyItem
-from SuperMechs.game_types import AnyStats
 from typing_extensions import Self
+
+from config import TEST_GUILDS
+from SuperMechs.core import MAX_BUFFS, STATS, Stat
+from SuperMechs.game_types import AnyStats
+from SuperMechs.item import AnyItem
 from ui.buttons import Button, ToggleButton, button
-from ui.views import PersonalView
-from utils import search_for
+from ui.views import InteractionCheck, SaneView, positioned
+from utils import dict_items_as, search_for
 
 if t.TYPE_CHECKING:
     from bot import SMBot
 
+T = t.TypeVar("T")
 
-class ItemView(PersonalView):
+logger = logging.getLogger(f"main.{__name__}")
+
+
+class ItemView(InteractionCheck, SaneView):
     def __init__(
         self,
-        embed: disnake.Embed,
+        embed: Embed,
         item: AnyItem,
-        callback: t.Callable[[disnake.Embed, AnyItem, bool, bool], None],
+        callback: t.Callable[[Embed, AnyItem, bool, bool], None],
         *,
         user_id: int,
         timeout: float | None = 180,
     ) -> None:
-        super().__init__(user_id=user_id, timeout=timeout)
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
         self.call = callback
         self.embed = embed
         self.item = item
 
+        if not {"phyDmg", "eleDmg", "ExpDmg"} & set(item.stats):
+            self.remove_item(self.avg_button, 0)
+
         callback(embed, item, False, False)
 
-    @button(cls=ToggleButton[Self], label="Buffs")
-    async def buff_button(self, button: ToggleButton[Self], inter: MessageInteraction) -> None:
+    @positioned(0, 0)
+    @button(cls=ToggleButton, label="Buffs", custom_id="button:buffs")
+    async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.embed.clear_fields()
         self.call(self.embed, self.item, button.on, self.avg_button.on)
         await inter.response.defer()
         await inter.edit_original_message(embed=self.embed, view=self)
 
-    @button(cls=ToggleButton[Self], label="Show damage spread")
-    async def avg_button(self, button: ToggleButton[Self], inter: MessageInteraction) -> None:
+    @positioned(0, 1)
+    @button(cls=ToggleButton, label="Show damage spread", custom_id="button:dmg")
+    async def avg_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.embed.clear_fields()
         self.call(self.embed, self.item, self.buff_button.on, button.on)
         await inter.response.defer()
         await inter.edit_original_message(embed=self.embed, view=self)
 
-    @button(label="Quit", style=disnake.ButtonStyle.red)
+    @positioned(0, 2)
+    @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
     async def quit_button(self, _: Button[Self], inter: MessageInteraction) -> None:
         self.stop()
         await inter.response.defer()
 
 
-class CompareView(PersonalView):
+class ItemCompareView(InteractionCheck, SaneView):
     def __init__(
         self,
-        embed: disnake.Embed,
+        embed: Embed,
         item_a: AnyItem,
         item_b: AnyItem,
         *,
         user_id: int,
         timeout: float | None = 180,
     ) -> None:
-        super().__init__(user_id=user_id, timeout=timeout)
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
         self.embed = embed
         self.item_a = item_a
         self.item_b = item_b
 
-    @button(label="Buffs A")
-    async def buff_button_A(self, button: Button[Self], inter: MessageInteraction) -> None:
-        if was_off := button.style is ButtonStyle.gray:
-            button.style = ButtonStyle.green
+        self.prepare()
+
+    @positioned(0, 0)
+    @button(cls=ToggleButton, label="Arena buffs", custom_id="button:buffs")
+    async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
+        button.toggle()
+        self.prepare()
+        await inter.response.edit_message(embed=self.embed, view=self)
+
+    @positioned(0, 1)
+    @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
+    async def quit_button(self, button: Button[Self], inter: MessageInteraction) -> None:
+        await inter.response.defer()
+        self.stop()
+
+    def prepare(self) -> None:
+        name_field, first_field, second_field = stats_to_fields(
+            MAX_BUFFS.buff_stats(self.item_a.stats) if self.buffs_button.on else self.item_a.stats,
+            MAX_BUFFS.buff_stats(self.item_b.stats) if self.buffs_button.on else self.item_b.stats,
+        )
+        if self.item_a.tags.require_jump:
+            first_field.append("❕")
+
+        if self.item_b.tags.require_jump:
+            second_field.append("❕")
+
+        if self.item_a.tags.require_jump or self.item_b.tags.require_jump:
+            name_field.append(f"{STATS['jump'].emoji} **Jumping required**")
+
+        if len(self.embed.fields):
+            modify = self.embed.set_field_at
 
         else:
-            button.style = ButtonStyle.gray
+            modify = self.embed.insert_field_at
 
-        await inter.response.edit_message(view=self)
-
-
-def buff(stat: str, enabled: bool, value: int) -> int:
-    """Returns a value buffed respectively to stat type"""
-    if not enabled or stat == "health":
-        return value
-
-    return MAX_BUFFS.total_buff(stat, value)
+        modify(0, "Stat", "\n".join(name_field))
+        modify(1, try_shorten(self.item_a.name), "\n".join(first_field))
+        modify(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
 
-def buff_difference(stat: str, enabled: bool, value: int) -> tuple[int, int]:
-    """Returns a value buffed respectively to stat type and the difference between it and base"""
-    if not enabled or stat == "health":
-        return value, 0
+class ItemLookup(commands.Cog):
+    def __init__(self, bot: SMBot) -> None:
+        self.bot = bot
 
-    return MAX_BUFFS.total_buff_difference(stat, value)
+    @commands.slash_command()
+    async def item(
+        self,
+        inter: CommandInteraction,
+        name: str,
+        compact: bool = False,
+        invisible: bool = True,
+    ) -> None:
+        """Finds an item and returns its stats {{ ITEM }}
+
+        Parameters
+        -----------
+        name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+        compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
+        invisible: Whether the bot response is visible only to you {{ ITEM_VISIBILITY }}
+        """
+
+        if name not in self.bot.items_cache:
+            if name == "Start typing to get suggestions...":
+                raise commands.UserInputError("This is only an information and not an option")
+
+            raise commands.UserInputError("Item not found.")
+
+        item = self.bot.items_cache[name]
+
+        if compact:
+            embed = (
+                Embed(color=item.element.color)
+                .set_author(name=item.name, icon_url=item.type.image_url)
+                .set_thumbnail(url=item.image_url)
+            )
+            embed_preset = compact_embed
+
+        else:
+            embed = (
+                Embed(
+                    title=item.name,
+                    description=f"{item.element.name.capitalize()} "
+                    f"{item.type.name.replace('_', ' ').lower()}",
+                    color=item.element.color,
+                )
+                .set_thumbnail(url=item.type.image_url)
+                .set_image(url=item.image_url)
+            )
+            embed_preset = default_embed
+
+        view = ItemView(embed, item, embed_preset, user_id=inter.author.id)
+        await inter.send(embed=embed, view=view, ephemeral=invisible)
+
+        await view.wait()
+        await inter.edit_original_message(view=None)
+
+    @commands.slash_command(guild_ids=TEST_GUILDS)
+    async def item_raw(self, inter: CommandInteraction, name: str) -> None:
+        """Finds an item and returns its raw stats {{ ITEM }}
+
+        Parameters
+        -----------
+        name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+        """
+
+        if name not in self.bot.items_cache:
+            if name == "Start typing to get suggestions...":
+                raise commands.UserInputError("This is only an information and not an option")
+
+            raise commands.UserInputError("Item not found.")
+
+        item = self.bot.items_cache[name]
+
+        await inter.send(f"`{item!r}`", ephemeral=True)
+
+    @commands.slash_command()
+    async def compare(self, inter: CommandInteraction, item1: str, item2: str) -> None:
+        """Shows an interactive comparison of two items. {{ COMPARE }}
+
+        Parameters
+        -----------
+        item1: First item to compare. {{ COMPARE_FIRST }}
+        item2: Second item to compare. {{ COMPARE_SECOND }}
+        """
+        item_a = self.bot.items_cache.get(item1)
+        item_b = self.bot.items_cache.get(item2)
+
+        if item_a is None or item_b is None:
+            raise commands.UserInputError("Either of specified items not found.")
+
+        if item_a.type is item_b.type and item_a.element is item_b.element:
+            desc = (
+                f"{item_a.element.name.capitalize()} {item_a.type.name.replace('_', ' ').lower()}"
+            )
+
+            if not desc.endswith("s"):
+                desc += "s"
+
+        else:
+            desc = (
+                f"{item_a.element.name.capitalize()} "
+                f"{item_a.type.name.replace('_', ' ').lower()}"
+                " | "
+                f"{item_b.element.name.capitalize()} "
+                f"{item_b.type.name.replace('_', ' ').lower()}"
+            )
+
+        embed = Embed(
+            title=f"{item_a.name} vs {item_b.name}",
+            description=desc,
+            color=item_a.element.color if item_a.element is item_b.element else inter.author.color,
+        )
+
+        view = ItemCompareView(embed, item_a, item_b, user_id=inter.author.id)
+        await inter.send(embed=embed, view=view, ephemeral=True)
+
+        await view.wait()
+        await inter.edit_original_message(view=None)
+
+    @item.autocomplete("name")
+    @item_raw.autocomplete("name")
+    @compare.autocomplete("item1")
+    @compare.autocomplete("item2")
+    async def item_autocomplete(self, inter: CommandInteraction, input: str) -> list[str]:
+        """Autocomplete for items"""
+        if len(input) < 2:
+            return ["Start typing to get suggestions..."]
+
+        items = sorted(
+            set(search_for(input, self.bot.items_cache))
+            | self.bot.item_abbrevs.get(input.lower(), set())
+        )
+
+        if len(items) <= 25:
+            return items
+
+        return items[:25]
 
 
 def avg_and_deviation(a: int | tuple[int, int], b: int | None = None) -> tuple[float, float]:
@@ -115,25 +280,26 @@ def avg_and_deviation(a: int | tuple[int, int], b: int | None = None) -> tuple[f
 def buffed_stats(
     item: AnyItem, buffs_enabled: bool
 ) -> t.Iterator[tuple[str, tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]]]:
-    m_buff = MAX_BUFFS.total_buff_difference if buffs_enabled else lambda _, value: (value, 0)
+    apply_buff = MAX_BUFFS.total_buff_difference if buffs_enabled else lambda _, value: (value, 0)
 
-    for stat, value in item.stats.items():
+    for stat, value in dict_items_as(int | list[int], item.stats):
         if stat == "health":
-            yield stat, (t.cast(int, value), 0)
+            assert type(value) is int
+            yield stat, (value, 0)
             continue
 
         match value:
             case int():
-                yield stat, m_buff(stat, value)
+                yield stat, apply_buff(stat, value)
 
             case [int() as x, y] if x == y:
-                yield stat, m_buff(stat, x)
+                yield stat, apply_buff(stat, x)
 
-            case [int() as x, int() as y]:
-                yield stat, (m_buff(stat, x), m_buff(stat, y))
+            case [x, y]:
+                yield stat, (apply_buff(stat, x), apply_buff(stat, y))
 
 
-def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
+def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
     """Fills embed with full-featured info about an item."""
 
     if item.rarity.is_single:
@@ -176,12 +342,12 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
             text = f"{v1}-{v2}"
             change = f" **{d1:+} {d2:+}**" if d1 or d2 else ""
 
-        name, emoji = STATS[stat]
+        name = STATS[stat].name
 
         if stat == "uses":
             name = "Use" if value == 1 else "Uses"
 
-        item_stats += f"{emoji} **{text}** {name}{change}\n"
+        item_stats += f"{STATS[stat].emoji} **{text}** {name}{change}\n"
 
     if item.tags.require_jump:
         item_stats += f"{STATS['jump'].emoji} **Jumping required**"
@@ -189,7 +355,7 @@ def default_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
     embed.add_field(name="Stats:", value=item_stats, inline=False)
 
 
-def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
+def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
     """Fills embed with reduced in size item info."""
 
     if item.rarity.is_single:
@@ -238,182 +404,180 @@ def compact_embed(embed: disnake.Embed, item: AnyItem, buffs_enabled: bool, avg:
         embed.add_field(name=name, value=field)
 
 
-@commands.slash_command()
-async def item(
-    inter: CommandInteraction,
-    name: str,
-    compact: bool = False,
-    invisible: bool = True,
-) -> None:
-    """Finds an item and returns its stats {{ ITEM }}
-
-    Parameters
-    -----------
-    name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
-    compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
-    invisible: Whether the bot response is visible only to you {{ ITEM_VISIBILITY }}
-    """
-
-    if name not in inter.bot.items_cache:
-        if name == "Start typing to get suggestions...":
-            raise commands.UserInputError("This is only an information and not an option")
-
-        raise commands.UserInputError("Item not found.")
-
-    item = inter.bot.items_cache[name]
-
-    if compact:
-        embed = (
-            disnake.Embed(color=item.element.color)
-            .set_author(name=item.name, icon_url=item.type.image_url)
-            .set_thumbnail(url=item.image_url)
-        )
-        view = ItemView(embed, item, compact_embed, user_id=inter.author.id)
-
-    else:
-        embed = (
-            disnake.Embed(
-                title=item.name,
-                description=f"{item.element.name.capitalize()} "
-                f"{item.type.name.replace('_', ' ').lower()}",
-                color=item.element.color,
-            )
-            .set_thumbnail(url=item.type.image_url)
-            .set_image(url=item.image_url)
-        )
+tuple_of_tuples = tuple[tuple[T, T], tuple[T, T]]
 
 
-@commands.slash_command(guild_ids=TEST_GUILDS)
-async def item_raw(inter: CommandInteraction, name: str) -> None:
-    """Finds an item and returns its raw stats {{ ITEM }}
-
-    Parameters
-    -----------
-    name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
-    """
-
-    if name not in inter.bot.items_cache:
-        if name == "Start typing to get suggestions...":
-            raise commands.UserInputError("This is only an information and not an option")
-
-        raise commands.UserInputError("Item not found.")
-
-    item = inter.bot.items_cache[name]
-
-    await inter.send(f"`{item!r}`", ephemeral=True)
-
-    await inter.send(embed=embed, view=view, ephemeral=invisible)
-    await view.wait()
-    await inter.edit_original_message(view=None)
+@t.overload
+def cmp_num(x: int, y: int, lower_is_better: bool = False) -> tuple_of_tuples[int]:
+    ...
 
 
-def cmp_two(a: object, b: object, lower_is_better: bool = False):
-    match a, b:
-        case int() as x, int() as y:
-            if x < y:
-                diff = y - x
-
-                if lower_is_better:
-                    return (-diff, "x")
-
-                else:
-                    return (diff, "y")
-
-            elif x > y:
-                diff = x - y
-
-                if lower_is_better:
-                    return (-diff, "y")
-
-                else:
-                    return (diff, "x")
-
-            else:
-                return (0, "neither")
-
-        case ([int() as x1, int() as x2], [int() as y1, int() as y2]):
-            x = avg_and_deviation(x1, x2)
-            y = avg_and_deviation(y1, y2)
-
-            if x > y:
-                pass
-
-            elif x < y:
-                pass
-
-            else:
-                pass
+@t.overload
+def cmp_num(x: float, y: float, lower_is_better: bool = False) -> tuple_of_tuples[float]:
+    ...
 
 
-def compare_stats(a: AnyStats, b: AnyStats):
-    out = {}
+def cmp_num(x: float, y: float, lower_is_better: bool = False) -> tuple_of_tuples[float]:
+    if x == y:
+        return ((x, 0), (y, 0))
 
-    lower_is_better = {"weight", "backfire", "heaCost", "eneCost"}
+    return ((x, x - y), (y, 0)) if lower_is_better ^ (x > y) else ((x, 0), (y, y - x))
 
-    for stat, data in STAT_NAMES.items():
-        if stat not in a and stat not in b:
+
+value_and_diff = tuple[int | float | None, float]
+
+# TODO: generic comparator for N items, with rulesets
+def generic_comparator(
+    *stats: AnyStats,
+) -> t.Iterator[tuple[str, Stat, tuple[value_and_diff, ...]]]:
+
+    if not stats:
+        return
+
+    undesired = {"weight", "backfire", "heaCost", "eneCost"}
+    special_cases = {"range"}
+
+    for stat_name, stat in STATS.items():
+        stat_values: list[int | None] | list[
+            list[int] | None
+        ] = []  # [stat.get(stat_name) for stat in stats]
+
+        if all(stat is None for stat in stat_values):
             continue
 
-        better = stat in lower_is_better
+        if stat_name in special_cases:
+            yield stat_name, stat, tuple(
+                tuple(stat) if isinstance(stat, list) else (None, 0) for stat in stat_values
+            )
+            continue
 
-        right = left = ()
+        if any(isinstance(stat, int) for stat in stat_values):
+            pass
 
-        if stat in a:
-            value = a[stat]
-            right = 1
-
-        else:
-            left = ()
-
-
-@commands.slash_command(guild_ids=TEST_GUILDS)
-async def compare(inter: CommandInteraction, item1: str, item2: str) -> None:
-    """Shows an interactive comparison of two items. {{ COMPARE }}
-
-    Parameters
-    -----------
-    item1: First item to compare. {{ COMPARE_FIRST }}
-    item2: Second item to compare. {{ COMPARE_SECOND }}
-    """
-    item_a = inter.bot.items_cache.get(item1)
-    item_b = inter.bot.items_cache.get(item2)
-
-    if item_a is None or item_b is None:
-        raise commands.UserInputError("Either of specified items not found.")
-
-    type_a = item_a.type
-    type_b = item_b.type
-
-    await inter.send(f"{item_a!r}\n\n{item_b!r}", ephemeral=True)
+        if any(isinstance(stat, list) for stat in stat_values):
+            pass
 
 
-@item.autocomplete("name")
-@item_raw.autocomplete("name")
-@compare.autocomplete("item1")
-@compare.autocomplete("item2")
-async def item_autocomplete(inter: CommandInteraction, input: str) -> list[str]:
-    """Autocomplete for items"""
-    if len(input) < 2:
-        return ["Start typing to get suggestions..."]
+def comparator(
+    stats_a: AnyStats, stats_b: AnyStats
+) -> t.Iterator[
+    tuple[
+        str,
+        Stat,
+        tuple[value_and_diff, value_and_diff]
+        | tuple[value_and_diff, value_and_diff, value_and_diff, value_and_diff],
+    ]
+]:
+    undesired = {"weight", "backfire", "heaCost", "eneCost"}
+    special_cases = {"range"}
 
-    items = sorted(
-        set(search_for(input, inter.bot.items_cache))
-        | inter.bot.item_abbrevs.get(input.lower(), set())
-    )
+    for stat_name, stat in STATS.items():
+        stat_a: int | list[int] | None = stats_a.get(stat_name)
+        stat_b: int | list[int] | None = stats_b.get(stat_name)
 
-    if len(items) <= 25:
-        return items
+        if stat_name in special_cases and not (stat_a is stat_b is None):
+            yield stat_name, stat, (
+                tuple(stat_a) if isinstance(stat_a, list) else (None, 0),
+                tuple(stat_b) if isinstance(stat_b, list) else (None, 0),
+            )
+            continue
 
-    return items[:25]
+        match stat_a, stat_b:
+            case (None, None):
+                continue
+
+            case (int() as a, int() as b):
+                yield stat_name, stat, cmp_num(a, b, stat_name in undesired)
+                continue
+
+            case ([int() as a1, int() as a2], [int() as b1, int() as b2]):
+                x_avg, x_inacc = avg_and_deviation(a1, a2)
+                y_avg, y_inacc = avg_and_deviation(b1, b2)
+
+                yield stat_name, stat, cmp_num(x_avg, y_avg, False) + cmp_num(
+                    x_inacc, y_inacc, True
+                )
+                continue
+
+        if isinstance(stat_a, int):
+            yield stat_name, stat, ((stat_a, 0), (None, 0))
+
+        elif isinstance(stat_b, int):
+            yield stat_name, stat, ((None, 0), (stat_b, 0))
+
+        elif stat_a is not None:
+            avg, inacc = avg_and_deviation(*stat_a)
+            yield stat_name, stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
+
+        elif stat_b is not None:
+            avg, inacc = avg_and_deviation(*stat_b)
+            yield stat_name, stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
+
+
+def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], list[str], list[str]]:
+    name_field: list[str] = []
+    first_item: list[str] = []
+    second_item: list[str] = []
+
+    for stat_name, stat, long_boy in comparator(stats_a, stats_b):
+        name_field.append(f"{stat.emoji} {stat.name}")
+
+        match (stat_name, long_boy):
+            case ("range", ((a1, a2), (b1, b2))):
+                first_item.append(f"**{a1}-{a2}**" if a1 is not None else "")
+                second_item.append(f"**{b1}-{b2}**" if b1 is not None else "")
+
+            case (_, ((_, _), (_, _)) as tup):
+                for (value, diff), field in zip(tup, (first_item, second_item)):
+                    if value is None:
+                        string = ""
+
+                    elif diff == 0:
+                        string = f"**{value:g}**"
+
+                    else:
+                        string = f"**{value:g}** {diff:+g}"
+
+                    field.append(string)
+
+            case (_, ((_, _), (_, _), (_, _), (_, _)) as tup):
+                name_field.append("🎲 Damage spread")
+
+                for (avg, diff), (spread, s_diff), field in zip(
+                    tup[:2], tup[2:], (first_item, second_item)
+                ):
+                    if avg is None:
+                        string = ""
+
+                    elif diff == 0:
+                        string = f"**{avg:g}**"
+
+                    else:
+                        string = f"**{avg:g}** {diff:+g}"
+
+                    field.append(string)
+
+                    if spread is None:
+                        string = ""
+
+                    elif s_diff == 0:
+                        string = f"**{spread:.1%}**"
+
+                    else:
+                        string = f"**{spread:.1%}** {s_diff:+.1%}"
+
+                    field.append(string)
+
+    return name_field, first_item, second_item
+
+
+def try_shorten(name: str) -> str:
+    if len(name) < 16:
+        return name
+
+    return "".join(s for s in name if s.isupper())
 
 
 def setup(bot: SMBot) -> None:
-    bot.add_slash_command(item)
-    bot.add_slash_command(item_raw)
-    bot.add_slash_command(compare)
-
-
-def teardown(bot: SMBot) -> None:
-    bot.remove_slash_command("item")
-    bot.remove_slash_command("item_raw")
-    bot.remove_slash_command("compare")
+    bot.add_cog(ItemLookup(bot))
+    logger.info('Cog "ItemLookupCog" loaded')

@@ -4,65 +4,90 @@ import asyncio
 import typing as t
 
 from disnake import ButtonStyle
-from disnake.ui.button import Button, V
-from disnake.ui.item import DecoratedItem
+from disnake.ui.button import Button, button
 from typing_extensions import Self
-from lib_helpers import MessageInteraction
-from utils import MISSING, no_op
 
-B = t.TypeVar("B", bound=Button, covariant=True)
-P = t.ParamSpec("P")
+from .item import ItemCallbackType
+from .views import V_CO
+
+if t.TYPE_CHECKING:
+    from disnake import Emoji, PartialEmoji
+
+B_CO = t.TypeVar("B_CO", bound=Button, covariant=True)
 T = t.TypeVar("T")
 
-
-class Object(t.Protocol[B, P]):
-    def __init__(*args: P.args, **kwargs: P.kwargs) -> None:
-        ...
+__all__ = ("button", "Button", "ToggleButton", "TrinaryButton", "B_CO")
 
 
-ItemCallbackType = t.Callable[[t.Any, B, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
-Callback = t.Callable[[B, MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
-
-__all__ = ("button", "Button", "ToggleButton", "TrinaryButton", "B")
-
-
-def button(
-    cls: type[Object[B, P]] = Button, *_: P.args, **kwargs: P.kwargs
-) -> t.Callable[[ItemCallbackType[B]], DecoratedItem[B]]:
-    """A decorator that works like `disnake.ui.button`,
-    but allows for custom Button subclasses."""
-
-    def decorator(func: ItemCallbackType[B]) -> DecoratedItem[B]:
-        if not asyncio.iscoroutinefunction(func):
-            raise TypeError("button callback must be a coroutine function")
-
-        func.__discord_ui_model_type__ = cls
-        func.__discord_ui_model_kwargs__ = kwargs
-        return t.cast(DecoratedItem[B], func)
-
-    return decorator
-
-
-class ToggleButton(Button[V]):
-    """A two-state button."""
-
-    custom_id: str
-    view: V
+class LinkButton(Button[V_CO]):
+    """Represents a dummy button with a link."""
 
     def __init__(
         self,
         *,
-        style_off: ButtonStyle = ButtonStyle.secondary,
-        style_on: ButtonStyle = ButtonStyle.success,
-        callback: Callback[Self] = no_op,
-        on: bool = False,
-        **kwargs: t.Any,
+        label: str | None = None,
+        disabled: bool = False,
+        url: str | None = None,
+        emoji: str | Emoji | PartialEmoji | None = None,
+        row: int | None = None,
     ) -> None:
-        kwargs.setdefault("style", style_on if on else style_off)
-        super().__init__(**kwargs)
+        super().__init__(label=label, disabled=disabled, url=url, emoji=emoji, row=row)
+
+
+class DecoButton(Button[V_CO]):
+    def __call__(self, func: ItemCallbackType[V_CO, Self]) -> Self:
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError("button callback must be a coroutine function")
+
+        func.__discord_ui_model_type__ = type(self)
+        func.__discord_ui_model_kwargs__ = {
+            "style": self.style,
+            "label": self.label,
+            "disabled": self.disabled,
+            "custom_id": self.custom_id,
+            "url": self.url,
+            "emoji": self.emoji,
+            "row": self.row,
+        }
+
+        return func  # type: ignore
+
+    add_callback = __call__
+
+
+class ToggleButton(Button):
+    """A two-state button."""
+
+    def __init__(
+        self,
+        *,
+        custom_id: str,
+        style: ButtonStyle | None = None,
+        style_off: ButtonStyle = ButtonStyle.gray,
+        style_on: ButtonStyle = ButtonStyle.green,
+        label: str | None = None,
+        disabled: bool = False,
+        emoji: str | Emoji | PartialEmoji | None = None,
+        row: int | None = None,
+        on: bool = False,
+    ) -> None:
+        super().__init__(
+            style=style or (style_on if on else style_off),
+            label=label,
+            disabled=disabled,
+            custom_id=custom_id,
+            emoji=emoji,
+            row=row,
+        )
         self.style_off = style_off
         self.style_on = style_on
-        self.call = callback
+
+    @property
+    def custom_id(self) -> str:
+        """The ID of the button that gets received during an interaction."""
+        custom_id = super().custom_id
+        assert custom_id is not None
+        return custom_id
 
     def toggle(self) -> None:
         """Toggles the state of the button between on and off."""
@@ -77,27 +102,36 @@ class ToggleButton(Button[V]):
     def on(self, value: bool) -> None:
         self.style = self.style_on if value else self.style_off
 
-    async def callback(self, inter: MessageInteraction) -> None:
-        await self.call(self, inter)
 
-
-class TrinaryButton(ToggleButton[V], t.Generic[V, T]):
+class TrinaryButton(ToggleButton, t.Generic[T]):
     """A tri-state button."""
-
-    item: T
 
     def __init__(
         self,
         *,
-        item: T = MISSING,
+        custom_id: str,
+        item: T | None = None,
+        style: ButtonStyle | None = None,
         style_off: ButtonStyle = ButtonStyle.gray,
-        style_on: ButtonStyle = ButtonStyle.primary,
-        style_item: ButtonStyle = ButtonStyle.success,
+        style_on: ButtonStyle = ButtonStyle.blurple,
+        style_item: ButtonStyle = ButtonStyle.green,
+        label: str | None = None,
+        disabled: bool = False,
+        emoji: str | Emoji | PartialEmoji | None = None,
+        row: int | None = None,
         on: bool = False,
-        **kwargs: t.Any,
     ) -> None:
-        kwargs.setdefault("style", style_on if on else style_item if item else style_off)
-        super().__init__(**kwargs, style_on=style_on, style_off=style_off, on=on)
+        super().__init__(
+            custom_id=custom_id,
+            style=style or (style_on if on else style_item if item else style_off),
+            style_off=style_off,
+            style_on=style_on,
+            label=label,
+            disabled=disabled,
+            emoji=emoji,
+            row=row,
+            on=on,
+        )
         self.style_item = style_item
         self.item = item
 

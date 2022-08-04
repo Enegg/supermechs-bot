@@ -6,14 +6,16 @@ from dataclasses import dataclass, field
 from utils import MISSING, random_str
 
 from .core import ArenaBuffs
+from .game_types import WUSerialized
 from .inv_item import AnyInvItem
 from .mech import Mech
-from .game_types import WUSerialized
 
 
 @dataclass
 class Player:
     """Represents a SuperMechs player."""
+
+    # TODO: add mech teams, and commands related to managing them
 
     id: int
     builds: dict[str, Mech] = field(default_factory=dict)

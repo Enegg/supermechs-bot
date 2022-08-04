@@ -5,12 +5,23 @@ import typing as t
 from collections import Counter
 from string import ascii_letters
 
+from typing_extensions import Self
+
 SupportsSet = t.TypeVar("SupportsSet", bound=t.Hashable)
 T = t.TypeVar("T")
+T_CO = t.TypeVar("T_CO", covariant=True)
+
+
+class SupportsComparison(t.Protocol[T_CO]):
+    def __gt__(self, other: t.Any, /) -> bool:
+        ...
+
+    def __lt__(self, other: t.Any, /) -> bool:
+        ...
 
 
 class _MissingSentinel:
-    def __eq__(self, other: t.Any) -> bool:
+    def __eq__(self, _: t.Any) -> bool:
         return False
 
     def __bool__(self) -> bool:
@@ -22,13 +33,13 @@ class _MissingSentinel:
     def __hash__(self) -> int:
         return hash((None,))
 
-    def __copy__(self: T) -> T:
+    def __copy__(self) -> Self:
         return self
 
     def __reduce__(self) -> str:
         return "MISSING"
 
-    def __deepcopy__(self: T, _: t.Any) -> T:
+    def __deepcopy__(self, _: t.Any) -> Self:
         return self
 
 
@@ -135,17 +146,35 @@ def unique_id() -> str:
     return os.urandom(16).hex()
 
 
-def binary_find_near_index(container: t.Sequence[int], value: int, start: int, end: int) -> int:
-    """Binary search for the index of the largest value in container, container[index] <= value"""
+def find_near_index(
+    container: t.Sequence[SupportsComparison[T_CO]],
+    value: SupportsComparison[T_CO],
+    start: int,
+    end: int,
+) -> int:
+    """Binary search for the index of the largest value in a sequence, container[index] <= value
+
+    Usable only on sorted sequences
+    """
     index = (start + end) // 2
 
     if end - start <= 1:
         return index
 
+    # tail recursion even though python does not optimize for it
     if container[index] > value:
-        return binary_find_near_index(container, value, start, index)
+        return find_near_index(container, value, start, index)
 
     if container[index] < value:
-        return binary_find_near_index(container, value, index, end)
+        return find_near_index(container, value, index, end)
 
     return index
+
+
+KT = t.TypeVar("KT")
+VT = t.TypeVar("VT")
+
+
+def dict_items_as(value_type: type[VT], obj: t.Mapping[KT, t.Any]) -> t.ItemsView[KT, VT]:
+    """Helper function to aid iterating over TypedDict.items()"""
+    return obj.items()

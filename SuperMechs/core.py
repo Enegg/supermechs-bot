@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import typing as t
+from json import load
 
-from .game_types import AnyStats
+from typing_extensions import Self
 
+from utils import MISSING, dict_items_as
+
+from .game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
+
+# order reference
 WORKSHOP_STATS: t.Final = (
     "weight",
     "health",
@@ -21,87 +27,84 @@ WORKSHOP_STATS: t.Final = (
 )
 
 
+class Name(t.NamedTuple):
+    default: str
+    in_game: str = MISSING
+    short: str = MISSING
+
+    def __str__(self) -> str:
+        return self.default
+
+    def __format__(self, __format_spec: str, /) -> str:
+        return self.default.__format__(__format_spec)
+
+    @property
+    def game_name(self) -> str:
+        return self.default if self.in_game is MISSING else self.in_game
+
+    @property
+    def short_name(self) -> str:
+        if self.short is not MISSING:
+            return self.short
+
+        return self.default if len(self.default) <= len(self.game_name) else self.game_name
+
+
 class Stat(t.NamedTuple):
-    name: str
-    emoji: str
+    name: Name
+    emoji: str = "❔"
+    beneficial: bool = True
+    buff: tuple[str, int] | None = None
+
+    @classmethod
+    def from_dict(cls, json: StatDict) -> Self:
+        buff = json.get("buff", None)
+        new = {
+            "name": Name(**json["names"]),
+            "beneficial": "beneficial" not in json,
+            "buff": None if buff is None else (buff["mode"], buff["range"]),
+        }
+        if emoji := json.get("emoji"):
+            new["emoji"] = emoji
+
+        return cls(**new)
 
 
-# fmt: off
-STATS = dict(
-    weight   =Stat("Weight",                "<:weight:725870760484143174>"),
-    health   =Stat("HP",                    "<:health:725870887588462652>"),
-    eneCap   =Stat("Energy",                "<:energy:725870941883859054>"),
-    eneReg   =Stat("Regeneration",           "<:regen:725871003665825822>"),
-    heaCap   =Stat("Heat",                    "<:heat:725871043767435336>"),
-    heaCol   =Stat("Cooling",              "<:cooling:725871075778363422>"),
-    phyRes   =Stat("Physical resistance",   "<:phyres:725871121051811931>"),
-    expRes   =Stat("Explosive resistance",  "<:expres:725871136935772294>"),
-    eleRes   =Stat("Electric resistance",  "<:elecres:725871146716758077>"),
-    phyDmg   =Stat("Physical damage",       "<:phydmg:725871208830074929>"),
-    phyResDmg=Stat("Resistance drain",   "<:phyresdmg:725871259635679263>"),
-    expDmg   =Stat("Explosive damage",      "<:expdmg:725871223338172448>"),
-    heaDmg   =Stat("Heat damage",           "<:headmg:725871613639393290>"),
-    heaCapDmg=Stat("Max heat damage",   "<:heatcapdmg:725871478083551272>"),
-    heaColDmg=Stat("Cooling damage",    "<:coolingdmg:725871499281563728>"),
-    expResDmg=Stat("Resistance drain",   "<:expresdmg:725871281311842314>"),
-    eleDmg   =Stat("Electric damage",       "<:eledmg:725871233614479443>"),
-    eneDmg   =Stat("Energy damage",         "<:enedmg:725871599517171719>"),
-    eneCapDmg=Stat("Max energy damage",  "<:enecapdmg:725871420126789642>"),
-    eneRegDmg=Stat("Regeneration damage", "<:regendmg:725871443815956510>"),
-    eleResDmg=Stat("Resistance drain",   "<:eleresdmg:725871296381976629>"),
-    range    =Stat("Range",                  "<:range:725871752072134736>"),
-    push     =Stat("Knockback",               "<:push:725871716613488843>"),
-    pull     =Stat("Pull",                    "<:pull:725871734141616219>"),
-    recoil   =Stat("Recoil",                "<:recoil:725871778282340384>"),
-    retreat  =Stat("Retreat",              "<:retreat:725871804236955668>"),
-    advance  =Stat("Advance",              "<:advance:725871818115907715>"),
-    walk     =Stat("Walking",                 "<:walk:725871844581834774>"),
-    jump     =Stat("Jumping",                 "<:jump:725871869793796116>"),
-    uses     =Stat("Uses",                    "<:uses:725871917923303688>"),
-    backfire =Stat("Backfire",            "<:backfire:725871901062201404>"),
-    heaCost  =Stat("Heat cost",            "<:heatgen:725871674007879740>"),
-    eneCost  =Stat("Energy cost",         "<:eneusage:725871660237979759>"))
-# fmt: on
+with open("SuperMechs/GameData/StatData.json") as file:
+    json: dict[AnyStatKey, StatDict] = load(file)
+
+    STATS = {stat_key: Stat.from_dict(value) for stat_key, value in json.items()}
 
 
 class GameVars(t.NamedTuple):
     MAX_WEIGHT: int = 1000
     OVERWEIGHT: int = 10
-    PENALTIES: dict[str, int] = {"health": 15}
+    PENALTIES: AnyMechStats = { "health": 15 }
 
     @property
     def MAX_OVERWEIGHT(self) -> int:
         return self.MAX_WEIGHT + self.OVERWEIGHT
+
+    @staticmethod
+    def default() -> GameVars:
+        return DEFAULT_VARS
 
 
 DEFAULT_VARS = GameVars()
 
 
 class ArenaBuffs:
-    ref_def = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
-    ref_hp = (0, +10, +30, +60, 90, 120, 150, 180, +220, +260, 300, 350)
-    stat_ref = (
-        "eneCap",
-        "eneReg",
-        "eneDmg",
-        "heaCap",
-        "heaCol",
-        "heaDmg",
-        "phyDmg",
-        "expDmg",
-        "eleDmg",
-        "phyRes",
-        "expRes",
-        "eleRes",
-        "health",
-        "backfire",
+    # fmt: off
+    BASE_PERCENT = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
+    HP_INCREASES = (0, +10, +30, +60, 90, 120, 150, 180, +220, +260, 300, 350)
+    STATS_REFERENCE = (
+        "eneCap", "eneReg", "eneDmg", "heaCap", "heaCol", "heaDmg", "phyDmg",
+        "expDmg", "eleDmg", "phyRes", "expRes", "eleRes", "health", "backfire"
     )
+    # fmt: on
 
     def __init__(self, levels: dict[str, int] | None = None) -> None:
-        self.levels = levels or dict.fromkeys(self.stat_ref, 0)
-
-    def __getitem__(self, key: str) -> int:
-        return self.levels[key]
+        self.levels = levels or dict.fromkeys(self.STATS_REFERENCE, 0)
 
     def __repr__(self) -> str:
         return (
@@ -109,6 +112,9 @@ class ArenaBuffs:
             + ", ".join(f"{stat}={lvl}" for stat, lvl in self.levels.items())
             + f" at 0x{id(self):016X}>"
         )
+
+    def __getitem__(self, item: str) -> int:
+        return self.levels[item]
 
     @property
     def is_at_zero(self) -> bool:
@@ -123,7 +129,7 @@ class ArenaBuffs:
         level = self.levels[stat]
 
         if stat == "health":
-            return value + self.ref_hp[level]
+            return value + self.HP_INCREASES[level]
 
         return round(value * (1 + self.get_percent(stat, level) / 100))
 
@@ -134,63 +140,66 @@ class ArenaBuffs:
         return buffed, buffed - value
 
     @classmethod
-    def get_percent(cls, stat: str, level: int) -> int:
+    def get_percent(cls, stat_name: str, level: int) -> int:
         """Returns an int representing the precentage for the stat's increase."""
-        match stat:
+        match stat_name:
             case "health":
                 raise TypeError('"Health" stat has absolute increase, not percent')
 
             case "backfire":
-                return -cls.ref_def[level]
+                return -cls.BASE_PERCENT[level]
 
             case "expRes" | "eleRes" | "phyRes":
-                return cls.ref_def[level] * 2
+                return cls.BASE_PERCENT[level] * 2
 
             case _:
-                return cls.ref_def[level]
+                return cls.BASE_PERCENT[level]
 
     @classmethod
-    def buff_as_str(cls, stat: str, level: int) -> str:
+    def buff_as_str(cls, stat_name: str, level: int) -> str:
         """Returns a formatted string representation of the stat's value at the given level."""
-        if stat == "health":
-            return f"+{cls.ref_hp[level]}"
+        if stat_name == "health":
+            return f"+{cls.HP_INCREASES[level]}"
 
-        return f"{cls.get_percent(stat, level):+}%"
+        return f"{cls.get_percent(stat_name, level):+}%"
 
     def buff_as_str_aware(self, stat: str) -> str:
         """Returns a formatted string representation of the stat's value."""
         return self.buff_as_str(stat, self.levels[stat])
 
     @classmethod
-    def iter_as_str(cls, stat: str) -> t.Iterator[str]:
-        levels = len(cls.ref_hp) if stat == "health" else len(cls.ref_def)
+    def iter_as_str(cls, stat_name: str) -> t.Iterator[str]:
+        levels = len(cls.HP_INCREASES) if stat_name == "health" else len(cls.BASE_PERCENT)
 
         for n in range(levels):
-            yield cls.buff_as_str(stat, n)
+            yield cls.buff_as_str(stat_name, n)
 
     @classmethod
     def maxed(cls) -> ArenaBuffs:
-        """Create an ArenaBuffs object with all levels maxed."""
-        self = cls.__new__(cls)
+        """Returns an ArenaBuffs object with all levels maxed."""
 
-        self.levels = dict.fromkeys(cls.stat_ref, len(cls.ref_def) - 1)
-        self.levels["health"] = len(cls.ref_hp) - 1
+        levels = dict.fromkeys(cls.STATS_REFERENCE, len(cls.BASE_PERCENT) - 1)
+        levels["health"] = len(cls.HP_INCREASES) - 1
+        max_buffs = cls(levels)
 
-        return self
+        setattr(cls, "maxed", staticmethod(lambda: max_buffs))
+
+        return max_buffs
 
     def buff_stats(self, stats: AnyStats, /, *, buff_health: bool = False) -> AnyStats:
         """Returns the buffed stats."""
         buffed: AnyStats = {}
 
-        for key, value in stats.items():
+        for key, value in dict_items_as(int | list[int], stats):
             if key == "health" and not buff_health:
-                buffed[key] = t.cast(int, value)
+                assert type(value) is int
+                buffed[key] = value
 
             elif isinstance(value, list):
                 buffed[key] = [self.total_buff(key, v) for v in value]
 
             else:
-                value = self.total_buff(key, t.cast(int, value))
+                value = self.total_buff(key, value)
                 buffed[key] = value
 
         return buffed
