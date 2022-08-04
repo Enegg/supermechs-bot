@@ -1,49 +1,50 @@
-import asyncio
-import aiohttp
-import socketio
+import logging
+import typing as t
 
-WU_SERVER_URL = "https://supermechs-workshop-server.thearchives.repl.co"
+from socketio import AsyncClient
+
+from config import CLIENT_VERSION, WU_SERVER_URL
+
+if t.TYPE_CHECKING:
+    from aiohttp import ClientSession
 
 
-async def main():
-    session = aiohttp.ClientSession()
-    sio = socketio.AsyncClient(http_session=session, ssl_verify=False)
+logger = logging.getLogger(f"main.{__name__}")
 
-    @sio.event
-    async def message(data):
-        print("I received a message!")
-        print(data)
 
-    @sio.event
-    def connect():
-        print("I'm connected!")
+class SMServer:
+    def __init__(self, session: "ClientSession") -> None:
+        self.session = session
+        self.connections: dict[str, AsyncClient] = {}
 
-    @sio.event
-    def connect_error(data):
-        print("The connection failed!")
-        print(data)
+    async def create_socket(self, name: str) -> AsyncClient:
+        """Create & connect to a socket for a player."""
 
-    @sio.event
-    def disconnect():
-        print("I'm disconnected!")
+        sio = AsyncClient(logger=logger, http_session=self.session, ssl_verify=False)
+        sio.on("connect", lambda: logger.info(f"Connected as {name}"))
+        sio.on("disconnect", lambda: logger.info(f"{name} disconnected"))
+        sio.on(
+            "connect_error", lambda data: logger.warning(f"Connection failed for {name}:\n{data}")
+        )
+        sio.on("message", lambda data: logger.info(f"Message: {data}"))
+        sio.on("server.message", lambda data: logger.warning(f"Server message: {data}"))
 
-    @sio.on("*")  # type: ignore
-    def catch_all(event, data):
-        print(event, data)
-
-    try:
         await sio.connect(
-            WU_SERVER_URL, headers={"x-player-name": "Eneg", "x-client-version": "gobsmacked!!!"}
+            WU_SERVER_URL,
+            headers={"x-player-name": name, "x-client-version": CLIENT_VERSION},
         )
 
-        while True:
-            await sio.send("foo")
-            await sio.sleep(3)
+        sid = sio.get_sid()
+        logger.info(f"SID for {name} is {sid}")
 
-    finally:
-        await sio.disconnect()
-        await session.close()
+        assert sid is not None
+        self.connections[sid] = sio
 
+        return sio
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    async def kill_connections(self) -> None:
+        """Disconnects all currently connected users."""
+
+        for id, socket in tuple(self.connections.items()):
+            await socket.disconnect()
+            del self.connections[id]

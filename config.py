@@ -11,3 +11,6 @@ DEFAULT_PACK_URL = (
 DEFAULT_PACK_V2_URL = (
     "https://gist.githubusercontent.com/ctrlraul/22b71089a0dd7fef81e759dfb3dda67b/raw"
 )
+
+WU_SERVER_URL = "https://supermechs-workshop-server.thearchives.repl.co"
+CLIENT_VERSION = "2"
