@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from .types import AnyStats
+from .game_types import AnyStats
 
 WORKSHOP_STATS: t.Final = (
     "weight",

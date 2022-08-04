@@ -9,7 +9,7 @@ from PIL import Image
 
 if t.TYPE_CHECKING:
     from .item import Item
-    from .types import Attachment, Attachments
+    from .game_types import Attachment, Attachments
 
 
 async def get_image(link: str, session: aiohttp.ClientSession) -> Image.Image:

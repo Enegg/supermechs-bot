@@ -8,7 +8,7 @@ from utils import Proxied, binary_find_near_index, proxy
 from .enums import Element, Type, Rarity, RarityRange
 from .errors import MaxPowerReached, MaxTierReached
 from .item import Item
-from .types import Attachment, Attachments, AttachmentType
+from .game_types import Attachment, Attachments, AttachmentType
 
 from PIL.Image import Image
 

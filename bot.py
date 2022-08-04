@@ -14,7 +14,7 @@ from config import DEFAULT_PACK_URL
 from SuperMechs.core import abbreviate_names
 from SuperMechs.item import AnyItem, Item
 from SuperMechs.player import Player
-from SuperMechs.types import ItemPack, PackConfig
+from SuperMechs.game_types import ItemPack, PackConfig
 from utils import MISSING
 
 from lib_helpers import CommandInteraction

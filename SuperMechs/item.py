@@ -9,7 +9,7 @@ from utils import MISSING, js_format
 from .core import MAX_BUFFS
 from .enums import Element, Type, Rarity, RarityRange
 from .images import get_image
-from .types import (
+from .game_types import (
     AnyStats,
     Attachment,
     Attachments,

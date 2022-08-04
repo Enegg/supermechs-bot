@@ -11,7 +11,7 @@ from utils import format_count
 from .core import DEFAULT_VARS, STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .images import MechRenderer
 from .inv_item import AnyInvItem, InvItem
-from .types import AnyStats, Attachment, Attachments, WUSerialized
+from .game_types import AnyStats, Attachment, Attachments, WUSerialized
 from .enums import Type
 
 if t.TYPE_CHECKING:

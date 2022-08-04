@@ -8,7 +8,7 @@ from utils import MISSING, random_str
 from .core import ArenaBuffs
 from .inv_item import AnyInvItem
 from .mech import Mech
-from .types import WUSerialized
+from .game_types import WUSerialized
 
 
 @dataclass

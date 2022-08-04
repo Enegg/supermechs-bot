@@ -9,7 +9,7 @@ from config import TEST_GUILDS
 from disnake.ext import commands
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.item import AnyItem
-from SuperMechs.types import AnyStats
+from SuperMechs.game_types import AnyStats
 from typing_extensions import Self
 from ui.buttons import Button, ToggleButton, button
 from ui.views import PersonalView
