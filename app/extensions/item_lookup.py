@@ -8,16 +8,17 @@ from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands
 from typing_extensions import Self
 
-from config import TEST_GUILDS
+from app import TEST_GUILDS
+from app.lib_helpers import image_to_file
+from app.ui.buttons import Button, ToggleButton, button
+from app.ui.views import InteractionCheck, SaneView, positioned
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
+from SuperMechs.game_types import AnyStats
 from SuperMechs.item import AnyItem
-from SuperMechs.types import AnyStats
-from ui.buttons import Button, ToggleButton, button
-from ui.views import InteractionCheck, SaneView, positioned
-from utils import dict_items_as, search_for
+from SuperMechs.utils import dict_items_as, search_for
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from app.bot import SMBot
 
 T = t.TypeVar("T")
 
@@ -40,7 +41,7 @@ class ItemView(InteractionCheck, SaneView):
         self.embed = embed
         self.item = item
 
-        if not {"phyDmg", "eleDmg", "ExpDmg"} & set(item.stats):
+        if not item.stats.has_any_of_stats("phyDmg", "eleDmg", "expDmg"):
             self.remove_item(self.avg_button, 0)
 
         callback(embed, item, False, False)
@@ -55,7 +56,7 @@ class ItemView(InteractionCheck, SaneView):
         await inter.edit_original_message(embed=self.embed, view=self)
 
     @positioned(0, 1)
-    @button(cls=ToggleButton, label="Show damage spread", custom_id="button:dmg")
+    @button(cls=ToggleButton, label="Damage average", custom_id="button:dmg")
     async def avg_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.embed.clear_fields()
@@ -102,20 +103,28 @@ class ItemCompareView(InteractionCheck, SaneView):
         self.stop()
 
     def prepare(self) -> None:
-        name_field, first_field, second_field = stats_to_fields(
-            MAX_BUFFS.buff_stats(self.item_a.stats) if self.buffs_button.on else self.item_a.stats,
-            MAX_BUFFS.buff_stats(self.item_b.stats) if self.buffs_button.on else self.item_b.stats,
-        )
-        if self.item_a.tags.require_jump:
+        if self.buffs_button.on:
+            name_field, first_field, second_field = stats_to_fields(
+                MAX_BUFFS.buff_stats(self.item_a.max_stats),
+                MAX_BUFFS.buff_stats(self.item_b.max_stats),
+            )
+
+        else:
+            name_field, first_field, second_field = stats_to_fields(
+                self.item_a.max_stats,
+                self.item_b.max_stats,
+            )
+        if require_jump := self.item_a.tags.require_jump:
             first_field.append("❕")
 
         if self.item_b.tags.require_jump:
             second_field.append("❕")
+            require_jump = True
 
-        if self.item_a.tags.require_jump or self.item_b.tags.require_jump:
+        if require_jump:
             name_field.append(f"{STATS['jump'].emoji} **Jumping required**")
 
-        if len(self.embed.fields):
+        if self.embed._fields:
             modify = self.embed.set_field_at
 
         else:
@@ -142,24 +151,24 @@ class ItemLookup(commands.Cog):
 
         Parameters
         -----------
-        name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+        name: The name of the item {{ ITEM_NAME }}
         compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
         invisible: Whether the bot response is visible only to you {{ ITEM_VISIBILITY }}
         """
 
-        if name not in self.bot.items_cache:
+        if name not in self.bot.default_pack:
             if name == "Start typing to get suggestions...":
-                raise commands.UserInputError("This is only an information and not an option")
+                raise commands.UserInputError("This option is only informative")
 
             raise commands.UserInputError("Item not found.")
 
-        item = self.bot.items_cache[name]
+        item = self.bot.default_pack.get_item_by_name(name)
 
         if compact:
             embed = (
                 Embed(color=item.element.color)
                 .set_author(name=item.name, icon_url=item.type.image_url)
-                .set_thumbnail(url=item.image_url)
+                .set_thumbnail(file=image_to_file(item.image.image))
             )
             embed_preset = compact_embed
 
@@ -172,7 +181,7 @@ class ItemLookup(commands.Cog):
                     color=item.element.color,
                 )
                 .set_thumbnail(url=item.type.image_url)
-                .set_image(url=item.image_url)
+                .set_image(file=image_to_file(item.image.image))
             )
             embed_preset = default_embed
 
@@ -191,13 +200,13 @@ class ItemLookup(commands.Cog):
         name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
         """
 
-        if name not in self.bot.items_cache:
+        if name not in self.bot.default_pack.names_to_ids:
             if name == "Start typing to get suggestions...":
                 raise commands.UserInputError("This is only an information and not an option")
 
             raise commands.UserInputError("Item not found.")
 
-        item = self.bot.items_cache[name]
+        item = self.bot.default_pack.get_item_by_name(name)
 
         await inter.send(f"`{item!r}`", ephemeral=True)
 
@@ -210,8 +219,8 @@ class ItemLookup(commands.Cog):
         item1: First item to compare. {{ COMPARE_FIRST }}
         item2: Second item to compare. {{ COMPARE_SECOND }}
         """
-        item_a = self.bot.items_cache.get(item1)
-        item_b = self.bot.items_cache.get(item2)
+        item_a = self.bot.default_pack.get_item_by_name(item1)
+        item_b = self.bot.default_pack.get_item_by_name(item2)
 
         if item_a is None or item_b is None:
             raise commands.UserInputError("Either of specified items not found.")
@@ -255,7 +264,7 @@ class ItemLookup(commands.Cog):
             return ["Start typing to get suggestions..."]
 
         items = sorted(
-            set(search_for(input, self.bot.items_cache))
+            set(search_for(input, self.bot.default_pack.iter_item_names()))
             | self.bot.item_abbrevs.get(input.lower(), set())
         )
 
@@ -280,9 +289,15 @@ def avg_and_deviation(a: int | tuple[int, int], b: int | None = None) -> tuple[f
 def buffed_stats(
     item: AnyItem, buffs_enabled: bool
 ) -> t.Iterator[tuple[str, tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]]]:
-    apply_buff = MAX_BUFFS.total_buff_difference if buffs_enabled else lambda _, value: (value, 0)
+    if buffs_enabled:
+        apply_buff = MAX_BUFFS.total_buff_difference
 
-    for stat, value in dict_items_as(int | list[int], item.stats):
+    else:
+
+        def apply_buff(stat_name: str, value: int) -> tuple[int, int]:
+            return (value, 0)
+
+    for stat, value in dict_items_as(int | list[int], item.stats.at(item.transform_range.max)):
         if stat == "health":
             assert type(value) is int
             yield stat, (value, 0)
@@ -302,11 +317,11 @@ def buffed_stats(
 def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
     """Fills embed with full-featured info about an item."""
 
-    if item.rarity.is_single:
-        transform_range = f"({item.rarity})"
+    if item.transform_range.is_single_tier():
+        transform_range = f"({item.transform_range})"
 
     else:
-        tiers = [tier.emoji for tier in item.rarity]
+        tiers = [tier.emoji for tier in item.transform_range]
         tiers[-1] = f"({tiers[-1]})"
         transform_range = "".join(tiers)
 
@@ -358,11 +373,11 @@ def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
 def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
     """Fills embed with reduced in size item info."""
 
-    if item.rarity.is_single:
-        transform_range = f"({item.rarity})"
+    if item.transform_range.is_single_tier():
+        transform_range = f"({item.transform_range})"
 
     else:
-        tiers = [tier.emoji for tier in item.rarity]
+        tiers = [tier.emoji for tier in item.transform_range]
         tiers[-1] = f"({tiers[-1]})"
         transform_range = "".join(tiers)
 
@@ -374,7 +389,7 @@ def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
 
         elif avg and stat != "range":
             a, b = avg_and_deviation(value[0], diff[0])
-            text = f"{a:g} ±{b:.1%}"
+            text = f"{a:.0g} ±{b:.0%}"
 
         else:
             text = f"{value[0]}-{diff[0]}"
@@ -426,43 +441,11 @@ def cmp_num(x: float, y: float, lower_is_better: bool = False) -> tuple_of_tuple
 
 value_and_diff = tuple[int | float | None, float]
 
-# TODO: generic comparator for N items, with rulesets
-def generic_comparator(
-    *stats: AnyStats,
-) -> t.Iterator[tuple[str, Stat, tuple[value_and_diff, ...]]]:
-
-    if not stats:
-        return
-
-    undesired = {"weight", "backfire", "heaCost", "eneCost"}
-    special_cases = {"range"}
-
-    for stat_name, stat in STATS.items():
-        stat_values: list[int | None] | list[
-            list[int] | None
-        ] = []  # [stat.get(stat_name) for stat in stats]
-
-        if all(stat is None for stat in stat_values):
-            continue
-
-        if stat_name in special_cases:
-            yield stat_name, stat, tuple(
-                tuple(stat) if isinstance(stat, list) else (None, 0) for stat in stat_values
-            )
-            continue
-
-        if any(isinstance(stat, int) for stat in stat_values):
-            pass
-
-        if any(isinstance(stat, list) for stat in stat_values):
-            pass
-
 
 def comparator(
     stats_a: AnyStats, stats_b: AnyStats
 ) -> t.Iterator[
     tuple[
-        str,
         Stat,
         tuple[value_and_diff, value_and_diff]
         | tuple[value_and_diff, value_and_diff, value_and_diff, value_and_diff],
@@ -476,7 +459,7 @@ def comparator(
         stat_b: int | list[int] | None = stats_b.get(stat_name)
 
         if stat_name in special_cases and not (stat_a is stat_b is None):
-            yield stat_name, stat, (
+            yield stat, (
                 tuple(stat_a) if isinstance(stat_a, list) else (None, 0),
                 tuple(stat_b) if isinstance(stat_b, list) else (None, 0),
             )
@@ -487,31 +470,31 @@ def comparator(
                 continue
 
             case (int() as a, int() as b):
-                yield stat_name, stat, cmp_num(a, b, stat_name in undesired)
+                yield stat, cmp_num(a, b, stat_name in undesired)
                 continue
 
             case ([int() as a1, int() as a2], [int() as b1, int() as b2]):
                 x_avg, x_inacc = avg_and_deviation(a1, a2)
                 y_avg, y_inacc = avg_and_deviation(b1, b2)
 
-                yield stat_name, stat, cmp_num(x_avg, y_avg, False) + cmp_num(
+                yield stat, cmp_num(x_avg, y_avg, False) + cmp_num(
                     x_inacc, y_inacc, True
                 )
                 continue
 
         if isinstance(stat_a, int):
-            yield stat_name, stat, ((stat_a, 0), (None, 0))
+            yield stat, ((stat_a, 0), (None, 0))
 
         elif isinstance(stat_b, int):
-            yield stat_name, stat, ((None, 0), (stat_b, 0))
+            yield stat, ((None, 0), (stat_b, 0))
 
         elif stat_a is not None:
             avg, inacc = avg_and_deviation(*stat_a)
-            yield stat_name, stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
+            yield stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
 
         elif stat_b is not None:
             avg, inacc = avg_and_deviation(*stat_b)
-            yield stat_name, stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
+            yield stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
 def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], list[str], list[str]]:
@@ -519,7 +502,8 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
     first_item: list[str] = []
     second_item: list[str] = []
 
-    for stat_name, stat, long_boy in comparator(stats_a, stats_b):
+    for stat, long_boy in comparator(stats_a, stats_b):
+        stat_name = str(stat)
         name_field.append(f"{stat.emoji} {stat.name}")
 
         match (stat_name, long_boy):

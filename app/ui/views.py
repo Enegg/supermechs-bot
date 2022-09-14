@@ -26,7 +26,7 @@ class InteractionCheck:
     will overwrite the method."""
 
     user_id: int
-    response = "This message is for someone else."
+    response = "Only the command invoker can interact with that."
 
     async def interaction_check(self, inter: disnake.MessageInteraction) -> bool:
         if inter.author.id != self.user_id:
@@ -37,6 +37,7 @@ class InteractionCheck:
 
 
 def positioned(row: int, column: int):
+    """Denotes the position of an Item in the 5x5 grid."""
     def decorator(func: ItemCallbackType[t.Any, I_CO] | DecoratedItem[I_CO]) -> DecoratedItem[I_CO]:
         func.__discord_ui_position__ = (row, column)  # type: ignore
         return func  # type: ignore
@@ -82,6 +83,8 @@ class SaneView(View):
         cls.__view_children_items__ = children
 
     def __init__(self, *, timeout: float | None = 180.0) -> None:
+        # we *do not* call super().__init__() and instead do all the initialization
+        # so as to overwrite how View initializes decorated callbacks
         self.timeout = timeout
 
         self.init_rows()
@@ -178,13 +181,13 @@ class SaneView(View):
 
     def add_item(self, item: MessageUI[t.Any], row: int | None = None) -> None:
         if not isinstance(item, Item):
-            raise TypeError(f"expected Item not {item.__class__!r}")
+            raise TypeError(f"expected Item, not {item.__class__!r}")
 
         if row is None and item.row is not None:
             row = item.row
 
         elif row is None:
-            raise ValueError("Cannot add item without row specified")
+            raise ValueError("Cannot add an item without row specified")
 
         if not 0 <= row < 5:
             raise ValueError("row outside range 0-4")

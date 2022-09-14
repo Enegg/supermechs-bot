@@ -8,9 +8,9 @@
     "ITEM_NAME": "przedmiot",
     "ITEM_DESCRIPTION": "Znajduje przedmiot i zwraca jego statystyki.",
     "ITEM_NAME_NAME": "nazwa",
-    "ITEM_NAME_DESCRIPTION": "Nazwa przedmiotu lub jej część.",
+    "ITEM_NAME_DESCRIPTION": "Nazwa przedmiotu.",
     "ITEM_COMPACT_NAME": "kompaktowy",
-    "ITEM_COMPACT_DESCRIPTION": "Kontroluje kompaktowe ułożenie (psuje się na aplikacji mobilnej).",
+    "ITEM_COMPACT_DESCRIPTION": "Włącza kompaktowe ułożenie (psuje się na aplikacji mobilnej).",
     "ITEM_VISIBILITY_NAME": "widzialność",
     "ITEM_VISIBILITY_DESCRIPTION": "Kontroluje czy wiadomość jest widoczna dla wszystkich.",
 

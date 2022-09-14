@@ -12,7 +12,7 @@ from disnake.ext import commands
 from disnake.utils import oauth_url
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from app.bot import SMBot
 
 logger = logging.getLogger(f"main.{__name__}")
 

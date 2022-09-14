@@ -7,16 +7,16 @@ from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectO
 from disnake.ext import commands
 from typing_extensions import Self
 
-from config import TEST_GUILDS
+from app import TEST_GUILDS
+from app.ui.buttons import Button, TrinaryButton, button
+from app.ui.item import add_callback
+from app.ui.selects import EMPTY_OPTION, Select, select
+from app.ui.views import InteractionCheck, PaginatorView, positioned
 from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
 from SuperMechs.player import Player
-from ui.buttons import Button, TrinaryButton, button
-from ui.item import add_callback
-from ui.selects import EMPTY_OPTION, Select, select
-from ui.views import InteractionCheck, PaginatorView, positioned
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from app.bot import SMBot
 
 logger = logging.getLogger(f"main.{__name__}")
 

@@ -13,7 +13,7 @@ from disnake.ext import commands
 if t.TYPE_CHECKING:
     from PIL.Image import Image
 
-    from bot import SMBot
+    from app.bot import SMBot
 
 
 class MessageInteraction(disnake.MessageInteraction):

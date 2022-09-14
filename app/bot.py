@@ -10,24 +10,19 @@ import aiohttp
 from disnake import CommandInteraction, Interaction, Member, User
 from disnake.abc import Messageable
 from disnake.ext import commands
+from disnake.utils import MISSING
 
-from config import DEFAULT_PACK_URL
-from lib_helpers import ChannelHandler
-from lib_helpers import CommandInteraction as SMCommandInteraction
+from SuperMechs import DEFAULT_PACK_V2_URL
 from SuperMechs.core import abbreviate_names
-from SuperMechs.item import AnyItem, Item
+from SuperMechs.pack_interface import PackInterface
 from SuperMechs.player import Player
-from SuperMechs.types import ItemPack, PackConfig
-from utils import MISSING
+
+from .lib_helpers import ChannelHandler
 
 logger = logging.getLogger(f"main.{__name__}")
 
 
 class SMBot(commands.InteractionBot):
-    items_cache: dict[str, AnyItem]
-    item_abbrevs: dict[str, set[str]]
-    item_pack: PackConfig
-
     def __init__(
         self, test_mode: bool = False, logs_channel_id: int | None = None, **options: t.Any
     ) -> None:
@@ -36,6 +31,7 @@ class SMBot(commands.InteractionBot):
         self.run_time: datetime = MISSING
         self.players: dict[int, Player] = {}
         self.logs_channel = logs_channel_id
+        self.default_pack = PackInterface()
 
     async def on_slash_command_error(
         self, inter: CommandInteraction, error: commands.CommandError
@@ -83,13 +79,13 @@ class SMBot(commands.InteractionBot):
             logger.info("Warnings & errors redirected to logs channel")
 
         try:
-            await self.load_item_pack(DEFAULT_PACK_URL)
+            await self.default_pack.load(DEFAULT_PACK_V2_URL, self.session)
 
         except (JSONDecodeError, aiohttp.ClientResponseError) as e:
             logger.warning("Error while fetching items: ", e)
             return
 
-        self.item_abbrevs = abbreviate_names(self.items_cache)
+        self.item_abbrevs = abbreviate_names(self.default_pack.iter_item_names())
 
         await self.connect(reconnect=reconnect)
 
@@ -104,44 +100,29 @@ class SMBot(commands.InteractionBot):
         session._request = partial(session._request, proxy=self.http.proxy)
         return session
 
-    async def load_item_pack(self, pack_url: str, /) -> None:
-        """Loads an item pack from url and sets it as active pack."""
-        logger.info("Fetching item pack")
-
-        async with self.session.get(pack_url) as response:
-            response.raise_for_status()
-            pack: ItemPack = await response.json(encoding="utf-8", content_type=None)
-
-        self.item_pack = pack["config"]
-        self.items_cache = {
-            item_dict["name"]: Item.from_json_v1(item_dict, pack=pack["config"])
-            for item_dict in pack["items"]
-        }
-        logger.info(f"Item pack loaded: {self.item_pack['name']}")
-
-    def get_player(self, data: User | Member | commands.Context | Interaction | int, /) -> Player:
+    def get_player(self, data: User | Member | commands.Context | Interaction, /) -> Player:
         """Return a Player object from object containing user ID."""
         match data:
             case User() | Member():
                 id = data.id
+                name = data.name
 
             case commands.Context() | Interaction():
                 id = data.author.id
-
-            case int():
-                id = data
+                name = data.author.name
 
             case _:
                 raise TypeError(f"Invalid type: {type(data)}")
 
         if id not in self.players:
-            logger.info("New player created: %d", id)
-            self.players[id] = Player(id=id)
+            logger.info(f"New player created: {id} ({name})")
+            self.players[id] = Player(id=id, name=name)
 
         return self.players[id]
 
 
 # due to disnake bug this cannot be Bot method
 @commands.register_injection
-def player_injector(inter: SMCommandInteraction) -> Player:
+def player_injector(inter: CommandInteraction) -> Player:
+    assert isinstance(inter.bot, SMBot)
     return inter.bot.get_player(inter)

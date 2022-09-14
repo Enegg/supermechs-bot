@@ -8,9 +8,9 @@ from argparse import ArgumentParser
 from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
 
-from bot import SMBot
-from config import LOGS_CHANNEL, OWNER_ID
-from lib_helpers import FileRecord
+from app.bot import SMBot
+from app import LOGS_CHANNEL
+from app.lib_helpers import FileRecord
 
 load_dotenv()
 
@@ -41,34 +41,32 @@ logger.addHandler(stream)
 
 def main() -> None:
     if LOCAL:
-        from config import TEST_GUILDS
+        from app import TEST_GUILDS
 
         bot = SMBot(
             test_mode=True,
             logs_channel_id=LOGS_CHANNEL,
-            owner_id=OWNER_ID,
             intents=Intents(guilds=True),
             activity=Game("SuperMechs"),
             guild_ids=TEST_GUILDS,
+            allowed_mentions=AllowedMentions.none(),
             strict_localization=True,
-            allowed_mentions=AllowedMentions.none()
             # sync_commands_debug=True,
         )
 
     else:
         bot = SMBot(
             logs_channel_id=LOGS_CHANNEL,
-            owner_id=OWNER_ID,
             intents=Intents(guilds=True),
             activity=Game("SuperMechs"),
             allowed_mentions=AllowedMentions.none(),
         )
 
     bot.i18n.load("locale/")
-    bot.load_extensions("commands")
+    bot.load_extensions("app/extensions")
 
-    logger.info("Bot started")
-    bot.run(os.environ.get("TOKEN_DEV" if LOCAL else "TOKEN"))
+    logger.info("Starting bot")
+    bot.run(os.environ["TOKEN_DEV" if LOCAL else "TOKEN"])
 
 
 if __name__ == "__main__":

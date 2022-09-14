@@ -9,19 +9,20 @@ from disnake import (AllowedMentions, CommandInteraction, Embed, Message, Messag
 from disnake.ext import commands
 from typing_extensions import Self
 
-from lib_helpers import DesyncError, image_to_file
+from app.lib_helpers import DesyncError, image_to_file
+from app.ui.buttons import Button, ToggleButton, TrinaryButton, button
+from app.ui.item import add_callback
+from app.ui.selects import EMPTY_OPTION, PaginatedSelect, select
+from app.ui.views import InteractionCheck, PaginatorView, positioned
 from SuperMechs.enums import Element, Type
-from SuperMechs.inv_item import AnyInvItem, InvItem
+from SuperMechs.ext.wu_compat import mech_to_id_str
+from SuperMechs.inv_item import InvItem
 from SuperMechs.item import AnyItem
-from SuperMechs.mech import Mech, icon_data_for_slot, type_for_slot
+from SuperMechs.mech import Mech, slot_to_icon_data, slot_to_type
 from SuperMechs.player import Player
-from ui.buttons import Button, ToggleButton, TrinaryButton, button
-from ui.item import add_callback
-from ui.selects import EMPTY_OPTION, PaginatedSelect, select
-from ui.views import InteractionCheck, PaginatorView, positioned
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from app.bot import SMBot
 
 logger = logging.getLogger(f"main.{__name__}")
 
@@ -48,7 +49,7 @@ class MechView(InteractionCheck, PaginatorView):
         self.user_id = player.id
 
         self.active: TrinaryButton[AnyItem] | None = None
-        self.dominant = mech.figure_dominant_element()
+        self.dominant = mech.get_dominant_element()
         self.image_update_task = asyncio.Future[None]()
 
         for pos, row in enumerate(
@@ -63,7 +64,7 @@ class MechView(InteractionCheck, PaginatorView):
                     TrinaryButton(
                         custom_id=id,
                         item=mech[id],
-                        emoji=icon_data_for_slot(id).emoji,
+                        emoji=slot_to_icon_data(id).emoji,
                         row=pos,
                     ),
                     self.slot_button_cb,
@@ -81,7 +82,7 @@ class MechView(InteractionCheck, PaginatorView):
 
         self.item_groups: dict[Type, list[SelectOption]] = {type: [] for type in Type}
 
-        for item in bot.items_cache.values():
+        for item in bot.default_pack.items.values():
             self.item_groups[item.type].append(
                 SelectOption(label=item.name, emoji=item.element.emoji)
             )
@@ -113,7 +114,7 @@ class MechView(InteractionCheck, PaginatorView):
     @button(cls=ToggleButton, label="Buffs", custom_id="button:buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
-        if self.player.arena_buffs.is_at_zero:
+        if self.player.arena_buffs.is_at_zero():
             await inter.send(
                 "This won't show any effect because all your buffs are at level zero.\n"
                 "You can change that using `/buffs` command.",
@@ -160,21 +161,21 @@ class MechView(InteractionCheck, PaginatorView):
             await inter.response.edit_message(view=self)
             return
 
-        item = None if item_name == "empty" else self.bot.items_cache[item_name]
+        item = None if item_name == "empty" else self.bot.default_pack.get_item_by_name(item_name)
 
         # sanity check if the item is actually valid
-        if item is not None and item.type is not type_for_slot(self.active.custom_id):
+        if item is not None and item.type is not slot_to_type(self.active.custom_id):
             raise DesyncError()
 
         self.active.item = item
         select.placeholder = item_name
 
         if item is not None:
-            item = t.cast(AnyInvItem, InvItem.from_item(item))  # type: ignore
+            item = InvItem.from_item(item, maxed=True)
 
         self.mech[self.active.custom_id] = item
 
-        self.dominant = self.mech.figure_dominant_element()
+        self.dominant = self.mech.get_dominant_element()
 
         if self.dominant is not None:
             self.embed.color = self.dominant.color
@@ -200,10 +201,9 @@ class MechView(InteractionCheck, PaginatorView):
         if self.mech.has_image_cached:
             return
 
-        # load images while waiting
-        await asyncio.gather(asyncio.sleep(2.0), self.mech.load_images(self.bot.session))
+        await asyncio.sleep(2.0)
 
-        filename = f"{self.mech:id}.png"
+        filename = f"{mech_to_id_str(self.mech)}.png"
         self.embed.set_image(url=f"attachment://{filename}")
         file = image_to_file(self.mech.image, filename)
         await self.bot_msg.edit(embed=self.embed, file=file, attachments=[])
@@ -246,7 +246,7 @@ class MechView(InteractionCheck, PaginatorView):
         else:
             self.active.toggle()
 
-        self.item_select.options = self.resort_options(type_for_slot(button.custom_id))
+        self.item_select.options = self.resort_options(slot_to_type(button.custom_id))
         self.item_select.placeholder = button.item.name if button.item else "empty"
         self.active = button
 
@@ -285,6 +285,7 @@ class MechBuilder(commands.Cog):
             await inter.send(
                 f'No build named "{name}" found.',
                 allowed_mentions=AllowedMentions.none(),
+                ephemeral=True,
             )
             return
 
@@ -298,7 +299,6 @@ class MechBuilder(commands.Cog):
 
         embed.color = mech.torso.element.color
 
-        await mech.load_images(self.bot.session)
         embed.set_image(file=image_to_file(mech.image, f"{name}.png"))
         await inter.send(embed=embed)
 
@@ -336,11 +336,11 @@ class MechBuilder(commands.Cog):
         """
 
         if name is None:
-            mech = player.get_or_create_build()
+            mech = player.get_or_create_active_build()
             name = player.active_build_name
 
         elif name not in player.builds:
-            mech = player.new_build(name)
+            mech = player.create(name)
 
         else:
             mech = player.builds[name]
@@ -355,9 +355,7 @@ class MechBuilder(commands.Cog):
 
         else:
             embed.color = mech.torso.element.color
-
-            await mech.load_images(self.bot.session)
-            filename = f"{mech:id}.png"
+            filename = f"{mech_to_id_str(mech)}.png"
 
             embed.set_image(file=image_to_file(mech.image, filename))
             await inter.send(embed=embed, view=view)

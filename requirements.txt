@@ -1,6 +1,13 @@
-git+https://github.com/Enegg/disnake
+# SuperMechs framework
+git+https://github.com/Enegg/python-socketio
+attrs == 22.1.*
+aiohttp == 3.8.*
 Pillow == 9.1.*
-python-dotenv == 0.19.*
+
+# Bot
+git+https://github.com/Enegg/disnake
 certifi == 2021.10.8
-python-socketio[asyncio_client] == 5.6.*
+
+# General
+python-dotenv == 0.19.*
 typing-extensions == 4.2.0

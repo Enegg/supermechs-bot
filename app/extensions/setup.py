@@ -8,11 +8,11 @@ from traceback import print_exception
 from disnake import AllowedMentions, CommandInteraction
 from disnake.ext import commands
 
-from config import TEST_GUILDS
-from lib_helpers import str_to_file
+from app import TEST_GUILDS
+from app.lib_helpers import str_to_file
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from app.bot import SMBot
 
 logger = logging.getLogger(f"main.{__name__}")
 
