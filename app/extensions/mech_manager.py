@@ -341,6 +341,71 @@ class MechManager(commands.Cog):
         await view.wait()
         await inter.edit_original_response(view=None)
 
+    @mech.sub_command(name="import")
+    async def import_(self, inter: CommandInteraction, player: Player, file: Attachment) -> None:
+        """Import mech(s) from a .JSON file.
+
+        Parameters
+        ----------
+        file: a .JSON file as exported from WU.
+        """
+        # file size of 16KiB sounds like a pretty beefy amount of mechs
+        MAX_SIZE = 1 << 14
+
+        if MAX_SIZE < file.size:
+            raise commands.UserInputError(f"The maximum accepted file size is {MAX_SIZE >> 10}KiB.")
+
+        data = json.loads(await file.read())
+
+        try:
+            mechs, failed = load_mechs(data, self.bot.default_pack)
+
+        except ValueError as e:
+            raise commands.UserInputError(str(e)) from None
+
+        if not mechs:
+            message = "No mechs loaded."
+
+        else:
+            # TODO: warn about overwriting
+            player.builds.update((mech.name, mech) for mech in mechs)
+            message = "Loaded mechs: " + ", ".join(f"`{mech.name}`" for mech in mechs)
+
+        if failed:
+            message += "\nFailed to load: " + ", ".join(
+                f"{name}, reason: {reason}" for name, reason in failed.items()
+            )
+
+        await inter.response.send_message(message, ephemeral=True)
+
+    @mech.sub_command()
+    async def export(self, inter: CommandInteraction, player: Player) -> None:
+        """Export selected mechs into a WU-compatible .JSON file."""
+
+        if not player.builds:
+            return await inter.response.send_message("You do not have any builds.", ephemeral=True)
+
+        mech_select = Select(
+            placeholder="Select mechs to export",
+            custom_id="select:exported_mechs",
+            max_values=min(25, len(player.builds)),
+            options=list(player.builds)[:25],
+        )
+        await inter.response.send_message(components=mech_select, ephemeral=True)
+
+        def check(inter: MessageInteraction) -> bool:
+            return inter.data.custom_id == mech_select.custom_id
+
+        new_inter: MessageInteraction = await inter.bot.wait_for("dropdown", check=check)
+        values = new_inter.values
+        assert values is not None
+        selected = frozenset(values)
+
+        mechs = (mech for name, mech in player.builds.items() if name in selected)
+        fp = dump_mechs(mechs, self.bot.default_pack.key)
+        file = File(fp, "mechs.json")  # type: ignore
+        await new_inter.response.edit_message(file=file, components=None)
+
     @build.autocomplete("name")
     async def mech_name_autocomplete(
         self, inter: CommandInteraction, input: str
