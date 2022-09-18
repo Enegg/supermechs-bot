@@ -9,9 +9,9 @@ from io import TextIOBase
 from pathlib import Path
 
 from attrs import define, field
-from SuperMechs.core import abbreviate_names
 
 from shared import SESSION_CTX
+from SuperMechs.core import abbreviate_names
 
 from .enums import Type
 from .game_types import AnyAttachment

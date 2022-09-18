@@ -98,7 +98,9 @@ class AttachedImage(t.Generic[AttachmentType]):
     def height(self) -> int:
         return self.image.height
 
-    def load_image(self, data: ImageIOLike, /, *, force: bool = False, resize_to: tuple[int, int] = (0, 0)) -> None:
+    def load_image(
+        self, data: ImageIOLike, /, *, force: bool = False, resize_to: tuple[int, int] = (0, 0)
+    ) -> None:
         """Do what it takes to actually load the image
         `force`: if true and an image is cached, it will be overwritten."""
         if self.loaded and not force:

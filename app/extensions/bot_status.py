@@ -6,8 +6,7 @@ import sys
 import typing as t
 from datetime import datetime
 
-from disnake import CommandInteraction, Embed
-from disnake import __version__ as disnake_version
+from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext import commands
 from disnake.utils import oauth_url
 

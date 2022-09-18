@@ -9,8 +9,8 @@ from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
 
 from app.bot import SMBot
-from shared import LOGS_CHANNEL
 from app.lib_helpers import FileRecord
+from shared import LOGS_CHANNEL
 
 load_dotenv()
 

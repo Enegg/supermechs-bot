@@ -60,6 +60,7 @@ def proxy(slot: str, /) -> t.Callable[[type[T]], type[T]]:
                     pass
 
         return cls
+
     return wrap
 
 

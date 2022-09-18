@@ -5,8 +5,15 @@ import typing as t
 from datetime import datetime
 from functools import partial
 
-from disnake import (AllowedMentions, BaseActivity, CommandInteraction, Intents, Interaction,
-                     Member, User)
+from disnake import (
+    AllowedMentions,
+    BaseActivity,
+    CommandInteraction,
+    Intents,
+    Interaction,
+    Member,
+    User,
+)
 from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.utils import MISSING

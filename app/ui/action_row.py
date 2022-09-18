@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import typing as t
-from typing_extensions import Self
 
 from disnake.ui.action_row import ActionRow, MessageUIComponent, StrictUIComponentT, UIComponentT
 from disnake.ui.item import WrappedComponent
+from typing_extensions import Self
 
 ActionRowT = t.TypeVar("ActionRowT", bound=ActionRow[t.Any], covariant=True)
 

@@ -111,7 +111,9 @@ class SaneView(t.Generic[ActionRowT], View):
             item._view = self
 
             if row is None:
-                raise TypeError(f"This view does not support auto rows; set row via @positioned; item id: {item.custom_id}")
+                raise TypeError(
+                    f"This view does not support auto rows; set row via @positioned; item id: {item.custom_id}"
+                )
 
             action_row = self.rows[row]
             action_row.insert_item(len(action_row) if column is None else column, item)
@@ -133,9 +135,7 @@ class SaneView(t.Generic[ActionRowT], View):
     def __getitem__(self, pos: tuple[int, int]) -> MessageUIComponent:
         ...
 
-    def __getitem__(
-        self, pos: int | tuple[int, int]
-    ) -> MessageUIComponent | ActionRowT:
+    def __getitem__(self, pos: int | tuple[int, int]) -> MessageUIComponent | ActionRowT:
         if isinstance(pos, int):
             return self.rows[pos]
 

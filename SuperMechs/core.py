@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 from json import load
 
-from attrs import frozen, define, Factory
+from attrs import Factory, define, frozen
 from typing_extensions import Self
 
 from .enums import Rarity
@@ -69,7 +69,7 @@ class Stat(t.NamedTuple):
             name=Name(**json["names"]),
             emoji=json.get("emoji", "❔"),
             beneficial=json.get("beneficial", True),
-            buff=json.get("buff", None)
+            buff=json.get("buff", None),
         )
 
 

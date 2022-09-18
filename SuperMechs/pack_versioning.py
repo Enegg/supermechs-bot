@@ -104,4 +104,5 @@ class ItemPackVer3(SpritesSheetMixin):
     description: str
     items: list[ItemDictVer3]
 
+
 AnyItemPack = ItemPackVer1 | ItemPackVer2 | ItemPackVer3

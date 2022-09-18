@@ -66,10 +66,8 @@ class Item(t.Generic[AttachmentType]):
 
         tags = set[str](data.get("tags", ()))
 
-        if (
-            ("legacy" in tags and transform_range.min is Rarity.MYTHICAL)
-            or
-            (transform_range.min > Rarity.EPIC)
+        if ("legacy" in tags and transform_range.min is Rarity.MYTHICAL) or (
+            transform_range.min > Rarity.EPIC
         ):
             tags.add("premium")
 
