@@ -8,11 +8,11 @@ from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands
 from typing_extensions import Self
 
-from app import TEST_GUILDS
 from app.lib_helpers import image_to_file
 from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, button
 from app.ui.views import InteractionCheck, SaneView, positioned
+from shared import TEST_GUILDS
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
 from SuperMechs.game_types import AnyElement, AnyStats, AnyType

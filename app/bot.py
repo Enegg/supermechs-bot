@@ -11,8 +11,7 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-from shared import SESSION_CTX
-from SuperMechs import DEFAULT_PACK_V2_URL
+from shared import DEFAULT_PACK_V2_URL, SESSION_CTX
 from SuperMechs.pack_interface import PackInterface
 from SuperMechs.player import Player
 
