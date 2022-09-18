@@ -24,7 +24,7 @@
     "MECH_SHOW_NAME": "pokaż",
     "MECH_SHOW_DESCRIPTION": "Wyświetla twojego mecha i jego statystyki.",
     "MECH_SHOW_NAME_NAME": "nazwa",
-    "MECH_SHOW_NAME_DESCRIPTION": "Nazwa mecha do pokazania. Jeśli nie podana, będzie to twój ostani mech.",
+    "MECH_SHOW_NAME_DESCRIPTION": "Nazwa mecha do pokazania. Jeśli nie podana, będzie to twój ostanio używany mech.",
 
     "MECH_BROWSE_NAME": "przeglądaj",
     "MECH_BROWSE_DESCRIPTION": "Wyświetla listę twoich mechów.",
@@ -32,5 +32,5 @@
     "MECH_BUILD_NAME": "buduj",
     "MECH_BUILD_DESCRIPTION": "Interaktywne UI do tworzenia i modyfikacji mechów.",
     "MECH_BUILD_NAME_NAME": "nazwa",
-    "MECH_BUILD_NAME_DESCRIPTION": "Nazwa istniejącego mecha lub do nadania nowemu. Jeśli nie podana, będzie utworzona losowo."
+    "MECH_BUILD_NAME_DESCRIPTION": "Nazwa istniejącego mecha lub do nadania nowemu."
 }

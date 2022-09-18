@@ -4,7 +4,7 @@ from disnake import SelectOption
 from disnake.ui.select import Select, select
 from disnake.utils import MISSING
 
-S_CO = t.TypeVar("S_CO", bound=Select, covariant=True)
+S_CO = t.TypeVar("S_CO", bound=Select[t.Any], covariant=True)
 
 
 EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
@@ -12,7 +12,7 @@ EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remov
 __all__ = ("select", "Select", "PaginatedSelect", "S_CO", "EMPTY_OPTION")
 
 
-class PaginatedSelect(Select):
+class PaginatedSelect(Select[None]):
     """Select which paginates options into chunks of 23-25 and registers two
     `SelectOption`s to move between chunks."""
 

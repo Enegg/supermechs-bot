@@ -44,11 +44,10 @@ def main() -> None:
         from app import TEST_GUILDS
 
         bot = SMBot(
-            test_mode=True,
             logs_channel_id=LOGS_CHANNEL,
             intents=Intents(guilds=True),
             activity=Game("SuperMechs"),
-            guild_ids=TEST_GUILDS,
+            test_guilds=TEST_GUILDS,
             allowed_mentions=AllowedMentions.none(),
             strict_localization=True,
             # sync_commands_debug=True,

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import typing as t
+from typing_extensions import Self
 
-from disnake.ui.action_row import ActionRow, StrictUIComponentT, UIComponentT
+from disnake.ui.action_row import ActionRow, MessageUIComponent, StrictUIComponentT, UIComponentT
 from disnake.ui.item import WrappedComponent
 
-if t.TYPE_CHECKING:
-    from .views import MessageUI
-
-ActionRowT = t.TypeVar("ActionRowT", bound=ActionRow, covariant=True)
+ActionRowT = t.TypeVar("ActionRowT", bound=ActionRow[t.Any], covariant=True)
 
 __all__ = ("ActionRowT", "ActionRow", "PaginatedRow")
 
@@ -30,8 +28,8 @@ class PaginatedRow(ActionRow[UIComponentT]):
 
     @t.overload
     def __init__(
-        self: "PaginatedRow[MessageUI[t.Any]]",
-        *components: MessageUI[t.Any] | None,
+        self: "PaginatedRow[MessageUIComponent]",
+        *components: MessageUIComponent | None,
         columns: int = 5,
     ) -> None:
         ...
@@ -118,25 +116,26 @@ class PaginatedRow(ActionRow[UIComponentT]):
         self._page = value
         self.update()
 
-    def insert_item(self, index: int, item: UIComponentT) -> None:
+    def insert_item(self, index: int, item: UIComponentT) -> Self:
         present_width = 0 if (present := self.persistent[index]) is None else present.width
 
         if self.width + item.width - present_width > 5:
             raise ValueError("Too many components in this row, can not append a new one.")
 
         self.persistent[index] = item
+        return self
 
     @t.overload
-    def extend_page_items(self, component: UIComponentT, /, *components: UIComponentT) -> None:
+    def extend_page_items(self, component: UIComponentT, /, *components: UIComponentT) -> Self:
         ...
 
     @t.overload
-    def extend_page_items(self, component: t.Iterable[UIComponentT], /) -> None:
+    def extend_page_items(self, component: t.Iterable[UIComponentT], /) -> Self:
         ...
 
     def extend_page_items(
         self, component: UIComponentT | t.Iterable[UIComponentT], /, *components: UIComponentT
-    ) -> None:
+    ) -> Self:
         """Appends passed components to the underlying page creator."""
         if isinstance(component, t.Iterable):
             self.page_items += component
@@ -145,11 +144,13 @@ class PaginatedRow(ActionRow[UIComponentT]):
             self.page_items.append(component)
 
         self.page_items += components
+        return self
 
-    def clear_items(self) -> None:
+    def clear_items(self) -> Self:
         self.clear_page()
         self.page_items.clear()
         self.persistent = [None] * 5
+        return self
 
     def clear_page(self) -> None:
         """Removes items from current page."""

@@ -50,7 +50,7 @@ class Misc(commands.Cog):
             invite = oauth_url(inter.me.id, scopes=("bot", "applications.commands"))
             desc += f"\n[**Invite link**]({invite})"
 
-        uptime = datetime.now() - self.bot.run_time
+        uptime = datetime.now() - self.bot.started_at
         ss = uptime.seconds
         mm, ss = divmod(ss, 60)
         hh, mm = divmod(mm, 60)

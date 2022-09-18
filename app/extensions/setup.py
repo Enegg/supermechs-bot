@@ -30,8 +30,8 @@ class Setup(commands.Cog):
     async def ext(
         self,
         inter: CommandInteraction,
-        action: t.Literal["load", "reload", "unload"] = "reload",
         ext: str | None = None,
+        action: t.Literal["load", "reload", "unload"] = "reload",
     ) -> None:
         """Extension manager
 

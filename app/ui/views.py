@@ -6,17 +6,17 @@ import typing as t
 from functools import partial
 
 import disnake
-from disnake.ui import Button, Select
+from disnake.ui import Button, MessageUIComponent, Select
 from disnake.ui.item import DecoratedItem, Item
 from disnake.ui.view import View
 from typing_extensions import Self
 
-from .action_row import ActionRow, PaginatedRow
+from .action_row import ActionRow, ActionRowT, PaginatedRow
 from .item import I_CO, ItemCallbackType
 
 V_CO = t.TypeVar("V_CO", bound=View | None, covariant=True)
-MessageUI = Button[V_CO] | Select[V_CO]
-
+T = t.TypeVar("T")
+FactoryT = type[T] | t.Callable[[], T]
 __all__ = ("View", "InteractionCheck", "PaginatorView", "V_CO")
 
 
@@ -28,9 +28,9 @@ class InteractionCheck:
     user_id: int
     response = "Only the command invoker can interact with that."
 
-    async def interaction_check(self, inter: disnake.MessageInteraction) -> bool:
-        if inter.author.id != self.user_id:
-            await inter.send(self.response, ephemeral=True)
+    async def interaction_check(self, interaction: disnake.MessageInteraction) -> bool:
+        if interaction.author.id != self.user_id:
+            await interaction.send(self.response, ephemeral=True)
             return False
 
         return True
@@ -38,6 +38,7 @@ class InteractionCheck:
 
 def positioned(row: int, column: int):
     """Denotes the position of an Item in the 5x5 grid."""
+
     def decorator(func: ItemCallbackType[t.Any, I_CO] | DecoratedItem[I_CO]) -> DecoratedItem[I_CO]:
         func.__discord_ui_position__ = (row, column)  # type: ignore
         return func  # type: ignore
@@ -45,7 +46,7 @@ def positioned(row: int, column: int):
     return decorator
 
 
-class SaneView(View):
+class SaneView(t.Generic[ActionRowT], View):
     """Represents a UI view.
 
     This object must be inherited to create a UI within Discord.
@@ -55,22 +56,16 @@ class SaneView(View):
     timeout: Optional[:class:`float`]
         Timeout in seconds from last interaction with the UI before no longer accepting input.
         If ``None`` then there is no timeout.
-
-    Attributes
-    ----------
-    timeout: Optional[:class:`float`]
-        Timeout from last interaction with the UI before no longer accepting input.
-        If ``None`` then there is no timeout.
-    rows: tuple[:class:`ActionRow`]
-        A tuple of component rows attached to this view.
     """
 
+    rows: tuple[ActionRowT, ActionRowT, ActionRowT, ActionRowT, ActionRowT]
+
     __view_children_items__: t.ClassVar[
-        list[MessageUI[Self] | ItemCallbackType[Self, MessageUI[Self]]]
+        list[MessageUIComponent | ItemCallbackType[Self, MessageUIComponent]]
     ] = []
 
-    def __init_subclass__(cls: type[Self]) -> None:
-        children: list[MessageUI[Self] | ItemCallbackType[Self, MessageUI[Self]]] = [
+    def __init_subclass__(cls: type[Self], *args: t.Any, **kwargs: t.Any) -> None:
+        children: list[MessageUIComponent | ItemCallbackType[Self, MessageUIComponent]] = [
             member
             for base in reversed(cls.__mro__)
             for member in base.__dict__.values()
@@ -82,18 +77,23 @@ class SaneView(View):
 
         cls.__view_children_items__ = children
 
-    def __init__(self, *, timeout: float | None = 180.0) -> None:
+    def __init__(
+        self,
+        *,
+        timeout: float = 180.0,
+        row_factory: FactoryT[ActionRowT] = ActionRow[MessageUIComponent],
+    ) -> None:
         # we *do not* call super().__init__() and instead do all the initialization
         # so as to overwrite how View initializes decorated callbacks
         self.timeout = timeout
 
-        self.init_rows()
+        self.rows = (row_factory(), row_factory(), row_factory(), row_factory(), row_factory())
 
         for item_or_func in self.__view_children_items__:
             column: int | None = None
 
             if not isinstance(item_or_func, Item):
-                item: MessageUI[Self] = item_or_func.__discord_ui_model_type__(
+                item: MessageUIComponent = item_or_func.__discord_ui_model_type__(
                     **item_or_func.__discord_ui_model_kwargs__
                 )
                 item.callback = partial(item_or_func, self, item)
@@ -111,7 +111,7 @@ class SaneView(View):
             item._view = self
 
             if row is None:
-                raise TypeError("This view does not support auto rows; set row via @positioned")
+                raise TypeError(f"This view does not support auto rows; set row via @positioned; item id: {item.custom_id}")
 
             action_row = self.rows[row]
             action_row.insert_item(len(action_row) if column is None else column, item)
@@ -122,31 +122,20 @@ class SaneView(View):
         self._View__timeout_task: asyncio.Task[None] | None = None
         self._View__stopped: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
 
-    def init_rows(self) -> None:
-        """Initializes the rows of the view."""
-
-        self.rows = (
-            ActionRow[MessageUI[Self]](),
-            ActionRow[MessageUI[Self]](),
-            ActionRow[MessageUI[Self]](),
-            ActionRow[MessageUI[Self]](),
-            ActionRow[MessageUI[Self]](),
-        )
-
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} timeout={self.timeout} rows={self.rows}>"
 
     @t.overload
-    def __getitem__(self, pos: int) -> ActionRow[MessageUI[Self]]:
+    def __getitem__(self, pos: int) -> ActionRowT:
         ...
 
     @t.overload
-    def __getitem__(self, pos: tuple[int, int]) -> MessageUI[Self]:
+    def __getitem__(self, pos: tuple[int, int]) -> MessageUIComponent:
         ...
 
     def __getitem__(
         self, pos: int | tuple[int, int]
-    ) -> MessageUI[Self] | ActionRow[MessageUI[Self]]:
+    ) -> MessageUIComponent | ActionRowT:
         if isinstance(pos, int):
             return self.rows[pos]
 
@@ -172,14 +161,14 @@ class SaneView(View):
         return [item for row in self.rows for item in row.children]
 
     @t.overload
-    def add_item(self, item: MessageUI[t.Any]) -> None:
+    def add_item(self, item: MessageUIComponent) -> None:
         ...
 
     @t.overload
-    def add_item(self, item: MessageUI[t.Any], row: int) -> None:
+    def add_item(self, item: MessageUIComponent, row: int) -> None:
         ...
 
-    def add_item(self, item: MessageUI[t.Any], row: int | None = None) -> None:
+    def add_item(self, item: MessageUIComponent, row: int | None = None) -> None:
         if not isinstance(item, Item):
             raise TypeError(f"expected Item, not {item.__class__!r}")
 
@@ -196,7 +185,7 @@ class SaneView(View):
 
         item._view = self
 
-    def remove_item(self, item: MessageUI[Self], row: int | None = None) -> None:
+    def remove_item(self, item: MessageUIComponent, row: int | None = None) -> None:
         if row is not None:
             self.rows[row].remove_item(item)
 
@@ -219,25 +208,21 @@ class SaneView(View):
         return [row.to_component_dict() for row in self.rows if len(row) != 0]
 
 
-class PaginatorView(SaneView):
+class PaginatorView(SaneView[PaginatedRow[MessageUIComponent]]):
     """View implementing simple button pagination."""
 
-    def __init__(self, *, timeout: float | None = 180, columns: int = 5) -> None:
-        self.columns = columns
-        super().__init__(timeout=timeout)
-
-    def init_rows(self) -> None:
-        self.rows = (
-            PaginatedRow[MessageUI[Self]](columns=self.columns),
-            PaginatedRow[MessageUI[Self]](columns=self.columns),
-            PaginatedRow[MessageUI[Self]](columns=self.columns),
-            PaginatedRow[MessageUI[Self]](columns=self.columns),
-            PaginatedRow[MessageUI[Self]](columns=self.columns),
+    def __init__(self, *, timeout: float = 180.0, columns: int = 5) -> None:
+        super().__init__(
+            timeout=timeout, row_factory=lambda: PaginatedRow[MessageUIComponent](columns=columns)
         )
 
     def __repr__(self) -> str:
         rows = ",\n".join(map(repr, self.rows))
-        return f"<{self.__class__.__name__} timeout={self.timeout} columns={self.columns} rows=(\n{rows})>"
+        return f"<{self.__class__.__name__} timeout={self.timeout} rows=(\n{rows})>"
+
+    @property
+    def columns(self) -> int:
+        return self.rows[0].columns
 
     @property
     def page(self) -> int:

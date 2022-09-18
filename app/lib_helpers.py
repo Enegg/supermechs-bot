@@ -13,16 +13,6 @@ from disnake.ext import commands
 if t.TYPE_CHECKING:
     from PIL.Image import Image
 
-    from app.bot import SMBot
-
-
-class MessageInteraction(disnake.MessageInteraction):
-    bot: SMBot
-
-
-class CommandInteraction(disnake.ApplicationCommandInteraction):
-    bot: SMBot
-
 
 class ForbiddenChannel(commands.CheckFailure):
     """Exception raised when command is used from invalid channel."""
@@ -54,11 +44,19 @@ def str_to_file(
     return disnake.File(file, filename)  # type: ignore
 
 
-def image_to_file(image: Image, filename: str | None = None) -> File:
+def image_to_file(image: Image, filename: str | None = None, format: str = "png") -> File:
     """Creates a `disnake.File` object from `PIL.Image.Image`."""
     # not using with as the stream is closed by the File object
+    if filename is not None:
+        filename = filename.replace(" ", "_")
+
+        ext = "." + format
+
+        if not filename.endswith(ext):
+            filename += ext
+
     stream = io.BytesIO()
-    image.save(stream, format="png")
+    image.save(stream, format=format)
     stream.seek(0)
     return File(stream, filename)
 
@@ -119,11 +117,11 @@ class ChannelHandler(logging.Handler):
         msg = self.format(record)
 
         if record.file is None:
-            task = self.destination.send(msg, allowed_mentions=disnake.AllowedMentions.none())
+            coro = self.destination.send(msg, allowed_mentions=disnake.AllowedMentions.none())
 
         else:
-            task = self.destination.send(
+            coro = self.destination.send(
                 msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none()
             )
 
-        asyncio.ensure_future(task).add_done_callback(self.fallback_emit(record))
+        asyncio.create_task(coro).add_done_callback(self.fallback_emit(record))

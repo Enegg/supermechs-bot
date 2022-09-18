@@ -235,7 +235,7 @@ class MechView(InteractionCheck, PaginatorView):
             self.item_select.disabled = True
             self.active = None
 
-            self.image_update_task = asyncio.ensure_future(self.update_image())
+            self.image_update_task = asyncio.create_task(self.update_image())
             return
 
         self.image_update_task.cancel()

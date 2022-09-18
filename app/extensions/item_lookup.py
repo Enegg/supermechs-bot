@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from itertools import zip_longest
+from itertools import filterfalse, zip_longest
 
 from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands
@@ -10,22 +10,32 @@ from typing_extensions import Self
 
 from app import TEST_GUILDS
 from app.lib_helpers import image_to_file
+from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, button
 from app.ui.views import InteractionCheck, SaneView, positioned
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
-from SuperMechs.game_types import AnyStats
+from SuperMechs.enums import Element, Type
+from SuperMechs.game_types import AnyElement, AnyStats, AnyType
 from SuperMechs.item import AnyItem
 from SuperMechs.utils import dict_items_as, search_for
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot
 
+    AnyTypeAny = AnyType | t.Literal["ANY"]
+    AnyElementAny = AnyElement | t.Literal["ANY"]
+
+else:
+    AnyTypeAny = t.Literal[t.get_args(AnyType) + ("ANY",)]
+    AnyElementAny = t.Literal[t.get_args(AnyElement) + ("ANY",)]
+
 T = t.TypeVar("T")
+twotuple = tuple[T, T]
 
 logger = logging.getLogger(f"main.{__name__}")
 
 
-class ItemView(InteractionCheck, SaneView):
+class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
     def __init__(
         self,
         embed: Embed,
@@ -33,7 +43,7 @@ class ItemView(InteractionCheck, SaneView):
         callback: t.Callable[[Embed, AnyItem, bool, bool], None],
         *,
         user_id: int,
-        timeout: float | None = 180,
+        timeout: float = 180,
     ) -> None:
         super().__init__(timeout=timeout)
         self.user_id = user_id
@@ -71,7 +81,7 @@ class ItemView(InteractionCheck, SaneView):
         await inter.response.defer()
 
 
-class ItemCompareView(InteractionCheck, SaneView):
+class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
     def __init__(
         self,
         embed: Embed,
@@ -79,7 +89,7 @@ class ItemCompareView(InteractionCheck, SaneView):
         item_b: AnyItem,
         *,
         user_id: int,
-        timeout: float | None = 180,
+        timeout: float = 180,
     ) -> None:
         super().__init__(timeout=timeout)
         self.user_id = user_id
@@ -136,7 +146,7 @@ class ItemCompareView(InteractionCheck, SaneView):
 
 
 class ItemLookup(commands.Cog):
-    def __init__(self, bot: SMBot) -> None:
+    def __init__(self, bot: "SMBot") -> None:
         self.bot = bot
 
     @commands.slash_command()
@@ -274,7 +284,8 @@ class ItemLookup(commands.Cog):
         return items[:25]
 
 
-def avg_and_deviation(a: int | tuple[int, int], b: int | None = None) -> tuple[float, float]:
+
+def avg_and_deviation(a: int | twotuple[int], b: int | None = None) -> twotuple[float]:
     if isinstance(a, tuple):
         a, b = a
 
@@ -288,16 +299,16 @@ def avg_and_deviation(a: int | tuple[int, int], b: int | None = None) -> tuple[f
 
 def buffed_stats(
     item: AnyItem, buffs_enabled: bool
-) -> t.Iterator[tuple[str, tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]]]:
+) -> t.Iterator[tuple[str, twotuple[int] | twotuple[twotuple[int]]]]:
     if buffs_enabled:
         apply_buff = MAX_BUFFS.total_buff_difference
 
     else:
 
-        def apply_buff(stat_name: str, value: int) -> tuple[int, int]:
+        def apply_buff(stat_name: str, value: int) -> twotuple[int]:
             return (value, 0)
 
-    for stat, value in dict_items_as(int | list[int], item.stats.at(item.transform_range.max)):
+    for stat, value in dict_items_as(int | list[int], item.max_stats):
         if stat == "health":
             assert type(value) is int
             yield stat, (value, 0)
@@ -312,6 +323,9 @@ def buffed_stats(
 
             case [x, y]:
                 yield stat, (apply_buff(stat, x), apply_buff(stat, y))
+
+            case _:
+                raise TypeError(f"Unexpected value: {value}")
 
 
 def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
@@ -389,7 +403,7 @@ def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
 
         elif avg and stat != "range":
             a, b = avg_and_deviation(value[0], diff[0])
-            text = f"{a:.0g} ±{b:.0%}"
+            text = f"{a:.0f} ±{b:.0%}"
 
         else:
             text = f"{value[0]}-{diff[0]}"
@@ -419,20 +433,17 @@ def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
         embed.add_field(name=name, value=field)
 
 
-tuple_of_tuples = tuple[tuple[T, T], tuple[T, T]]
-
-
 @t.overload
-def cmp_num(x: int, y: int, lower_is_better: bool = False) -> tuple_of_tuples[int]:
+def cmp_num(x: int, y: int, lower_is_better: bool = False) -> twotuple[twotuple[int]]:
     ...
 
 
 @t.overload
-def cmp_num(x: float, y: float, lower_is_better: bool = False) -> tuple_of_tuples[float]:
+def cmp_num(x: float, y: float, lower_is_better: bool = False) -> twotuple[twotuple[float]]:
     ...
 
 
-def cmp_num(x: float, y: float, lower_is_better: bool = False) -> tuple_of_tuples[float]:
+def cmp_num(x: float, y: float, lower_is_better: bool = False) -> twotuple[twotuple[float]]:
     if x == y:
         return ((x, 0), (y, 0))
 
@@ -446,12 +457,12 @@ def comparator(
     stats_a: AnyStats, stats_b: AnyStats
 ) -> t.Iterator[
     tuple[
+        str,
         Stat,
-        tuple[value_and_diff, value_and_diff]
+        twotuple[value_and_diff]
         | tuple[value_and_diff, value_and_diff, value_and_diff, value_and_diff],
     ]
 ]:
-    undesired = {"weight", "backfire", "heaCost", "eneCost"}
     special_cases = {"range"}
 
     for stat_name, stat in STATS.items():
@@ -459,7 +470,7 @@ def comparator(
         stat_b: int | list[int] | None = stats_b.get(stat_name)
 
         if stat_name in special_cases and not (stat_a is stat_b is None):
-            yield stat, (
+            yield stat_name, stat, (
                 tuple(stat_a) if isinstance(stat_a, list) else (None, 0),
                 tuple(stat_b) if isinstance(stat_b, list) else (None, 0),
             )
@@ -470,31 +481,34 @@ def comparator(
                 continue
 
             case (int() as a, int() as b):
-                yield stat, cmp_num(a, b, stat_name in undesired)
+                yield stat_name, stat, cmp_num(a, b, not stat.beneficial)
                 continue
 
             case ([int() as a1, int() as a2], [int() as b1, int() as b2]):
                 x_avg, x_inacc = avg_and_deviation(a1, a2)
                 y_avg, y_inacc = avg_and_deviation(b1, b2)
 
-                yield stat, cmp_num(x_avg, y_avg, False) + cmp_num(
+                yield stat_name, stat, cmp_num(x_avg, y_avg, False) + cmp_num(
                     x_inacc, y_inacc, True
                 )
                 continue
 
+            case _:
+                pass
+
         if isinstance(stat_a, int):
-            yield stat, ((stat_a, 0), (None, 0))
+            yield stat_name, stat, ((stat_a, 0), (None, 0))
 
         elif isinstance(stat_b, int):
-            yield stat, ((None, 0), (stat_b, 0))
+            yield stat_name, stat, ((None, 0), (stat_b, 0))
 
         elif stat_a is not None:
             avg, inacc = avg_and_deviation(*stat_a)
-            yield stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
+            yield stat_name, stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
 
         elif stat_b is not None:
             avg, inacc = avg_and_deviation(*stat_b)
-            yield stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
+            yield stat_name, stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
 def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], list[str], list[str]]:
@@ -502,8 +516,7 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
     first_item: list[str] = []
     second_item: list[str] = []
 
-    for stat, long_boy in comparator(stats_a, stats_b):
-        stat_name = str(stat)
+    for stat_name, stat, long_boy in comparator(stats_a, stats_b):
         name_field.append(f"{stat.emoji} {stat.name}")
 
         match (stat_name, long_boy):
@@ -562,6 +575,6 @@ def try_shorten(name: str) -> str:
     return "".join(s for s in name if s.isupper())
 
 
-def setup(bot: SMBot) -> None:
+def setup(bot: "SMBot") -> None:
     bot.add_cog(ItemLookup(bot))
     logger.info('Cog "ItemLookupCog" loaded')

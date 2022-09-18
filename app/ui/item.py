@@ -10,10 +10,10 @@ if t.TYPE_CHECKING:
     from .views import V_CO
 
 else:
-    V_CO = t.NewType("V_CO", t.Any)
+    V_CO = t.TypeVar("V_CO")
 
-I_CO = t.TypeVar("I_CO", bound=Item, covariant=True)
-I = t.TypeVar("I", bound=Item)
+I_CO = t.TypeVar("I_CO", bound=Item[t.Any], covariant=True)
+I = t.TypeVar("I", bound=Item[t.Any])
 
 Callback = t.Callable[[I_CO, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
 ItemCallbackType = t.Callable[[V_CO, I_CO, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]

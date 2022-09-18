@@ -13,13 +13,13 @@ from .views import V_CO
 if t.TYPE_CHECKING:
     from disnake import Emoji, PartialEmoji
 
-B_CO = t.TypeVar("B_CO", bound=Button, covariant=True)
+B_CO = t.TypeVar("B_CO", bound=Button[t.Any], covariant=True)
 T = t.TypeVar("T")
 
 __all__ = ("button", "Button", "ToggleButton", "TrinaryButton", "B_CO")
 
 
-class LinkButton(Button[V_CO]):
+class LinkButton(Button[None]):
     """Represents a dummy button with a link."""
 
     def __init__(
@@ -55,7 +55,7 @@ class DecoButton(Button[V_CO]):
     add_callback = __call__
 
 
-class ToggleButton(Button):
+class ToggleButton(Button[None]):
     """A two-state button."""
 
     def __init__(
