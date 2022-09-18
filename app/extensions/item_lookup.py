@@ -154,35 +154,43 @@ class ItemLookup(commands.Cog):
         self,
         inter: CommandInteraction,
         name: str,
+        type: AnyTypeAny = "ANY",
+        element: AnyElementAny = "ANY",
         compact: bool = False,
-        invisible: bool = True,
     ) -> None:
         """Finds an item and returns its stats {{ ITEM }}
 
         Parameters
         -----------
         name: The name of the item {{ ITEM_NAME }}
+        type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
+        element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
         compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
-        invisible: Whether the bot response is visible only to you {{ ITEM_VISIBILITY }}
         """
 
         if name not in self.bot.default_pack:
-            if name == "Start typing to get suggestions...":
-                raise commands.UserInputError("This option is only informative")
-
             raise commands.UserInputError("Item not found.")
 
         item = self.bot.default_pack.get_item_by_name(name)
 
+        # for the time being, we cannot set images directly from File object;
+        # need to upload it and set the images to an attachment link
+
+        file = image_to_file(item.image.image, item.name)
+        url = f"attachment://{file.filename}"
+
         if compact:
+            # fmt: off
             embed = (
                 Embed(color=item.element.color)
                 .set_author(name=item.name, icon_url=item.type.image_url)
-                .set_thumbnail(file=image_to_file(item.image.image))
+                .set_thumbnail(url)
             )
+            # fmt: on
             embed_preset = compact_embed
 
         else:
+            # fmt: off
             embed = (
                 Embed(
                     title=item.name,
@@ -191,23 +199,32 @@ class ItemLookup(commands.Cog):
                     color=item.element.color,
                 )
                 .set_thumbnail(url=item.type.image_url)
-                .set_image(file=image_to_file(item.image.image))
+                .set_image(url)
             )
+            # fmt: on
             embed_preset = default_embed
 
         view = ItemView(embed, item, embed_preset, user_id=inter.author.id)
-        await inter.send(embed=embed, view=view, ephemeral=invisible)
+        await inter.send(embed=embed, file=file, view=view, ephemeral=True)
 
         await view.wait()
         await inter.edit_original_message(view=None)
 
     @commands.slash_command(guild_ids=TEST_GUILDS)
-    async def item_raw(self, inter: CommandInteraction, name: str) -> None:
+    async def item_raw(
+        self,
+        inter: CommandInteraction,
+        name: str,
+        type: AnyTypeAny = "ANY",
+        element: AnyElementAny = "ANY",
+    ) -> None:
         """Finds an item and returns its raw stats {{ ITEM }}
 
         Parameters
         -----------
         name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+        type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
+        element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
         """
 
         if name not in self.bot.default_pack.names_to_ids:
@@ -269,20 +286,42 @@ class ItemLookup(commands.Cog):
     @compare.autocomplete("item1")
     @compare.autocomplete("item2")
     async def item_autocomplete(self, inter: CommandInteraction, input: str) -> list[str]:
-        """Autocomplete for items"""
-        if len(input) < 2:
-            return ["Start typing to get suggestions..."]
+        """Autocomplete for items with regard for type & element."""
 
-        items = sorted(
-            set(search_for(input, self.bot.default_pack.iter_item_names()))
-            | self.bot.item_abbrevs.get(input.lower(), set())
+        type_name = inter.filled_options.get("type", "ANY")
+        element_name = inter.filled_options.get("element", "ANY")
+
+        filters: list[t.Callable[[AnyItem], bool]] = []
+
+        if type_name != "ANY":
+            filters.append(lambda item: item.type is Type[type_name])
+
+        if element_name != "ANY":
+            filters.append(lambda item: item.element is Element[element_name])
+
+        def filter_func(item: AnyItem) -> bool:
+            return all(func(item) for func in filters)
+
+        pack = self.bot.default_pack
+        abbrevs = pack.name_abbrevs.get(input.lower(), set())
+
+        def filter_items(names: t.Iterable[str]) -> t.Iterator[str]:
+            return (item.name for item in filter(filter_func, map(pack.get_item_by_name, names)))
+
+        import heapq
+
+        # place matching abbreviations at the top
+        matching_items = sorted(filter_items(abbrevs))
+
+        # extend names up to 25, avoiding repetitions
+        matching_items += heapq.nsmallest(
+            25 - len(matching_items),
+            filterfalse(
+                abbrevs.__contains__, filter_items(search_for(input, pack.iter_item_names()))
+            ),
         )
 
-        if len(items) <= 25:
-            return items
-
-        return items[:25]
-
+        return matching_items
 
 
 def avg_and_deviation(a: int | twotuple[int], b: int | None = None) -> twotuple[float]:
