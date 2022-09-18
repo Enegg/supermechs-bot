@@ -12,10 +12,7 @@
             "short": "HP"
         },
         "emoji": "<:health:725870887588462652>",
-        "buff": {
-            "mode": "+",
-            "range": 12
-        }
+        "buff": "+"
     },
     "eneCap": {
         "names": {
@@ -23,10 +20,7 @@
             "in_game": "Energy"
         },
         "emoji": "<:energy:725870941883859054>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "eneReg": {
         "names": {
@@ -34,10 +28,7 @@
             "short": "Regen"
         },
         "emoji": "<:regen:725871003665825822>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "heaCap": {
         "names": {
@@ -45,20 +36,14 @@
             "in_game": "Heat"
         },
         "emoji": "<:heat:725871043767435336>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "heaCol": {
         "names": {
             "default": "Cooling"
         },
         "emoji": "<:cooling:725871075778363422>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "bulletCap": {
         "names": {
@@ -73,10 +58,7 @@
             "in_game": "Rocket cap"
         },
         "emoji": "🚀",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "phyRes": {
         "names": {
@@ -84,10 +66,7 @@
             "in_game": "Pys resist"
         },
         "emoji": "<:phyres:725871121051811931>",
-        "buff": {
-            "mode": "+2%",
-            "range": 11
-        }
+        "buff": "+2%"
     },
     "expRes": {
         "names": {
@@ -95,10 +74,7 @@
             "in_game": "Exp resist"
         },
         "emoji": "<:expres:725871136935772294>",
-        "buff": {
-            "mode": "+2%",
-            "range": 11
-        }
+        "buff": "+2%"
     },
     "eleRes": {
         "names": {
@@ -106,10 +82,7 @@
             "in_game": "Ele resist"
         },
         "emoji": "<:elecres:725871146716758077>",
-        "buff": {
-            "mode": "+2%",
-            "range": 11
-        }
+        "buff": "+2%"
     },
     "phyDmg": {
         "names": {
@@ -117,10 +90,7 @@
             "in_game": "Pys dmg"
         },
         "emoji": "<:phydmg:725871208830074929>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "phyResDmg": {
         "names": {
@@ -136,10 +106,7 @@
             "in_game": "Exp dmg"
         },
         "emoji": "<:expdmg:725871223338172448>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "heaDmg": {
         "names": {
@@ -147,10 +114,7 @@
             "in_game": "Heat dmg"
         },
         "emoji": "<:headmg:725871613639393290>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "heaCapDmg": {
         "names": {
@@ -179,10 +143,7 @@
             "in_game": "Ele dmg"
         },
         "emoji": "<:eledmg:725871233614479443>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "eneDmg": {
         "names": {
@@ -190,10 +151,7 @@
             "in_game": "Energy dmg"
         },
         "emoji": "<:enedmg:725871599517171719>",
-        "buff": {
-            "mode": "+%",
-            "range": 11
-        }
+        "buff": "+%"
     },
     "eneCapDmg": {
         "names": {
@@ -277,10 +235,7 @@
         },
         "emoji": "<:backfire:725871901062201404>",
         "beneficial": false,
-        "buff": {
-            "mode": "-%",
-            "range": 11
-        }
+        "buff": "-%"
     },
     "heaCost": {
         "names": {

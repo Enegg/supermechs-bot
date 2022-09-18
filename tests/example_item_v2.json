@@ -1,0 +1,23 @@
+{
+    "id": 187,
+    "name": "Overcharged Rocket Battery",
+    "type": "SIDE_WEAPON",
+    "element": "EXPLOSIVE",
+    "stats": {
+        "weight": 63,
+        "expDmg": [213, 382],
+        "heaDmg": 112,
+        "expResDmg": 14,
+        "range": [3, 6],
+        "push": 1,
+        "retreat": 1,
+        "uses": 3,
+        "backfire": 180,
+        "heaCost": 75
+    },
+    "attachment": {
+        "x": 57,
+        "y": 49
+    },
+    "transform_range": "L-D"
+}

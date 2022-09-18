@@ -1,22 +1,24 @@
 import csv
 import typing as t
 import uuid
-from dataclasses import dataclass, field
+from bisect import bisect_left
 
-from utils import Proxied, find_near_index, proxy
+from attrs import Factory, define, field
 
-from .enums import Element, Rarity, RarityRange, Type
+from .core import TransformRange
+from .enums import Element, Rarity, Type
 from .errors import MaxPowerReached, MaxTierReached
-from .item import Item
-from .types import AnyStats, Attachment, Attachments, AttachmentType
+from .game_types import AnyStats, Attachment, Attachments, AttachmentType
+from .images import AttachedImage
+from .item import Item, Tags
+from .utils import Proxied, proxy
 
-if t.TYPE_CHECKING:
-    from PIL.Image import Image
+__all__ = ("InvItem", "AnyInvItem", "InvItemSlot")
 
 with (
-    open("SuperMechs/GameData/default_powers.csv", newline="") as file1,
-    open("SuperMechs/GameData/lm_item_powers.csv", newline="") as file2,
-    open("SuperMechs/GameData/reduced_powers.csv", newline="") as file3,
+    open("SuperMechs/static/default_powers.csv", newline="") as file1,
+    open("SuperMechs/static/lm_item_powers.csv", newline="") as file2,
+    open("SuperMechs/static/reduced_powers.csv", newline="") as file3,
 ):
     rows1 = csv.reader(file1, skipinitialspace=True)
     rows2 = csv.reader(file2, skipinitialspace=True)
@@ -26,7 +28,7 @@ with (
         rarity: tuple(map(int, row)) for rarity, row in zip(Rarity, rows1)
     }
 
-    LM_POWERS: dict[Rarity, tuple[int, ...]] = {
+    LM_ITEM_POWERS: dict[Rarity, tuple[int, ...]] = {
         rarity: tuple(map(int, row)) for rarity, row in zip((Rarity.L, Rarity.M), rows2)
     }
 
@@ -34,79 +36,77 @@ with (
         rarity: tuple(map(int, row)) for rarity, row in zip((Rarity.L, Rarity.M), rows3)
     }
 
-REDUCED_COST_ITEMS = {"Archimonde", "Armor Annihilator"}
+REDUCED_COST_ITEMS = frozenset(("Archimonde", "Armor Annihilator"))
 
 
-@dataclass(slots=True)
-@proxy("underlying")
+@define(kw_only=True)
+@proxy("base")
 class InvItem(t.Generic[AttachmentType]):
     """Represents an item inside inventory."""
 
-    underlying: Item[AttachmentType]
+    base: Item[AttachmentType]
 
-    # fmt: off
-    name:    t.ClassVar[Proxied[str]]
-    rarity:  t.ClassVar[Proxied[RarityRange]]
-    element: t.ClassVar[Proxied[Element]]
-    type:    t.ClassVar[Proxied[Type]]
-    image:   t.ClassVar[Proxied["Image"]]
-    attachment: t.ClassVar[Proxied[AttachmentType]]  # type: ignore
-    # fmt: on
+    id: Proxied[int] = field(init=False)
+    name: Proxied[str] = field(init=False)
+    type: Proxied[Type] = field(init=False)
+    element: Proxied[Element] = field(init=False)
+    transform_range: Proxied[TransformRange] = field(init=False)
+    image: Proxied[AttachedImage[AttachmentType]] = field(init=False)
+    tags: Proxied[Tags] = field(init=False)
 
-    tier: Rarity = field(hash=False)
-    power: int = field(default=0, hash=False)
-    UUID: uuid.UUID = field(default_factory=uuid.uuid4)
-    _level: int | None = field(default=None, init=False, hash=False)
-    maxed: bool = field(init=False, hash=False)
+    tier: Rarity
+    power: int = 0
+    UUID: uuid.UUID = Factory(uuid.uuid4)
+    _level: int | None = field(default=None, init=False)
+    maxed: bool = field(init=False)
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         self.maxed = self.tier is Rarity.DIVINE or self.power >= self.max_power
 
     def __str__(self) -> str:
-        return f"{self.underlying}, {self.tier}, lvl {'max' if self.maxed else self.level}"
+        level = "max" if self.maxed else self.level
+        return f"{self.name} at {self.tier.name.capitalize()} lvl {level}"
 
     def add_power(self, power: int) -> None:
-        """Adds power to the item"""
-
-        if self.maxed:
-            raise MaxPowerReached(self)
+        """Adds power to the item."""
 
         if power < 0:
             raise ValueError("Power cannot be negative")
 
+        if self.maxed:
+            raise MaxPowerReached(self)
+
         del self.level
-        result = min(self.power + power, self.max_power)
+        self.power = min(self.power + power, self.max_power)
 
-        if result == self.max_power:
+        if self.power == self.max_power:
             self.maxed = True
-
-        self.power = result
 
     def can_transform(self) -> bool:
         """Returns True if item has enough power to transform
         and hasn't reached max transform tier, False otherwise"""
-        return self.maxed and self.tier < self.rarity.max
+        return self.maxed and self.tier < self.transform_range.max
 
     def transform(self) -> None:
         """Transforms the item to higher tier, if it has enough power"""
         if not self.maxed:
-            raise ValueError("Not enough power to transform")
+            raise ValueError("Cannot transform a non-maxed item")
 
-        if self.tier is self.rarity.max:
+        if self.tier is self.transform_range.max:
             raise MaxTierReached(self)
 
-        self.tier = self.rarity.next_tier(self.tier)
+        self.tier = self.transform_range.next_tier(self.tier)
         self.power = 0
         self.maxed = self.tier is not Rarity.DIVINE
 
     @property
     def stats(self) -> AnyStats:
-        # TODO: InvItem should calculate its own stats based on its level and tier
-        return self.underlying.stats
+        """The stats of this item at its particular tier and level."""
+        return self.base.stats.at(self.tier, self.level)
 
     @property
     def level(self) -> int:
-        """The level this item is currently at"""
+        """The level of this item."""
 
         if self._level is not None:
             return self._level
@@ -114,8 +114,8 @@ class InvItem(t.Generic[AttachmentType]):
         if self.tier is Rarity.DIVINE:
             return 0
 
-        levels = self.get_bank()[self.tier]
-        self._level = find_near_index(levels, self.power, 0, len(levels))
+        levels = self.get_power_bank()[self.tier]
+        self._level = bisect_left(levels, self.power)
         return self._level
 
     @level.deleter
@@ -129,26 +129,32 @@ class InvItem(t.Generic[AttachmentType]):
         if self.tier is Rarity.DIVINE:
             return 0
 
-        return self.get_bank()[self.tier][-1]
+        return self.get_power_bank()[self.tier][-1]
 
-    def get_bank(self) -> dict[Rarity, tuple[int, ...]]:
+    def get_power_bank(self) -> dict[Rarity, tuple[int, ...]]:
         """Returns the power per level bank for the item"""
 
         if self.name in REDUCED_COST_ITEMS:
             return REDUCED_POWERS
 
-        if self.rarity.min >= Rarity.LEGENDARY:
-            return LM_POWERS
+        if self.transform_range.min >= Rarity.LEGENDARY:
+            return LM_ITEM_POWERS
 
-        if self.rarity.max <= Rarity.EPIC:
+        if self.transform_range.max <= Rarity.EPIC:
             # TODO: this has special case too, but currently I have no data on that
             return DEFAULT_POWERS
 
         return DEFAULT_POWERS
 
+    def has_any_of_stats(self, *stats: str) -> bool:
+        """Check if any of the stat keys appear in the item's stats."""
+        return not self.stats.keys().isdisjoint(stats)
+
     @classmethod
-    def from_item(cls, item: Item[AttachmentType], /) -> "InvItem[AttachmentType]":
-        return cls(underlying=item, tier=item.rarity.max)
+    def from_item(
+        cls, item: Item[AttachmentType], /, *, maxed: bool = False
+    ) -> "InvItem[AttachmentType]":
+        return cls(base=item, tier=item.transform_range.max if maxed else item.transform_range.min)
 
 
 AnyInvItem = InvItem[Attachment] | InvItem[Attachments] | InvItem[None]

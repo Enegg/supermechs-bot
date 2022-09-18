@@ -48,92 +48,8 @@ class Rarity(TierData, Enum):
     PERK      = P = TierData(6, 0xFFFF33, "🟡")
     # fmt: on
 
-
-class RarityRange:
-    TIERS = tuple(Rarity)
-
-    def __init__(self, lower: Rarity | int, upper: Rarity | int | None = None) -> None:
-        """Represents a range of rarities an item can have. Unlike `range` object,
-        upper bound is inclusive."""
-
-        if isinstance(lower, Rarity):
-            lower = lower.level
-
-        if upper is None:
-            upper = lower
-
-        elif isinstance(upper, Rarity):
-            upper = upper.level
-
-        if not 0 <= lower <= upper <= self.TIERS[-1].level:
-            if lower > upper:
-                raise ValueError("upper rarity below lower rarity")
-
-            raise ValueError("rarities out of bounds")
-
-        self.range = range(lower, upper + 1)
-
-    def __str__(self) -> str:
-        return "".join(rarity.emoji for rarity in self)
-
-    def __repr__(self) -> str:
-        return f"RarityRange(Rarity.{self.min.name}, Rarity.{self.max.name})"
-
-    def __hash__(self) -> int:
-        return hash((self.min, self.max))
-
-    def __iter__(self) -> t.Iterator[Rarity]:
-        return (self.TIERS[n] for n in self.range)
-
-    def __eq__(self, obj: object) -> bool:
-        if not isinstance(obj, RarityRange):
-            return NotImplemented
-
-        return self.range == obj.range
-
-    def __len__(self) -> int:
-        return len(self.range)
-
-    @property
-    def min(self) -> Rarity:
-        """Lower rarity bound"""
-        return self.TIERS[self.range.start]
-
-    @property
-    def max(self) -> Rarity:
-        """Upper rarity bound"""
-        return self.TIERS[self.range.stop - 1]
-
-    @property
-    def is_single(self) -> bool:
-        """Whether range has only one rarity"""
-        return len(self.range) == 1
-
-    def __contains__(self, item: Rarity | RarityRange) -> bool:
-        match item:
-            case Rarity():
-                return item.level in self.range
-
-            case RarityRange():
-                return item.range in self.range
-
-            case _:
-                return NotImplemented
-
-    @classmethod
-    def from_string(cls, string: str, /) -> RarityRange:
-        up, _, down = string.strip().partition("-")
-
-        if down:
-            return cls(Rarity[up.upper()], Rarity[down.upper()])
-
-        return cls(Rarity[up.upper()])
-
-    def next_tier(self, current: Rarity, /) -> Rarity:
-        if current is self.TIERS[-1] or current is self.max:
-            raise TypeError("Highest rarity already achieved")
-
-        return self.TIERS[self.TIERS.index(current) + 1]
+    def __int__(self) -> int:
+        return self.level
 
 
 class Element(ElementData, Enum):
@@ -168,3 +84,13 @@ class Type(IconData, Enum):
     TELE = TELEPORTER
     # SHIELD, PERK, KIT?
     # fmt: on
+
+    @property
+    def displayable(self) -> bool:
+        """True if the type can be rendered on a mech, False otherwise"""
+        return self.name not in ("TELEPORTER", "CHARGE", "HOOK", "MODULE")
+
+    @property
+    def attachable(self) -> bool:
+        """True if the type should have an attachment, False otherwise"""
+        return self.displayable and self.name != "DRONE"

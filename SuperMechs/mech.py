@@ -1,25 +1,28 @@
 from __future__ import annotations
 
-import asyncio
 import typing as t
-from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from collections import Counter
+from functools import partial
+from types import MappingProxyType
+from uuid import UUID
 
-from utils import dict_items_as, format_count
+from attrs import Attribute, define, field
+from typing_extensions import Self
 
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, IconData, Type
-from .images import MechRenderer
+from .game_types import Attachment, Attachments, AttachmentType
+from .images import ImageRenderer
 from .inv_item import AnyInvItem, InvItem
-from .types import Attachment, Attachments, WUSerialized
+from .utils import dict_items_as, format_count
 
 if t.TYPE_CHECKING:
-    from aiohttp import ClientSession
     from PIL.Image import Image
 
 T = t.TypeVar("T")
 T2 = t.TypeVar("T2")
 XOrTupleXY = T | tuple[T, T2]
+SlotType = InvItem[AttachmentType] | None
 
 BODY_SLOTS = ("torso", "legs", "drone")
 WEAPON_SLOTS = ("side1", "side2", "side3", "side4", "top1", "top2")
@@ -33,13 +36,26 @@ _SLOTS_SET = (
     | frozenset(MODULE_SLOTS)
 )
 
+_type_to_slot_lookup = {
+    Type.SIDE_WEAPON: "side",
+    Type.TOP_WEAPON: "top",
+    Type.TELEPORTER: "tele",
+    Type.CHARGE_ENGINE: "charge",
+    Type.GRAPPLING_HOOK: "hook",
+}
 
-def type_for_slot(slot: str) -> Type:
-    if slot.startswith("top"):
-        return Type.TOP_WEAPON
 
+def _type_to_partial_slot(type: Type) -> str:
+    return _type_to_slot_lookup.get(type) or type.name.lower()
+
+
+def slot_to_type(slot: str) -> Type:
+    """Convert slot literal to corresponding type enum."""
     if slot.startswith("side"):
         return Type.SIDE_WEAPON
+
+    if slot.startswith("top"):
+        return Type.TOP_WEAPON
 
     if slot.startswith("mod"):
         return Type.MODULE
@@ -47,87 +63,147 @@ def type_for_slot(slot: str) -> Type:
     return Type[slot.upper()]
 
 
-def icon_data_for_slot(slot: str) -> IconData:
+def slot_to_icon_data(slot: str) -> IconData:
+    """Same as slot_to_type but returns alternate icon for items mounted on the right side."""
     if slot.startswith(("top", "side")) and int(slot[-1]) % 2 == 1:
-        return type_for_slot(slot).alt
+        return slot_to_type(slot).alt
 
-    return type_for_slot(slot)
+    return slot_to_type(slot)
 
 
-def parse_slot(slot: XOrTupleXY[str | Type, int], /) -> str:
-    match slot:
-        case (str() as _slot, int() as pos):
-            return _slot.lower() + str(pos)
+def slot_name_converter(slot_: XOrTupleXY[str | Type, int], /):
+    """Parse a slot to appropriate name. Raises TypeError if invalid."""
+    match slot_:
+        case (str() as slot, int() as pos):
+            slot = slot.lower() + str(pos)
 
-        case (Type() as _slot, int() as pos):
-            return _slot.name.lower() + str(pos)
+        case (Type() as slot, int() as pos):
+            slot = _type_to_partial_slot(slot) + str(pos)
 
         case Type():
-            return slot.name.lower()
+            slot = _type_to_partial_slot(slot_)
 
-        case str() as _slot:
-            return _slot.lower()
+        case str() as slot:
+            slot = slot.lower()
 
         case _:
-            raise TypeError(f"{slot!r} is not a valid slot")
+            raise TypeError(f"{slot_!r} is not a valid slot")
+
+    if slot not in _SLOTS_SET:
+        raise TypeError(f"{slot_!r} is not a valid slot")
+
+    return slot
 
 
-@dataclass
+def jumping_required(mech: Mech) -> bool:
+    return mech.legs is not None and "jumping" in mech.legs.stats
+
+
+def no_res_stacking(mech: Mech, item: AnyInvItem) -> bool:
+    for stat in item.stats.keys() & {"phyRes", "expRes", "eleRes"}:
+        for item_ in mech.iter_items(modules=True):
+            if item_ is None or item_ is item:
+                continue
+
+            if stat in item_.stats:
+                return False
+
+    return True
+
+
+def is_valid_type(inst: t.Any, attr: Attribute, value: InvItem[t.Any] | None | t.Any) -> None:
+    """Performs a check if item assigned to a slot has valid type."""
+    if value is None:
+        return
+
+    if not isinstance(value, InvItem):
+        raise TypeError(f"Invalid object set as item: {type(value)}")
+
+    valid_type = slot_to_type(attr.name)
+
+    if value.type is not valid_type:
+        raise ValueError(f"Mech slot {attr.name} expects a type {valid_type}, got {value.type}")
+
+
+def get_weight_utilization_emoji(mech: Mech, weight: int) -> str:
+    vars = mech.game_vars
+    # fmt: off
+    weight_usage = (
+        "⛔"
+        if weight >  vars.MAX_OVERWEIGHT   else "❕"
+        if weight >  vars.MAX_WEIGHT       else "👌"
+        if weight >= vars.MAX_WEIGHT       else "🆗"
+        if weight >= vars.MAX_WEIGHT * .99 else "⚙️"
+        if weight >= 0                     else "🗿"
+    )
+    # fmt: on
+
+    return " " + weight_usage
+
+
+@define(kw_only=True)
 class Mech:
     """Represents a mech build."""
 
+    name: str
     game_vars: GameVars = GameVars.default()
-    is_custom: bool = False
-    _stats: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
-    _image: Image | None = field(default=None, init=False)
+    custom: bool = False
+    constraints: dict[UUID, t.Callable[[Self], bool]] = field(factory=dict, init=False)
+    _stats_cache: dict[str, int] = field(factory=dict, init=False)
+    _image_cache: Image | None = field(default=None, init=False)
 
     # fmt: off
-    torso:  InvItem[Attachments] | None = None
-    legs:   InvItem[Attachment] | None = None
-    drone:  InvItem[None] | None = None
-    side1:  InvItem[Attachment] | None = None
-    side2:  InvItem[Attachment] | None = None
-    side3:  InvItem[Attachment] | None = None
-    side4:  InvItem[Attachment] | None = None
-    top1:   InvItem[Attachment] | None = None
-    top2:   InvItem[Attachment] | None = None
-    tele:   InvItem[None] | None = None
-    charge: InvItem[None] | None = None
-    hook:   InvItem[None] | None = None
-    mod1:   InvItem[None] | None = None
-    mod2:   InvItem[None] | None = None
-    mod3:   InvItem[None] | None = None
-    mod4:   InvItem[None] | None = None
-    mod5:   InvItem[None] | None = None
-    mod6:   InvItem[None] | None = None
-    mod7:   InvItem[None] | None = None
-    mod8:   InvItem[None] | None = None
+    torso:  SlotType[Attachments] = field(default=None, validator=is_valid_type)
+    legs:   SlotType[Attachment]  = field(default=None, validator=is_valid_type)
+    drone:  SlotType[None]        = field(default=None, validator=is_valid_type)
+    side1:  SlotType[Attachment]  = field(default=None, validator=is_valid_type)
+    side2:  SlotType[Attachment]  = field(default=None, validator=is_valid_type)
+    side3:  SlotType[Attachment]  = field(default=None, validator=is_valid_type)
+    side4:  SlotType[Attachment]  = field(default=None, validator=is_valid_type)
+    top1:   SlotType[Attachment]  = field(default=None, validator=is_valid_type)
+    top2:   SlotType[Attachment]  = field(default=None, validator=is_valid_type)
+    tele:   SlotType[None] = field(default=None, validator=is_valid_type)
+    charge: SlotType[None] = field(default=None, validator=is_valid_type)
+    hook:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod1:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod2:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod3:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod4:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod5:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod6:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod7:   SlotType[None] = field(default=None, validator=is_valid_type)
+    mod8:   SlotType[None] = field(default=None, validator=is_valid_type)
     # fmt: on
 
     def __setitem__(self, slot: XOrTupleXY[str | Type, int], item: AnyInvItem | None, /) -> None:
         if not isinstance(item, (InvItem, type(None))):
             raise TypeError(f"Expected Item object or None, got {type(item)}")
 
-        slot = parse_slot(slot)
+        slot = slot_name_converter(slot)
 
-        if slot not in _SLOTS_SET:
-            raise TypeError("Invalid slot passed")
+        if item is not None:
+            if slot_to_type(slot) is not item.type:
+                raise TypeError(f"Item type {item.type} does not match slot {slot!r}")
 
-        if item is not None and item.type is not type_for_slot(slot):
-            raise TypeError("Invalid item type for specified slot")
+            if not self.custom and item.tags.custom:
+                raise TypeError("Cannot set a custom item on this mech")
+
+            if (prev := self[slot]) is not None and prev.UUID in self.constraints:
+                del self.constraints[prev.UUID]
+
+            if item.type is Type.MODULE and item.stats.keys() & {"phyRes", "expRes", "eleRes"}:
+                self.constraints[item.UUID] = partial(no_res_stacking, item=item)
+
+            elif item.tags.require_jump:
+                self.constraints[item.UUID] = jumping_required
 
         del self.stats
 
-        self.invalidate_image(item, self[slot])
+        self.try_delete_cached_image(item, self[slot])
         setattr(self, slot, item)
 
     def __getitem__(self, slot: XOrTupleXY[str | Type, int]) -> AnyInvItem | None:
-        slot = parse_slot(slot)
-
-        if slot not in _SLOTS_SET:
-            raise KeyError("Invalid slot passed")
-
-        return getattr(self, slot)
+        return getattr(self, slot_name_converter(slot))
 
     def __str__(self) -> str:
         string_parts = [
@@ -150,153 +226,160 @@ class Mech:
 
         return "\n".join(string_parts)
 
-    def __format__(self, spec: str, /) -> str:
-        if spec == "id":
-            return "_".join(str(item.underlying.id) if item else "0" for item in self.iter_items())
-
-        return str(self)
-
     @property
     def weight(self) -> int:
         return self.stats.get("weight", 0)
 
-    @property
-    def is_valid(self) -> bool:
+    def validate(self) -> bool:
+        """Check if the mech is battle ready."""
         return (
+            # torso present
             self.torso is not None
+            # legs present
             and self.legs is not None
+            # at least one weapon
             and any(wep is not None for wep in self.iter_items(weapons=True))
+            # not over max overload
             and self.weight <= self.game_vars.MAX_OVERWEIGHT
+            # no constraints are broken
+            and all(constr(self) for constr in self.constraints.values())
         )
 
-    @property
-    def stats(self) -> defaultdict[str, int]:
-        if self._stats:
-            return self._stats
+    def check_integrity(self) -> None:
+        """Go through items and validate that they are of correct type"""
+        invalid_slots: list[str] = []
 
-        stats_cache = self._stats
+        for item, slot in self.iter_items(slots=True):
+            if item is None:
+                continue
+
+            if slot_to_type(slot) is not item.type:
+                invalid_slots.append(slot)
+
+        if invalid_slots:
+            raise TypeError(f"Slots: {', '.join(invalid_slots)} have invalid item type")
+
+    @property
+    def stats(self) -> MappingProxyType[str, int]:
+        if self._stats_cache:
+            return MappingProxyType(self._stats_cache)
+
+        stats_cache = self._stats_cache
 
         for item in filter(None, self.iter_items()):
-            for key in WORKSHOP_STATS:
-                if key in item.stats:
-                    stats_cache[key] += item.stats[key]
+            for stat in WORKSHOP_STATS:
+                if (value := item.stats.get(stat)) is not None:
+                    if stat not in stats_cache:
+                        stats_cache[stat] = 0
 
-        if (weight := stats_cache["weight"]) > self.game_vars.MAX_WEIGHT:
+                    stats_cache[stat] += value
+
+        # setdefault in case mech has no items
+        if (weight := stats_cache.setdefault("weight", 0)) > self.game_vars.MAX_WEIGHT:
             for stat, pen in dict_items_as(int, self.game_vars.PENALTIES):
                 stats_cache[stat] -= (weight - self.game_vars.MAX_WEIGHT) * pen
 
-        return stats_cache
+        return MappingProxyType(stats_cache)
 
     @stats.deleter
     def stats(self) -> None:
-        self._stats.clear()
+        self._stats_cache.clear()
 
-    @property
-    def sorted_stats(self) -> list[tuple[str, int]]:
+    def get_sorted_stats(self) -> list[tuple[str, int]]:
         return sorted(self.stats.items(), key=lambda stat: WORKSHOP_STATS.index(stat[0]))
 
-    def buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
-        for stat, value in self.sorted_stats:
+    def get_buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
+        for stat, value in self.get_sorted_stats():
             yield stat, buffs.total_buff(stat, value)
 
-    def print_stats(self, buffs: ArenaBuffs | None = None, /) -> str:
-        if buffs is None:
-            bank = iter(self.sorted_stats)
+    def print_stats(
+        self,
+        included_buffs: ArenaBuffs | None = None,
+        /,
+        *,
+        line_format: str | None = None,
+        extra: dict[str, t.Callable[[Mech, int], str]] | None = None,
+    ) -> str:
+        """Returns a string of lines formatted with mech stats.
+
+        Parameters
+        -----------
+        included_buffs: `ArenaBuffs` object to apply the buffs from, or None if plain stats are resired.
+        line_format: a string which will be used with `.format` to denote the format of each line.
+                     The keywords available are:
+                        * `stat` - a `Stat` object.
+                        * `value` - the integer value of the stat.
+                        * `extra` - any extra data coming from a callable from the `extra` param.
+        """
+        if line_format is None:
+            line_format = "{stat.emoji} **{value}** {stat.name}{extra}"
+
+        if extra is None:
+            extra = {"weight": get_weight_utilization_emoji}
+
+        if included_buffs is None:
+            bank = self.get_sorted_stats()
 
         else:
-            bank = self.buffed_stats(buffs)
+            bank = self.get_buffed_stats(included_buffs)
 
-        weight, value = next(bank)
-        name = STATS[weight].name
-        icon = STATS[weight].emoji
-        vars = self.game_vars
+        default = lambda mech, value: ""
 
-        # fmt: off
-        weight_usage = (
-            "⛔"
-            if value >  vars.MAX_OVERWEIGHT   else "❕"
-            if value >  vars.MAX_WEIGHT       else "👌"
-            if value >= vars.MAX_WEIGHT       else "🆗"
-            if value >= vars.MAX_WEIGHT * .99 else "⚙️"
-            if value >= 0                     else "🗿"
-        )
-        # fmt: on
-
-        return f"{icon} **{value}** {name} {weight_usage}\n" + "\n".join(
-            "{0.emoji} **{1}** {0.name}".format(STATS[stat], value) for stat, value in bank
+        return "\n".join(
+            line_format.format(
+                value=value, stat=STATS[stat_name], extra=extra.get(stat_name, default)(self, value)
+            )
+            for stat_name, value in bank
         )
 
     @property
     def image(self) -> Image:
         """Returns `Image` object merging all item images.
         Requires the torso to be set, otherwise raises `RuntimeError`"""
-        if self._image is not None:
-            return self._image
+        if self._image_cache is not None:
+            return self._image_cache
 
-        if self.torso is None:
-            raise RuntimeError("Cannot create image without torso set")
-
-        canvas = MechRenderer(self.torso)
-
-        if self.legs is not None:
-            canvas.add_image(self.legs, "leg1")
-            canvas.add_image(self.legs, "leg2")
-
-        for item, layer in self.iter_items(weapons=True, slots=True):
-            if item is None:
-                continue
-
-            canvas.add_image(item, layer)
-
-        if self.drone is not None:
-            canvas.add_image(
-                self.drone,
-                "drone",
-                canvas.pixels_left + self.drone.image.width // 2,
-                canvas.pixels_above + self.drone.image.height + 25,
-            )
-
-        self._image = canvas.finalize()
-        return self._image
+        canvas = ImageRenderer.from_mech(self)
+        self._image_cache = canvas.merge()
+        return self._image_cache
 
     @image.deleter
     def image(self) -> None:
-        self._image = None
+        self._image_cache = None
 
-    def invalidate_image(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
-        if new is not None and new.underlying.displayable:
+    def try_delete_cached_image(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
+        """Deletes cached image if the new item changes mech appearance."""
+        # Setting a displayable item will not change the image
+        # only if the old item was the same item
+        # For simplicity I don't exclude that case from updating the image
+        if new is not None and new.type.displayable:
             del self.image
 
-        elif old is not None and old.underlying.displayable:
+        # the item was set to None, thus the appearance will change
+        # only if the previous one was displayable
+        elif old is not None and old.type.displayable:
             del self.image
 
     @property
     def has_image_cached(self) -> bool:
         """Returns True if the image is in cache, False otherwise.
         Does not check if the cache has been changed."""
-        return self._image is not None
-
-    async def load_images(self, session: ClientSession) -> None:
-        """Bulk loads item images"""
-        coros = {
-            item.underlying.load_image(session)
-            for item in self.iter_items()
-            if item is not None
-            if not item.underlying.has_image
-        }
-
-        if coros:
-            await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
+        return self._image_cache is not None
 
     @t.overload
-    def iter_items(self) -> t.Iterator[AnyInvItem | None]:
+    def iter_items(self, *, slots: t.Literal[False] = False) -> t.Iterator[AnyInvItem | None]:
+        ...
+
+    @t.overload
+    def iter_items(self, *, slots: t.Literal[True]) -> t.Iterator[tuple[AnyInvItem | None, str]]:
         ...
 
     @t.overload
     def iter_items(
         self,
         *,
-        weapons: bool = True,
+        weapons: t.Literal[True],
+        slots: t.Literal[False] = False,
     ) -> t.Iterator[InvItem[Attachment] | None]:
         ...
 
@@ -304,8 +387,8 @@ class Mech:
     def iter_items(
         self,
         *,
-        weapons: bool = True,
-        slots: t.Literal[True] = True,
+        weapons: t.Literal[True],
+        slots: t.Literal[True],
     ) -> t.Iterator[tuple[InvItem[Attachment] | None, str]]:
         ...
 
@@ -315,6 +398,7 @@ class Mech:
         *,
         modules: bool = ...,
         specials: bool = ...,
+        slots: t.Literal[False] = False,
     ) -> t.Iterator[InvItem[None] | None]:
         ...
 
@@ -324,7 +408,7 @@ class Mech:
         *,
         modules: bool = ...,
         specials: bool = ...,
-        slots: t.Literal[True] = True,
+        slots: t.Literal[True],
     ) -> t.Iterator[tuple[InvItem[None] | None, str]]:
         ...
 
@@ -336,6 +420,7 @@ class Mech:
         weapons: bool = ...,
         specials: bool = ...,
         modules: bool = ...,
+        slots: t.Literal[False] = False,
     ) -> t.Iterator[AnyInvItem | None]:
         ...
 
@@ -347,7 +432,7 @@ class Mech:
         weapons: bool = ...,
         specials: bool = ...,
         modules: bool = ...,
-        slots: t.Literal[True] = True,
+        slots: t.Literal[True],
     ) -> t.Iterator[tuple[AnyInvItem | None, str]]:
         ...
 
@@ -361,8 +446,28 @@ class Mech:
         slots: bool = False,
     ) -> t.Iterator[AnyInvItem | None | tuple[AnyInvItem | None, str]]:
         """Iterator over mech's selected items.
-        If all fields are set to False, it will iterate over all items.
-        If slots is True, it'll yield pairs of (Item, slot_name)"""
+
+        Parameters
+        ----------
+        body, weapons, specials, modules: `bool`
+            Selectors denoting which groups of parts to yield.
+            If all set to `False`, acts as if all are set to `True`.
+            - `body` yields torso, legs and drone;
+            - `weapons` yields side & top weapons;
+            - `specials` yields teleport, charge and hook;
+            - `modules` yields modules.
+
+        slots: `bool`
+            If `True`, yields all selected items as tuple pairs of (`InvItem`, `str`). When False
+            yields only the items.
+
+        Yields
+        ------
+        `InvItem`
+            If `slots` is set to `False`.
+        `tuple[InvItem, str]`
+            If `slots` is set to `True`.
+        """
 
         if not (body or weapons or specials or modules):
             body = weapons = specials = modules = True
@@ -385,56 +490,7 @@ class Mech:
             for slot in slot_set:
                 yield factory(slot)
 
-    def wu_serialize(self, build_name: str, player_name: str) -> WUSerialized:
-        if self.is_custom:
-            raise TypeError("Cannot serialize a custom mech into WU format")
-
-        def wu_compat_order():
-            yield self.torso
-            yield self.legs
-            yield from self.iter_items(weapons=True)
-            yield self.drone
-            yield self.charge
-            yield self.tele
-            yield self.hook
-            yield from self.iter_items(modules=True)
-
-        slot_names = (
-            "torso",
-            "legs",
-            "sideWeapon1",
-            "sideWeapon2",
-            "sideWeapon3",
-            "sideWeapon4",
-            "topWeapon1",
-            "topWeapon2",
-            "drone",
-            "chargeEngine",
-            "teleporter",
-            "grapplingHook",
-        )
-
-        serialized_items = [
-            None if item is None else item.underlying.wu_serialize(slot)
-            for slot, item in zip(slot_names, wu_compat_order())
-        ]
-        # lazy import
-        import hashlib
-        import json
-
-        json_string = json.dumps(serialized_items, indent=None)
-        hash = hashlib.sha256(json_string.encode()).hexdigest()
-
-        return {
-            "name": str(player_name),
-            "itemsHash": hash,
-            "mech": {
-                "name": str(build_name),
-                "setup": [item.underlying.id if item else 0 for item in wu_compat_order()],
-            },
-        }
-
-    def figure_dominant_element(self) -> Element | None:
+    def get_dominant_element(self) -> Element | None:
         """Guesses the mech type by equipped items."""
         excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER, Type.MODULE}
         elements = Counter(
