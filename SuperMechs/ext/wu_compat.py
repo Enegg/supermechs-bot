@@ -1,14 +1,17 @@
+import io
+import json
 import typing as t
 
 from attrs import asdict
 
-from ..player import Player
+from SuperMechs.utils import truncate_name
 
 from ..core import MAX_BUFFS
 from ..game_types import AnyStats
 from ..inv_item import AnyInvItem, InvItem
 from ..item import AnyItem
 from ..mech import Mech
+from ..player import Player
 
 if t.TYPE_CHECKING:
     from ..pack_interface import PackInterface
@@ -40,7 +43,7 @@ class WUSerialized(t.TypedDict):
 
 
 class ExportedMechsJSON(t.TypedDict):
-    version: str
+    version: int
     mechs: dict[str, list[WUMech]]
 
 
@@ -78,6 +81,9 @@ def wu_slot_to_mech_slot(slot: str) -> str:
     if slot.startswith("top"):
         return "top" + slot[-1]
 
+    if slot.startswith("module"):
+        return "mod" + slot[-1]
+
     return _slot_for_slot.get(slot, slot)
 
 
@@ -105,15 +111,62 @@ def export_mech(mech: Mech) -> WUMech:
     return {"name": mech.name, "setup": list(iter_mech_item_ids(mech))}
 
 
+def export_mechs(mechs: t.Iterable[Mech], pack_key: str) -> ExportedMechsJSON:
+    wu_mechs = list(map(export_mech, mechs))
+    return {"version": 1, "mechs": {pack_key: wu_mechs}}
+
+
+def dump_mechs(mechs: t.Iterable[Mech], pack_key: str) -> io.StringIO:
+    fp = io.StringIO()
+    json.dump(export_mechs(mechs, pack_key), fp, indent=2)
+    fp.seek(0)
+    return fp
+
+
 def import_mech(data: WUMech, pack: "PackInterface") -> Mech:
-    mech = Mech(name=data["name"])
+    mech = Mech(name=truncate_name(data["name"]))
 
     for item_id, wu_slot in zip(data["setup"], WU_SLOT_NAMES + WU_MODULE_SLOT_NAMES):
         slot = wu_slot_to_mech_slot(wu_slot)
-        item = pack.get_item_by_id(item_id)
-        mech[slot] = InvItem.from_item(item, maxed=True)
+        if item_id != 0:
+            item = pack.get_item_by_id(item_id)
+            mech[slot] = InvItem.from_item(item, maxed=True)
+
+        else:
+            mech[slot] = None
 
     return mech
+
+
+def load_mechs(data: ExportedMechsJSON, pack: "PackInterface") -> tuple[list[Mech], dict[str, str]]:
+    try:
+        version = data["version"]
+        mech_list = data["mechs"][pack.key]
+
+    except KeyError as e:
+        raise ValueError(f'Malformed data: key "{e}" not found.') from e
+
+    if version != 1:
+        raise ValueError(f"Expected version = 1, got {version}")
+
+    mechs: list[Mech] = []
+    failed: dict[str, str] = {}
+
+    for wu_mech in mech_list:
+        try:
+            mechs.append(import_mech(wu_mech, pack))
+
+        except Exception as e:
+            try:
+                name = wu_mech["name"]
+
+            except (KeyError, TypeError):
+                failed[str(wu_mech)] = str(e)
+
+            else:
+                failed[name] = str(e)
+
+    return mechs, failed
 
 
 def wu_serialize_item(item: AnyItem, slot_name: str) -> WUBattleItem:
@@ -122,7 +175,7 @@ def wu_serialize_item(item: AnyItem, slot_name: str) -> WUBattleItem:
         "id": item.id,
         "name": item.name,
         "type": item.type.name,
-        "stats": MAX_BUFFS.buff_stats(item.stats.at(item.transform_range.max)),
+        "stats": MAX_BUFFS.buff_stats(item.max_stats),
         "tags": asdict(item.tags),
         "element": item.element.name,
         "timesUsed": 0,
@@ -144,11 +197,7 @@ def wu_serialize_mech(mech: Mech, player_name: str) -> WUSerialized:
     json_string = json.dumps(serialized_items_without_modules, indent=None)
     hash = hashlib.sha256(json_string.encode()).hexdigest()
 
-    return {
-        "name": str(player_name),
-        "itemsHash": hash,
-        "mech": export_mech(mech)
-    }
+    return {"name": str(player_name), "itemsHash": hash, "mech": export_mech(mech)}
 
 
 def build_to_json(

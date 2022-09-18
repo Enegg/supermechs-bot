@@ -3,7 +3,9 @@ from __future__ import annotations
 import typing as t
 from enum import Enum
 
-from utils import MISSING
+from typing_extensions import Self
+
+from .utils import MISSING
 
 
 class TierData(t.NamedTuple):
@@ -11,19 +13,10 @@ class TierData(t.NamedTuple):
     color: int
     emoji: str
 
-    def __str__(self) -> str:
-        return self.emoji
-
-    def __int__(self) -> int:
-        return self.level
-
 
 class ElementData(t.NamedTuple):
     color: int
     emoji: str
-
-    def __str__(self) -> str:
-        return self.emoji
 
 
 class IconData(t.NamedTuple):
@@ -31,21 +24,23 @@ class IconData(t.NamedTuple):
     emoji: str
     alt: IconData = MISSING
 
-    def __str__(self) -> str:
-        return self.emoji
-
 
 class Rarity(TierData, Enum):
     """Enumeration of item tiers"""
 
+    def __new__(cls, level: int, color: int, emoji: str) -> Self:
+        obj = t.cast(Self, TierData.__new__(cls, level, color, emoji))
+        obj._value_ = level
+        return obj
+
     # fmt: off
-    COMMON    = C = TierData(0, 0xB1B1B1, "⚪")
-    RARE      = R = TierData(1, 0x55ACEE, "🔵")
-    EPIC      = E = TierData(2, 0xCC41CC, "🟣")
-    LEGENDARY = L = TierData(3, 0xE0A23C, "🟠")
-    MYTHICAL  = M = TierData(4, 0xFE6333, "🟤")
-    DIVINE    = D = TierData(5, 0xFFFFFF, "⚪")
-    PERK      = P = TierData(6, 0xFFFF33, "🟡")
+    COMMON    = C = (0, 0xB1B1B1, "⚪")
+    RARE      = R = (1, 0x55ACEE, "🔵")
+    EPIC      = E = (2, 0xCC41CC, "🟣")
+    LEGENDARY = L = (3, 0xE0A23C, "🟠")
+    MYTHICAL  = M = (4, 0xFE6333, "🟤")
+    DIVINE    = D = (5, 0xFFFFFF, "⚪")
+    PERK      = P = (6, 0xFFFF33, "🟡")
     # fmt: on
 
     def __int__(self) -> int:

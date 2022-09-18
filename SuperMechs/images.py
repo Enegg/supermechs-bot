@@ -4,8 +4,10 @@ import typing as t
 from io import BytesIO
 from pathlib import Path
 
-from attrs import define, field, validators
+from attrs import define, field
 from typing_extensions import Self
+
+from shared import SESSION_CTX
 
 from .enums import Type
 from .game_types import AnyAttachment, Attachment, Attachments, AttachmentType
@@ -13,7 +15,6 @@ from .pack_versioning import SpritePosition
 from .utils import MISSING
 
 if t.TYPE_CHECKING:
-    from aiohttp import ClientSession
     from aiohttp.typedefs import StrOrURL
     from PIL.Image import Image
 
@@ -41,8 +42,8 @@ class HasWidthAndHeight(t.Protocol):
 ImageIOLike = str | Path | BytesIO | tuple["Image", SpritePosition]
 
 
-async def fetch_image_bytes(link: StrOrURL, session: ClientSession) -> BytesIO:
-    async with session.get(link) as response:
+async def fetch_image_bytes(link: StrOrURL, /) -> BytesIO:
+    async with SESSION_CTX.get().get(link) as response:
         response.raise_for_status()
         return BytesIO(await response.content.read())
 

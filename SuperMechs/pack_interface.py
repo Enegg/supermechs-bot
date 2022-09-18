@@ -1,25 +1,26 @@
 from __future__ import annotations
 
 import asyncio
-from functools import partial
 import json
 import logging
 import typing as t
+from functools import partial
 from io import TextIOBase
 from pathlib import Path
 
 from attrs import define, field
+from SuperMechs.core import abbreviate_names
 
-from .game_types import AnyAttachment
+from shared import SESSION_CTX
 
 from .enums import Type
+from .game_types import AnyAttachment
 from .images import AttachedImage, create_synthetic_attachment, fetch_image_bytes
 from .item import AnyItem, Item
 from .pack_versioning import AnyItemPack, ItemPackVer1
 from .utils import MISSING, js_format
 
 if t.TYPE_CHECKING:
-    from aiohttp import ClientSession
     from aiohttp.typedefs import StrOrURL
 
 __all__ = ("PackInterface",)
@@ -51,12 +52,12 @@ def load_json(fp: str | Path | TextIOBase, /) -> t.Any:
             raise TypeError("Unsuppored file type")
 
 
-async def fetch_json(session: ClientSession, url: StrOrURL, /) -> t.Any:
+async def fetch_json(url: StrOrURL, /) -> t.Any:
     """Loads a json from url."""
 
     logger.info(f"Fetching from url {url}")
 
-    async with session.get(url) as response:
+    async with SESSION_CTX.get().get(url) as response:
         response.raise_for_status()
         return await response.json(encoding="utf-8", content_type=None)
 
@@ -68,7 +69,6 @@ def assert_attachment_set(type: Type, image: AttachedImage[AnyAttachment]) -> No
 
 def pack_v1_handle(pack: ItemPackVer1):
     base_url = pack["config"]["base_url"]
-
 
     def item_iterator():
         for item_dict in pack["items"]:
@@ -82,14 +82,15 @@ def pack_v1_handle(pack: ItemPackVer1):
     return item_iterator
 
 
-
 @define
 class PackInterface:
     key: str = MISSING
     name: str = MISSING
     description: str = MISSING
     # Item ID to Item
-    items: dict[int, AnyItem] = field(factory=dict, init=False, repr=lambda s: f"{{... {len(s)} items}}")
+    items: dict[int, AnyItem] = field(
+        factory=dict, init=False, repr=lambda s: f"{{... {len(s)} items}}"
+    )
     # Item name to item ID
     names_to_ids: dict[str, int] = field(factory=dict, init=False)
     name_abbrevs: dict[str, set[str]] = field(factory=dict, init=False)
@@ -112,31 +113,24 @@ class PackInterface:
                 return NotImplemented
 
     @staticmethod
-    async def fetch_pack(
-        pack_link: StrOrURL | Path, /, session: ClientSession | None = None, **extra: t.Any
-    ) -> AnyItemPack:
+    async def fetch_pack(pack_link: StrOrURL | Path, /, **extra: t.Any) -> AnyItemPack:
         """Loads items pack, parses items, and then fetches images."""
         match pathify(pack_link):
             case Path() as path:
                 pack: AnyItemPack = load_json(path)
 
             case url:
-                if session is None:
-                    raise TypeError("Session not passed for url request")
-
-                pack: AnyItemPack = await fetch_json(session, url)
+                pack: AnyItemPack = await fetch_json(url)
 
         pack |= extra  # type: ignore
         return pack
 
-    async def load(
-        self, pack_link: StrOrURL | Path, /, session: ClientSession, **extra: t.Any
-    ) -> None:
+    async def load(self, pack_link: StrOrURL | Path, /, **extra: t.Any) -> None:
         """Do all the tasks it takes to load an item pack: fetch item pack, load items, load images"""
 
         # TODO: split the logic in this method into functions
 
-        pack = await self.fetch_pack(pack_link, session, **extra)
+        pack = await self.fetch_pack(pack_link, **extra)
         self.extract_info(pack)
         logger.info(f"Pack {self.name!r} extracted; key: {self.key!r}")
 
@@ -146,8 +140,6 @@ class PackInterface:
             base_url = pack["config"]["base_url"]
             item_dicts_list = pack["items"]
 
-            for item_dict in item_dicts_list:
-                pass
             get_promise = lambda item_dict: js_format(item_dict["image"], url=base_url)
             spritesheet_url = None
 
@@ -162,6 +154,7 @@ class PackInterface:
             renderer = AttachedImage(attachment=item_dict.get("attachment", None))
             width = item_dict.get("width", 0)
             height = item_dict.get("height", 0)
+
             def resize_later():
                 image = renderer.image
                 w = width or image.width
@@ -180,11 +173,12 @@ class PackInterface:
             except (KeyError, TypeError):
                 logger.warning(f"Item {item.name!r} failed to load image")
 
+        self.name_abbrevs = abbreviate_names(self.names_to_ids)
 
         if spritesheet_url is not None:
             from PIL.Image import open
 
-            spritesheet = open(await fetch_image_bytes(spritesheet_url, session))
+            spritesheet = open(await fetch_image_bytes(spritesheet_url))
             for renderer, promise, asserter in promises:
                 renderer.load_image((spritesheet, promise))
                 asserter(renderer)
@@ -193,14 +187,14 @@ class PackInterface:
             coros = set()
 
             for renderer, promise, asserter in promises:
-                fut = asyncio.ensure_future(fetch_image_bytes(promise, session))
+                task = asyncio.create_task(fetch_image_bytes(promise))
 
-                def cb(task):
+                def cb(task: asyncio.Task):
                     renderer.load_image(task.result())
                     asserter(renderer)
 
-                fut.add_done_callback(cb)
-                coros.add(fut)
+                task.add_done_callback(cb)
+                coros.add(task)
 
             await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
         logger.info("Item images loaded")
@@ -241,11 +235,13 @@ class PackInterface:
 
 if __name__ == "__main__":
     link = "https://gist.githubusercontent.com/ctrlraul/22b71089a0dd7fef81e759dfb3dda67b/raw"
+
     async def runner(link, **extra):
         from aiohttp import ClientSession
-        from logging import basicConfig
-        basicConfig(level="INFO")
+
+        logging.basicConfig(level="INFO")
         interface = PackInterface()
         async with ClientSession() as session:
-            await interface.load(link, session, **extra)
+            SESSION_CTX.set(session)
+            await interface.load(link, **extra)
             return interface

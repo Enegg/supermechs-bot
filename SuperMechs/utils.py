@@ -133,3 +133,7 @@ async def maybe_coroutine(coro: T | t.Coroutine[t.Any, t.Any, T]) -> T:
         return await coro
 
     return coro
+
+
+def truncate_name(input: str, length: int = 32) -> str:
+    return input[:length]

@@ -65,7 +65,7 @@ class InvItem(t.Generic[AttachmentType]):
 
     def __str__(self) -> str:
         level = "max" if self.maxed else self.level
-        return f"{self.name} at {self.tier.name.capitalize()} lvl {level}"
+        return f"{self.name} at {self.tier.name.lower()} lvl {level}"
 
     def add_power(self, power: int) -> None:
         """Adds power to the item."""
