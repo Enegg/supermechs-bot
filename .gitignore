@@ -12,4 +12,4 @@ venv
 !example.env
 
 TODO.md
-dev.py
+dev/
