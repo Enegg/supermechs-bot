@@ -60,7 +60,7 @@ class Setup(commands.Cog):
                 sio.write("An error occured:\n```py\n")
                 print_exception(type(error), error, error.__traceback__, file=sio)
                 sio.write("```")
-            await inter.send(sio.getvalue(), ephemeral=True)
+                await inter.send(sio.getvalue(), ephemeral=True)
 
         else:
             await inter.send("Success", ephemeral=True)
