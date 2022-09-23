@@ -6,7 +6,6 @@ from itertools import filterfalse, zip_longest
 
 from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands
-from typing_extensions import Self
 
 from app.lib_helpers import image_to_file
 from app.ui.action_row import ActionRow, MessageUIComponent
@@ -76,7 +75,7 @@ class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
 
     @positioned(0, 2)
     @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
-    async def quit_button(self, _: Button[Self], inter: MessageInteraction) -> None:
+    async def quit_button(self, _: Button[None], inter: MessageInteraction) -> None:
         self.stop()
         await inter.response.defer()
 
@@ -108,7 +107,7 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
 
     @positioned(0, 1)
     @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
-    async def quit_button(self, button: Button[Self], inter: MessageInteraction) -> None:
+    async def quit_button(self, button: Button[None], inter: MessageInteraction) -> None:
         await inter.response.defer()
         self.stop()
 
@@ -558,7 +557,7 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
     for stat_name, stat, long_boy in comparator(stats_a, stats_b):
         name_field.append(f"{stat.emoji} {stat.name}")
 
-        match (stat_name, long_boy):
+        match (stat_name, long_boy):  # pyright: ignore[reportMatchNotExhaustive]
             case ("range", ((a1, a2), (b1, b2))):
                 first_item.append(f"**{a1}-{a2}**" if a1 is not None else "")
                 second_item.append(f"**{b1}-{b2}**" if b1 is not None else "")

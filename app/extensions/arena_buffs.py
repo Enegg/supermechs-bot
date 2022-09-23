@@ -5,7 +5,6 @@ import typing as t
 
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands
-from typing_extensions import Self
 
 from app.ui.buttons import Button, TrinaryButton, button
 from app.ui.item import add_callback
@@ -58,7 +57,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
 
     @positioned(3, 2)
     @button(label="🡺", custom_id="button:next", style=ButtonStyle.blurple)
-    async def next_button(self, button: Button[Self], inter: MessageInteraction) -> None:
+    async def next_button(self, button: Button[None], inter: MessageInteraction) -> None:
         self.page += 1
         self.prev_button.disabled = False
 
@@ -69,7 +68,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
 
     @positioned(3, 1)
     @button(label="🡸", custom_id="button:prev", style=ButtonStyle.blurple, disabled=True)
-    async def prev_button(self, button: Button[Self], inter: MessageInteraction) -> None:
+    async def prev_button(self, button: Button[None], inter: MessageInteraction) -> None:
         self.page -= 1
         self.next_button.disabled = False
 
@@ -80,7 +79,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
 
     @positioned(3, 0)
     @button(label="Quit", custom_id="button:quit", style=ButtonStyle.red)
-    async def quit_button(self, _: Button[Self], inter: MessageInteraction) -> None:
+    async def quit_button(self, _: Button[None], inter: MessageInteraction) -> None:
         self.stop()
 
         for row in self.rows[:3]:
@@ -94,7 +93,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
 
     @positioned(4, 0)
     @select(custom_id="select:menu", options=[EMPTY_OPTION], disabled=True)
-    async def select_menu(self, select: Select[Self], inter: MessageInteraction) -> None:
+    async def select_menu(self, select: Select[None], inter: MessageInteraction) -> None:
         level = int(select.values[0])
 
         assert self.active is not None

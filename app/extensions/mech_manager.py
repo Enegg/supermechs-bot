@@ -62,9 +62,11 @@ class MechView(InteractionCheck, PaginatorView):
         self.dominant = mech.get_dominant_element()
         self.image_update_task = asyncio.Task(asyncio.sleep(0))
 
-        self.embed = Embed(title=f'Mech build "{mech.name}"', color=Element.OMNI.color).add_field(
-            "Stats:", mech.print_stats()
-        )
+        # fmt: off
+        self.embed = Embed(
+            title=f'Mech build "{mech.name}"', color=Element.OMNI.color
+        ).add_field("Stats:", mech.print_stats())
+        # fmt: on
 
         for pos, row in enumerate(
             (
@@ -119,7 +121,7 @@ class MechView(InteractionCheck, PaginatorView):
     async def modules_button(self, button: Button[None], inter: MessageInteraction) -> None:
         """Button swapping mech editor with modules and vice versa."""
         self.page ^= 1  # toggle between 0 and 1
-        button.emoji = Type.TORSO.emoji if self.page else Type.MODULE.emoji
+        button.emoji = Type.TORSO.emoji if self.page == 1 else Type.MODULE.emoji
 
         await inter.response.edit_message(view=self)
 
@@ -168,7 +170,7 @@ class MechView(InteractionCheck, PaginatorView):
         ),
         placeholder="Choose slot",
         custom_id="select:item",
-        options=[EMPTY_OPTION],
+        all_options=[EMPTY_OPTION],
         disabled=True,
     )
     async def item_select(self, select: PaginatedSelect, inter: MessageInteraction) -> None:
@@ -264,7 +266,7 @@ class MechView(InteractionCheck, PaginatorView):
         else:
             self.active.toggle()
 
-        self.item_select.options = self.sort_options(slot_to_type(button.custom_id))
+        self.item_select.all_options = self.sort_options(slot_to_type(button.custom_id))
         self.item_select.placeholder = button.item.name if button.item else "empty"
         self.active = button
 

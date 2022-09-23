@@ -6,12 +6,14 @@ from disnake.ui.action_row import ActionRow, MessageUIComponent, StrictUICompone
 from disnake.ui.item import WrappedComponent
 from typing_extensions import Self
 
-ActionRowT = t.TypeVar("ActionRowT", bound=ActionRow[t.Any], covariant=True)
+from app.lib_helpers import ReprMixin
+
+ActionRowT = t.TypeVar("ActionRowT", bound=ActionRow[MessageUIComponent], covariant=True)
 
 __all__ = ("ActionRowT", "ActionRow", "PaginatedRow")
 
 
-class PaginatedRow(ActionRow[UIComponentT]):
+class PaginatedRow(ReprMixin, ActionRow[UIComponentT]):
     """Action row which divides added items into pages."""
 
     __repr_attributes__ = ("columns", "page", "persistent", "page_items")
@@ -60,10 +62,6 @@ class PaginatedRow(ActionRow[UIComponentT]):
 
         self.columns = columns
         self._page = 0
-
-    def __repr__(self) -> str:
-        attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
-        return f"<{type(self).__name__} {attrs}>"
 
     def __setitem__(self, index: int, item: UIComponentT | None) -> None:
         if not isinstance(item, (WrappedComponent, type(None))):

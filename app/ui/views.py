@@ -11,13 +11,15 @@ from disnake.ui.item import DecoratedItem, Item
 from disnake.ui.view import View
 from typing_extensions import Self
 
+from app.lib_helpers import ReprMixin
+
 from .action_row import ActionRow, ActionRowT, PaginatedRow
 from .item import I_CO, ItemCallbackType
 
 V_CO = t.TypeVar("V_CO", bound=View | None, covariant=True)
 T = t.TypeVar("T")
 FactoryT = type[T] | t.Callable[[], T]
-__all__ = ("View", "InteractionCheck", "PaginatorView", "V_CO")
+__all__ = ("View", "InteractionCheck", "PaginatorView", "V_CO", "positioned")
 
 
 class InteractionCheck:
@@ -46,7 +48,7 @@ def positioned(row: int, column: int):
     return decorator
 
 
-class SaneView(t.Generic[ActionRowT], View):
+class SaneView(t.Generic[ActionRowT], ReprMixin, View):
     """Represents a UI view.
 
     This object must be inherited to create a UI within Discord.
@@ -58,13 +60,15 @@ class SaneView(t.Generic[ActionRowT], View):
         If ``None`` then there is no timeout.
     """
 
+    __repr_attributes__ = ("timeout", "rows")
     rows: tuple[ActionRowT, ActionRowT, ActionRowT, ActionRowT, ActionRowT]
 
     __view_children_items__: t.ClassVar[
         list[MessageUIComponent | ItemCallbackType[Self, MessageUIComponent]]
     ] = []
 
-    def __init_subclass__(cls: type[Self], *args: t.Any, **kwargs: t.Any) -> None:
+    def __init_subclass__(cls, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init_subclass__(*args, **kwargs)
         children: list[MessageUIComponent | ItemCallbackType[Self, MessageUIComponent]] = [
             member
             for base in reversed(cls.__mro__)
@@ -112,7 +116,7 @@ class SaneView(t.Generic[ActionRowT], View):
 
             if row is None:
                 raise TypeError(
-                    f"This view does not support auto rows; set row via @positioned; item id: {item.custom_id}"
+                    f"This view does not support auto rows, set row for item {item.custom_id} via @positioned"
                 )
 
             action_row = self.rows[row]
@@ -123,9 +127,6 @@ class SaneView(t.Generic[ActionRowT], View):
         self._View__timeout_expiry: float | None = None
         self._View__timeout_task: asyncio.Task[None] | None = None
         self._View__stopped: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
-
-    def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} timeout={self.timeout} rows={self.rows}>"
 
     @t.overload
     def __getitem__(self, pos: int) -> ActionRowT:
@@ -211,14 +212,12 @@ class SaneView(t.Generic[ActionRowT], View):
 class PaginatorView(SaneView[PaginatedRow[MessageUIComponent]]):
     """View implementing simple button pagination."""
 
+    __repr_attributes__ = ("timeout", "rows")
+
     def __init__(self, *, timeout: float = 180.0, columns: int = 5) -> None:
         super().__init__(
             timeout=timeout, row_factory=lambda: PaginatedRow[MessageUIComponent](columns=columns)
         )
-
-    def __repr__(self) -> str:
-        rows = ",\n".join(map(repr, self.rows))
-        return f"<{self.__class__.__name__} timeout={self.timeout} rows=(\n{rows})>"
 
     @property
     def columns(self) -> int:

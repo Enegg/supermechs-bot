@@ -8,12 +8,11 @@ from disnake.ui.button import Button, button
 from typing_extensions import Self
 
 from .item import ItemCallbackType
-from .views import V_CO
 
 if t.TYPE_CHECKING:
     from disnake import Emoji, PartialEmoji
 
-B_CO = t.TypeVar("B_CO", bound=Button[t.Any], covariant=True)
+B_CO = t.TypeVar("B_CO", bound=Button[None], covariant=True)
 T = t.TypeVar("T")
 
 __all__ = ("button", "Button", "ToggleButton", "TrinaryButton", "B_CO")
@@ -34,8 +33,8 @@ class LinkButton(Button[None]):
         super().__init__(label=label, disabled=disabled, url=url, emoji=emoji, row=row)
 
 
-class DecoButton(Button[V_CO]):
-    def __call__(self, func: ItemCallbackType[V_CO, Self]) -> Self:
+class DecoButton(Button[None]):
+    def __call__(self, func: ItemCallbackType[None, Self]) -> Self:
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("button callback must be a coroutine function")
 

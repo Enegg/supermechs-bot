@@ -14,13 +14,6 @@ if t.TYPE_CHECKING:
     from PIL.Image import Image
 
 
-class ForbiddenChannel(commands.CheckFailure):
-    """Exception raised when command is used from invalid channel."""
-
-    def __init__(self, message: str | None = None, *args: t.Any) -> None:
-        super().__init__(message=message or "You cannot use this command here.", *args)
-
-
 class DesyncError(commands.CommandError):
     """Exception raised when due to external factors command's state goes out of sync"""
 
@@ -41,7 +34,7 @@ def str_to_file(
         case _:
             file = fp
 
-    return disnake.File(file, filename)  # type: ignore
+    return disnake.File(file, filename)  # pyright: ignore[reportGeneralTypeIssues]
 
 
 def image_to_file(image: Image, filename: str | None = None, format: str = "png") -> File:
@@ -125,3 +118,13 @@ class ChannelHandler(logging.Handler):
             )
 
         asyncio.create_task(coro).add_done_callback(self.fallback_emit(record))
+
+
+class ReprMixin:
+    """Class for programmatic __repr__ creation."""
+    __repr_attributes__: t.Iterable[str]
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
+        return f"<{type(self).__name__} {attrs} at 0x{id(self):016X}>"
