@@ -150,6 +150,12 @@ def is_valid_type(
         raise ValueError(f"Mech slot {attr.name} expects a type {valid_type}, got {value.type}")
 
 
+class _MechCache(t.TypedDict, total=False):
+    stats: dict[str, int]
+    image: Image
+    dominant_element: Element | None
+
+
 @define(kw_only=True)
 class Mech:
     """Represents a mech build."""
@@ -158,8 +164,7 @@ class Mech:
     custom: bool = False
     game_vars: GameVars = GameVars.default()
     constraints: dict[UUID, t.Callable[[Self], bool]] = field(factory=dict, init=False)
-    _stats_cache: dict[str, int] = field(factory=dict, init=False)
-    _image_cache: Image | None = field(default=None, init=False)
+    _cache: _MechCache = field(factory=dict, init=False, repr=False, eq=False)
 
     # fmt: off
     torso:  SlotType[Attachments] = field(default=None, validator=is_valid_type)
@@ -208,7 +213,7 @@ class Mech:
 
         del self.stats
 
-        self.try_delete_cached_image(item, self[slot])
+        self.try_invalidate_cache(item, self[slot])
         setattr(self, slot, item)
 
     def __getitem__(self, slot: XOrTupleXY[str | Type, int]) -> AnyInvItem | None:
@@ -270,29 +275,30 @@ class Mech:
 
     @property
     def stats(self) -> MappingProxyType[str, int]:
-        if self._stats_cache:
-            return MappingProxyType(self._stats_cache)
+        if "stats" in self._cache:
+            return MappingProxyType(self._cache["stats"])
 
-        stats_cache = self._stats_cache
+        stats: dict[str, int] = {}
+        self._cache["stats"] = stats
 
         for item in filter(None, self.iter_items()):
             for stat in WORKSHOP_STATS:
                 if (value := item.stats.get(stat)) is not None:
-                    if stat not in stats_cache:
-                        stats_cache[stat] = 0
+                    if stat not in stats:
+                        stats[stat] = 0
 
-                    stats_cache[stat] += value
+                    stats[stat] += value
 
         # setdefault in case mech has no items
-        if (weight := stats_cache.setdefault("weight", 0)) > self.game_vars.MAX_WEIGHT:
+        if (weight := stats.setdefault("weight", 0)) > self.game_vars.MAX_WEIGHT:
             for stat, pen in dict_items_as(int, self.game_vars.PENALTIES):
-                stats_cache[stat] -= (weight - self.game_vars.MAX_WEIGHT) * pen
+                stats[stat] -= (weight - self.game_vars.MAX_WEIGHT) * pen
 
-        return MappingProxyType(stats_cache)
+        return MappingProxyType(stats)
 
     @stats.deleter
     def stats(self) -> None:
-        self._stats_cache.clear()
+        self._cache.pop("stats", None)
 
     def get_sorted_stats(self) -> list[tuple[str, int]]:
         return sorted(self.stats.items(), key=lambda stat: WORKSHOP_STATS.index(stat[0]))
@@ -345,18 +351,18 @@ class Mech:
     def image(self) -> Image:
         """Returns `Image` object merging all item images.
         Requires the torso to be set, otherwise raises `RuntimeError`"""
-        if self._image_cache is not None:
-            return self._image_cache
+        if (image := self._cache.get("image")) is not None:
+            return image
 
         canvas = ImageRenderer.from_mech(self)
-        self._image_cache = canvas.merge()
-        return self._image_cache
+        self._cache["image"] = image = canvas.merge()
+        return image
 
     @image.deleter
     def image(self) -> None:
-        self._image_cache = None
+        self._cache.pop("image", None)
 
-    def try_delete_cached_image(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
+    def try_invalidate_cache(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
         """Deletes cached image if the new item changes mech appearance."""
         # Setting a displayable item will not change the image
         # only if the old item was the same item
@@ -369,11 +375,14 @@ class Mech:
         elif old is not None and old.type.displayable:
             del self.image
 
+        if new is None or old is None or new.element is not old.element:
+            self._cache.pop("dominant_element", None)
+
     @property
     def has_image_cached(self) -> bool:
         """Returns True if the image is in cache, False otherwise.
         Does not check if the cache has been changed."""
-        return self._image_cache is not None
+        return "image" in self._cache
 
     @t.overload
     def iter_items(self, *, slots: t.Literal[False] = False) -> t.Iterator[AnyInvItem | None]:
@@ -501,6 +510,9 @@ class Mech:
 
     def get_dominant_element(self) -> Element | None:
         """Guesses the mech type by equipped items."""
+        if (element := self._cache.get("dominant_element")) is not None:
+            return element
+
         excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER, Type.MODULE}
         elements = Counter(
             item.element
@@ -512,7 +524,9 @@ class Mech:
         # return None when there are no elements
         # or the difference between the two most common is small
         if len(elements) == 0 or (len(elements) == 2 and elements[0][1] - elements[1][1] < 2):
+            self._cache["dominant_element"] = None
             return None
 
         # otherwise just return the most common one
+        self._cache["dominant_element"] = elements[0][0]
         return elements[0][0]
