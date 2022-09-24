@@ -22,7 +22,9 @@ from app.lib_helpers import DesyncError, image_to_file
 from app.ui.buttons import Button, ToggleButton, TrinaryButton, button
 from app.ui.item import add_callback
 from app.ui.selects import EMPTY_OPTION, PaginatedSelect, Select, select
-from app.ui.views import InteractionCheck, PaginatorView, positioned
+from app.ui.views import InteractionCheck, PaginatorView, SaneView, positioned
+from app.ui.action_row import ActionRow, MessageUIComponent
+from SuperMechs.core import STATS, ArenaBuffs
 from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
 from SuperMechs.inv_item import InvItem
@@ -37,6 +39,19 @@ if t.TYPE_CHECKING:
 
 MixedInteraction = CommandInteraction | MessageInteraction
 logger = logging.getLogger(f"main.{__name__}")
+T = t.TypeVar("T")
+
+# we need to hardcode it as bot.get_global_command_named fails in testing
+# due to the command being registered in test guilds only
+BUFFS_COMMAND_ID = 919329829227229196
+
+
+def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
+    embed = Embed(
+        title=f'Mech build "{mech.name}"',
+        color=(mech.get_dominant_element() or Element.OMNI).color
+    ).add_field("Stats:", mech.print_stats(included_buffs))
+    return embed
 
 
 class MechView(InteractionCheck, PaginatorView):
@@ -59,14 +74,8 @@ class MechView(InteractionCheck, PaginatorView):
         self.user_id = player.id
 
         self.active: TrinaryButton[AnyItem] | None = None
-        self.dominant = mech.get_dominant_element()
         self.image_update_task = asyncio.Task(asyncio.sleep(0))
-
-        # fmt: off
-        self.embed = Embed(
-            title=f'Mech build "{mech.name}"', color=Element.OMNI.color
-        ).add_field("Stats:", mech.print_stats())
-        # fmt: on
+        self.embed = embed_mech(mech)
 
         for pos, row in enumerate(
             (
@@ -132,16 +141,17 @@ class MechView(InteractionCheck, PaginatorView):
         if self.player.arena_buffs.is_at_zero():
             await inter.send(
                 "This won't show any effect because all your buffs are at level zero.\n"
-                "You can change that using `/buffs` command.",
+                f"You can change that using </buffs:{BUFFS_COMMAND_ID}> command.",
                 ephemeral=True,
             )
             return
 
         button.toggle()
-
+        assert self.embed._fields is not None
+        self.embed._fields[0]
         self.embed.set_field_at(
             0,
-            name="Stats:",
+            name=self.embed.fields[0].name,
             value=self.mech.print_stats(self.player.arena_buffs if button.on else None),
         )
 
@@ -196,10 +206,8 @@ class MechView(InteractionCheck, PaginatorView):
 
         self.mech[self.active.custom_id] = item
 
-        self.dominant = self.mech.get_dominant_element()
-
-        if self.dominant is not None:
-            self.embed.color = self.dominant.color
+        if (dominant := self.mech.get_dominant_element()) is not None:
+            self.embed.color = dominant.color
 
         elif self.mech.torso is not None:
             self.embed.color = self.mech.torso.element.color
@@ -238,9 +246,9 @@ class MechView(InteractionCheck, PaginatorView):
 
         ref = [element.emoji for element in Element]
 
-        if self.dominant is not None:
-            ref.remove(self.dominant.emoji)
-            ref.insert(0, self.dominant.emoji)
+        if (dominant := self.mech.get_dominant_element()) is not None:
+            ref.remove(dominant.emoji)
+            ref.insert(0, dominant.emoji)
 
         new_options += sorted(all_options, key=lambda o: (ref.index(str(o.emoji)), o.label))
 
@@ -271,6 +279,41 @@ class MechView(InteractionCheck, PaginatorView):
         self.active = button
 
 
+class BrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
+    """View """
+    pass
+
+class DetailedBrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
+    def __init__(self, player: Player, *, timeout: float = 180.0) -> None:
+        super().__init__(timeout=timeout)
+        self.player = player
+        self.page = 0
+        self.embed = embed_mech(next(iter(player.builds.values())), player.arena_buffs)
+
+    @positioned(0, 0)
+    @button(label="🡸", custom_id="button:prev", disabled=True)
+    async def prev_button(self, button: Button[None], inter: MessageInteraction) -> None:
+        self.page -= 1
+        self.next_button.disabled = False
+
+        if self.page == 0:
+            button.disabled = True
+
+        await inter.response.edit_message(view=self)
+
+    @positioned(0, 1)
+    @button(label="🡺", custom_id="button:next")
+    async def next_button(self, button: Button[None], inter: MessageInteraction) -> None:
+        self.page += 1
+        self.prev_button.disabled = False
+
+        # condition for max page
+        if False:
+            button.disabled = True
+
+        await inter.response.edit_message(view=self)
+
+
 class MechManager(commands.Cog):
     def __init__(self, bot: SMBot) -> None:
         self.bot = bot
@@ -286,19 +329,42 @@ class MechManager(commands.Cog):
             await inter.send("You do not have any builds.", ephemeral=True)
             return
 
-        string = f"Currently active: **{player.active_build_name}**\n"
+        embed = Embed(title="Your builds", color=inter.author.color)
 
-        string += "\n\n".join(
-            f"**{name}**:\n"
-            f'{build.torso or "No torso"}'
-            f', {build.legs or "no legs"}'
-            f", {len(tuple(filter(None, build.iter_items(weapons=True))))} weapon(s)"
-            f", {len(tuple(filter(None, build.iter_items(modules=True))))} module(s)"
-            f"; {build.weight} weight"
-            for name, build in player.builds.items()
+        if player.active_build_name:
+            embed.description = f"Currently active: **{player.active_build_name}**"
+
+        fields: list[tuple[str, str]] = []
+
+        def count_not_none(it: t.Iterable[t.Any | None]) -> int:
+            i = 0
+            for item in it:
+                if item is not None:
+                    i += 1
+            return i
+
+        fmt_string = (
+            f"• {Type.TORSO.emoji} {{TORSO}}\n"
+            f"• {Type.LEGS.emoji} {{LEGS}}\n"
+            f"• {Type.SIDE_WEAPON.emoji} {{WEAPONS}} weapon(s)\n"
+            f"• {Type.MODULE.emoji} {{MODULES}} module(s)\n"
+            f"• {STATS['weight'].emoji} {{WEIGHT}} weight"
         )
 
-        await inter.send(string, ephemeral=True)
+        for name, build in player.builds.items():
+            value = fmt_string.format(
+                TORSO="no torso" if build.torso is None else build.torso.name,
+                LEGS="no legs" if build.legs is None else build.legs.name,
+                WEAPONS=count_not_none(build.iter_items(weapons=True)),
+                MODULES=count_not_none(build.iter_items(modules=True)),
+                WEIGHT=build.weight,
+            )
+            fields.append((name, value))
+
+        for title, value in fields:
+            embed.add_field(title, value)
+
+        await inter.send(embed=embed, ephemeral=True)
 
     @mech.sub_command()
     @commands.max_concurrency(1, commands.BucketType.user)
@@ -393,7 +459,7 @@ class MechManager(commands.Cog):
             max_values=min(25, len(player.builds)),
             options=list(player.builds)[:25],
         )
-        await inter.response.send_message(components=mech_select, ephemeral=True)
+        await inter.send(components=mech_select, ephemeral=True)
 
         def check(inter: MessageInteraction) -> bool:
             return inter.data.custom_id == mech_select.custom_id
@@ -421,6 +487,6 @@ class MechManager(commands.Cog):
         }
 
 
-def setup(bot: SMBot) -> None:
+def setup(bot: "SMBot") -> None:
     bot.add_cog(MechManager(bot))
     logger.info('Cog "MechManager" loaded')

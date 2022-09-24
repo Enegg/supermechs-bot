@@ -41,6 +41,7 @@ class Name(t.NamedTuple):
 
 
 class Stat(t.NamedTuple):
+    key: str
     name: Name
     emoji: str = "❔"
     beneficial: bool = True
@@ -50,8 +51,9 @@ class Stat(t.NamedTuple):
         return self.name.default
 
     @classmethod
-    def from_dict(cls, json: StatDict) -> Self:
+    def from_dict(cls, json: StatDict, key: str) -> Self:
         return cls(
+            key=key,
             name=Name(**json["names"]),
             emoji=json.get("emoji", "❔"),
             beneficial=json.get("beneficial", True),
