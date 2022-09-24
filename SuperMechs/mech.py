@@ -28,13 +28,10 @@ BODY_SLOTS = ("torso", "legs", "drone")
 WEAPON_SLOTS = ("side1", "side2", "side3", "side4", "top1", "top2")
 SPECIAL_SLOTS = ("tele", "charge", "hook")
 MODULE_SLOTS = ("mod1", "mod2", "mod3", "mod4", "mod5", "mod6", "mod7", "mod8")
+_SLOTS_SET = frozenset(BODY_SLOTS).union(WEAPON_SLOTS, SPECIAL_SLOTS, MODULE_SLOTS)
 
-_SLOTS_SET = (
-    frozenset(BODY_SLOTS)
-    | frozenset(WEAPON_SLOTS)
-    | frozenset(SPECIAL_SLOTS)
-    | frozenset(MODULE_SLOTS)
-)
+
+# -------------------------------- Converters ---------------------------------
 
 _type_to_slot_lookup = {
     Type.SIDE_WEAPON: "side",
@@ -95,36 +92,6 @@ def slot_name_converter(slot_: XOrTupleXY[str | Type, int], /):
     return slot
 
 
-def jumping_required(mech: Mech) -> bool:
-    return mech.legs is not None and "jumping" in mech.legs.stats
-
-
-def no_res_stacking(mech: Mech, item: AnyInvItem) -> bool:
-    for stat in item.stats.keys() & {"phyRes", "expRes", "eleRes"}:
-        for item_ in mech.iter_items(modules=True):
-            if item_ is None or item_ is item:
-                continue
-
-            if stat in item_.stats:
-                return False
-
-    return True
-
-
-def is_valid_type(inst: t.Any, attr: Attribute, value: InvItem[t.Any] | None | t.Any) -> None:
-    """Performs a check if item assigned to a slot has valid type."""
-    if value is None:
-        return
-
-    if not isinstance(value, InvItem):
-        raise TypeError(f"Invalid object set as item: {type(value)}")
-
-    valid_type = slot_to_type(attr.name)
-
-    if value.type is not valid_type:
-        raise ValueError(f"Mech slot {attr.name} expects a type {valid_type}, got {value.type}")
-
-
 def get_weight_utilization_emoji(mech: Mech, weight: int) -> str:
     vars = mech.game_vars
     # fmt: off
@@ -141,13 +108,53 @@ def get_weight_utilization_emoji(mech: Mech, weight: int) -> str:
     return " " + weight_usage
 
 
+# -------------------------------- Constraints --------------------------------
+
+
+def jumping_required(mech: Mech) -> bool:
+    return mech.legs is not None and "jumping" in mech.legs.stats
+
+
+def no_res_stacking(mech: Mech, item: AnyInvItem) -> bool:
+    for stat in item.stats.keys() & {"phyRes", "expRes", "eleRes"}:
+        for item_ in mech.iter_items(modules=True):
+            if item_ is None or item_ is item:
+                continue
+
+            if stat in item_.stats:
+                return False
+
+    return True
+
+
+# -------------------------------- Validators ---------------------------------
+
+
+def is_valid_type(
+    inst: t.Any,
+    attr: Attribute[InvItem[t.Any] | None | t.Any],
+    value: InvItem[t.Any] | None | t.Any,
+) -> None:
+    """Performs a check if item assigned to a slot has valid type."""
+    if value is None:
+        return
+
+    if not isinstance(value, InvItem):
+        raise TypeError(f"Invalid object set as item: {type(value)}")
+
+    valid_type = slot_to_type(attr.name)
+
+    if value.type is not valid_type:
+        raise ValueError(f"Mech slot {attr.name} expects a type {valid_type}, got {value.type}")
+
+
 @define(kw_only=True)
 class Mech:
     """Represents a mech build."""
 
     name: str
-    game_vars: GameVars = GameVars.default()
     custom: bool = False
+    game_vars: GameVars = GameVars.default()
     constraints: dict[UUID, t.Callable[[Self], bool]] = field(factory=dict, init=False)
     _stats_cache: dict[str, int] = field(factory=dict, init=False)
     _image_cache: Image | None = field(default=None, init=False)
@@ -185,7 +192,7 @@ class Mech:
             if slot_to_type(slot) is not item.type:
                 raise TypeError(f"Item type {item.type} does not match slot {slot!r}")
 
-            if not self.custom and item.tags.custom:
+            if item.tags.custom and not self.custom:
                 raise TypeError("Cannot set a custom item on this mech")
 
             if (prev := self[slot]) is not None and prev.UUID in self.constraints:
@@ -323,11 +330,11 @@ class Mech:
         else:
             bank = self.get_buffed_stats(included_buffs)
 
-        default = lambda mech, value: ""
-
         return "\n".join(
             line_format.format(
-                value=value, stat=STATS[stat_name], extra=extra.get(stat_name, default)(self, value)
+                value=value,
+                stat=STATS[stat_name],
+                extra=extra.get(stat_name, lambda mech, value: "")(self, value),
             )
             for stat_name, value in bank
         )
