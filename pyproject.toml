@@ -18,6 +18,8 @@ include = ["app", "SuperMechs"]
 pythonVersion = "3.10"
 
 reportUnnecessaryTypeIgnoreComment = true
+reportUnnecessaryCast = true
+reportMatchNotExhaustive = "warning"
 
 reportOverlappingOverload = false
 reportPrivateUsage = false
