@@ -45,14 +45,14 @@
         "emoji": "<:cooling:725871075778363422>",
         "buff": "+%"
     },
-    "bulletCap": {
+    "bulletsCap": {
         "names": {
             "default": "Bullet capacity",
             "in_game": "Bullet cap"
         },
         "emoji": "🥕"
     },
-    "rocketCap": {
+    "rocketsCap": {
         "names": {
             "default": "Rocket capacity",
             "in_game": "Rocket cap"
@@ -251,13 +251,13 @@
         "emoji": "<:eneusage:725871660237979759>",
         "beneficial": false
     },
-    "bulletCost": {
+    "bulletsCost": {
         "names": {
             "default": "Bullet cost"
         },
         "beneficial": false
     },
-    "rocketCost": {
+    "rocketsCost": {
         "names": {
             "default": "Rocket cost"
         },

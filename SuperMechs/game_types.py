@@ -22,8 +22,8 @@ AnyMechStatKey = t.Literal[
     "weight", "health",
     "eneCap", "eneReg",
     "heaCap", "heaCol",
-    "bulletCap", "rocketCap",
     "phyRes", "expRes", "eleRes",
+    "bulletsCap", "rocketsCap",
     "walk", "jump"
 ]
 
@@ -34,7 +34,7 @@ AnyStatKey = AnyMechStatKey | t.Literal[
     "range",
     "push", "pull", "recoil", "retreat", "advance",
     "uses",
-    "backfire", "heaCost", "eneCost", "bulletCost", "rocketCost"
+    "backfire", "heaCost", "eneCost", "bulletsCost", "rocketsCost"
 ]
 # fmt: on
 
@@ -59,11 +59,11 @@ class AnyMechStats(t.TypedDict, total=False):
     eneReg: int
     heaCap: int
     heaCol: int
-    bulletCap: int
-    rocketCap: int
     phyRes: int
     expRes: int
     eleRes: int
+    bulletsCap: int
+    rocketsCap: int
     walk: int
     jump: int
 
@@ -93,8 +93,8 @@ class AnyStats(AnyMechStats, total=False):
     backfire: int
     heaCost: int
     eneCost: int
-    bulletCost: int
-    rocketCost: int
+    bulletsCost: int
+    rocketsCost: int
 
 
 class Attachment(t.TypedDict):

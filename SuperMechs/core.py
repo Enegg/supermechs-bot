@@ -11,21 +11,7 @@ from .game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
 from .utils import MISSING, dict_items_as
 
 # order reference
-WORKSHOP_STATS = (
-    "weight",
-    "health",
-    "eneCap",
-    "eneReg",
-    "heaCap",
-    "heaCol",
-    "phyRes",
-    "expRes",
-    "eleRes",
-    "bulletCap",
-    "rocketCap",
-    "walk",
-    "jump",
-)
+WORKSHOP_STATS = tuple(AnyMechStats.__annotations__)
 
 # this is offset by 1 as items start at lvl 1
 MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Rarity, range(9, 50, 10))} | {Rarity.D: 0}
