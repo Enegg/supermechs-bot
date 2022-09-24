@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from itertools import filterfalse, zip_longest
+from itertools import zip_longest
 
 from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands
@@ -287,10 +287,11 @@ class ItemLookup(commands.Cog):
     async def item_autocomplete(self, inter: CommandInteraction, input: str) -> list[str]:
         """Autocomplete for items with regard for type & element."""
 
+        pack = self.bot.default_pack
         type_name = inter.filled_options.get("type", "ANY")
         element_name = inter.filled_options.get("element", "ANY")
-
         filters: list[t.Callable[[AnyItem], bool]] = []
+        abbrevs = pack.name_abbrevs.get(input.lower(), set())
 
         if type_name != "ANY":
             filters.append(lambda item: item.type is Type[type_name])
@@ -298,29 +299,26 @@ class ItemLookup(commands.Cog):
         if element_name != "ANY":
             filters.append(lambda item: item.element is Element[element_name])
 
-        def filter_func(item: AnyItem) -> bool:
-            return all(func(item) for func in filters)
+        def filter_item_names(names: t.Iterable[str]) -> t.Iterator[str]:
+            items = map(pack.get_item_by_name, names)
+            filtered_items = (item for item in items if all(func(item) for func in filters))
+            return (item.name for item in filtered_items)
 
-        pack = self.bot.default_pack
-        abbrevs = pack.name_abbrevs.get(input.lower(), set())
-
-        def filter_items(names: t.Iterable[str]) -> t.Iterator[str]:
-            return (item.name for item in filter(filter_func, map(pack.get_item_by_name, names)))
+        # place matching abbreviations at the top
+        matching_item_names = sorted(filter_item_names(abbrevs))
 
         import heapq
 
-        # place matching abbreviations at the top
-        matching_items = sorted(filter_items(abbrevs))
+        # extra filter to exclude duplicates
+        filters.append(lambda item: item.name not in abbrevs)
 
         # extend names up to 25, avoiding repetitions
-        matching_items += heapq.nsmallest(
-            25 - len(matching_items),
-            filterfalse(
-                abbrevs.__contains__, filter_items(search_for(input, pack.iter_item_names()))
-            ),
+        matching_item_names += heapq.nsmallest(
+            25 - len(matching_item_names),
+            filter_item_names(search_for(input, pack.iter_item_names())),
         )
 
-        return matching_items
+        return matching_item_names
 
 
 def avg_and_deviation(a: int | twotuple[int], b: int | None = None) -> twotuple[float]:
