@@ -112,17 +112,19 @@ def get_weight_utilization_emoji(mech: Mech, weight: int) -> str:
 
 
 def jumping_required(mech: Mech) -> bool:
-    return mech.legs is not None and "jumping" in mech.legs.stats
+    # unequipping legs is allowed, so no legs tests positive
+    return mech.legs is None or "jumping" in mech.legs.stats
 
 
-def no_res_stacking(mech: Mech, item: AnyInvItem) -> bool:
-    for stat in item.stats.keys() & {"phyRes", "expRes", "eleRes"}:
-        for item_ in mech.iter_items(modules=True):
-            if item_ is None or item_ is item:
-                continue
+def no_res_stacking(mech: Mech, module: AnyInvItem) -> bool:
+    existing_resistances = module.stats.keys() & {"phyRes", "expRes", "eleRes"}
 
-            if stat in item_.stats:
-                return False
+    for equipped_module in mech.iter_items(modules=True):
+        if equipped_module is None or equipped_module is module:
+            continue
+
+        if equipped_module.has_any_of_stats(*existing_resistances):
+            return False
 
     return True
 
@@ -198,8 +200,8 @@ class Mech:
             if (prev := self[slot]) is not None and prev.UUID in self.constraints:
                 del self.constraints[prev.UUID]
 
-            if item.type is Type.MODULE and item.stats.keys() & {"phyRes", "expRes", "eleRes"}:
-                self.constraints[item.UUID] = partial(no_res_stacking, item=item)
+            if item.type is Type.MODULE and item.has_any_of_stats("phyRes", "expRes", "eleRes"):
+                self.constraints[item.UUID] = partial(no_res_stacking, module=item)
 
             elif item.tags.require_jump:
                 self.constraints[item.UUID] = jumping_required
