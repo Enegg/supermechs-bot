@@ -2,6 +2,7 @@ import csv
 import typing as t
 import uuid
 from bisect import bisect_left
+from pathlib import Path
 
 from attrs import Factory, define, field
 
@@ -15,27 +16,22 @@ from .utils import Proxied, proxy
 
 __all__ = ("InvItem", "AnyInvItem", "InvItemSlot")
 
-with (
-    open("SuperMechs/static/default_powers.csv", newline="") as file1,
-    open("SuperMechs/static/lm_item_powers.csv", newline="") as file2,
-    open("SuperMechs/static/reduced_powers.csv", newline="") as file3,
-):
-    rows1 = csv.reader(file1, skipinitialspace=True)
-    rows2 = csv.reader(file2, skipinitialspace=True)
-    rows3 = csv.reader(file3, skipinitialspace=True)
 
-    DEFAULT_POWERS: dict[Rarity, tuple[int, ...]] = {
-        rarity: tuple(map(int, row)) for rarity, row in zip(Rarity, rows1)
-    }
+def _load_power_data_files():
+    path = Path("SuperMechs/static")
+    file_names = ("default_powers.csv", "lm_item_powers.csv", "reduced_powers.csv")
+    iterables = (Rarity, (Rarity.L, Rarity.M), (Rarity.L, Rarity.M))
 
-    LM_ITEM_POWERS: dict[Rarity, tuple[int, ...]] = {
-        rarity: tuple(map(int, row)) for rarity, row in zip((Rarity.L, Rarity.M), rows2)
-    }
+    for file_name, rarities in zip(file_names, iterables):
+        file_path = path / file_name
 
-    REDUCED_POWERS: dict[Rarity, tuple[int, ...]] = {
-        rarity: tuple(map(int, row)) for rarity, row in zip((Rarity.L, Rarity.M), rows3)
-    }
+        with file_path.open(newline="") as file:
+            rows = csv.reader(file, skipinitialspace=True)
 
+            yield {rarity: tuple(map(int, row)) for rarity, row in zip(rarities, rows)}
+
+
+DEFAULT_POWERS, LM_ITEM_POWERS, REDUCED_POWERS = _load_power_data_files()
 REDUCED_COST_ITEMS = frozenset(("Archimonde", "Armor Annihilator"))
 
 

@@ -59,10 +59,13 @@ class Stat(t.NamedTuple):
         )
 
 
-with open("SuperMechs/static/StatData.json") as file:
-    json: dict[AnyStatKey, StatDict] = load(file)
+def _load_stats():
+    with open("SuperMechs/static/StatData.json") as file:
+        json: dict[AnyStatKey, StatDict] = load(file)
+        return {stat_key: Stat.from_dict(value, stat_key) for stat_key, value in json.items()}
 
-STATS = {stat_key: Stat.from_dict(value) for stat_key, value in json.items()}
+
+STATS = _load_stats()
 
 
 @frozen
