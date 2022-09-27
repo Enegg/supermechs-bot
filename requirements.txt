@@ -5,9 +5,9 @@ aiohttp == 3.8.*
 Pillow == 9.1.*
 
 # Bot
-git+https://github.com/Enegg/disnake
-certifi == 2021.10.8
+git+https://github.com/DisnakeDev/disnake
+git+https://github.com/Chromosomologist/disnake-ext-plugins
 
 # General
 python-dotenv == 0.19.*
-typing-extensions == 4.2.0
+typing-extensions == 4.3.0

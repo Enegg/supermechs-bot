@@ -8,10 +8,21 @@ import typing as t
 
 import disnake
 from disnake import File
-from disnake.ext import commands
+from disnake.ext import commands, plugins
+from typing_extensions import Self
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
+
+BotT = t.TypeVar(
+    "BotT",
+    bound=t.Union[
+        commands.Bot,
+        commands.AutoShardedBot,
+        commands.InteractionBot,
+        commands.AutoShardedInteractionBot,
+    ],
+)
 
 
 class DesyncError(commands.CommandError):
@@ -22,7 +33,7 @@ class DesyncError(commands.CommandError):
 
 def str_to_file(
     fp: str | bytes | io.TextIOBase | io.BufferedIOBase, filename: str | None = "file.txt"
-) -> disnake.File:
+) -> File:
     """Creates a disnake.File from a string, bytes or IO object."""
     match fp:
         case str():
@@ -34,7 +45,7 @@ def str_to_file(
         case _:
             file = fp
 
-    return disnake.File(file, filename)  # pyright: ignore[reportGeneralTypeIssues]
+    return File(file, filename)  # pyright: ignore[reportGeneralTypeIssues]
 
 
 def image_to_file(image: Image, filename: str | None = None, format: str = "png") -> File:
@@ -57,7 +68,7 @@ def image_to_file(image: Image, filename: str | None = None, format: str = "png"
 class FileRecord(logging.LogRecord):
     """LogRecord with extra file attribute"""
 
-    def __init__(self, *args: t.Any, file: disnake.File | None = None, **kwargs: t.Any) -> None:
+    def __init__(self, *args: t.Any, file: File | None = None, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
         self.file = file
 
@@ -110,21 +121,57 @@ class ChannelHandler(logging.Handler):
         msg = self.format(record)
 
         if record.file is None:
-            coro = self.destination.send(msg, allowed_mentions=disnake.AllowedMentions.none())
+            coro = self.destination.send(msg)
 
         else:
-            coro = self.destination.send(
-                msg, file=record.file, allowed_mentions=disnake.AllowedMentions.none()
-            )
+            coro = self.destination.send(msg, file=record.file)
 
         asyncio.create_task(coro).add_done_callback(self.fallback_emit(record))
 
 
 class ReprMixin:
     """Class for programmatic __repr__ creation."""
+
     __repr_attributes__: t.Iterable[str]
     __slots__ = ()
 
     def __repr__(self) -> str:
         attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
         return f"<{type(self).__name__} {attrs} at 0x{id(self):016X}>"
+
+
+class BotPlugin(t.Generic[BotT], plugins.Plugin):
+    __slots__ = ("bot",)
+    bot: BotT
+
+    @t.overload
+    def __init__(
+        self: BotPlugin[commands.Bot], metadata: t.Optional[plugins.plugin.PluginMetadata] = ...
+    ) -> None:
+        ...
+
+    @t.overload
+    def __init__(self, metadata: t.Optional[plugins.plugin.PluginMetadata] = ...) -> None:
+        ...
+
+    def __init__(self, metadata: t.Optional[plugins.plugin.PluginMetadata] = None) -> None:
+        super().__init__(metadata)
+
+    if t.TYPE_CHECKING:
+
+        @classmethod
+        def with_metadata(
+            cls,
+            *,
+            name: t.Optional[str] = None,
+            category: t.Optional[str] = None,
+            command_attrs: t.Optional[plugins.plugin.CommandParams] = None,
+            message_command_attrs: t.Optional[plugins.plugin.AppCommandParams] = None,
+            slash_command_attrs: t.Optional[plugins.plugin.SlashCommandParams] = None,
+            user_command_attrs: t.Optional[plugins.plugin.AppCommandParams] = None,
+        ) -> Self:
+            ...
+
+    async def load(self, bot: BotT) -> None:
+        self.bot = bot
+        return await super().load(bot)  # type: ignore

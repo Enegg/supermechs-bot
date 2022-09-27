@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import logging
-import typing as t
-
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
-from disnake.ext import commands
+from disnake.ext import commands, plugins
 
 from app.ui.buttons import Button, TrinaryButton, button
 from app.ui.item import add_callback
@@ -14,12 +11,7 @@ from shared import TEST_GUILDS
 from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
 from SuperMechs.player import Player
 
-if t.TYPE_CHECKING:
-    from app.bot import SMBot
-
-logger = logging.getLogger(f"main.{__name__}")
-
-# TODO: create mock tests for the commands to ensure nothing breaks for the nth time
+plugin = plugins.Plugin()
 
 
 class ArenaBuffsView(InteractionCheck, PaginatorView):
@@ -137,28 +129,20 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
         self.active = button
 
 
-class ArenaBuffsCog(commands.Cog):
-    def __init__(self, bot: SMBot) -> None:
-        super().__init__()
-        self.bot = bot
-
-    @commands.slash_command()
-    @commands.max_concurrency(1, commands.BucketType.user)
-    async def buffs(self, inter: CommandInteraction, player: Player) -> None:
-        """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""
-
-        view = ArenaBuffsView(player.arena_buffs, user_id=inter.author.id)
-
-        await inter.response.send_message("**Arena Shop**", view=view, ephemeral=True)
-
-    @commands.slash_command(guild_ids=TEST_GUILDS)
-    @commands.is_owner()
-    async def maxed(self, inter: CommandInteraction, player: Player) -> None:
-        """Maxes out your arena buffs. {{ BUFFS_MAXED }}"""
-        player.arena_buffs.levels.update(ArenaBuffs.maxed().levels)
-        await inter.send("Success", ephemeral=True)
+@plugin.slash_command()
+@commands.max_concurrency(1, commands.BucketType.user)
+async def buffs(inter: CommandInteraction, player: Player) -> None:
+    """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""
+    view = ArenaBuffsView(player.arena_buffs, user_id=inter.author.id)
+    await inter.response.send_message("**Arena Shop**", view=view, ephemeral=True)
 
 
-def setup(bot: SMBot) -> None:
-    bot.add_cog(ArenaBuffsCog(bot))
-    logger.info('Cog "ArenaBuffsCog" loaded')
+@plugin.slash_command(guild_ids=TEST_GUILDS)
+@commands.is_owner()
+async def maxed(inter: CommandInteraction, player: Player) -> None:
+    """Maxes out your arena buffs. {{ BUFFS_MAXED }}"""
+    player.arena_buffs.levels.update(ArenaBuffs.maxed().levels)
+    await inter.send("Success", ephemeral=True)
+
+
+setup, teardown = plugin.create_extension_handlers()

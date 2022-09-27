@@ -18,12 +18,12 @@ from disnake import (
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-from app.lib_helpers import DesyncError, image_to_file
+from app.lib_helpers import BotPlugin, DesyncError, image_to_file
+from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, TrinaryButton, button
 from app.ui.item import add_callback
 from app.ui.selects import EMPTY_OPTION, PaginatedSelect, Select, select
 from app.ui.views import InteractionCheck, PaginatorView, SaneView, positioned
-from app.ui.action_row import ActionRow, MessageUIComponent
 from SuperMechs.core import STATS, ArenaBuffs
 from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
@@ -38,8 +38,9 @@ if t.TYPE_CHECKING:
     from app.bot import SMBot
 
 MixedInteraction = CommandInteraction | MessageInteraction
-logger = logging.getLogger(f"main.{__name__}")
 T = t.TypeVar("T")
+logger = logging.getLogger(__name__)
+plugin = BotPlugin["SMBot"]()
 
 # we need to hardcode it as bot.get_global_command_named fails in testing
 # due to the command being registered in test guilds only
@@ -48,8 +49,7 @@ BUFFS_COMMAND_ID = 919329829227229196
 
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
-        title=f'Mech build "{mech.name}"',
-        color=(mech.get_dominant_element() or Element.OMNI).color
+        title=f'Mech build "{mech.name}"', color=(mech.get_dominant_element() or Element.OMNI).color
     ).add_field("Stats:", mech.print_stats(included_buffs))
     return embed
 
@@ -139,16 +139,14 @@ class MechView(InteractionCheck, PaginatorView):
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
         if self.player.arena_buffs.is_at_zero():
-            await inter.send(
+            return await inter.send(
                 "This won't show any effect because all your buffs are at level zero.\n"
                 f"You can change that using </buffs:{BUFFS_COMMAND_ID}> command.",
                 ephemeral=True,
             )
-            return
 
         button.toggle()
         assert self.embed._fields is not None
-        self.embed._fields[0]
         self.embed.set_field_at(
             0,
             name=self.embed.fields[0].name,
@@ -189,8 +187,7 @@ class MechView(InteractionCheck, PaginatorView):
         (item_name,) = select.values
 
         if select.check_option(item_name):
-            await inter.response.edit_message(view=self)
-            return
+            return await inter.response.edit_message(view=self)
 
         item = None if item_name == EMPTY_OPTION.label else self.pack.get_item_by_name(item_name)
 
@@ -236,7 +233,7 @@ class MechView(InteractionCheck, PaginatorView):
         self.embed.set_image(url=f"attachment://{file.filename}")
         await self.response_message.edit(embed=self.embed, file=file, attachments=[])
 
-    def sort_options(self, item_type: Type) -> list[SelectOption]:
+    def sorted_options(self, item_type: Type) -> list[SelectOption]:
         """Returns a list of `SelectOption`s filtered by type"""
         all_options = self.item_groups[item_type]
         new_options = [EMPTY_OPTION]
@@ -274,14 +271,16 @@ class MechView(InteractionCheck, PaginatorView):
         else:
             self.active.toggle()
 
-        self.item_select.all_options = self.sort_options(slot_to_type(button.custom_id))
+        self.item_select.all_options = self.sorted_options(slot_to_type(button.custom_id))
         self.item_select.placeholder = button.item.name if button.item else "empty"
         self.active = button
 
 
 class BrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
-    """View """
+    """View"""
+
     pass
+
 
 class DetailedBrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
     def __init__(self, player: Player, *, timeout: float = 180.0) -> None:
@@ -314,179 +313,176 @@ class DetailedBrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent
         await inter.response.edit_message(view=self)
 
 
-class MechManager(commands.Cog):
-    def __init__(self, bot: SMBot) -> None:
-        self.bot = bot
+@plugin.slash_command()
+async def mech(_: CommandInteraction) -> None:
+    pass
 
-    @commands.slash_command()
-    async def mech(self, _: CommandInteraction) -> None:
-        pass
 
-    @mech.sub_command(name="list")
-    async def browse(self, inter: CommandInteraction, player: Player) -> None:
-        """Displays a list of your builds. {{ MECH_BROWSE }}"""
-        if not player.builds:
-            await inter.send("You do not have any builds.", ephemeral=True)
-            return
+@mech.sub_command(name="list")
+async def browse(inter: CommandInteraction, player: Player) -> None:
+    """Displays a list of your builds. {{ MECH_BROWSE }}"""
+    if not player.builds:
+        await inter.send("You do not have any builds.", ephemeral=True)
+        return
 
-        embed = Embed(title="Your builds", color=inter.author.color)
+    embed = Embed(title="Your builds", color=inter.author.color)
 
-        if player.active_build_name:
-            embed.description = f"Currently active: **{player.active_build_name}**"
+    if player.active_build_name:
+        embed.description = f"Currently active: **{player.active_build_name}**"
 
-        fields: list[tuple[str, str]] = []
+    fields: list[tuple[str, str]] = []
 
-        def count_not_none(it: t.Iterable[t.Any | None]) -> int:
-            i = 0
-            for item in it:
-                if item is not None:
-                    i += 1
-            return i
+    def count_not_none(it: t.Iterable[t.Any | None]) -> int:
+        i = 0
+        for item in it:
+            if item is not None:
+                i += 1
+        return i
 
-        fmt_string = (
-            f"• {Type.TORSO.emoji} {{TORSO}}\n"
-            f"• {Type.LEGS.emoji} {{LEGS}}\n"
-            f"• {Type.SIDE_WEAPON.emoji} {{WEAPONS}} weapon(s)\n"
-            f"• {Type.MODULE.emoji} {{MODULES}} module(s)\n"
-            f"• {STATS['weight'].emoji} {{WEIGHT}} weight"
+    fmt_string = (
+        f"• {Type.TORSO.emoji} {{TORSO}}\n"
+        f"• {Type.LEGS.emoji} {{LEGS}}\n"
+        f"• {Type.SIDE_WEAPON.emoji} {{WEAPONS}} weapon(s)\n"
+        f"• {Type.MODULE.emoji} {{MODULES}} module(s)\n"
+        f"• {STATS['weight'].emoji} {{WEIGHT}} weight"
+    )
+
+    for name, build in player.builds.items():
+        value = fmt_string.format(
+            TORSO="no torso" if build.torso is None else build.torso.name,
+            LEGS="no legs" if build.legs is None else build.legs.name,
+            WEAPONS=count_not_none(build.iter_items(weapons=True)),
+            MODULES=count_not_none(build.iter_items(modules=True)),
+            WEIGHT=build.weight,
+        )
+        fields.append((name, value))
+
+    for title, value in fields:
+        embed.add_field(title, value)
+
+    await inter.send(embed=embed, ephemeral=True)
+
+
+@mech.sub_command()
+@commands.max_concurrency(1, commands.BucketType.user)
+async def build(inter: MixedInteraction, player: Player, name: str | None = None) -> None:
+    """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
+
+    Parameters
+    -----------
+    name: The name of existing build or one to create. If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
+    """
+
+    if name is None:
+        mech = player.get_or_create_active_build()
+        name = player.active_build_name
+
+    elif name not in player.builds:
+        mech = player.create_build(name)
+
+    else:
+        mech = player.builds[name]
+        player.active_build_name = mech.name
+
+    view = MechView(mech, plugin.bot.default_pack, player, timeout=100)
+    file = MISSING
+
+    if mech.torso is not None:
+        view.embed.color = mech.torso.element.color
+
+        file = image_to_file(mech.image, mech_to_id_str(mech))
+        url = f"attachment://{file.filename}"
+        view.embed.set_image(url)
+
+    if isinstance(inter, MessageInteraction):
+        await inter.response.edit_message(embed=view.embed, file=file, view=view)
+
+    else:
+        await inter.response.send_message(embed=view.embed, file=file, view=view, ephemeral=True)
+    view.response_message = await inter.original_response()
+
+    await view.wait()
+    await inter.edit_original_response(view=None)
+
+
+@mech.sub_command(name="import")
+async def import_(inter: CommandInteraction, player: Player, file: Attachment) -> None:
+    """Import mech(s) from a .JSON file.
+
+    Parameters
+    ----------
+    file: a .JSON file as exported from WU.
+    """
+    # file size of 16KiB sounds like a pretty beefy amount of mechs
+    MAX_SIZE = 1 << 14
+
+    if MAX_SIZE < file.size:
+        raise commands.UserInputError(f"The maximum accepted file size is {MAX_SIZE >> 10}KiB.")
+
+    data = json.loads(await file.read())
+
+    try:
+        mechs, failed = load_mechs(data, plugin.bot.default_pack)
+
+    except ValueError as e:
+        raise commands.UserInputError(str(e)) from None
+
+    if not mechs:
+        message = "No mechs loaded."
+
+    else:
+        # TODO: warn about overwriting
+        player.builds.update((mech.name, mech) for mech in mechs)
+        message = "Loaded mechs: " + ", ".join(f"`{mech.name}`" for mech in mechs)
+
+    if failed:
+        message += "\nFailed to load: " + ", ".join(
+            f"{name}, reason: {reason}" for name, reason in failed.items()
         )
 
-        for name, build in player.builds.items():
-            value = fmt_string.format(
-                TORSO="no torso" if build.torso is None else build.torso.name,
-                LEGS="no legs" if build.legs is None else build.legs.name,
-                WEAPONS=count_not_none(build.iter_items(weapons=True)),
-                MODULES=count_not_none(build.iter_items(modules=True)),
-                WEIGHT=build.weight,
-            )
-            fields.append((name, value))
-
-        for title, value in fields:
-            embed.add_field(title, value)
-
-        await inter.send(embed=embed, ephemeral=True)
-
-    @mech.sub_command()
-    @commands.max_concurrency(1, commands.BucketType.user)
-    async def build(self, inter: MixedInteraction, player: Player, name: str | None = None) -> None:
-        """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
-
-        Parameters
-        -----------
-        name: The name of existing build or one to create. If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
-        """
-
-        if name is None:
-            mech = player.get_or_create_active_build()
-            name = player.active_build_name
-
-        elif name not in player.builds:
-            mech = player.create_build(name)
-
-        else:
-            mech = player.builds[name]
-            player.active_build_name = mech.name
-
-        view = MechView(mech, self.bot.default_pack, player, timeout=100)
-        file = MISSING
-
-        if mech.torso is not None:
-            view.embed.color = mech.torso.element.color
-
-            file = image_to_file(mech.image, mech_to_id_str(mech))
-            url = f"attachment://{file.filename}"
-            view.embed.set_image(url)
-
-        if isinstance(inter, MessageInteraction):
-            await inter.response.edit_message(embed=view.embed, file=file, view=view)
-
-        else:
-            await inter.response.send_message(
-                embed=view.embed, file=file, view=view, ephemeral=True
-            )
-        view.response_message = await inter.original_response()
-
-        await view.wait()
-        await inter.edit_original_response(view=None)
-
-    @mech.sub_command(name="import")
-    async def import_(self, inter: CommandInteraction, player: Player, file: Attachment) -> None:
-        """Import mech(s) from a .JSON file.
-
-        Parameters
-        ----------
-        file: a .JSON file as exported from WU.
-        """
-        # file size of 16KiB sounds like a pretty beefy amount of mechs
-        MAX_SIZE = 1 << 14
-
-        if MAX_SIZE < file.size:
-            raise commands.UserInputError(f"The maximum accepted file size is {MAX_SIZE >> 10}KiB.")
-
-        data = json.loads(await file.read())
-
-        try:
-            mechs, failed = load_mechs(data, self.bot.default_pack)
-
-        except ValueError as e:
-            raise commands.UserInputError(str(e)) from None
-
-        if not mechs:
-            message = "No mechs loaded."
-
-        else:
-            # TODO: warn about overwriting
-            player.builds.update((mech.name, mech) for mech in mechs)
-            message = "Loaded mechs: " + ", ".join(f"`{mech.name}`" for mech in mechs)
-
-        if failed:
-            message += "\nFailed to load: " + ", ".join(
-                f"{name}, reason: {reason}" for name, reason in failed.items()
-            )
-
-        await inter.response.send_message(message, ephemeral=True)
-
-    @mech.sub_command()
-    async def export(self, inter: CommandInteraction, player: Player) -> None:
-        """Export selected mechs into a WU-compatible .JSON file."""
-
-        if not player.builds:
-            return await inter.response.send_message("You do not have any builds.", ephemeral=True)
-
-        mech_select = Select(
-            placeholder="Select mechs to export",
-            custom_id="select:exported_mechs",
-            max_values=min(25, len(player.builds)),
-            options=list(player.builds)[:25],
-        )
-        await inter.send(components=mech_select, ephemeral=True)
-
-        def check(inter: MessageInteraction) -> bool:
-            return inter.data.custom_id == mech_select.custom_id
-
-        new_inter: MessageInteraction = await inter.bot.wait_for("dropdown", check=check)
-        values = new_inter.values
-        assert values is not None
-        selected = frozenset(values)
-
-        mechs = (mech for name, mech in player.builds.items() if name in selected)
-        fp = dump_mechs(mechs, self.bot.default_pack.key)
-        file = File(fp, "mechs.json")  # type: ignore
-        await new_inter.response.edit_message(file=file, components=None)
-
-    @build.autocomplete("name")
-    async def mech_name_autocomplete(
-        self, inter: CommandInteraction, input: str
-    ) -> list[str] | dict[str, str]:
-        """Autocomplete for player builds."""
-        player = self.bot.get_player(inter)
-        input = truncate_name(input)
-        case_insensitive = input.lower()
-        return [name for name in player.builds if name.lower().startswith(case_insensitive)] or {
-            f'Enter to create mech "{input}"...': input
-        }
+    await inter.response.send_message(message, ephemeral=True)
 
 
-def setup(bot: "SMBot") -> None:
-    bot.add_cog(MechManager(bot))
-    logger.info('Cog "MechManager" loaded')
+@mech.sub_command()
+async def export(inter: CommandInteraction, player: Player) -> None:
+    """Export selected mechs into a WU-compatible .JSON file."""
+
+    if not player.builds:
+        return await inter.response.send_message("You do not have any builds.", ephemeral=True)
+
+    mech_select = Select(
+        placeholder="Select mechs to export",
+        custom_id="select:exported_mechs",
+        max_values=min(25, len(player.builds)),
+        options=list(player.builds)[:25],
+    )
+    await inter.send(components=mech_select, ephemeral=True)
+
+    def check(inter: MessageInteraction) -> bool:
+        return inter.data.custom_id == mech_select.custom_id
+
+    new_inter: MessageInteraction = await inter.bot.wait_for("dropdown", check=check)
+    values = new_inter.values
+    assert values is not None
+    selected = frozenset(values)
+
+    mechs = (mech for name, mech in player.builds.items() if name in selected)
+    fp = dump_mechs(mechs, plugin.bot.default_pack.key)
+    file = File(fp, "mechs.json")  # type: ignore
+    await new_inter.response.edit_message(file=file, components=None)
+
+
+@build.autocomplete("name")
+async def mech_name_autocomplete(
+    inter: CommandInteraction, input: str
+) -> list[str] | dict[str, str]:
+    """Autocomplete for player builds."""
+    player = plugin.bot.get_player(inter)
+    input = truncate_name(input)
+    case_insensitive = input.lower()
+    return [name for name in player.builds if name.lower().startswith(case_insensitive)] or {
+        f'Enter to create mech "{input}"...': input
+    }
+
+
+setup, teardown = plugin.create_extension_handlers()

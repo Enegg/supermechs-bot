@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import typing as t
@@ -21,11 +22,14 @@ args = parser.parse_args()
 LOCAL: t.Final[bool] = args.local
 
 logging.setLogRecordFactory(FileRecord)
-logger = logging.getLogger("main")
-logger.level = logging.INFO
-
+LOGGER = logging.getLogger()
+LOGGER.setLevel(logging.INFO)
 stream = logging.StreamHandler()
-stream.level = logging.INFO
+stream.setLevel(logging.INFO)
+LOGGER.addHandler(stream)
+
+logging.getLogger("disnake").setLevel(logging.WARNING)
+logging.getLogger("disnake.ext.plugins.plugin").setLevel(logging.INFO)
 
 if LOCAL:
     stream.formatter = logging.Formatter(
@@ -36,10 +40,8 @@ else:
     # don't append timestamp as heroku does that already
     stream.formatter = logging.Formatter("[{levelname}] - {name}: {message}", style="{")
 
-logger.addHandler(stream)
 
-
-def main() -> None:
+async def main() -> None:
     if LOCAL:
         from shared import TEST_GUILDS
 
@@ -64,10 +66,10 @@ def main() -> None:
     bot.i18n.load("locale/")
     bot.load_extensions("app/extensions")
 
-    logger.info("Starting bot")
-    bot.run(os.environ["TOKEN_DEV" if LOCAL else "TOKEN"])
+    LOGGER.info("Starting bot")
+    await bot.start(os.environ["TOKEN_DEV" if LOCAL else "TOKEN"])
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
     logging.shutdown()
