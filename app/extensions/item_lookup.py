@@ -4,9 +4,9 @@ import typing as t
 from itertools import zip_longest
 
 from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
-from disnake.ext import commands
+from disnake.ext import commands, plugins
 
-from app.lib_helpers import BotPlugin, image_to_file
+from app.lib_helpers import image_to_file
 from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, button
 from app.ui.views import InteractionCheck, SaneView, positioned
@@ -30,7 +30,7 @@ else:
 T = t.TypeVar("T")
 twotuple = tuple[T, T]
 
-plugin = BotPlugin["SMBot"]()
+plugin = plugins.Plugin["SMBot"]()
 
 
 class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):

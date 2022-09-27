@@ -32,3 +32,4 @@ reportIncompatibleVariableOverride = false
 reportUnknownMemberType = false
 reportUnknownArgumentType = false
 reportUnknownVariableType = false
+reportMissingTypeStubs = false

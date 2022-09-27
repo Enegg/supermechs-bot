@@ -7,16 +7,16 @@ from contextvars import ContextVar
 from traceback import print_exception
 
 from disnake import AllowedMentions, CommandInteraction
-from disnake.ext import commands
+from disnake.ext import commands, plugins
 
-from app.lib_helpers import BotPlugin, str_to_file
+from app.lib_helpers import str_to_file
 from shared import TEST_GUILDS
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot
 
 logger = logging.getLogger(f"main.{__name__}")
-plugin = BotPlugin["SMBot"].with_metadata(slash_command_attrs={"guild_ids": TEST_GUILDS})
+plugin = plugins.Plugin["SMBot"].with_metadata(slash_command_attrs={"guild_ids": TEST_GUILDS})
 extension_var = ContextVar[str | None]("last_extension", default=None)
 
 

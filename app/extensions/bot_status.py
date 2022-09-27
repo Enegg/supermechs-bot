@@ -7,13 +7,12 @@ from datetime import datetime
 
 from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.utils import oauth_url
-
-from app.lib_helpers import BotPlugin
+from disnake.ext.plugins import Plugin
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot
 
-plugin = BotPlugin["SMBot"]()
+plugin = Plugin["SMBot"]()
 
 
 @plugin.slash_command()

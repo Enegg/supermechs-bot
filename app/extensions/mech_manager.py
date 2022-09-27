@@ -15,10 +15,10 @@ from disnake import (
     MessageInteraction,
     SelectOption,
 )
-from disnake.ext import commands
+from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from app.lib_helpers import BotPlugin, DesyncError, image_to_file
+from app.lib_helpers import DesyncError, image_to_file
 from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, TrinaryButton, button
 from app.ui.item import add_callback
@@ -40,7 +40,7 @@ if t.TYPE_CHECKING:
 MixedInteraction = CommandInteraction | MessageInteraction
 T = t.TypeVar("T")
 logger = logging.getLogger(__name__)
-plugin = BotPlugin["SMBot"]()
+plugin = plugins.Plugin["SMBot"]()
 
 # we need to hardcode it as bot.get_global_command_named fails in testing
 # due to the command being registered in test guilds only
