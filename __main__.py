@@ -53,6 +53,7 @@ async def main() -> None:
             allowed_mentions=AllowedMentions.none(),
             strict_localization=True,
             # sync_commands_debug=True,
+            dev_mode=True,
         )
 
     else:

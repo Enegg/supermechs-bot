@@ -31,10 +31,12 @@ class SMBot(commands.InteractionBot):
     started_at: datetime
     players: dict[int, Player]
     default_pack: PackInterface
+    dev_mode: bool
 
     def __init__(
         self,
         *,
+        dev_mode: bool = False,
         logs_channel_id: int | None = None,
         owner_id: int | None = None,
         reload: bool = False,
@@ -63,23 +65,23 @@ class SMBot(commands.InteractionBot):
         self.players = {}
         self.logs_channel = logs_channel_id
         self.default_pack = PackInterface()
+        self.dev_mode = dev_mode
 
     async def on_slash_command_error(
         self, inter: CommandInteraction, error: commands.CommandError
     ) -> None:
         match error:
             case commands.NotOwner():
-                await inter.send("This is a developer-only command.", ephemeral=True)
+                info = "This is a developer-only command."
 
             case commands.UserInputError() | commands.CheckFailure():
-                await inter.send(str(error), ephemeral=True)
+                info = str(error)
 
             case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
-                text = "Your previous invocation of this command has not finished executing."
-                await inter.send(text, ephemeral=True)
+                info = "Your previous invocation of this command has not finished executing."
 
             case commands.MaxConcurrencyReached():
-                await inter.send(str(error), ephemeral=True)
+                info = str(error)
 
             case _:
                 arguments = ", ".join(
@@ -93,8 +95,13 @@ class SMBot(commands.InteractionBot):
                     f" `/{inter.application_command.qualified_name}` {arguments}"
                 )
 
-                LOGGER.exception(text, exc_info=error)
-                await inter.send("Command executed with an error...", ephemeral=True)
+                if self.dev_mode:
+                    info = text
+
+                else:
+                    LOGGER.exception(text, exc_info=error)
+                    info = "Command executed with an error..."
+        await inter.send(info, ephemeral=True)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         self.started_at = datetime.now()
