@@ -32,7 +32,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
                 add_callback(
                     TrinaryButton(
                         item=buffs[id] == MAX_BUFFS[id] or None,
-                        label=f"{buffs.buff_as_str_aware(id):⠀>4}",
+                        label=str(buffs.modifier_of(id)).rjust(4, "⠀"),
                         custom_id=f"slotbutton:{id}",
                         emoji=STATS[id].emoji,
                     ),
@@ -98,7 +98,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
         else:
             self.active.item = None
 
-        self.active.label = self.buffs.buff_as_str_aware(id).rjust(4, "⠀")
+        self.active.label = str(self.buffs.modifier_of(id)).rjust(4, "⠀")
         self.toggle_style(self.active)
 
         await inter.response.edit_message(view=self)
@@ -122,7 +122,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
         self.select_menu.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
             for level, buff in enumerate(
-                self.buffs.iter_as_str(button.custom_id.rsplit(":", 1)[-1])
+                self.buffs.iter_modifiers_of(button.custom_id.rsplit(":", 1)[-1])
             )
         ]
 

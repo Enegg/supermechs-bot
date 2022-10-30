@@ -305,7 +305,7 @@ class Mech:
 
     def get_buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
         for stat, value in self.get_sorted_stats():
-            yield stat, buffs.total_buff(stat, value)
+            yield stat, buffs.buff(stat, value)
 
     def print_stats(
         self,

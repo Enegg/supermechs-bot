@@ -166,6 +166,20 @@ class GameVars(t.NamedTuple):
 DEFAULT_VARS = GameVars()
 
 
+class BuffModifier(t.NamedTuple):
+    value: int
+    percent: bool = True
+
+    def __str__(self) -> str:
+        if self.percent:
+            return f"{self.value:+}%"
+
+        return f"+{self.value}"
+
+    def __int__(self) -> int:
+        return self.value
+
+
 @define
 class ArenaBuffs:
     BASE_PERCENT: t.ClassVar = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
@@ -179,33 +193,63 @@ class ArenaBuffs:
     # fmt: on
     levels: dict[str, int] = Factory(lambda: dict.fromkeys(ArenaBuffs.BUFFABLE_STATS, 0))
 
-    def __getitem__(self, item: str) -> int:
-        return self.levels[item]
+    def __getitem__(self, stat_name: str) -> int:
+        return self.levels[stat_name]
 
     def is_at_zero(self) -> bool:
-        """Whether all buffs are at level 0"""
+        """Whether all buffs are at level 0."""
         return all(v == 0 for v in self.levels.values())
 
-    def total_buff(self, stat_name: str, value: int) -> int:
+    def buff(self, stat_name: str, value: int) -> int:
         """Buffs a value according to given stat."""
         if stat_name not in self.levels:
             return value
 
         level = self.levels[stat_name]
+        abs_or_percent, is_percent = self.modifier_at(stat_name, level)
 
-        if stat_name == "health":
-            return value + self.HP_INCREASES[level]
+        if is_percent:
+            return round(value * (1 + abs_or_percent / 100))
 
-        return round(value * (1 + self.get_percent(stat_name, level) / 100))
+        return value + abs_or_percent
 
-    def total_buff_difference(self, stat_name: str, value: int) -> tuple[int, int]:
+    def buff_with_difference(self, stat_name: str, value: int) -> tuple[int, int]:
         """Returns buffed value and the difference between the result and the initial value."""
-        buffed = self.total_buff(stat_name, value)
+        buffed = self.buff(stat_name, value)
         return buffed, buffed - value
+
+    def buff_stats(self, stats: AnyStats, /, *, buff_health: bool = False) -> AnyStats:
+        """Returns the buffed stats."""
+        buffed: AnyStats = {}
+
+        for key, value in dict_items_as(int | list[int], stats):
+            if key == "health" and not buff_health:
+                assert type(value) is int
+                buffed[key] = value
+
+            elif isinstance(value, list):
+                buffed[key] = [self.buff(key, v) for v in value]
+
+            else:
+                buffed[key] = self.buff(key, value)
+
+        return buffed
+
+    @classmethod
+    def modifier_at(cls, stat_name: str, level: int) -> BuffModifier:
+        """Returns an object that can be interpreted as an int or the buff's str representation at given level."""
+        if STATS[stat_name].buff == "+":
+            return BuffModifier(cls.HP_INCREASES[level], False)
+
+        return BuffModifier(cls.get_percent(stat_name, level))
+
+    def modifier_of(self, stat_name: str) -> BuffModifier:
+        """Returns an object that can be interpreted as an int or the buff's str representation."""
+        return self.modifier_at(stat_name, self.levels[stat_name])
 
     @classmethod
     def get_percent(cls, stat_name: str, level: int) -> int:
-        """Returns an int representing the precentage for the stat's increase."""
+        """Returns an int representing the precentage for the stat's modifier."""
 
         match STATS[stat_name].buff:
             case "+%":
@@ -224,27 +268,20 @@ class ArenaBuffs:
                 raise ValueError(f"Stat {stat_name!r} has no buffs associated")
 
     @classmethod
-    def buff_as_str(cls, stat_name: str, level: int) -> str:
-        """Returns a formatted string representation of the stat's value at the given level."""
-        if stat_name == "health":
-            return f"+{cls.HP_INCREASES[level]}"
+    def iter_modifiers_of(cls, stat_name: str) -> t.Iterator[BuffModifier]:
+        """Iterator over the modifiers of a stat from 0 to its maximum level."""
+        if STATS[stat_name].buff == "+":
+            levels = len(cls.HP_INCREASES)
 
-        return f"{cls.get_percent(stat_name, level):+}%"
+        else:
+            levels = len(cls.BASE_PERCENT)
 
-    def buff_as_str_aware(self, stat: str) -> str:
-        """Returns a formatted string representation of the stat's value."""
-        return self.buff_as_str(stat, self.levels[stat])
-
-    @classmethod
-    def iter_as_str(cls, stat_name: str) -> t.Iterator[str]:
-        levels = len(cls.HP_INCREASES) if stat_name == "health" else len(cls.BASE_PERCENT)
-
-        for n in range(levels):
-            yield cls.buff_as_str(stat_name, n)
+        for level in range(levels):
+            yield cls.modifier_at(stat_name, level)
 
     @classmethod
     def maxed(cls) -> Self:
-        """Returns an ArenaBuffs object with all levels maxed."""
+        """Alternate constructor returning the object with all levels set to max."""
 
         levels = dict.fromkeys(cls.BUFFABLE_STATS, len(cls.BASE_PERCENT) - 1)
         levels["health"] = len(cls.HP_INCREASES) - 1
@@ -253,24 +290,6 @@ class ArenaBuffs:
         setattr(cls, "maxed", staticmethod(lambda: max_buffs))
 
         return max_buffs
-
-    def buff_stats(self, stats: AnyStats, /, *, buff_health: bool = False) -> AnyStats:
-        """Returns the buffed stats."""
-        buffed: AnyStats = {}
-
-        for key, value in dict_items_as(int | list[int], stats):
-            if key == "health" and not buff_health:
-                assert type(value) is int
-                buffed[key] = value
-
-            elif isinstance(value, list):
-                buffed[key] = [self.total_buff(key, v) for v in value]
-
-            else:
-                value = self.total_buff(key, value)
-                buffed[key] = value
-
-        return buffed
 
 
 MAX_BUFFS = ArenaBuffs.maxed()

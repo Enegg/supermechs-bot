@@ -331,7 +331,7 @@ def buffed_stats(
     item: AnyItem, buffs_enabled: bool
 ) -> t.Iterator[tuple[str, twotuple[int] | twotuple[twotuple[int]]]]:
     if buffs_enabled:
-        apply_buff = MAX_BUFFS.total_buff_difference
+        apply_buff = MAX_BUFFS.buff_with_difference
 
     else:
 
