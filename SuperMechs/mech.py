@@ -274,37 +274,32 @@ class Mech:
 
     @property
     def stats(self) -> MappingProxyType[str, int]:
+        """A dict of the mech's stats, in order as they appear in workshop."""
         if "stats" in self._cache:
             return MappingProxyType(self._cache["stats"])
 
-        stats: dict[str, int] = {}
-        self._cache["stats"] = stats
+        # inherit the order of dict keys from workshop stats
+        stats: dict[str, int] = dict.fromkeys(WORKSHOP_STATS, 0)
 
         for item in filter(None, self.iter_items()):
-            for stat in WORKSHOP_STATS:
+            for stat in stats:
                 if (value := item.stats.get(stat)) is not None:
-                    if stat not in stats:
-                        stats[stat] = 0
-
                     stats[stat] += value
 
-        # setdefault in case mech has no items
-        if (weight := stats.setdefault("weight", 0)) > self.game_vars.MAX_WEIGHT:
-            for stat, pen in dict_items_as(int, self.game_vars.PENALTIES):
-                stats[stat] -= (weight - self.game_vars.MAX_WEIGHT) * pen
+        if (overweight := stats["weight"] - self.game_vars.MAX_WEIGHT) > 0:
+            for stat, penalty_mult in dict_items_as(int, self.game_vars.PENALTIES):
+                stats[stat] -= overweight * penalty_mult
 
+        for stat, value in tuple(stats.items()):
+            if value == 0:
+                del stats[stat]
+
+        self._cache["stats"] = stats
         return MappingProxyType(stats)
 
     @stats.deleter
     def stats(self) -> None:
         self._cache.pop("stats", None)
-
-    def get_sorted_stats(self) -> list[tuple[str, int]]:
-        return sorted(self.stats.items(), key=lambda stat: WORKSHOP_STATS.index(stat[0]))
-
-    def get_buffed_stats(self, buffs: ArenaBuffs, /) -> t.Iterator[tuple[str, int]]:
-        for stat, value in self.get_sorted_stats():
-            yield stat, buffs.buff(stat, value)
 
     def print_stats(
         self,
@@ -320,10 +315,10 @@ class Mech:
         -----------
         included_buffs: `ArenaBuffs` object to apply the buffs from, or None if plain stats are resired.
         line_format: a string which will be used with `.format` to denote the format of each line.
-                     The keywords available are:
-                        * `stat` - a `Stat` object.
-                        * `value` - the integer value of the stat.
-                        * `extra` - any extra data coming from a callable from the `extra` param.
+        The keywords available are:
+            - `stat` - a `Stat` object.
+            - `value` - the integer value of the stat.
+            - `extra` - any extra data coming from a callable from the `extra` param.
         """
         if line_format is None:
             line_format = "{stat.emoji} **{value}** {stat.name}{extra}"
@@ -332,10 +327,10 @@ class Mech:
             extra = {"weight": get_weight_utilization_emoji}
 
         if included_buffs is None:
-            bank = self.get_sorted_stats()
+            bank = self.stats
 
         else:
-            bank = self.get_buffed_stats(included_buffs)
+            bank = included_buffs.buff_stats(self.stats, buff_health=True)
 
         return "\n".join(
             line_format.format(
@@ -343,7 +338,7 @@ class Mech:
                 stat=STATS[stat_name],
                 extra=extra.get(stat_name, lambda mech, value: "")(self, value),
             )
-            for stat_name, value in bank
+            for stat_name, value in bank.items()
         )
 
     @property
