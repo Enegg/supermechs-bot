@@ -13,19 +13,19 @@ from app.ui.views import InteractionCheck, SaneView, positioned
 from shared import TEST_GUILDS
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
-from SuperMechs.game_types import AnyElement, AnyStats, AnyType
+from SuperMechs.game_types import AnyStats, LiteralElement, LiteralType
 from SuperMechs.item import AnyItem
 from SuperMechs.utils import dict_items_as, search_for
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot
 
-    AnyTypeAny = AnyType | t.Literal["ANY"]
-    AnyElementAny = AnyElement | t.Literal["ANY"]
+    LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
+    LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
 
 else:
-    AnyTypeAny = t.Literal[t.get_args(AnyType) + ("ANY",)]
-    AnyElementAny = t.Literal[t.get_args(AnyElement) + ("ANY",)]
+    LiteralTypeOrAny = t.Literal[t.get_args(LiteralType) + ("ANY",)]
+    LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
 
 T = t.TypeVar("T")
 twotuple = tuple[T, T]
@@ -147,8 +147,8 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
 async def item(
     inter: CommandInteraction,
     name: str,
-    type: AnyTypeAny = "ANY",
-    element: AnyElementAny = "ANY",
+    type: LiteralTypeOrAny = "ANY",
+    element: LiteralElementOrAny = "ANY",
     compact: bool = False,
 ) -> None:
     """Finds an item and returns its stats {{ ITEM }}
@@ -208,8 +208,8 @@ async def item(
 async def item_raw(
     inter: CommandInteraction,
     name: str,
-    type: AnyTypeAny = "ANY",
-    element: AnyElementAny = "ANY",
+    type: LiteralTypeOrAny = "ANY",
+    element: LiteralElementOrAny = "ANY",
 ) -> None:
     """Finds an item and returns its raw stats {{ ITEM }}
 

@@ -4,7 +4,7 @@ import typing as t
 
 from typing_extensions import NotRequired
 
-AnyType = t.Literal[
+LiteralType = t.Literal[
     "TORSO",
     "LEGS",
     "DRONE",
@@ -15,7 +15,7 @@ AnyType = t.Literal[
     "GRAPPLING_HOOK",
     "MODULE",
 ]
-AnyElement = t.Literal["PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
+LiteralElement = t.Literal["PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
 
 # fmt: off
 AnyMechStatKey = t.Literal[
