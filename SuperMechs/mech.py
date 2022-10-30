@@ -260,7 +260,7 @@ class Mech:
         )
 
     def check_integrity(self) -> None:
-        """Go through items and validate that they are of correct type"""
+        """Go through items and validate that they are of correct type."""
         invalid_slots: list[str] = []
 
         for item, slot in self.iter_items(slots=True):

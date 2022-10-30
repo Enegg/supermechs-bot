@@ -99,12 +99,12 @@ class TransformRange:
 
     @property
     def min(self) -> Rarity:
-        """Lower range bound"""
+        """Lower range bound."""
         return Rarity.__call__(self.range.start)
 
     @property
     def max(self) -> Rarity:
-        """Upper range bound"""
+        """Upper range bound."""
         return Rarity.__call__(self.range.stop - 1)
 
     def is_single_tier(self) -> bool:
