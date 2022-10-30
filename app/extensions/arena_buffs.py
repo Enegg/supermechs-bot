@@ -135,6 +135,7 @@ async def buffs(inter: CommandInteraction, player: Player) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""
     view = ArenaBuffsView(player.arena_buffs, user_id=inter.author.id)
     await inter.response.send_message("**Arena Shop**", view=view, ephemeral=True)
+    await view.wait()
 
 
 @plugin.slash_command(guild_ids=TEST_GUILDS)
