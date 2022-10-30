@@ -224,9 +224,6 @@ class MechView(InteractionCheck, PaginatorView):
 
     async def update_image(self) -> None:
         """Background task to update embed's image."""
-        if self.mech.has_image_cached:
-            return
-
         await asyncio.sleep(2.0)
 
         file = image_to_file(self.mech.image, mech_to_id_str(self.mech))
@@ -260,7 +257,9 @@ class MechView(InteractionCheck, PaginatorView):
             self.item_select.disabled = True
             self.active = None
 
-            self.image_update_task = asyncio.create_task(self.update_image())
+            if not self.mech.has_image_cached:
+                self.image_update_task = asyncio.create_task(self.update_image())
+
             return
 
         self.image_update_task.cancel()
