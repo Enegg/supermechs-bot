@@ -350,8 +350,8 @@ class Mech:
     def image(self) -> Image:
         """Returns `Image` object merging all item images.
         Requires the torso to be set, otherwise raises `RuntimeError`"""
-        if (image := self._cache.get("image")) is not None:
-            return image
+        if "image" in self._cache:
+            return self._cache["image"]
 
         canvas = ImageRenderer.from_mech(self)
         self._cache["image"] = image = canvas.merge()
@@ -509,8 +509,8 @@ class Mech:
 
     def get_dominant_element(self) -> Element | None:
         """Guesses the mech type by equipped items."""
-        if (element := self._cache.get("dominant_element")) is not None:
-            return element
+        if "dominant_element" in self._cache:
+            return self._cache["dominant_element"]
 
         excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER, Type.MODULE}
         elements = Counter(
