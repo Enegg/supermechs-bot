@@ -127,3 +127,15 @@ class ReprMixin:
     def __repr__(self) -> str:
         attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
         return f"<{type(self).__name__} {attrs} at 0x{id(self):016X}>"
+
+
+def add_plural_s(text: str, value: int, plural: str = "s") -> str:
+    if value != 1:
+        return text + plural
+
+    return text
+
+
+def hyperlink(text: str, url: str) -> str:
+    """Return a hyperlink to a URL."""
+    return f"[{text}]({url})"

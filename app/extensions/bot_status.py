@@ -3,11 +3,12 @@ from __future__ import annotations
 import random
 import sys
 import typing as t
-from datetime import datetime
 
 from disnake import CommandInteraction, Embed, __version__ as disnake_version
-from disnake.utils import oauth_url
+from disnake.utils import oauth_url, format_dt
 from disnake.ext.plugins import Plugin
+
+from app.lib_helpers import hyperlink
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot
@@ -35,49 +36,34 @@ async def ping(inter: CommandInteraction) -> None:
 @plugin.slash_command(name="self")
 async def self_info(inter: CommandInteraction) -> None:
     """Displays information about the bot."""
-    app_info = await plugin.bot.application_info()
-    desc = (
-        f"Member of {len(inter.bot.guilds)} server{'s' * (len(plugin.bot.guilds) != 1)}"
-        f"\n**Author:** {app_info.owner.mention}"
-    )
+
+    bot = plugin.bot
+    app_info = await bot.application_info()
+
+    guild_count = len(bot.guilds)
+    desc_fields = [
+        f"Member of {guild_count} server{'s' * (guild_count != 1)}",
+        f"Author: {app_info.owner.mention}"
+    ]
 
     if app_info.bot_public:
-        invite = oauth_url(inter.me.id, scopes=("bot", "applications.commands"))
-        desc += f"\n[**Invite link**]({invite})"
-
-    uptime = datetime.now() - plugin.bot.started_at
-    ss = uptime.seconds
-    mm, ss = divmod(ss, 60)
-    hh, mm = divmod(mm, 60)
-
-    time_data: list[str] = []
-    if (days := uptime.days) != 0:
-        time_data.append(f'{days} day{"s" * (days != 1)}')
-
-    if hh != 0:
-        time_data.append(f"{hh}h")
-
-    if mm != 0:
-        time_data.append(f"{mm}min")
-
-    if ss != 0:
-        time_data.append(f"{ss}s")
+        invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
+        desc_fields.append(hyperlink("**Invite link**", invite))
 
     python_version = ".".join(map(str, sys.version_info[:3]))
 
-    tech_field = (
-        f"Python build: {python_version} {sys.version_info.releaselevel}"
-        f"\ndisnake version: {disnake_version}"
-        f"\nUptime: {' '.join(time_data)}"
-    )
+    tech_fields = [
+        f"Python build: {python_version} {sys.version_info.releaselevel}",
+        f"disnake version: {disnake_version}",
+        f"Created: {format_dt(bot.user.created_at, 'R')}",
+        f"Started: {format_dt(bot.started_at, 'R')}"
+    ]
 
     embed = (
-        Embed(title="Bot info", description=desc, color=inter.me.color)
+        Embed(title="Bot info", description="\n".join(desc_fields), color=inter.me.color)
         .set_thumbnail(inter.me.display_avatar.url)
-        .add_field("Technical", tech_field)
-        .set_footer(text="Created")
+        .add_field("Technical", "\n".join(tech_fields))
     )
-    embed.timestamp = inter.me.created_at
 
     await inter.send(embed=embed, ephemeral=True)
 
