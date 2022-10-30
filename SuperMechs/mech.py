@@ -11,9 +11,9 @@ from typing_extensions import Self
 
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, IconData, Type
-from .game_types import Attachment, Attachments, AttachmentType
+from .game_types import Attachment, Attachments
 from .images import ImageRenderer
-from .inv_item import AnyInvItem, InvItem
+from .inv_item import AnyInvItem, InvItem, SlotType
 from .utils import dict_items_as, format_count
 
 if t.TYPE_CHECKING:
@@ -22,7 +22,6 @@ if t.TYPE_CHECKING:
 T = t.TypeVar("T")
 T2 = t.TypeVar("T2")
 XOrTupleXY = T | tuple[T, T2]
-SlotType = InvItem[AttachmentType] | None
 
 BODY_SLOTS = ("torso", "legs", "drone")
 WEAPON_SLOTS = ("side1", "side2", "side3", "side4", "top1", "top2")

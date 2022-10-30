@@ -14,7 +14,7 @@ from .images import AttachedImage
 from .item import Item, Tags
 from .utils import Proxied, proxy
 
-__all__ = ("InvItem", "AnyInvItem", "InvItemSlot")
+__all__ = ("InvItem", "AnyInvItem", "SlotType")
 
 
 def _load_power_data_files():
@@ -154,4 +154,4 @@ class InvItem(t.Generic[AttachmentType]):
 
 
 AnyInvItem = InvItem[Attachment] | InvItem[Attachments] | InvItem[None]
-InvItemSlot = InvItem[AttachmentType] | None
+SlotType = InvItem[AttachmentType] | None
