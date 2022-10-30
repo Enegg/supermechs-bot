@@ -25,7 +25,7 @@ if t.TYPE_CHECKING:
 
 __all__ = ("PackInterface",)
 
-logger = logging.getLogger(f"SuperMechs.{__name__}")
+logger = logging.getLogger(__name__)
 
 
 def pathify(maybe_path: StrOrURL | Path) -> StrOrURL | Path:

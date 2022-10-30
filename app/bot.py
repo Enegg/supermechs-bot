@@ -24,7 +24,7 @@ from SuperMechs.player import Player
 
 from .lib_helpers import ChannelHandler
 
-LOGGER = logging.getLogger(f"main.{__name__}")
+LOGGER = logging.getLogger(__name__)
 
 
 class SMBot(commands.InteractionBot):
