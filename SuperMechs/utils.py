@@ -6,8 +6,7 @@ from string import ascii_letters
 
 from typing_extensions import Self
 
-SupportsSet = t.TypeVar("SupportsSet", bound=t.Hashable)
-T = t.TypeVar("T")
+from .typeshed import KT, VT, SupportsSet, T
 
 
 class _MissingSentinel:
@@ -42,7 +41,7 @@ def make_property(slot: str, attr: str):
 
 
 def proxy(slot: str, /) -> t.Callable[[type[T]], type[T]]:
-    """Creates a __getattr__ for given slot and removes Proxied fields from object"""
+    """Creates properties for attributes marked as Proxied."""
 
     def wrap(cls: type[T]) -> type[T]:
         for ann, tp in tuple(cls.__annotations__.items()):
@@ -65,7 +64,7 @@ def proxy(slot: str, /) -> t.Callable[[type[T]], type[T]]:
 
 
 def common_items(*items: t.Iterable[SupportsSet]) -> set[SupportsSet]:
-    """Returns intersection of items in iterables"""
+    """Returns intersection of items in iterables."""
     iterables = iter(items)
     result = set(next(iterables, ()))
 
@@ -116,16 +115,12 @@ def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
 
 
 def random_str(length: int, /) -> str:
-    """Generates a random string of given length from ascii letters"""
+    """Generates a random string of given length from ascii letters."""
     return "".join(random.sample(ascii_letters, length))
 
 
-KT = t.TypeVar("KT")
-VT = t.TypeVar("VT")
-
-
 def dict_items_as(value_type: type[VT], obj: t.Mapping[KT, t.Any]) -> t.ItemsView[KT, VT]:
-    """Helper function to aid iterating over TypedDict.items()"""
+    """Helper function to aid iterating over TypedDict.items()."""
     return obj.items()
 
 

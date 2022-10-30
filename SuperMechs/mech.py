@@ -14,14 +14,11 @@ from .enums import Element, IconData, Type
 from .game_types import Attachment, Attachments
 from .images import ImageRenderer
 from .inv_item import AnyInvItem, InvItem, SlotType
+from .typeshed import XOrTupleXY
 from .utils import dict_items_as, format_count
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
-
-T = t.TypeVar("T")
-T2 = t.TypeVar("T2")
-XOrTupleXY = T | tuple[T, T2]
 
 BODY_SLOTS = ("torso", "legs", "drone")
 WEAPON_SLOTS = ("side1", "side2", "side3", "side4", "top1", "top2")

@@ -15,6 +15,7 @@ from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
 from SuperMechs.game_types import AnyStats, LiteralElement, LiteralType
 from SuperMechs.item import AnyItem
+from SuperMechs.typeshed import twotuple
 from SuperMechs.utils import dict_items_as, search_for
 
 if t.TYPE_CHECKING:
@@ -26,9 +27,6 @@ if t.TYPE_CHECKING:
 else:
     LiteralTypeOrAny = t.Literal[t.get_args(LiteralType) + ("ANY",)]
     LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
-
-T = t.TypeVar("T")
-twotuple = tuple[T, T]
 
 plugin = plugins.Plugin["SMBot"]()
 
