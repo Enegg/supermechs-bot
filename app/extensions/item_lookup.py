@@ -240,11 +240,13 @@ async def compare(inter: CommandInteraction, item1: str, item2: str) -> None:
     item1: First item to compare. {{ COMPARE_FIRST }}
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    item_a = plugin.bot.default_pack.get_item_by_name(item1)
-    item_b = plugin.bot.default_pack.get_item_by_name(item2)
 
-    if item_a is None or item_b is None:
-        raise commands.UserInputError("Either of specified items not found.")
+    try:
+        item_a = plugin.bot.default_pack.get_item_by_name(item1)
+        item_b = plugin.bot.default_pack.get_item_by_name(item2)
+
+    except KeyError as e:
+        raise commands.UserInputError(*e.args) from e
 
     if item_a.type is item_b.type and item_a.element is item_b.element:
         desc = f"{item_a.element.name.capitalize()} {item_a.type.name.replace('_', ' ').lower()}"
@@ -282,16 +284,15 @@ async def item_autocomplete(inter: CommandInteraction, input: str) -> list[str]:
     """Autocomplete for items with regard for type & element."""
 
     pack = plugin.bot.default_pack
-    type_name = inter.filled_options.get("type", "ANY")
-    element_name = inter.filled_options.get("element", "ANY")
     filters: list[t.Callable[[AnyItem], bool]] = []
-    abbrevs = pack.name_abbrevs.get(input.lower(), set())
 
-    if type_name != "ANY":
+    if (type_name := inter.filled_options.get("type", "ANY")) != "ANY":
         filters.append(lambda item: item.type is Type[type_name])
 
-    if element_name != "ANY":
+    if (element_name := inter.filled_options.get("element", "ANY")) != "ANY":
         filters.append(lambda item: item.element is Element[element_name])
+
+    abbrevs = pack.name_abbrevs.get(input.lower(), set())
 
     def filter_item_names(names: t.Iterable[str]) -> t.Iterator[str]:
         items = map(pack.get_item_by_name, names)
