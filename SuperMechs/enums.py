@@ -54,7 +54,7 @@ class Element(ElementData, Enum):
     PHYSICAL  = PHYS = ElementData(0xffb800, "<:phydmg:725871208830074929>")
     EXPLOSIVE = HEAT = ElementData(0xb71010, "<:expdmg:725871223338172448>")
     ELECTRIC  = ELEC = ElementData(0x106ed8, "<:eledmg:725871233614479443>")
-    COMBINED  = COMB = ElementData(0x211d1d, "🔰")
+    COMBINED  = COMB = ElementData(0x211d1d, "<:combined:1026853188940349490>")
     OMNI =             ElementData(0x000000, "<a:energyball:731885130594910219>")
     # fmt: on
 
