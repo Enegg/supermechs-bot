@@ -10,11 +10,12 @@ from .enums import Rarity
 from .game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
 from .utils import MISSING, dict_items_as
 
-# order reference
 WORKSHOP_STATS = tuple(AnyMechStats.__annotations__)
+"""The stats that can appear in mech summary, in order."""
 
-# this is offset by 1 as items start at lvl 1
 MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Rarity, range(9, 50, 10))} | {Rarity.D: 0}
+"""A mapping of a tier to the maximum level an item can have at this tier.
+    Note that in game levels start at 1."""
 
 
 class Name(t.NamedTuple):

@@ -9,6 +9,7 @@ if t.TYPE_CHECKING:
 
 
 SESSION_CTX: ContextVar["ClientSession"] = ContextVar("session")
+"""The aiohttp.ClientSession instantiated by the bot."""
 
 
 parser = ConfigParser()
@@ -16,12 +17,13 @@ parser.read("config.ini")
 
 # bot
 LOGS_CHANNEL = parser.getint("bot", "LOGS_CHANNEL")
-HOME_GUILD_ID = parser.getint("bot", "HOME_GUILD_ID")
-TEST_GUILDS = (HOME_GUILD_ID,)
-OWNER_ID = parser.getint("bot", "OWNER_ID")
+"""The ID of a text channel for ChannelHandler to send logs to."""
 
-# SM
-DEFAULT_PACK_URL = parser["packs"]["DEFAULT_PACK_URL"]
-DEFAULT_PACK_V2_URL = parser["packs"]["DEFAULT_PACK_V2_URL"]
-WU_SERVER_URL = parser["socket"]["WU_SERVER_URL"]
-CLIENT_VERSION = parser["socket"]["CLIENT_VERSION"]
+HOME_GUILD_ID = parser.getint("bot", "HOME_GUILD_ID")
+"""The bot's home guild ID."""
+
+TEST_GUILDS = (HOME_GUILD_ID,)
+"""The IDs of guilds the bot will register commands in while in dev mode."""
+
+OWNER_ID = parser.getint("bot", "OWNER_ID")
+"""The ID of the bot's owner."""

@@ -18,9 +18,10 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-from shared import DEFAULT_PACK_V2_URL, SESSION_CTX
+from shared import SESSION_CTX
 from SuperMechs.pack_interface import PackInterface
 from SuperMechs.player import Player
+from SuperMechs.urls import PACK_V2_URL
 
 from .lib_helpers import ChannelHandler
 
@@ -113,7 +114,7 @@ class SMBot(commands.InteractionBot):
 
     async def before_connect(self) -> None:
         try:
-            await self.default_pack.load(DEFAULT_PACK_V2_URL)
+            await self.default_pack.load(PACK_V2_URL)
 
         except Exception as e:
             LOGGER.warning("Failed to load items: ", exc_info=e)
