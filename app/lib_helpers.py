@@ -1,3 +1,5 @@
+"""A utility module providing functions and classes related to disnake and/or interacting with discord."""
+
 from __future__ import annotations
 
 import asyncio
