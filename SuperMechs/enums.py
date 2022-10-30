@@ -25,8 +25,8 @@ class IconData(t.NamedTuple):
     alt: IconData = MISSING
 
 
-class Rarity(TierData, Enum):
-    """Enumeration of item tiers"""
+class Tier(TierData, Enum):
+    """Enumeration of item tiers."""
 
     def __new__(cls, level: int, color: int, emoji: str) -> Self:
         obj = t.cast(Self, TierData.__new__(cls, level, color, emoji))
@@ -48,7 +48,7 @@ class Rarity(TierData, Enum):
 
 
 class Element(ElementData, Enum):
-    """Enumeration of item elements"""
+    """Enumeration of item elements."""
 
     # fmt: off
     PHYSICAL  = PHYS = ElementData(0xffb800, "<:phydmg:725871208830074929>")
@@ -60,7 +60,7 @@ class Element(ElementData, Enum):
 
 
 class Type(IconData, Enum):
-    """Enumeration of item types"""
+    """Enumeration of item types."""
 
     # fmt: off
     TORSO       = IconData("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>")

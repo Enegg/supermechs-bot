@@ -4,7 +4,7 @@ from attrs import define
 from typing_extensions import Self
 
 from .core import MAX_LVL_FOR_TIER, TransformRange
-from .enums import Rarity
+from .enums import Tier
 from .game_types import AnyStats
 from .pack_versioning import TiersMixin
 from .utils import dict_items_as
@@ -12,16 +12,16 @@ from .utils import dict_items_as
 
 @define
 class StatHandler:
-    stat_mapping: dict[Rarity, tuple[AnyStats, AnyStats]]
+    stat_mapping: dict[Tier, tuple[AnyStats, AnyStats]]
 
-    def __contains__(self, stat: str | Rarity | TransformRange) -> bool:
+    def __contains__(self, stat: str | Tier | TransformRange) -> bool:
         match stat:
             case str():
                 for mapping in self.stat_mapping.values():
                     if stat in mapping[0]:
                         return True
 
-            case Rarity():
+            case Tier():
                 return stat in self.stat_mapping
 
             case TransformRange():
@@ -29,7 +29,7 @@ class StatHandler:
 
         return False
 
-    def has_stat(self, stat: str, tier: Rarity | None = None) -> bool:
+    def has_stat(self, stat: str, tier: Tier | None = None) -> bool:
         """Check whether the item has a given stat.
 
         tier: if specified, checks only at that tier. Otherwise, checks all tiers.
@@ -43,7 +43,7 @@ class StatHandler:
 
         return False
 
-    def has_any_of_stats(self, *stats: str, tier: Rarity | None = None) -> bool:
+    def has_any_of_stats(self, *stats: str, tier: Tier | None = None) -> bool:
         """Check if any of the stat keys appear in the item's stats.
 
         tier: if specified, checks only at that tier. Otherwise, checks all tiers.
@@ -58,7 +58,7 @@ class StatHandler:
         return False
 
     def iter_tiers_to(
-        self, tier: Rarity | None = None, include_maxed: bool = True
+        self, tier: Tier | None = None, include_maxed: bool = True
     ) -> t.Iterator[AnyStats]:
         """Iterate over the stats, such that each next item has exact stats
         you'd find at given tier."""
@@ -73,13 +73,13 @@ class StatHandler:
             yield stats.copy()
             stats |= max_
 
-            if include_maxed and tier_ is not Rarity.DIVINE:
+            if include_maxed and tier_ is not Tier.DIVINE:
                 yield stats.copy()
 
             if tier is tier_:
                 break
 
-    def at(self, tier: Rarity, level: int = 0) -> AnyStats:
+    def at(self, tier: Tier, level: int = 0) -> AnyStats:
         """Returns the full stats at given tier and level.
 
         For convenience, levels follow the game logic; the lowest level is 1
@@ -131,19 +131,19 @@ class StatHandler:
         return stats
 
     @classmethod
-    def from_old_format(cls, stats: AnyStats, tier: Rarity = Rarity.DIVINE) -> Self:
+    def from_old_format(cls, stats: AnyStats, tier: Tier = Tier.DIVINE) -> Self:
         """Construct the object from a single stats dict."""
-        if tier is Rarity.DIVINE:
-            return cls({Rarity.DIVINE: (stats, {})})
+        if tier is Tier.DIVINE:
+            return cls({Tier.DIVINE: (stats, {})})
         return cls({tier: (stats, stats)})
 
     @classmethod
     def from_new_format(cls, json: TiersMixin) -> Self:
         """Create the object from a dict containing stats dicts of different tiers."""
-        stat_listing = dict[Rarity, tuple[AnyStats, AnyStats]]()
+        stat_listing = dict[Tier, tuple[AnyStats, AnyStats]]()
         hit = False
 
-        for rarity in Rarity:
+        for rarity in Tier:
             key = rarity.name.lower()
 
             if key not in json:
@@ -159,7 +159,7 @@ class StatHandler:
             base = json[key]
             top = AnyStats()
 
-            if rarity is not Rarity.DIVINE:
+            if rarity is not Tier.DIVINE:
                 try:
                     top = json["max_" + key]
 

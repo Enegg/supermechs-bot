@@ -6,14 +6,14 @@ from json import load
 from attrs import Factory, define, frozen
 from typing_extensions import Self
 
-from .enums import Rarity
+from .enums import Tier
 from .game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
 from .utils import MISSING, dict_items_as
 
 WORKSHOP_STATS = tuple(AnyMechStats.__annotations__)
 """The stats that can appear in mech summary, in order."""
 
-MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Rarity, range(9, 50, 10))} | {Rarity.D: 0}
+MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Tier, range(9, 50, 10))} | {Tier.D: 0}
 """A mapping of a tier to the maximum level an item can have at this tier.
     Note that in game levels start at 1."""
 
@@ -80,15 +80,15 @@ class TransformRange:
     def __str__(self) -> str:
         return "".join(rarity.emoji for rarity in self)
 
-    def __iter__(self) -> t.Iterator[Rarity]:
-        return (Rarity.__call__(n) for n in self.range)
+    def __iter__(self) -> t.Iterator[Tier]:
+        return map(Tier.__call__, self.range)
 
     def __len__(self) -> int:
         return len(self.range)
 
-    def __contains__(self, item: Rarity | TransformRange) -> bool:
+    def __contains__(self, item: Tier | TransformRange) -> bool:
         match item:
-            case Rarity():
+            case Tier():
                 return item.level in self.range
 
             case TransformRange():
@@ -98,38 +98,38 @@ class TransformRange:
                 return NotImplemented
 
     @property
-    def min(self) -> Rarity:
+    def min(self) -> Tier:
         """Lower range bound."""
-        return Rarity.__call__(self.range.start)
+        return Tier.__call__(self.range.start)
 
     @property
-    def max(self) -> Rarity:
+    def max(self) -> Tier:
         """Upper range bound."""
-        return Rarity.__call__(self.range.stop - 1)
+        return Tier.__call__(self.range.stop - 1)
 
     def is_single_tier(self) -> bool:
-        """Whether range has only one rarity"""
+        """Whether range has only one tier."""
         return len(self.range) == 1
 
     @classmethod
-    def from_rarity(cls, lower: Rarity | int, upper: Rarity | int | None = None) -> Self:
+    def from_tiers(cls, lower: Tier | int, upper: Tier | int | None = None) -> Self:
         """Construct a TransformRange object from upper and lower bounds.
         Unlike `range` object, upper bound is inclusive."""
 
         if isinstance(lower, int):
-            lower = Rarity.__call__(lower)
+            lower = Tier.__call__(lower)
 
         if upper is None:
             upper = lower
 
         elif isinstance(upper, int):
-            upper = Rarity.__call__(upper)
+            upper = Tier.__call__(upper)
 
-        if not Rarity.C <= lower <= upper:
+        if not Tier.C <= lower <= upper:
             if lower > upper:
-                raise ValueError("upper rarity below lower rarity")
+                raise ValueError("Upper tier below lower tier")
 
-            raise ValueError("rarities out of bounds")
+            raise ValueError("Tiers out of bounds")
 
         return cls(range(lower.level, upper.level + 1))
 
@@ -139,15 +139,15 @@ class TransformRange:
         up, _, down = string.strip().partition("-")
 
         if down:
-            return cls.from_rarity(Rarity[up.upper()], Rarity[down.upper()])
+            return cls.from_tiers(Tier[up.upper()], Tier[down.upper()])
 
-        return cls.from_rarity(Rarity[up.upper()])
+        return cls.from_tiers(Tier[up.upper()])
 
-    def next_tier(self, current: Rarity, /) -> Rarity:
+    def next_tier(self, current: Tier, /) -> Tier:
         if current >= self.max:
-            raise ValueError("Highest rarity already achieved")
+            raise ValueError("Highest tier already achieved")
 
-        return Rarity.__call__(current.level + 1)
+        return Tier.__call__(current.level + 1)
 
 
 class GameVars(t.NamedTuple):

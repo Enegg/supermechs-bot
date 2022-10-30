@@ -7,7 +7,7 @@ from pathlib import Path
 from attrs import Factory, define, field
 
 from .core import TransformRange
-from .enums import Element, Rarity, Type
+from .enums import Element, Tier, Type
 from .errors import MaxPowerReached, MaxTierReached
 from .game_types import AnyStats, Attachment, Attachments, AttachmentType
 from .images import AttachedImage
@@ -20,7 +20,7 @@ __all__ = ("InvItem", "AnyInvItem", "InvItemSlot")
 def _load_power_data_files():
     path = Path("SuperMechs/static")
     file_names = ("default_powers.csv", "lm_item_powers.csv", "reduced_powers.csv")
-    iterables = (Rarity, (Rarity.L, Rarity.M), (Rarity.L, Rarity.M))
+    iterables = (Tier, (Tier.L, Tier.M), (Tier.L, Tier.M))
 
     for file_name, rarities in zip(file_names, iterables):
         file_path = path / file_name
@@ -50,14 +50,14 @@ class InvItem(t.Generic[AttachmentType]):
     image: Proxied[AttachedImage[AttachmentType]] = field(init=False)
     tags: Proxied[Tags] = field(init=False)
 
-    tier: Rarity
+    tier: Tier
     power: int = 0
     UUID: uuid.UUID = Factory(uuid.uuid4)
     _level: int | None = field(default=None, init=False)
     maxed: bool = field(init=False)
 
     def __attrs_post_init__(self) -> None:
-        self.maxed = self.tier is Rarity.DIVINE or self.power >= self.max_power
+        self.maxed = self.tier is Tier.DIVINE or self.power >= self.max_power
 
     def __str__(self) -> str:
         level = "max" if self.maxed else self.level
@@ -93,7 +93,7 @@ class InvItem(t.Generic[AttachmentType]):
 
         self.tier = self.transform_range.next_tier(self.tier)
         self.power = 0
-        self.maxed = self.tier is not Rarity.DIVINE
+        self.maxed = self.tier is not Tier.DIVINE
 
     @property
     def stats(self) -> AnyStats:
@@ -107,7 +107,7 @@ class InvItem(t.Generic[AttachmentType]):
         if self._level is not None:
             return self._level
 
-        if self.tier is Rarity.DIVINE:
+        if self.tier is Tier.DIVINE:
             return 0
 
         levels = self.get_power_bank()[self.tier]
@@ -122,21 +122,21 @@ class InvItem(t.Generic[AttachmentType]):
     def max_power(self) -> int:
         """Returns the total power necessary to max the item at current tier"""
 
-        if self.tier is Rarity.DIVINE:
+        if self.tier is Tier.DIVINE:
             return 0
 
         return self.get_power_bank()[self.tier][-1]
 
-    def get_power_bank(self) -> dict[Rarity, tuple[int, ...]]:
+    def get_power_bank(self) -> dict[Tier, tuple[int, ...]]:
         """Returns the power per level bank for the item"""
 
         if self.name in REDUCED_COST_ITEMS:
             return REDUCED_POWERS
 
-        if self.transform_range.min >= Rarity.LEGENDARY:
+        if self.transform_range.min >= Tier.LEGENDARY:
             return LM_ITEM_POWERS
 
-        if self.transform_range.max <= Rarity.EPIC:
+        if self.transform_range.max <= Tier.EPIC:
             # TODO: this has special case too, but currently I have no data on that
             return DEFAULT_POWERS
 

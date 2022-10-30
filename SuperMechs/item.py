@@ -6,7 +6,7 @@ from attrs import field, frozen, validators
 from typing_extensions import Self
 
 from .core import TransformRange
-from .enums import Element, Rarity, Type
+from .enums import Element, Tier, Type
 from .game_types import AnyStats, AttachmentType
 from .images import AttachedImage
 from .pack_versioning import ItemDictVer1, ItemDictVer2, ItemDictVer3
@@ -66,8 +66,8 @@ class Item(t.Generic[AttachmentType]):
 
         tags = set[str](data.get("tags", ()))
 
-        if ("legacy" in tags and transform_range.min is Rarity.MYTHICAL) or (
-            transform_range.min > Rarity.EPIC
+        if ("legacy" in tags and transform_range.min is Tier.MYTHICAL) or (
+            transform_range.min > Tier.EPIC
         ):
             tags.add("premium")
 
