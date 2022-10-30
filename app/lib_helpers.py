@@ -6,8 +6,8 @@ import logging
 import traceback
 import typing as t
 
-import disnake
 from disnake import File
+from disnake.abc import Messageable
 from disnake.ext import commands
 
 if t.TYPE_CHECKING:
@@ -65,7 +65,7 @@ class FileRecord(logging.LogRecord):
 class ChannelHandler(logging.Handler):
     """Handler instance dispatching logging events to a discord channel."""
 
-    def __init__(self, channel: disnake.abc.Messageable, level: int = logging.NOTSET) -> None:
+    def __init__(self, channel: Messageable, level: int = logging.NOTSET) -> None:
         super().__init__(level)
         self.destination = channel
 

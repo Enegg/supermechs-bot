@@ -236,7 +236,7 @@ class PackInterface:
 if __name__ == "__main__":
     link = "https://gist.githubusercontent.com/ctrlraul/22b71089a0dd7fef81e759dfb3dda67b/raw"
 
-    async def runner(link, **extra):
+    async def runner(link: str, **extra: t.Any):
         from aiohttp import ClientSession
 
         logging.basicConfig(level="INFO")

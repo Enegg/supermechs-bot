@@ -37,7 +37,7 @@ MISSING: t.Final[t.Any] = _MissingSentinel()
 Proxied = t.Annotated[T, MISSING]
 
 
-def make_property(slot: str, attr: str) -> t.Any:
+def make_property(slot: str, attr: str):
     return property(lambda self: getattr(getattr(self, slot), attr))
 
 
