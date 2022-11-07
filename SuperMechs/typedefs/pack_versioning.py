@@ -98,7 +98,7 @@ class ItemDictVer3(ItemDictBase, TiersMixin):
 
 
 class ItemPackVer3(SpritesSheetMixin):
-    version: t.Literal["3", "standalone"]
+    version: t.Literal["3"]
     key: str
     name: str
     description: str
