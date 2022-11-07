@@ -9,9 +9,9 @@ from attrs import Factory, define, field
 from .core import TransformRange
 from .enums import Element, Tier, Type
 from .errors import MaxPowerReached, MaxTierReached
-from .typedefs.game_types import AnyStats
 from .images import AttachedImage, Attachment, Attachments, AttachmentType
 from .item import Item, Tags
+from .typedefs.game_types import AnyStats
 from .utils import Proxied, proxy
 
 __all__ = ("InvItem", "AnyInvItem", "SlotType")
