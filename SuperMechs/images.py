@@ -1,24 +1,71 @@
 from __future__ import annotations
 
 import typing as t
-from io import BytesIO
-from pathlib import Path
+from collections import defaultdict
+from functools import partial
 
 from attrs import define, field
-from typing_extensions import Self
+from typing_extensions import LiteralString, Self
 
-from shared import SESSION_CTX
+from abstract.files import Resource
 
 from .enums import Type
 from .typedefs.game_types import AnyRawAttachment, RawAttachment, RawAttachments
 from .typedefs.pack_versioning import SpritePosition
+from .typeshed import P, twotuple
 from .utils import MISSING
 
 if t.TYPE_CHECKING:
-    from aiohttp.typedefs import StrOrURL
     from PIL.Image import Image
 
     from .mech import Mech
+
+
+ImageMode = (
+    t.Literal["1", "L", "P", "RGB", "RGBA", "CMYK", "YCbCr", "LAB", "HSV", "I", "F"] | LiteralString
+)
+
+
+class Attachment(t.NamedTuple):
+    x: int
+    y: int
+
+    @classmethod
+    def from_dict(cls, mapping: RawAttachment) -> Self:
+        return cls(mapping["x"], mapping["y"])
+
+
+def raw_attachments_to_tupled(mapping: RawAttachments) -> Attachments:
+    return {key: Attachment.from_dict(mapping) for key, mapping in mapping.items()}
+
+
+Attachments = dict[str, Attachment]
+AnyAttachment = Attachment | Attachments | None
+AttachmentType = t.TypeVar("AttachmentType", bound=AnyAttachment)
+
+
+def parse_raw_attachment(raw_attachment: AnyRawAttachment) -> AnyAttachment:
+    match raw_attachment:
+        case {
+            "leg1": int(),
+            "leg2": int(),
+            "side1": int(),
+            "side2": int(),
+            "side3": int(),
+            "side4": int(),
+            "top1": int(),
+            "top2": int(),
+        }:
+            return raw_attachments_to_tupled(raw_attachment)
+
+        case {"x": int(), "y": int()}:
+            return Attachment.from_dict(raw_attachment)
+
+        case None:
+            return None
+
+        case _:
+            TypeError(f"Invalid attachment type: {raw_attachment!r}")
 
 
 class HasImage(t.Protocol[AttachmentType]):
@@ -39,117 +86,35 @@ class HasWidthAndHeight(t.Protocol):
         ...
 
 
-ImageIOLike = str | Path | BytesIO | tuple["Image", SpritePosition]
+@define
+class Offsets:
+    """Dataclass describing how many pixels the complete image extends beyond canvas."""
 
-
-async def fetch_image_bytes(link: StrOrURL, /) -> BytesIO:
-    async with SESSION_CTX.get().get(link) as response:
-        response.raise_for_status()
-        return BytesIO(await response.content.read())
-
-
-def convert_and_resize(
-    image: Image, /, width: int = 0, height: int = 0, mode: str = "RGBA"
-) -> Image:
-    if image.mode != mode:
-        image = image.convert(mode)
-
-    # value == 0 preserves the dimension
-    width = width or image.width
-    height = height or image.height
-
-    if width != image.width or height != image.height:
-        image = image.resize((width, height))
-
-    return image
+    left: int = 0
+    right: int = 0
+    above: int = 0
+    below: int = 0
 
 
 @define
-class AttachedImage(t.Generic[AttachmentType]):
-    """Object proxying PIL.Image.Image with attachment point(s)"""
-
-    # XXX: this class may be redundant if we place attachments on item itself and make
-    # loading methods simple functions
-
-    _image: Image = MISSING
-    attachment: AttachmentType = field(default=None)
-
-    @property
-    def loaded(self) -> bool:
-        """Whether image has been loaded."""
-        return self._image is not MISSING
-
-    @property
-    def image(self) -> Image:
-        if not self.loaded:
-            raise RuntimeError("Image accessed before it was loaded")
-
-        return self._image
-
-    @image.setter
-    def image(self, img: Image) -> None:
-        self._image = img
-
-    @property
-    def width(self) -> int:
-        return self.image.width
-
-    @property
-    def height(self) -> int:
-        return self.image.height
-
-    def load_image(
-        self, data: ImageIOLike, /, *, force: bool = False, resize_to: tuple[int, int] = (0, 0)
-    ) -> None:
-        """Do what it takes to actually load the image
-        `force`: if true and an image is cached, it will be overwritten."""
-        if self.loaded and not force:
-            return
-
-        match data:
-            case str() | Path() | BytesIO():
-                from PIL.Image import open
-
-                raw = open(data)
-
-            case (image, {"x": x1, "y": y1, "width": w, "height": h}):
-                raw = image.crop((x1, y1, x1 + w, y1 + h))
-
-            case _:
-                raise TypeError("Unrecognized file-like type")
-
-        self.image = convert_and_resize(raw, *resize_to)
-
-
 class ImageRenderer:
     """Class responsible for creating mech image."""
 
-    def __init__(self, base: HasImage[Attachments], layers: t.Sequence[str]) -> None:
-        self.base_image = base.image
-        self.base_attachments = base.attachment
-        # how many pixels the complete image extends beyond torso image boundaries
-        self.pixels_left = 0
-        self.pixels_right = 0
-        self.pixels_above = 0
-        self.pixels_below = 0
+    base: HasImage[Attachments]
+    layers: t.Sequence[str]
+    offsets: Offsets = field(factory=Offsets)
+    images: list[tuple[int, int, Image] | None] = field(init=False)
 
-        self.layers = layers
-        self.images: list[tuple[int, int, Image] | None] = [None] * len(layers)
-
-    def __repr__(self) -> str:
-        return (
-            f"<{type(self).__name__} "
-            f"offsets={(self.pixels_left, self.pixels_right, self.pixels_above, self.pixels_below)}"
-            f" images={self.images} at 0x{id(self):016X}>"
-        )
+    def __attrs_post_init__(self) -> None:
+        self.images = [None] * len(self.layers)
 
     @t.overload
-    def add_image(self, item: HasImage[None], layer: str, x_pos: int, y_pos: int) -> None:
+    def add_image(self, item: HasImage[None], layer: str, attach_at: tuple[int, int]) -> None:
         ...
 
     @t.overload
     def add_image(
-        self, item: HasImage[Attachment], layer: str, x_pos: int = ..., y_pos: int = ...
+        self, item: HasImage[Attachment], layer: str, attach_at: tuple[int, int] = ...
     ) -> None:
         ...
 
@@ -157,30 +122,24 @@ class ImageRenderer:
         self,
         item: HasImage[Attachment] | HasImage[None],
         layer: str,
-        x_pos: int | None = None,
-        y_pos: int | None = None,
+        attach_at: tuple[int, int] | None = None,
     ) -> None:
         """Adds the image of the item to the canvas."""
-        attachment = item.attachment
+        attachment = item.attachment or attach_at
 
         if attachment is None:
-            if x_pos is None or y_pos is None:
-                raise TypeError("For item without attachment both x_pos and y_pos are needed")
+            raise TypeError("Item without attachment needs the attachment parameter provided")
 
-            item_x = x_pos
-            item_y = y_pos
-
-        elif attachment.keys() != {"x", "y"}:
-            raise TypeError(f"Invalid attachment for layer {layer!r}: {attachment}")
+        elif len(attachment) != 2:
+            raise TypeError(f"Invalid attachment for layer {layer!r}: {attachment!r}")
 
         else:
-            item_x = attachment["x"]
-            item_y = attachment["y"]
+            item_x, item_y = attachment
 
-        if layer in self.base_attachments:
-            offset = self.base_attachments[layer]
-            x = offset["x"] - item_x
-            y = offset["y"] - item_y
+        if layer in self.base.attachment:
+            offset = self.base.attachment[layer]
+            x = offset.x - item_x
+            y = offset.y - item_y
 
         else:
             x, y = -item_x, -item_y
@@ -188,12 +147,13 @@ class ImageRenderer:
         self.adjust_offsets(item.image, x, y)
         self.put_image(item.image, layer, x, y)
 
-    def adjust_offsets(self, image: Image, x: int, y: int) -> None:
+    def adjust_offsets(self, image: HasWidthAndHeight, x: int, y: int) -> None:
         """Resizes the canvas if the image does not fit."""
-        self.pixels_left = max(self.pixels_left, -x)
-        self.pixels_above = max(self.pixels_above, -y)
-        self.pixels_right = max(self.pixels_right, x + image.width - self.base_image.width)
-        self.pixels_below = max(self.pixels_below, y + image.height - self.base_image.height)
+        offsets = self.offsets
+        offsets.left = max(offsets.left, -x)
+        offsets.above = max(offsets.above, -y)
+        offsets.right = max(offsets.right, x + image.width - self.base.image.width)
+        offsets.below = max(offsets.below, y + image.height - self.base.image.height)
 
     def put_image(self, image: Image, layer: str, x: int, y: int) -> None:
         """Place the image on the canvas."""
@@ -201,21 +161,21 @@ class ImageRenderer:
 
     def merge(self) -> Image:
         """Merges all images into one and returns it."""
-        self.put_image(self.base_image, "torso", 0, 0)
+        self.put_image(self.base.image, "torso", 0, 0)
 
         from PIL.Image import new
 
         canvas = new(
             "RGBA",
             (
-                self.base_image.width + self.pixels_left + self.pixels_right,
-                self.base_image.height + self.pixels_above + self.pixels_below,
+                self.base.image.width + self.offsets.left + self.offsets.right,
+                self.base.image.height + self.offsets.above + self.offsets.below,
             ),
             (0, 0, 0, 0),
         )
 
         for x, y, image in filter(None, self.images):
-            canvas.alpha_composite(image, (x + self.pixels_left, y + self.pixels_above))
+            canvas.alpha_composite(image, (x + self.offsets.left, y + self.offsets.above))
 
         return canvas
 
@@ -253,42 +213,133 @@ class ImageRenderer:
             self.add_image(
                 mech.drone.image,
                 "drone",
-                self.pixels_left + mech.drone.image.width // 2,
-                self.pixels_above + mech.drone.image.height + 25,
+                (
+                    self.offsets.left + mech.drone.image.width // 2,
+                    self.offsets.above + mech.drone.image.height + 25,
+                ),
             )
 
         return self
 
 
-def create_synthetic_attachment(image: HasWidthAndHeight, type: Type) -> AnyAttachment:
-    """Create an attachment off item image. Likely won't work well for scope-like items."""
-    # Yoinked from WU, credits to Raul
-    x = image.width
-    y = image.height
+def create_synthetic_attachment(width: int, height: int, type: Type) -> AnyAttachment:
+    """Create an attachment off given image size. Likely won't work well for scope-like items.
+    Note: taken directly from WU, credits to Raul."""
 
-    match type:
-        case Type.TORSO:
-            # fmt: off
-            return {
-                "leg1":  {"x": round(x * 0.40), "y": round(y * 0.9)},
-                "leg2":  {"x": round(x * 0.80), "y": round(y * 0.9)},
-                "side1": {"x": round(x * 0.25), "y": round(y * 0.6)},
-                "side2": {"x": round(x * 0.75), "y": round(y * 0.6)},
-                "side3": {"x": round(x * 0.20), "y": round(y * 0.3)},
-                "side4": {"x": round(x * 0.80), "y": round(y * 0.3)},
-                "top1":  {"x": round(x * 0.25), "y": round(y * 0.1)},
-                "top2":  {"x": round(x * 0.75), "y": round(y * 0.1)},
-            }
-            # fmt: on
+    if type is Type.TORSO:
+        return Attachments(
+            leg1=Attachment(round(width * 0.40), round(width * 0.9)),
+            leg2=Attachment(round(width * 0.80), round(width * 0.9)),
+            side1=Attachment(round(width * 0.25), round(width * 0.6)),
+            side2=Attachment(round(width * 0.75), round(width * 0.6)),
+            side3=Attachment(round(width * 0.20), round(width * 0.3)),
+            side4=Attachment(round(width * 0.80), round(width * 0.3)),
+            top1=Attachment(round(width * 0.25), round(width * 0.1)),
+            top2=Attachment(round(width * 0.75), round(width * 0.1)),
+        )
 
-        case Type.LEGS:
-            return {"x": round(x * 0.5), "y": round(y * 0.1)}
+    if type is Type.LEGS:
+        return Attachment(round(width * 0.5), round(height * 0.1))
 
-        case Type.SIDE_WEAPON:
-            return {"x": round(x * 0.3), "y": round(y * 0.5)}
+    if type is Type.SIDE_WEAPON:
+        return Attachment(round(width * 0.3), round(height * 0.5))
 
-        case Type.TOP_WEAPON:
-            return {"x": round(x * 0.3), "y": round(y * 0.8)}
+    if type is Type.TOP_WEAPON:
+        return Attachment(round(width * 0.3), round(height * 0.8))
 
-        case _:
-            return None
+    return None
+
+
+# Image if t.TYPE_CHECKING else object
+#    def __getattr__(self, name: str) -> t.NoReturn:
+#        return getattr(self._underlying, name)  # type: ignore
+
+
+RI_T = t.TypeVar("RI_T", bound="AttachedImage[t.Any]")
+
+
+def delegate(
+    func: t.Callable[t.Concatenate[RI_T, P], None]
+) -> t.Callable[t.Concatenate[RI_T, P], None]:
+    """Mark the method as a delegated call."""
+
+    def deco(self: RI_T, *args: P.args, **kwargs: P.kwargs) -> None:
+        self._postprocess[id(self)].append(partial(func, *args, **kwargs))
+
+    return deco
+
+
+@define
+class AttachedImage(t.Generic[AttachmentType]):
+    image: Image = MISSING
+    attachment: AttachmentType = field(default=None)
+
+    _resource_cache: t.ClassVar[dict[Resource[t.Any], Image]] = {}
+    _postprocess: t.ClassVar[dict[int, list[t.Callable[[], None]]]] = defaultdict(list)
+
+    @property
+    def size(self) -> twotuple[int]:
+        return self.image.size
+
+    @property
+    def width(self) -> int:
+        return self.image.width
+
+    @property
+    def height(self) -> int:
+        return self.image.height
+
+    @delegate
+    def crop(self, size: SpritePosition) -> None:
+        """Queue the image to be cropped."""
+        x, y, w, h = size["x"], size["y"], size["width"], size["height"]
+        self.image = self.image.crop((x, y, x + w, y + h))
+
+    @delegate
+    def convert(self, mode: ImageMode) -> None:
+        """Queue the image to convert its mode."""
+        self.image = self.image.convert(mode)
+
+    @delegate
+    def resize(self, width: int = 0, height: int = 0) -> None:
+        """Queue the image to be resized."""
+        self.image = self.image.resize((width or self.image.width, height or self.image.height))
+
+    @delegate
+    def assert_attachment(self, type: Type) -> None:
+        """Queue creating synthetic attachment in case one isn't set."""
+        if self.attachment is None and type.attachable:
+            self.attachment = t.cast(
+                AttachmentType, create_synthetic_attachment(*self.image.size, type)
+            )
+
+    async def with_resource(self, resource: Resource[t.Any], is_partial: bool = False) -> None:
+        """Load the image from Resource object."""
+        if resource in self._resource_cache:
+            image = self._resource_cache[resource]
+
+        else:
+            from PIL.Image import open
+
+            with await resource.open() as file:
+                image = open(file)
+                image.load()
+
+            if is_partial:
+                self._resource_cache[resource] = image
+
+        self.image = image
+
+    @classmethod
+    def new(
+        cls, mode: ImageMode, size: twotuple[int], attachment: AttachmentType | None = None
+    ) -> Self:
+        """Create a blank image of given size."""
+        from PIL.Image import new
+
+        return cls(new(mode, size), attachment)
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        cls._resource_cache.clear()
+        cls._postprocess.clear()

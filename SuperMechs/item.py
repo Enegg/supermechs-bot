@@ -7,9 +7,7 @@ from typing_extensions import Self
 
 from .core import TransformRange
 from .enums import Element, Tier, Type
-from .game_types import AnyStats, AttachmentType
-from .images import AttachedImage
-from .pack_versioning import ItemDictVer1, ItemDictVer2, ItemDictVer3
+from .images import AttachedImage, AttachmentType, parse_raw_attachment
 from .stat_handler import StatHandler
 from .typedefs.game_types import AnyStats
 from .typedefs.pack_versioning import ItemDictVer1, ItemDictVer2, ItemDictVer3, SpritePosition

@@ -11,8 +11,7 @@ from typing_extensions import Self
 
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, IconData, Type
-from .game_types import Attachment, Attachments
-from .images import ImageRenderer
+from .images import ImageRenderer, Attachment, Attachments
 from .inv_item import AnyInvItem, InvItem, SlotType
 from .typeshed import XOrTupleXY
 from .utils import dict_items_as, format_count
