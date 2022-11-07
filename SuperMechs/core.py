@@ -161,8 +161,8 @@ class GameVars(t.NamedTuple):
     def MAX_OVERWEIGHT(self) -> int:
         return self.MAX_WEIGHT + self.OVERWEIGHT
 
-    @staticmethod
-    def default() -> GameVars:
+    @classmethod
+    def default(cls) -> Self:
         return DEFAULT_VARS
 
 
