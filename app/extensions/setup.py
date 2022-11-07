@@ -9,8 +9,8 @@ from traceback import print_exception
 from disnake import AllowedMentions, CommandInteraction
 from disnake.ext import commands, plugins
 
+from app.config import TEST_GUILDS
 from app.lib_helpers import str_to_file
-from shared import TEST_GUILDS
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot

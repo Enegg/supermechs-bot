@@ -10,8 +10,8 @@ from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
 
 from app.bot import SMBot
+from app.config import LOGS_CHANNEL
 from app.lib_helpers import FileRecord
-from shared import LOGS_CHANNEL
 
 load_dotenv()
 
@@ -43,7 +43,7 @@ else:
 
 async def main() -> None:
     if LOCAL:
-        from shared import TEST_GUILDS
+        from app.config import TEST_GUILDS
 
         bot = SMBot(
             logs_channel_id=LOGS_CHANNEL,

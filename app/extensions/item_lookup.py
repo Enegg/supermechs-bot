@@ -6,11 +6,11 @@ from itertools import zip_longest
 from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands, plugins
 
+from app.config import TEST_GUILDS
 from app.lib_helpers import image_to_file
 from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, button
 from app.ui.views import InteractionCheck, SaneView, positioned
-from shared import TEST_GUILDS
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
 from SuperMechs.typedefs.game_types import AnyStats, LiteralElement, LiteralType

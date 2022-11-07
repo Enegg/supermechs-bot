@@ -3,11 +3,11 @@ from __future__ import annotations
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands, plugins
 
+from app.config import TEST_GUILDS
 from app.ui.buttons import Button, TrinaryButton, button
 from app.ui.item import add_callback
 from app.ui.selects import EMPTY_OPTION, Select, select
 from app.ui.views import InteractionCheck, PaginatorView, positioned
-from shared import TEST_GUILDS
 from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
 from SuperMechs.player import Player
 
