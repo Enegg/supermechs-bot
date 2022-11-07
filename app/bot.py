@@ -23,7 +23,7 @@ from SuperMechs.pack_interface import PackInterface
 from SuperMechs.player import Player
 from SuperMechs.urls import PACK_V2_URL
 
-from .lib_helpers import ChannelHandler
+from .library_extensions import ChannelHandler
 
 LOGGER = logging.getLogger(__name__)
 

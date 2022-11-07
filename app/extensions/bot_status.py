@@ -8,7 +8,7 @@ from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
-from app.lib_helpers import hyperlink
+from app.library_extensions import hyperlink
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot

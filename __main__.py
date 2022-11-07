@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from app.bot import SMBot
 from app.config import LOGS_CHANNEL
-from app.lib_helpers import FileRecord
+from app.library_extensions import FileRecord
 
 load_dotenv()
 

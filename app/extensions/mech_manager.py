@@ -18,7 +18,7 @@ from disnake import (
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from app.lib_helpers import DesyncError, image_to_file
+from app.library_extensions import DesyncError, image_to_file
 from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, TrinaryButton, button
 from app.ui.item import add_callback

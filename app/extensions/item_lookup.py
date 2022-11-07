@@ -7,7 +7,7 @@ from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands, plugins
 
 from app.config import TEST_GUILDS
-from app.lib_helpers import image_to_file
+from app.library_extensions import image_to_file
 from app.ui.action_row import ActionRow, MessageUIComponent
 from app.ui.buttons import Button, ToggleButton, button
 from app.ui.views import InteractionCheck, SaneView, positioned

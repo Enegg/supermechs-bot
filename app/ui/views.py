@@ -11,7 +11,7 @@ from disnake.ui.item import DecoratedItem, Item
 from disnake.ui.view import View
 from typing_extensions import Self
 
-from app.lib_helpers import ReprMixin
+from app.library_extensions import ReprMixin
 
 from .action_row import ActionRow, ActionRowT, PaginatedRow
 from .item import I_CO, ItemCallbackType

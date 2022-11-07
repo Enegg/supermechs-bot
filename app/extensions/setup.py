@@ -9,7 +9,7 @@ from disnake import AllowedMentions, CommandInteraction
 from disnake.ext import commands, plugins
 
 from app.config import TEST_GUILDS
-from app.lib_helpers import str_to_file
+from app.library_extensions import str_to_file
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot
