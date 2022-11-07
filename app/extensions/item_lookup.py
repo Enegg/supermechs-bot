@@ -93,13 +93,13 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
         self.item_a = item_a
         self.item_b = item_b
 
-        self.prepare()
+        self.update()
 
     @positioned(0, 0)
     @button(cls=ToggleButton, label="Arena buffs", custom_id="button:buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
-        self.prepare()
+        self.update()
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @positioned(0, 1)
@@ -108,18 +108,14 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
         await inter.response.defer()
         self.stop()
 
-    def prepare(self) -> None:
-        if self.buffs_button.on:
-            name_field, first_field, second_field = stats_to_fields(
-                MAX_BUFFS.buff_stats(self.item_a.max_stats),
-                MAX_BUFFS.buff_stats(self.item_b.max_stats),
-            )
+    def update(self) -> None:
+        items_stats = (self.item_a.max_stats, self.item_b.max_stats)
 
-        else:
-            name_field, first_field, second_field = stats_to_fields(
-                self.item_a.max_stats,
-                self.item_b.max_stats,
-            )
+        if self.buffs_button.on:
+            items_stats = map(MAX_BUFFS.buff_stats, items_stats)
+
+        name_field, first_field, second_field = stats_to_fields(*items_stats)
+
         if require_jump := self.item_a.tags.require_jump:
             first_field.append("❕")
 
@@ -131,14 +127,14 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
             name_field.append(f"{STATS['jump'].emoji} **Jumping required**")
 
         if self.embed._fields:
-            modify = self.embed.set_field_at
+            modify_field_at = self.embed.set_field_at
 
         else:
-            modify = self.embed.insert_field_at
+            modify_field_at = self.embed.insert_field_at
 
-        modify(0, "Stat", "\n".join(name_field))
-        modify(1, try_shorten(self.item_a.name), "\n".join(first_field))
-        modify(2, try_shorten(self.item_b.name), "\n".join(second_field))
+        modify_field_at(0, "Stat", "\n".join(name_field))
+        modify_field_at(1, try_shorten(self.item_a.name), "\n".join(first_field))
+        modify_field_at(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
 
 @plugin.slash_command()
@@ -199,7 +195,7 @@ async def item(
     await inter.send(embed=embed, file=file, view=view, ephemeral=True)
 
     await view.wait()
-    await inter.edit_original_message(view=None)
+    await inter.edit_original_response(view=None)
 
 
 @plugin.slash_command(guild_ids=TEST_GUILDS)
@@ -271,7 +267,7 @@ async def compare(inter: CommandInteraction, item1: str, item2: str) -> None:
     await inter.send(embed=embed, view=view, ephemeral=True)
 
     await view.wait()
-    await inter.edit_original_message(view=None)
+    await inter.edit_original_response(view=None)
 
 
 @item.autocomplete("name")
