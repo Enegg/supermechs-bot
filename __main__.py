@@ -22,6 +22,7 @@ args = parser.parse_args()
 LOCAL: t.Final[bool] = args.local
 
 logging.setLogRecordFactory(FileRecord)
+logging.captureWarnings(True)
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 stream = logging.StreamHandler()
