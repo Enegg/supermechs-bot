@@ -8,7 +8,9 @@ from typing_extensions import Self
 
 from .enums import Tier
 from .game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
-from .utils import MISSING, dict_items_as
+from .utils import MISSING
+
+ValueT = t.TypeVar("ValueT", bound=int | list[int])
 
 WORKSHOP_STATS = tuple(AnyMechStats.__annotations__)
 """The stats that can appear in mech summary, in order."""
@@ -197,39 +199,58 @@ class ArenaBuffs:
     def __getitem__(self, stat_name: str) -> int:
         return self.levels[stat_name]
 
+    def __setitem__(self, stat_name: str, level: int) -> None:
+        if level > (max_lvl := self.max_level_of(stat_name)):
+            raise ValueError(f"The max level for {stat_name!r} is {max_lvl}, got {level}")
+
+        self.levels[stat_name] = level
+
     def is_at_zero(self) -> bool:
         """Whether all buffs are at level 0."""
         return all(v == 0 for v in self.levels.values())
 
-    def buff(self, stat_name: str, value: int) -> int:
+    def buff(self, stat_name: str, value: int, /) -> int:
         """Buffs a value according to given stat."""
         if stat_name not in self.levels:
             return value
 
         level = self.levels[stat_name]
-        abs_or_percent, is_percent = self.modifier_at(stat_name, level)
+        abs_or_percent_increase, is_percent = self.modifier_at(stat_name, level)
 
         if is_percent:
-            return round(value * (1 + abs_or_percent / 100))
+            return round(value * (1 + abs_or_percent_increase / 100))
 
-        return value + abs_or_percent
+        return value + abs_or_percent_increase
 
-    def buff_with_difference(self, stat_name: str, value: int) -> tuple[int, int]:
+    def buff_with_difference(self, stat_name: str, value: int, /) -> tuple[int, int]:
         """Returns buffed value and the difference between the result and the initial value."""
         buffed = self.buff(stat_name, value)
         return buffed, buffed - value
 
-    def buff_stats(self, stats: AnyStats, /, *, buff_health: bool = False) -> AnyStats:
-        """Returns the buffed stats."""
-        buffed: AnyStats = {}
+    # the overloads are redundant, but TypedDict fallbacks to object as their value type
+    # and that doesn't play well with typing
+    @t.overload
+    def buff_stats(self, stats: AnyStats, /, *, buff_health: bool = ...) -> AnyStats:
+        ...
 
-        for key, value in dict_items_as(int | list[int], stats):
+    @t.overload
+    def buff_stats(
+        self, stats: t.Mapping[str, ValueT], /, *, buff_health: bool = ...
+    ) -> dict[str, ValueT]:
+        ...
+
+    def buff_stats(
+        self, stats: t.Mapping[str, ValueT] | AnyStats, /, *, buff_health: bool = False
+    ) -> dict[str, ValueT] | AnyStats:
+        """Returns the buffed stats."""
+        buffed: dict[str, ValueT] = {}
+
+        for key, value in t.cast(t.Mapping[str, ValueT], stats).items():
             if key == "health" and not buff_health:
-                assert type(value) is int
                 buffed[key] = value
 
             elif isinstance(value, list):
-                buffed[key] = [self.buff(key, v) for v in value]
+                buffed[key] = [self.buff(key, v) for v in value]  # type: ignore
 
             else:
                 buffed[key] = self.buff(key, value)
@@ -237,14 +258,14 @@ class ArenaBuffs:
         return buffed
 
     @classmethod
-    def modifier_at(cls, stat_name: str, level: int) -> BuffModifier:
+    def modifier_at(cls, stat_name: str, level: int, /) -> BuffModifier:
         """Returns an object that can be interpreted as an int or the buff's str representation at given level."""
         if STATS[stat_name].buff == "+":
             return BuffModifier(cls.HP_INCREASES[level], False)
 
         return BuffModifier(cls.get_percent(stat_name, level))
 
-    def modifier_of(self, stat_name: str) -> BuffModifier:
+    def modifier_of(self, stat_name: str, /) -> BuffModifier:
         """Returns an object that can be interpreted as an int or the buff's str representation."""
         return self.modifier_at(stat_name, self.levels[stat_name])
 
@@ -271,22 +292,25 @@ class ArenaBuffs:
     @classmethod
     def iter_modifiers_of(cls, stat_name: str) -> t.Iterator[BuffModifier]:
         """Iterator over the modifiers of a stat from 0 to its maximum level."""
-        if STATS[stat_name].buff == "+":
-            levels = len(cls.HP_INCREASES)
-
-        else:
-            levels = len(cls.BASE_PERCENT)
-
-        for level in range(levels):
+        for level in range(cls.max_level_of(stat_name)):
             yield cls.modifier_at(stat_name, level)
+
+    @classmethod
+    def max_level_of(cls, stat_name: str) -> int:
+        """Get the maximum level for a given buff."""
+        if STATS[stat_name].buff == "+":
+            return len(cls.HP_INCREASES) - 1
+
+        return len(cls.BASE_PERCENT) - 1
 
     @classmethod
     def maxed(cls) -> Self:
         """Alternate constructor returning the object with all levels set to max."""
 
-        levels = dict.fromkeys(cls.BUFFABLE_STATS, len(cls.BASE_PERCENT) - 1)
-        levels["health"] = len(cls.HP_INCREASES) - 1
-        max_buffs = cls(levels)
+        max_buffs = cls()
+        levels = max_buffs.levels
+        for key in levels:
+            levels[key] = cls.max_level_of(key)
 
         setattr(cls, "maxed", staticmethod(lambda: max_buffs))
 
