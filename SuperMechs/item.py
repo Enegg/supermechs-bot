@@ -11,6 +11,11 @@ from .game_types import AnyStats, AttachmentType
 from .images import AttachedImage
 from .pack_versioning import ItemDictVer1, ItemDictVer2, ItemDictVer3
 from .stat_handler import StatHandler
+from .typedefs.game_types import AnyStats
+from .typedefs.pack_versioning import ItemDictVer1, ItemDictVer2, ItemDictVer3, SpritePosition
+
+if t.TYPE_CHECKING:
+    from PIL.Image import Image
 
 __all__ = ("Item", "AnyItem")
 

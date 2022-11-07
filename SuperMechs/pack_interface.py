@@ -17,7 +17,7 @@ from .enums import Type
 from .game_types import AnyAttachment
 from .images import AttachedImage, create_synthetic_attachment, fetch_image_bytes
 from .item import AnyItem, Item
-from .pack_versioning import AnyItemPack, ItemPackVer1
+from .typedefs.pack_versioning import AnyItemPack, ItemPackVer1, ItemPackVer2
 from .utils import MISSING, js_format
 
 if t.TYPE_CHECKING:

@@ -7,7 +7,7 @@ from attrs import asdict
 from SuperMechs.utils import truncate_name
 
 from ..core import MAX_BUFFS
-from ..game_types import AnyStats
+from ..typedefs.game_types import AnyStats
 from ..inv_item import AnyInvItem, InvItem
 from ..item import AnyItem
 from ..mech import Mech

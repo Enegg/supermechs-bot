@@ -7,7 +7,7 @@ from attrs import Factory, define, frozen
 from typing_extensions import Self
 
 from .enums import Tier
-from .game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
+from .typedefs.game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
 from .utils import MISSING
 
 ValueT = t.TypeVar("ValueT", bound=int | list[int])

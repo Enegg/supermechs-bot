@@ -2,7 +2,7 @@ import typing as t
 
 from typing_extensions import NotRequired
 
-from .game_types import AnyStats, Attachment, Attachments, LiteralElement, LiteralType
+from .game_types import AnyStats, RawAttachment, RawAttachments, LiteralElement, LiteralType
 
 
 class TiersMixin(t.TypedDict, total=False):
@@ -40,7 +40,7 @@ class ItemDictBase(t.TypedDict):
     tags: NotRequired[list[t.Literal["sword", "melee", "roller"]]]
     width: NotRequired[int]
     height: NotRequired[int]
-    attachment: NotRequired[Attachment | Attachments]
+    attachment: NotRequired[RawAttachment | RawAttachments]
 
 
 # -------------------------------------- v1 --------------------------------------
@@ -105,4 +105,5 @@ class ItemPackVer3(SpritesSheetMixin):
     items: list[ItemDictVer3]
 
 
+AnyItemDict = ItemDictVer1 | ItemDictVer2 | ItemDictVer3
 AnyItemPack = ItemPackVer1 | ItemPackVer2 | ItemPackVer3

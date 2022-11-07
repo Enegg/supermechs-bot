@@ -9,8 +9,8 @@ from attrs import Factory, define, field
 from .core import TransformRange
 from .enums import Element, Tier, Type
 from .errors import MaxPowerReached, MaxTierReached
-from .game_types import AnyStats, Attachment, Attachments, AttachmentType
-from .images import AttachedImage
+from .typedefs.game_types import AnyStats
+from .images import AttachedImage, Attachment, Attachments, AttachmentType
 from .item import Item, Tags
 from .utils import Proxied, proxy
 

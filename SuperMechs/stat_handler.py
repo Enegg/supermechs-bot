@@ -5,8 +5,8 @@ from typing_extensions import Self
 
 from .core import MAX_LVL_FOR_TIER, TransformRange
 from .enums import Tier
-from .game_types import AnyStats
-from .pack_versioning import TiersMixin
+from .typedefs.game_types import AnyStats
+from .typedefs.pack_versioning import TiersMixin
 from .utils import dict_items_as
 
 

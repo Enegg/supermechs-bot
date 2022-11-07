@@ -13,7 +13,7 @@ from app.ui.views import InteractionCheck, SaneView, positioned
 from shared import TEST_GUILDS
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
-from SuperMechs.game_types import AnyStats, LiteralElement, LiteralType
+from SuperMechs.typedefs.game_types import AnyStats, LiteralElement, LiteralType
 from SuperMechs.item import AnyItem
 from SuperMechs.typeshed import twotuple
 from SuperMechs.utils import dict_items_as, search_for

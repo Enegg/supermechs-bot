@@ -10,8 +10,8 @@ from typing_extensions import Self
 from shared import SESSION_CTX
 
 from .enums import Type
-from .game_types import AnyAttachment, Attachment, Attachments, AttachmentType
-from .pack_versioning import SpritePosition
+from .typedefs.game_types import AnyRawAttachment, RawAttachment, RawAttachments
+from .typedefs.pack_versioning import SpritePosition
 from .utils import MISSING
 
 if t.TYPE_CHECKING:

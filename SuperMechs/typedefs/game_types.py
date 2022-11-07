@@ -97,12 +97,10 @@ class AnyStats(AnyMechStats, total=False):
     rocketsCost: int
 
 
-class Attachment(t.TypedDict):
+class RawAttachment(t.TypedDict):
     x: int
     y: int
 
 
-# These may make sense to be somewhere else
-Attachments = dict[str, Attachment]
-AnyAttachment = Attachment | Attachments | None
-AttachmentType = t.TypeVar("AttachmentType", bound=AnyAttachment)
+RawAttachments = dict[str, RawAttachment]
+AnyRawAttachment = RawAttachment | RawAttachments | None
