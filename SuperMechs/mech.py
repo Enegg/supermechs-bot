@@ -11,7 +11,7 @@ from typing_extensions import Self
 
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, IconData, Type
-from .images import ImageRenderer, Attachment, Attachments
+from .images import Attachment, Attachments, ImageRenderer
 from .inv_item import AnyInvItem, InvItem, SlotType
 from .typeshed import XOrTupleXY
 from .utils import dict_items_as, format_count
@@ -157,7 +157,7 @@ class Mech:
 
     name: str
     custom: bool = False
-    game_vars: GameVars = GameVars.default()
+    game_vars: GameVars = field(factory=GameVars.default)
     constraints: dict[UUID, t.Callable[[Self], bool]] = field(factory=dict, init=False)
     _cache: _MechCache = field(factory=dict, init=False, repr=False, eq=False)
 
@@ -237,6 +237,7 @@ class Mech:
 
     @property
     def weight(self) -> int:
+        """The weight of the mech."""
         return self.stats.get("weight", 0)
 
     def validate(self) -> bool:

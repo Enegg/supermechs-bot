@@ -5,8 +5,8 @@ import sys
 import typing as t
 
 from disnake import CommandInteraction, Embed, __version__ as disnake_version
-from disnake.utils import oauth_url, format_dt
 from disnake.ext.plugins import Plugin
+from disnake.utils import format_dt, oauth_url
 
 from app.lib_helpers import hyperlink
 
@@ -43,7 +43,7 @@ async def self_info(inter: CommandInteraction) -> None:
     guild_count = len(bot.guilds)
     desc_fields = [
         f"Member of {guild_count} server{'s' * (guild_count != 1)}",
-        f"Author: {app_info.owner.mention}"
+        f"Author: {app_info.owner.mention}",
     ]
 
     if app_info.bot_public:
@@ -56,7 +56,7 @@ async def self_info(inter: CommandInteraction) -> None:
         f"Python build: {python_version} {sys.version_info.releaselevel}",
         f"disnake version: {disnake_version}",
         f"Created: {format_dt(bot.user.created_at, 'R')}",
-        f"Started: {format_dt(bot.started_at, 'R')}"
+        f"Started: {format_dt(bot.started_at, 'R')}",
     ]
 
     embed = (

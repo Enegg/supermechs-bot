@@ -2,7 +2,7 @@ import typing as t
 
 from typing_extensions import NotRequired
 
-from .game_types import AnyStats, RawAttachment, RawAttachments, LiteralElement, LiteralType
+from .game_types import AnyStats, LiteralElement, LiteralType, RawAttachment, RawAttachments
 
 
 class TiersMixin(t.TypedDict, total=False):

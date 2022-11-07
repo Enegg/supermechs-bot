@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import logging
 import typing as t
 from contextvars import ContextVar
 from traceback import print_exception
@@ -15,9 +14,8 @@ from app.lib_helpers import str_to_file
 if t.TYPE_CHECKING:
     from app.bot import SMBot
 
-logger = logging.getLogger(f"main.{__name__}")
 plugin = plugins.Plugin["SMBot"].with_metadata(slash_command_attrs={"guild_ids": TEST_GUILDS})
-extension_var = ContextVar[str | None]("last_extension", default=None)
+LAST_EXTENSION = ContextVar[str | None]("last_extension", default=None)
 
 
 @plugin.slash_command()
@@ -35,7 +33,7 @@ async def ext(
     action: The type of action to perform.
     ext: The name of extension to perform action on.
     """
-    ext = ext or extension_var.get()
+    ext = ext or LAST_EXTENSION.get()
 
     if ext is None:
         return await inter.response.send_message("No extension cached.", ephemeral=True)
@@ -58,7 +56,7 @@ async def ext(
 
     else:
         await inter.response.send_message("Success", ephemeral=True)
-        extension_var.set(ext)
+        LAST_EXTENSION.set(ext)
 
 
 @ext.autocomplete("ext")

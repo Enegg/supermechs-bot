@@ -479,9 +479,12 @@ async def mech_name_autocomplete(
     player = plugin.bot.get_player(inter)
     input = truncate_name(input)
     case_insensitive = input.lower()
-    return [name for name in player.builds if name.lower().startswith(case_insensitive)] or {
-        f'Enter to create mech "{input}"...': input
-    } if input else []
+    return (
+        [name for name in player.builds if name.lower().startswith(case_insensitive)]
+        or {f'Enter to create mech "{input}"...': input}
+        if input
+        else []
+    )
 
 
 setup, teardown = plugin.create_extension_handlers()
