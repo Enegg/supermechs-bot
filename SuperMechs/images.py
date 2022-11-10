@@ -264,7 +264,7 @@ def delegate(
     """Mark the method as a delegated call."""
 
     def deco(self: RI_T, *args: P.args, **kwargs: P.kwargs) -> None:
-        self._postprocess[id(self)].append(partial(func, *args, **kwargs))
+        self._postprocess[id(self)].append(partial(func, self, *args, **kwargs))
 
     return deco
 
