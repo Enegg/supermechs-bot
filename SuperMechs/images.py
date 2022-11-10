@@ -47,14 +47,14 @@ AttachmentType = t.TypeVar("AttachmentType", bound=AnyAttachment)
 def parse_raw_attachment(raw_attachment: AnyRawAttachment) -> AnyAttachment:
     match raw_attachment:
         case {
-            "leg1": int(),
-            "leg2": int(),
-            "side1": int(),
-            "side2": int(),
-            "side3": int(),
-            "side4": int(),
-            "top1": int(),
-            "top2": int(),
+            "leg1": {},
+            "leg2": {},
+            "side1": {},
+            "side2": {},
+            "side3": {},
+            "side4": {},
+            "top1": {},
+            "top2": {},
         }:
             return raw_attachments_to_tupled(raw_attachment)
 
