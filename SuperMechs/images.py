@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from collections import defaultdict
 from functools import partial
@@ -20,6 +21,8 @@ if t.TYPE_CHECKING:
 
     from .mech import Mech
 
+
+logger = logging.getLogger(__name__)
 
 ImageMode = (
     t.Literal["1", "L", "P", "RGB", "RGBA", "CMYK", "YCbCr", "LAB", "HSV", "I", "F"] | LiteralString
@@ -294,16 +297,20 @@ class AttachedImage(t.Generic[AttachmentType]):
         """Queue the image to be cropped."""
         x, y, w, h = size["x"], size["y"], size["width"], size["height"]
         self.image = self.image.crop((x, y, x + w, y + h))
+        logger.debug(f"Image {self!r} cropped")
 
     @delegate
     def convert(self, mode: ImageMode) -> None:
         """Queue the image to convert its mode."""
-        self.image = self.image.convert(mode)
+        if self.image.mode != mode:
+            self.image = self.image.convert(mode)
 
     @delegate
     def resize(self, width: int = 0, height: int = 0) -> None:
         """Queue the image to be resized."""
-        self.image = self.image.resize((width or self.image.width, height or self.image.height))
+        if not width == height == 0:
+            self.image = self.image.resize((width or self.image.width, height or self.image.height))
+            logger.debug(f"Image {self!r} resized")
 
     @delegate
     def assert_attachment(self, type: Type) -> None:
@@ -312,11 +319,13 @@ class AttachedImage(t.Generic[AttachmentType]):
             self.attachment = t.cast(
                 AttachmentType, create_synthetic_attachment(*self.image.size, type)
             )
+            logger.info(f"Created attachment for image {self!r}")
 
     async def with_resource(self, resource: Resource[t.Any], is_partial: bool = False) -> None:
         """Load the image from Resource object."""
         if resource in self._resource_cache:
             image = self._resource_cache[resource]
+            logger.debug(f"Used cached image for {resource!r}")
 
         else:
             from PIL.Image import open
