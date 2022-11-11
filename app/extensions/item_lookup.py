@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import typing as t
 from itertools import zip_longest
 
@@ -306,34 +307,33 @@ async def item_autocomplete(inter: CommandInteraction, input: str) -> list[str]:
         25 - len(matching_item_names),
         filter_item_names(search_for(input, pack.iter_item_names())),
     )
-
     return matching_item_names
 
 
-def avg_and_deviation(a: int | twotuple[int], b: int | None = None) -> twotuple[float]:
-    if isinstance(a, tuple):
-        a, b = a
+def standard_deviation(*numbers: float) -> twotuple[float]:
+    """Calculate the average and the standard deviation from a sequence of numbers."""
+    if not numbers:
+        raise ValueError("No arguments passed")
 
-    elif b is None:
-        raise ValueError("Got a single argument which is not a tuple")
+    avg = sum(numbers) / len(numbers)
+    # √(∑(x-avg)² ÷ n)
+    deviation = math.sqrt(sum((x - avg) ** 2 for x in numbers) / len(numbers))
 
-    avg = (a + b) / 2
-    deviation = (b - avg) / avg
     return avg, deviation
 
 
 def buffed_stats(
-    item: AnyItem, buffs_enabled: bool
+    stats: AnyStats, buffs_enabled: bool
 ) -> t.Iterator[tuple[str, twotuple[int] | twotuple[twotuple[int]]]]:
     if buffs_enabled:
         apply_buff = MAX_BUFFS.buff_with_difference
 
     else:
 
-        def apply_buff(stat_name: str, value: int) -> twotuple[int]:
+        def apply_buff(stat_name: str, value: int, /) -> twotuple[int]:
             return (value, 0)
 
-    for stat, value in dict_items_as(int | list[int], item.max_stats):
+    for stat, value in dict_items_as(int | list[int], stats):
         if stat == "health":
             assert type(value) is int
             yield stat, (value, 0)
@@ -370,7 +370,7 @@ def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
     item_stats = ""  # the main string
     cost_stats = {"backfire", "heaCost", "eneCost"}
 
-    for stat, (value, diff) in buffed_stats(item, buffs_enabled):
+    for stat, (value, diff) in buffed_stats(item.max_stats, buffs_enabled):
         if not spaced and stat in cost_stats:
             item_stats += "\n"
             spaced = True
@@ -383,7 +383,7 @@ def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
             v1, d1 = value
             v2, d2 = diff
 
-            avg_dmg, dev = avg_and_deviation(v1, v2)
+            avg_dmg, dev = standard_deviation(v1, v2)
             avg_diff = (d1 + d2) / 2
 
             text = f"{avg_dmg:g} ±{dev:.1%}"
@@ -422,12 +422,12 @@ def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
 
     lines: list[str] = []
 
-    for stat, (value, diff) in buffed_stats(item, buffs_enabled):
+    for stat, (value, diff) in buffed_stats(item.max_stats, buffs_enabled):
         if not (isinstance(value, tuple) and isinstance(diff, tuple)):
             text = str(value)
 
         elif avg and stat != "range":
-            a, b = avg_and_deviation(value[0], diff[0])
+            a, b = standard_deviation(value[0], diff[0])
             text = f"{a:.0f} ±{b:.0%}"
 
         else:
@@ -459,12 +459,12 @@ def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
 
 
 @t.overload
-def cmp_num(x: int, y: int, lower_is_better: bool = False) -> twotuple[twotuple[int]]:
+def cmp_num(x: int, y: int, lower_is_better: bool = ...) -> twotuple[twotuple[int]]:
     ...
 
 
 @t.overload
-def cmp_num(x: float, y: float, lower_is_better: bool = False) -> twotuple[twotuple[float]]:
+def cmp_num(x: float, y: float, lower_is_better: bool = ...) -> twotuple[twotuple[float]]:
     ...
 
 
@@ -473,6 +473,23 @@ def cmp_num(x: float, y: float, lower_is_better: bool = False) -> twotuple[twotu
         return ((x, 0), (y, 0))
 
     return ((x, x - y), (y, 0)) if lower_is_better ^ (x > y) else ((x, 0), (y, y - x))
+
+
+@t.overload
+def compare_numbers(x: int, y: int, lower_is_better: bool = ...) -> twotuple[int]:
+    ...
+
+
+@t.overload
+def compare_numbers(x: float, y: float, lower_is_better: bool = ...) -> twotuple[int]:
+    ...
+
+
+def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
+    if x == y:
+        return (0, 0)
+
+    return (x - y, 0) if lower_is_better ^ (x > y) else (0, y - x)
 
 
 value_and_diff = tuple[int | float | None, float]
@@ -510,8 +527,8 @@ def comparator(
                 continue
 
             case ([int() as a1, int() as a2], [int() as b1, int() as b2]):
-                x_avg, x_inacc = avg_and_deviation(a1, a2)
-                y_avg, y_inacc = avg_and_deviation(b1, b2)
+                x_avg, x_inacc = standard_deviation(a1, a2)
+                y_avg, y_inacc = standard_deviation(b1, b2)
 
                 yield stat_name, stat, cmp_num(x_avg, y_avg, False) + cmp_num(
                     x_inacc, y_inacc, True
@@ -528,11 +545,11 @@ def comparator(
             yield stat_name, stat, ((None, 0), (stat_b, 0))
 
         elif stat_a is not None:
-            avg, inacc = avg_and_deviation(*stat_a)
+            avg, inacc = standard_deviation(*stat_a)
             yield stat_name, stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
 
         elif stat_b is not None:
-            avg, inacc = avg_and_deviation(*stat_b)
+            avg, inacc = standard_deviation(*stat_b)
             yield stat_name, stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
