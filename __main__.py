@@ -3,8 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import typing as t
-from argparse import ArgumentParser
+import warnings
 
 from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
@@ -15,38 +14,35 @@ from app.library_extensions import FileRecord
 
 load_dotenv()
 
-parser = ArgumentParser()
-parser.add_argument("--local", action="store_true")
-parser.add_argument("--log-file", action="store_true")
-args = parser.parse_args()
-LOCAL: t.Final[bool] = args.local
-
+logging.Formatter.default_time_format = "%d.%m.%Y %H:%M:%S"
 logging.setLogRecordFactory(FileRecord)
+warnings.filterwarnings("ignore", "PyNaCl")
 logging.captureWarnings(True)
-LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.INFO)
+ROOT_LOGGER = logging.getLogger()
+ROOT_LOGGER.setLevel(logging.INFO)
 stream = logging.StreamHandler()
 stream.setLevel(logging.INFO)
-LOGGER.addHandler(stream)
+ROOT_LOGGER.addHandler(stream)
 
 logging.getLogger("disnake").setLevel(logging.WARNING)
 logging.getLogger("disnake.ext.plugins.plugin").setLevel(logging.INFO)
 
-if LOCAL:
-    stream.formatter = logging.Formatter(
-        "{asctime} [{levelname}] - {name}: {message}", "%d.%m.%Y %H:%M:%S", style="{"
-    )
+if __debug__:
+    format = "{asctime} [{levelname}] - {name}: {message}"
 
 else:
     # don't append timestamp as heroku does that already
-    stream.formatter = logging.Formatter("[{levelname}] - {name}: {message}", style="{")
+    format = "[{levelname}] - {name}: {message}"
+
+stream.setFormatter(logging.Formatter(format, style="{"))
 
 
 async def main() -> None:
-    if LOCAL:
+    if __debug__:
         from app.config import TEST_GUILDS
 
         bot = SMBot(
+            dev_mode=True,
             logs_channel_id=LOGS_CHANNEL,
             intents=Intents(guilds=True),
             activity=Game("SuperMechs"),
@@ -54,8 +50,8 @@ async def main() -> None:
             allowed_mentions=AllowedMentions.none(),
             strict_localization=True,
             # sync_commands_debug=True,
-            dev_mode=True,
         )
+        token_key = "TOKEN_DEV"
 
     else:
         bot = SMBot(
@@ -64,14 +60,19 @@ async def main() -> None:
             activity=Game("SuperMechs"),
             allowed_mentions=AllowedMentions.none(),
         )
+        token_key = "TOKEN"
 
     bot.i18n.load("locale/")
     bot.load_extensions("app/extensions")
 
-    LOGGER.info("Starting bot")
-    await bot.start(os.environ["TOKEN_DEV" if LOCAL else "TOKEN"])
+    ROOT_LOGGER.info("Starting bot")
+    await bot.start(os.environ[token_key])
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+
+    except KeyboardInterrupt:
+        pass
     logging.shutdown()
