@@ -15,8 +15,8 @@ from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
 from SuperMechs.item import AnyItem
 from SuperMechs.typedefs.game_types import AnyStats, LiteralElement, LiteralType
-from SuperMechs.typeshed import twotuple
-from SuperMechs.utils import dict_items_as, search_for
+from SuperMechs.typeshed import dict_items_as, twotuple
+from SuperMechs.utils import search_for
 
 if t.TYPE_CHECKING:
     from app.bot import SMBot
