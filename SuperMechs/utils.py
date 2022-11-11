@@ -6,7 +6,7 @@ from string import ascii_letters
 
 from typing_extensions import Self
 
-from .typeshed import KT, VT, SupportsSet, T
+from .typeshed import SupportsSet, T
 
 
 class _MissingSentinel:
@@ -117,11 +117,6 @@ def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
 def random_str(length: int, /) -> str:
     """Generates a random string of given length from ascii letters."""
     return "".join(random.sample(ascii_letters, length))
-
-
-def dict_items_as(value_type: type[VT], obj: t.Mapping[KT, t.Any]) -> t.ItemsView[KT, VT]:
-    """Helper function to aid iterating over TypedDict.items()."""
-    return obj.items()
 
 
 async def maybe_coroutine(coro: T | t.Coroutine[t.Any, t.Any, T]) -> T:

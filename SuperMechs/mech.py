@@ -13,8 +13,8 @@ from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, IconData, Type
 from .images import Attachment, Attachments, ImageRenderer
 from .inv_item import AnyInvItem, InvItem, SlotType
-from .typeshed import XOrTupleXY
-from .utils import dict_items_as, format_count
+from .typeshed import XOrTupleXY, dict_items_as
+from .utils import format_count
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
