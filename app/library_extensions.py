@@ -22,21 +22,20 @@ class DesyncError(commands.CommandError):
     pass
 
 
-def str_to_file(
-    fp: str | bytes | io.TextIOBase | io.BufferedIOBase, filename: str | None = "file.txt"
-) -> File:
-    """Creates a disnake.File from a string, bytes or IO object."""
-    match fp:
+def ensure_file(data_or_fp: str | bytes | io.BufferedIOBase) -> io.BufferedIOBase:
+    """Creates a readable file from a string, bytes or IO object."""
+
+    match data_or_fp:
         case str():
-            file = io.StringIO(fp)
+            file = io.BytesIO(data_or_fp.encode())
 
         case bytes():
-            file = io.BytesIO(fp)
+            file = io.BytesIO(data_or_fp)
 
         case _:
-            file = fp
+            file = data_or_fp
 
-    return File(file, filename)  # pyright: ignore[reportGeneralTypeIssues]
+    return file
 
 
 def image_to_file(image: Image, filename: str | None = None, format: str = "png") -> File:
@@ -57,9 +56,9 @@ def image_to_file(image: Image, filename: str | None = None, format: str = "png"
 
 
 class FileRecord(logging.LogRecord):
-    """LogRecord with extra file attribute"""
+    """LogRecord with extra file attribute."""
 
-    def __init__(self, *args: t.Any, file: File | None = None, **kwargs: t.Any) -> None:
+    def __init__(self, *args: t.Any, file: io.BufferedIOBase | None = None, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
         self.file = file
 
@@ -84,7 +83,7 @@ class ChannelHandler(logging.Handler):
                 record.exc_text = stack
 
             if len(record.exc_text) + len(msg) + 8 > 2000:
-                record.file = str_to_file(record.exc_text, "traceback.py")
+                record.file = ensure_file(record.exc_text)
 
             else:
                 if not msg.endswith("\n"):
@@ -115,7 +114,7 @@ class ChannelHandler(logging.Handler):
             coro = self.destination.send(msg)
 
         else:
-            coro = self.destination.send(msg, file=record.file)
+            coro = self.destination.send(msg, file=File(record.file, "traceback.py"))
 
         asyncio.create_task(coro).add_done_callback(self.fallback_emit(record))
 
