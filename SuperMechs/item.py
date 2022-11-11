@@ -10,7 +10,8 @@ from .enums import Element, Tier, Type
 from .images import AttachedImage, AttachmentType, parse_raw_attachment
 from .stat_handler import StatHandler
 from .typedefs.game_types import AnyStats
-from .typedefs.pack_versioning import ItemDictVer1, ItemDictVer2, ItemDictVer3, SpritePosition
+from .typedefs.pack_versioning import AnyItemDict, ItemDictVer1, ItemDictVer2, SpritePosition
+from .utils import MISSING
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
@@ -31,6 +32,30 @@ class Tags:
     @classmethod
     def from_iterable(cls, iterable: t.Iterable[str]) -> Self:
         return cls(**dict.fromkeys(iterable, True))
+
+    @classmethod
+    def from_data(
+        cls,
+        tags: t.Iterable[str],
+        transform_range: TransformRange,
+        stats: StatHandler,
+        custom: bool,
+    ) -> Self:
+        literal_tags = set(tags)
+
+        if "legacy" not in literal_tags and transform_range.min >= Tier.LEGENDARY:
+            literal_tags.add("premium")
+
+        elif transform_range.min is Tier.MYTHICAL:
+            literal_tags.add("premium")
+
+        if "advance" in stats or "retreat" in stats:
+            literal_tags.add("require_jump")
+
+        if custom:
+            literal_tags.add("custom")
+
+        return cls.from_iterable(literal_tags)
 
 
 @frozen(kw_only=True, order=False)
@@ -54,11 +79,13 @@ class Item(t.Generic[AttachmentType]):
     @classmethod
     def from_json(
         cls,
-        data: ItemDictVer1 | ItemDictVer2 | ItemDictVer3,
-        image: AttachedImage[AttachmentType],
+        data: AnyItemDict,
         custom: bool,
-    ) -> Self:
+        base_image: Image = MISSING,
+        sprite_pos: SpritePosition | None = None,
+    ) -> AnyItem:
         transform_range = TransformRange.from_string(data["transform_range"])
+        item_type = Type[data["type"].upper()]
 
         if "stats" not in data:
             stats = StatHandler.from_new_format(data)
@@ -67,28 +94,26 @@ class Item(t.Generic[AttachmentType]):
             data = t.cast(ItemDictVer1 | ItemDictVer2, data)
             stats = StatHandler.from_old_format(data["stats"], transform_range.max)
 
-        tags = set[str](data.get("tags", ()))
+        attachment = parse_raw_attachment(data.get("attachment", None))
+        renderer = AttachedImage(base_image, attachment)
 
-        if ("legacy" in tags and transform_range.min is Tier.MYTHICAL) or (
-            transform_range.min > Tier.EPIC
-        ):
-            tags.add("premium")
+        if sprite_pos is not None:
+            renderer.crop(sprite_pos)
 
-        if "advance" in stats or "retreat" in stats:
-            tags.add("require_jump")
+        renderer.resize(data.get("width", 0), data.get("height", 0))
+        renderer.assert_attachment(item_type)
 
-        if custom:
-            tags.add("custom")
+        tags = Tags.from_data(data.get("tags", ()), transform_range, stats, custom)
 
         return cls(
             id=data["id"],
             name=data["name"],
-            type=Type[data["type"].upper()],
+            type=item_type,
             element=Element[data["element"].upper()],
             transform_range=transform_range,
             stats=stats,
-            image=image,
-            tags=Tags.from_iterable(tags),
+            image=renderer,
+            tags=tags,
         )
 
 
