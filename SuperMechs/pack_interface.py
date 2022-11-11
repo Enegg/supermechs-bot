@@ -4,35 +4,23 @@ import asyncio
 import json
 import logging
 import typing as t
-from functools import partial
 from io import TextIOBase
 from pathlib import Path
 
 from attrs import define, field
 
+from abstract.files import URL, Resource, Urlish
 from shared import SESSION_CTX
-from SuperMechs.core import abbreviate_names
 
-from .enums import Type
-from .game_types import AnyAttachment
-from .images import AttachedImage, create_synthetic_attachment, fetch_image_bytes
+from .core import abbreviate_names
+from .images import AttachedImage
 from .item import AnyItem, Item
 from .typedefs.pack_versioning import AnyItemPack, ItemPackVer1, ItemPackVer2
 from .utils import MISSING, js_format
 
-if t.TYPE_CHECKING:
-    from aiohttp.typedefs import StrOrURL
-
 __all__ = ("PackInterface",)
 
 logger = logging.getLogger(__name__)
-
-
-def pathify(maybe_path: StrOrURL | Path) -> StrOrURL | Path:
-    if isinstance(maybe_path, str) and (path := Path(maybe_path)).is_file():
-        return path
-
-    return maybe_path
 
 
 def load_json(fp: str | Path | TextIOBase, /) -> t.Any:
@@ -52,7 +40,7 @@ def load_json(fp: str | Path | TextIOBase, /) -> t.Any:
             raise TypeError("Unsuppored file type")
 
 
-async def fetch_json(url: StrOrURL, /) -> t.Any:
+async def fetch_json(url: Urlish, /) -> t.Any:
     """Loads a json from url."""
 
     logger.info(f"Fetching from url {url}")
@@ -62,24 +50,40 @@ async def fetch_json(url: StrOrURL, /) -> t.Any:
         return await response.json(encoding="utf-8", content_type=None)
 
 
-def assert_attachment_set(type: Type, image: AttachedImage[AnyAttachment]) -> None:
-    if type.attachable and image.attachment is None:
-        image.attachment = create_synthetic_attachment(image, type)
+HandleRet = tuple[t.Iterator[AnyItem], list[asyncio.Task[None]]]
 
 
-def pack_v1_handle(pack: ItemPackVer1):
+async def pack_v1_handle(pack: ItemPackVer1, custom: bool = False) -> HandleRet:
     base_url = pack["config"]["base_url"]
 
-    def item_iterator():
+    tasks: list[asyncio.Task[None]] = []
+
+    def loop():
         for item_dict in pack["items"]:
-            width = item_dict.get("width", 0)
-            height = item_dict.get("height", 0)
-            renderer = AttachedImage(attachment=item_dict.get("attachment", None))
-            image_url = js_format(item_dict["image"], url=base_url)
+            item = Item.from_json(item_dict, custom, MISSING, None)
 
-            yield item_dict, renderer
+            url = js_format(item_dict["image"], url=base_url)
+            task = asyncio.create_task(item.image.with_resource(URL(url)))
+            tasks.append(task)
+            yield item
 
-    return item_iterator
+    return loop(), tasks
+
+
+async def pack_v2_handle(pack: ItemPackVer2, custom: bool = False) -> HandleRet:
+    sprite_map = pack["spritesMap"]
+
+    from PIL.Image import open
+
+    base_image = open(await URL(pack["spritesSheet"]).open())
+
+    def loop():
+        for item_dict in pack["items"]:
+            key = item_dict["name"].replace(" ", "")
+            item = Item.from_json(item_dict, custom, base_image, sprite_map[key])
+            yield item
+
+    return loop(), []
 
 
 @define
@@ -92,8 +96,8 @@ class PackInterface:
         factory=dict, init=False, repr=lambda s: f"{{... {len(s)} items}}"
     )
     # Item name to item ID
-    names_to_ids: dict[str, int] = field(factory=dict, init=False)
-    name_abbrevs: dict[str, set[str]] = field(factory=dict, init=False)
+    names_to_ids: dict[str, int] = field(factory=dict, init=False, repr=False)
+    name_abbrevs: dict[str, set[str]] = field(factory=dict, init=False, repr=False)
 
     # personal packs
     custom: bool = False
@@ -112,91 +116,49 @@ class PackInterface:
             case _:
                 return NotImplemented
 
-    @staticmethod
-    async def fetch_pack(pack_link: StrOrURL | Path, /, **extra: t.Any) -> AnyItemPack:
-        """Loads items pack, parses items, and then fetches images."""
-        match pathify(pack_link):
-            case Path() as path:
-                pack: AnyItemPack = load_json(path)
-
-            case url:
-                pack: AnyItemPack = await fetch_json(url)
-
-        pack |= extra  # type: ignore
-        return pack
-
-    async def load(self, pack_link: StrOrURL | Path, /, **extra: t.Any) -> None:
-        """Do all the tasks it takes to load an item pack: fetch item pack, load items, load images"""
+    async def load(self, resource: Resource[t.Any], /, **extra: t.Any) -> None:
+        """Load the item pack from a resource."""
 
         # TODO: split the logic in this method into functions
 
-        pack = await self.fetch_pack(pack_link, **extra)
+        pack: AnyItemPack = await resource.json()
+        pack |= extra  # type: ignore
+
         self.extract_info(pack)
         logger.info(f"Pack {self.name!r} extracted; key: {self.key!r}")
 
-        promises: list[tuple[AttachedImage, t.Any, t.Callable[[AttachedImage], None]]] = []
-
         if "version" not in pack or pack["version"] == "1":
-            base_url = pack["config"]["base_url"]
-            item_dicts_list = pack["items"]
+            handle = pack_v1_handle(pack, self.custom)
 
-            get_promise = lambda item_dict: js_format(item_dict["image"], url=base_url)
-            spritesheet_url = None
+        elif pack["version"] == "2":
+            handle = pack_v2_handle(pack, self.custom)
+
+        elif pack["version"] == "3":
+            return
 
         else:
-            item_dicts_list = pack["items"]
-            sprite_map = pack["spritesMap"]
-            spritesheet_url = pack["spritesSheet"]
+            logger.info("Pack version not recognized")
+            return
 
-            get_promise = lambda item_dict: sprite_map[item_dict["name"].replace(" ", "")]
+        iterator, tasks = await handle
 
-        for item_dict in item_dicts_list:
-            renderer = AttachedImage(attachment=item_dict.get("attachment", None))
-            width = item_dict.get("width", 0)
-            height = item_dict.get("height", 0)
-
-            def resize_later():
-                image = renderer.image
-                w = width or image.width
-                h = height or image.height
-                renderer.image = image.resize((w, h))
-
-            item = Item.from_json(item_dict, renderer, self.custom)
+        for item in iterator:
             self.items[item.id] = item
             self.names_to_ids[item.name] = item.id
 
-            try:
-                promises.append(
-                    (renderer, get_promise(item_dict), partial(assert_attachment_set, item.type))
-                )
-
-            except (KeyError, TypeError):
-                logger.warning(f"Item {item.name!r} failed to load image")
+        # logger.warning(f"Item {item.name!r} failed to load image")
 
         self.name_abbrevs = abbreviate_names(self.names_to_ids)
 
-        if spritesheet_url is not None:
-            from PIL.Image import open
+        if tasks:
+            await asyncio.wait(tasks, timeout=5, return_when="ALL_COMPLETED")
 
-            spritesheet = open(await fetch_image_bytes(spritesheet_url))
-            for renderer, promise, asserter in promises:
-                renderer.load_image((spritesheet, promise))
-                asserter(renderer)
+        # TODO: this may be eligible to run in an executor
+        for funcs in AttachedImage._postprocess.values():
+            for func in funcs:
+                func()
 
-        else:
-            coros = set()
-
-            for renderer, promise, asserter in promises:
-                task = asyncio.create_task(fetch_image_bytes(promise))
-
-                def cb(task: asyncio.Task):
-                    renderer.load_image(task.result())
-                    asserter(renderer)
-
-                task.add_done_callback(cb)
-                coros.add(task)
-
-            await asyncio.wait(coros, timeout=5, return_when="ALL_COMPLETED")
+        AttachedImage.clear_cache()
         logger.info("Item images loaded")
 
     def get_item_by_name(self, name: str) -> AnyItem:
@@ -231,17 +193,3 @@ class PackInterface:
         self.key = config["key"]
         self.name = config["name"]
         self.description = config["description"]
-
-
-if __name__ == "__main__":
-    link = "https://gist.githubusercontent.com/ctrlraul/22b71089a0dd7fef81e759dfb3dda67b/raw"
-
-    async def runner(link: str, **extra: t.Any):
-        from aiohttp import ClientSession
-
-        logging.basicConfig(level="INFO")
-        interface = PackInterface()
-        async with ClientSession() as session:
-            SESSION_CTX.set(session)
-            await interface.load(link, **extra)
-            return interface
