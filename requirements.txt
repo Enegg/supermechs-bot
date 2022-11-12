@@ -1,13 +1,13 @@
-# SuperMechs framework
-git+https://github.com/Enegg/python-socketio
-attrs == 22.1.*
-aiohttp == 3.8.*
-Pillow == 9.1.*
-
-# Bot
-git+https://github.com/DisnakeDev/disnake
-git+https://github.com/Chromosomologist/disnake-ext-plugins
-
 # General
 python-dotenv == 0.19.*
-typing-extensions == 4.3.0
+typing-extensions == 4.4.*
+attrs == 22.1.*
+aiohttp == 3.8.*
+
+# SuperMechs framework
+# git+https://github.com/Enegg/python-socketio
+Pillow == 9.3.*
+
+# Bot
+disnake == 2.6.*
+git+https://github.com/Chromosomologist/disnake-ext-plugins
