@@ -27,6 +27,7 @@ if t.TYPE_CHECKING:
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
 
 else:
+    # disnake cannot parse unions of literals
     LiteralTypeOrAny = t.Literal[t.get_args(LiteralType) + ("ANY",)]
     LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
 
@@ -161,9 +162,6 @@ async def item(
         raise commands.UserInputError("Item not found.")
 
     item = plugin.bot.default_pack.get_item_by_name(name)
-
-    # for the time being, we cannot set images directly from File object;
-    # need to upload it and set the images to an attachment link
 
     file = image_to_file(item.image.image, item.name)
     url = f"attachment://{file.filename}"
