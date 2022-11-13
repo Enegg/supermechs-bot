@@ -8,9 +8,9 @@ import warnings
 from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
 
-from app.bot import SMBot
-from app.config import LOGS_CHANNEL
-from app.library_extensions import FileRecord
+from bot import SMBot
+from config import LOGS_CHANNEL
+from library_extensions import FileRecord
 
 load_dotenv()
 
@@ -39,7 +39,7 @@ stream.setFormatter(logging.Formatter(format, style="{"))
 
 async def main() -> None:
     if __debug__:
-        from app.config import TEST_GUILDS
+        from config import TEST_GUILDS
 
         bot = SMBot(
             dev_mode=True,

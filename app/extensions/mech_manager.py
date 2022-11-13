@@ -18,12 +18,13 @@ from disnake import (
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from app.library_extensions import DesyncError, image_to_file
-from app.ui.action_row import ActionRow, MessageUIComponent
-from app.ui.buttons import Button, ToggleButton, TrinaryButton, button
-from app.ui.item import add_callback
-from app.ui.selects import EMPTY_OPTION, PaginatedSelect, Select, select
-from app.ui.views import InteractionCheck, PaginatorView, SaneView, positioned
+from library_extensions import DesyncError, image_to_file
+from ui.action_row import ActionRow, MessageUIComponent
+from ui.buttons import Button, ToggleButton, TrinaryButton, button
+from ui.item import add_callback
+from ui.selects import EMPTY_OPTION, PaginatedSelect, Select, select
+from ui.views import InteractionCheck, PaginatorView, SaneView, positioned
+
 from SuperMechs.core import STATS, ArenaBuffs
 from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
@@ -35,7 +36,7 @@ from SuperMechs.player import Player
 from SuperMechs.utils import truncate_name
 
 if t.TYPE_CHECKING:
-    from app.bot import SMBot
+    from bot import SMBot
 
 MixedInteraction = CommandInteraction | MessageInteraction
 T = t.TypeVar("T")

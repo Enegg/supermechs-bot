@@ -8,10 +8,10 @@ from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
-from app.library_extensions import hyperlink
+from library_extensions import hyperlink
 
 if t.TYPE_CHECKING:
-    from app.bot import SMBot
+    from bot import SMBot
 
 plugin = Plugin["SMBot"]()
 

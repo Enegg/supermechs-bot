@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from json import load
+from pathlib import Path
 
 from attrs import Factory, define, frozen
 from typing_extensions import Self
@@ -65,7 +66,7 @@ class Stat(t.NamedTuple):
 
 
 def _load_stats():
-    with open("SuperMechs/static/StatData.json") as file:
+    with open(Path(__file__).parent / "static/StatData.json") as file:
         json: dict[AnyStatKey, StatDict] = load(file)
         return {stat_key: Stat.from_dict(value, stat_key) for stat_key, value in json.items()}
 

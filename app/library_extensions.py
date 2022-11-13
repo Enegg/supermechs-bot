@@ -19,8 +19,6 @@ if t.TYPE_CHECKING:
 class DesyncError(commands.CommandError):
     """Exception raised when due to external factors command's state goes out of sync"""
 
-    pass
-
 
 def ensure_file(data_or_fp: str | bytes | io.BufferedIOBase) -> io.BufferedIOBase:
     """Creates a readable file from a string, bytes or IO object."""
@@ -58,7 +56,9 @@ def image_to_file(image: Image, filename: str | None = None, format: str = "png"
 class FileRecord(logging.LogRecord):
     """LogRecord with extra file attribute."""
 
-    def __init__(self, *args: t.Any, file: io.BufferedIOBase | None = None, **kwargs: t.Any) -> None:
+    def __init__(
+        self, *args: t.Any, file: io.BufferedIOBase | None = None, **kwargs: t.Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.file = file
 

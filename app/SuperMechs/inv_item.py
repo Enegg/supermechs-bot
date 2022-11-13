@@ -18,7 +18,7 @@ __all__ = ("InvItem", "AnyInvItem", "SlotType")
 
 
 def _load_power_data_files():
-    path = Path("SuperMechs/static")
+    path = Path(__file__).parent / "static"
     file_names = ("default_powers.csv", "lm_item_powers.csv", "reduced_powers.csv")
     iterables = (Tier, (Tier.L, Tier.M), (Tier.L, Tier.M))
 

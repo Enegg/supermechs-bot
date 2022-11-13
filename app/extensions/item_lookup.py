@@ -7,11 +7,12 @@ from itertools import zip_longest
 from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction
 from disnake.ext import commands, plugins
 
-from app.config import TEST_GUILDS
-from app.library_extensions import image_to_file
-from app.ui.action_row import ActionRow, MessageUIComponent
-from app.ui.buttons import Button, ToggleButton, button
-from app.ui.views import InteractionCheck, SaneView, positioned
+from config import TEST_GUILDS
+from library_extensions import image_to_file
+from ui.action_row import ActionRow, MessageUIComponent
+from ui.buttons import Button, ToggleButton, button
+from ui.views import InteractionCheck, SaneView, positioned
+
 from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
 from SuperMechs.item import AnyItem
@@ -20,7 +21,7 @@ from SuperMechs.typeshed import dict_items_as, twotuple
 from SuperMechs.utils import search_for
 
 if t.TYPE_CHECKING:
-    from app.bot import SMBot
+    from bot import SMBot
 
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]

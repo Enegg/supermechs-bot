@@ -4,14 +4,13 @@ import typing as t
 
 from attrs import asdict
 
-from SuperMechs.utils import truncate_name
-
 from ..core import MAX_BUFFS
 from ..inv_item import AnyInvItem, InvItem
 from ..item import AnyItem
 from ..mech import Mech
 from ..player import Player
 from ..typedefs.game_types import AnyStats
+from ..utils import truncate_name
 
 if t.TYPE_CHECKING:
     from ..pack_interface import PackInterface

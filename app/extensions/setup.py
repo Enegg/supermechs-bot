@@ -12,11 +12,11 @@ from disnake import AllowedMentions, CommandInteraction, File, ModalInteraction,
 from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
-from app.config import TEST_GUILDS
-from app.library_extensions import ensure_file
+from config import TEST_GUILDS
+from library_extensions import ensure_file
 
 if t.TYPE_CHECKING:
-    from app.bot import SMBot
+    from bot import SMBot
 
 plugin = plugins.Plugin["SMBot"].with_metadata(slash_command_attrs={"guild_ids": TEST_GUILDS})
 LAST_EXTENSION = ContextVar[str | None]("last_extension", default=None)
