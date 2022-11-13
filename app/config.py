@@ -12,6 +12,3 @@ HOME_GUILD_ID = parser.getint("bot", "HOME_GUILD_ID")
 
 TEST_GUILDS = (HOME_GUILD_ID,)
 """The IDs of guilds the bot will register commands in while in dev mode."""
-
-OWNER_ID = parser.getint("bot", "OWNER_ID")
-"""The ID of the bot's owner."""
