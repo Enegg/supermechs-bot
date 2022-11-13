@@ -231,14 +231,14 @@ def create_synthetic_attachment(width: int, height: int, type: Type) -> AnyAttac
 
     if type is Type.TORSO:
         return Attachments(
-            leg1=Attachment(round(width * 0.40), round(width * 0.9)),
-            leg2=Attachment(round(width * 0.80), round(width * 0.9)),
-            side1=Attachment(round(width * 0.25), round(width * 0.6)),
-            side2=Attachment(round(width * 0.75), round(width * 0.6)),
-            side3=Attachment(round(width * 0.20), round(width * 0.3)),
-            side4=Attachment(round(width * 0.80), round(width * 0.3)),
-            top1=Attachment(round(width * 0.25), round(width * 0.1)),
-            top2=Attachment(round(width * 0.75), round(width * 0.1)),
+            leg1=Attachment(round(width * 0.40), round(height * 0.9)),
+            leg2=Attachment(round(width * 0.80), round(height * 0.9)),
+            side1=Attachment(round(width * 0.25), round(height * 0.6)),
+            side2=Attachment(round(width * 0.75), round(height * 0.6)),
+            side3=Attachment(round(width * 0.20), round(height * 0.3)),
+            side4=Attachment(round(width * 0.80), round(height * 0.3)),
+            top1=Attachment(round(width * 0.25), round(height * 0.1)),
+            top2=Attachment(round(width * 0.75), round(height * 0.1)),
         )
 
     if type is Type.LEGS:
