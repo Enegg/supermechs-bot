@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import logging
 import typing as t
 from collections import defaultdict
@@ -89,6 +90,14 @@ class HasWidthAndHeight(t.Protocol):
         ...
 
 
+def image_to_fp(image: Image, format: str = "png") -> io.BytesIO:
+    """Save image to a file-like object."""
+    stream = io.BytesIO()
+    image.save(stream, format=format)
+    stream.seek(0)
+    return stream
+
+
 @define
 class Offsets:
     """Dataclass describing how many pixels the complete image extends beyond canvas."""
@@ -97,6 +106,20 @@ class Offsets:
     right: int = 0
     above: int = 0
     below: int = 0
+
+    def adjust(self, image: HasWidthAndHeight, x: int, y: int) -> None:
+        """Updates the canvas size in-place, if the new data extends beyond previous."""
+        self.left = max(self.left, -x)
+        self.above = max(self.above, -y)
+        self.right = max(self.right, x + image.width)
+        self.below = max(self.below, y + image.height)
+
+    def final_size(self, base_image: HasWidthAndHeight) -> tuple[int, int]:
+        """Return the final size of the canvas, given base image."""
+        return (
+            self.left + max(base_image.width, self.right),
+            self.above + max(base_image.height, self.below),
+        )
 
 
 @define
@@ -147,16 +170,8 @@ class ImageRenderer:
         else:
             x, y = -item_x, -item_y
 
-        self.adjust_offsets(item.image, x, y)
+        self.offsets.adjust(item.image, x, y)
         self.put_image(item.image, layer, x, y)
-
-    def adjust_offsets(self, image: HasWidthAndHeight, x: int, y: int) -> None:
-        """Resizes the canvas if the image does not fit."""
-        offsets = self.offsets
-        offsets.left = max(offsets.left, -x)
-        offsets.above = max(offsets.above, -y)
-        offsets.right = max(offsets.right, x + image.width - self.base.image.width)
-        offsets.below = max(offsets.below, y + image.height - self.base.image.height)
 
     def put_image(self, image: Image, layer: str, x: int, y: int) -> None:
         """Place the image on the canvas."""
@@ -170,10 +185,7 @@ class ImageRenderer:
 
         canvas = new(
             "RGBA",
-            (
-                self.base.image.width + self.offsets.left + self.offsets.right,
-                self.base.image.height + self.offsets.above + self.offsets.below,
-            ),
+            self.offsets.final_size(self.base.image),
             (0, 0, 0, 0),
         )
 
@@ -251,11 +263,6 @@ def create_synthetic_attachment(width: int, height: int, type: Type) -> AnyAttac
         return Attachment(round(width * 0.3), round(height * 0.8))
 
     return None
-
-
-# Image if t.TYPE_CHECKING else object
-#    def __getattr__(self, name: str) -> t.NoReturn:
-#        return getattr(self._underlying, name)  # type: ignore
 
 
 RI_T = t.TypeVar("RI_T", bound="AttachedImage[t.Any]")
