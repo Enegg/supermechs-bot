@@ -9,7 +9,7 @@ from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
 
 from bot import SMBot
-from config import LOGS_CHANNEL
+from config import LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import FileRecord
 
 load_dotenv()
@@ -38,35 +38,21 @@ stream.setFormatter(logging.Formatter(format, style="{"))
 
 
 async def main() -> None:
-    if __debug__:
-        from config import TEST_GUILDS
-
-        bot = SMBot(
-            dev_mode=True,
-            logs_channel_id=LOGS_CHANNEL,
-            intents=Intents(guilds=True),
-            activity=Game("SuperMechs"),
-            test_guilds=TEST_GUILDS,
-            allowed_mentions=AllowedMentions.none(),
-            strict_localization=True,
-            # sync_commands_debug=True,
-        )
-        token_key = "TOKEN_DEV"
-
-    else:
-        bot = SMBot(
-            logs_channel_id=LOGS_CHANNEL,
-            intents=Intents(guilds=True),
-            activity=Game("SuperMechs"),
-            allowed_mentions=AllowedMentions.none(),
-        )
-        token_key = "TOKEN"
+    bot = SMBot(
+        dev_mode=__debug__,
+        logs_channel_id=LOGS_CHANNEL,
+        intents=Intents(guilds=True),
+        activity=Game("SuperMechs"),
+        test_guilds=TEST_GUILDS if __debug__ else None,
+        allowed_mentions=AllowedMentions.none(),
+        strict_localization=__debug__,
+        # sync_commands_debug=True,
+    )
 
     bot.i18n.load("locale/")
     bot.load_extensions("app/extensions")
 
-    ROOT_LOGGER.info("Starting bot")
-    await bot.start(os.environ[token_key])
+    await bot.start(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
 
 
 if __name__ == "__main__":

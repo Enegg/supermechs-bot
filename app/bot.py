@@ -106,6 +106,7 @@ class SMBot(commands.InteractionBot):
         await inter.send(info, ephemeral=True)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
+        LOGGER.info("Starting bot")
         self.started_at = datetime.now()
         await self.login(token)
         self.create_aiohttp_session()
