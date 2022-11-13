@@ -91,7 +91,6 @@ class MechView(InteractionCheck, PaginatorView):
                         custom_id=id,
                         item=mech[id],
                         emoji=slot_to_icon_data(id).emoji,
-                        row=pos,
                     ),
                     self.slot_button_cb,
                 )
@@ -456,12 +455,12 @@ async def export(inter: CommandInteraction, player: Player) -> None:
         max_values=min(25, len(player.builds)),
         options=list(player.builds)[:25],
     )
-    await inter.send(components=mech_select, ephemeral=True)
+    await inter.response.send_message(components=mech_select, ephemeral=True)
 
     def check(inter: MessageInteraction) -> bool:
         return inter.data.custom_id == mech_select.custom_id
 
-    new_inter: MessageInteraction = await inter.bot.wait_for("dropdown", check=check)
+    new_inter: MessageInteraction = await plugin.bot.wait_for("dropdown", check=check)
     values = new_inter.values
     assert values is not None
     selected = frozenset(values)
