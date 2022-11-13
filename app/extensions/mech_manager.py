@@ -56,7 +56,7 @@ def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
 
 
 class MechView(InteractionCheck, PaginatorView):
-    """Class implementing View for a button-based mech building"""
+    """Class implementing View for a button-based mech building."""
 
     response_message: Message
 
@@ -232,7 +232,7 @@ class MechView(InteractionCheck, PaginatorView):
         await self.response_message.edit(embed=self.embed, file=file, attachments=[])
 
     def sorted_options(self, item_type: Type) -> list[SelectOption]:
-        """Returns a list of `SelectOption`s filtered by type"""
+        """Returns a list of `SelectOption`s sorted by element."""
         all_options = self.item_groups[item_type]
         new_options = [EMPTY_OPTION]
 
