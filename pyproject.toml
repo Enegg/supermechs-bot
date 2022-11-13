@@ -9,11 +9,13 @@ py_version = 310
 line_length = 100
 combine_as_imports = true
 filter_files = true
+src_paths = ["app"]
+forced_separate = ["SuperMechs"]
 
 
 [tool.pyright]
 typeCheckingMode = "strict"
-include = ["app", "SuperMechs"]
+include = ["app"]
 
 pythonVersion = "3.10"
 
