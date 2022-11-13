@@ -13,7 +13,7 @@ from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
 from config import TEST_GUILDS
-from library_extensions import ensure_file
+from library_extensions import Markdown, ensure_file
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -170,7 +170,7 @@ async def eval_(inter: CommandInteraction | ModalInteraction, input: str | None 
         input = modal_inter.text_values[text_input.custom_id]
         inter = modal_inter
 
-    input = input.removeprefix("```py").removesuffix("```").strip()
+    input = Markdown.strip_codeblock(input)
 
     with io.StringIO() as local_stdout:
         with redirect_stdout(local_stdout), redirect_stderr(local_stdout):

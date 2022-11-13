@@ -8,7 +8,7 @@ from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
-from library_extensions import hyperlink
+from library_extensions import Markdown
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -48,7 +48,7 @@ async def self_info(inter: CommandInteraction) -> None:
 
     if app_info.bot_public:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
-        desc_fields.append(hyperlink("**Invite link**", invite))
+        desc_fields.append(Markdown.hyperlink("**Invite link**", invite))
 
     python_version = ".".join(map(str, sys.version_info[:3]))
 
