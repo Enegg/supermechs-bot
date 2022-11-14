@@ -9,6 +9,8 @@ from uuid import UUID
 from attrs import Attribute, define, field
 from typing_extensions import Self
 
+from shared.utils import cached_slot_property
+
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, IconData, Type
 from .images import Attachment, Attachments, ImageRenderer
@@ -145,12 +147,6 @@ def is_valid_type(
         raise ValueError(f"Mech slot {attr.name} expects a type {valid_type}, got {value.type}")
 
 
-class _MechCache(t.TypedDict, total=False):
-    stats: dict[str, int]
-    image: Image
-    dominant_element: Element | None
-
-
 @define(kw_only=True)
 class Mech:
     """Represents a mech build."""
@@ -159,7 +155,9 @@ class Mech:
     custom: bool = False
     game_vars: GameVars = field(factory=GameVars.default)
     constraints: dict[UUID, t.Callable[[Self], bool]] = field(factory=dict, init=False)
-    _cache: _MechCache = field(factory=dict, init=False, repr=False, eq=False)
+    _stats: dict[str, int] = field(init=False, repr=False, eq=False)
+    _image: dict[str, int] = field(init=False, repr=False, eq=False)
+    _dominant_element: dict[str, int] = field(init=False, repr=False, eq=False)
 
     # fmt: off
     torso:  SlotType[Attachments] = field(default=None, validator=is_valid_type)
@@ -269,11 +267,9 @@ class Mech:
         if invalid_slots:
             raise TypeError(f"Slots: {', '.join(invalid_slots)} have invalid item type")
 
-    @property
+    @cached_slot_property
     def stats(self) -> MappingProxyType[str, int]:
         """A dict of the mech's stats, in order as they appear in workshop."""
-        if "stats" in self._cache:
-            return MappingProxyType(self._cache["stats"])
 
         # inherit the order of dict keys from workshop stats
         stats: dict[str, int] = dict.fromkeys(WORKSHOP_STATS, 0)
@@ -291,12 +287,7 @@ class Mech:
             if value == 0:
                 del stats[stat]
 
-        self._cache["stats"] = stats
         return MappingProxyType(stats)
-
-    @stats.deleter
-    def stats(self) -> None:
-        self._cache.pop("stats", None)
 
     def print_stats(
         self,
@@ -309,7 +300,7 @@ class Mech:
         """Returns a string of lines formatted with mech stats.
 
         Parameters
-        -----------
+        ----------
         included_buffs: `ArenaBuffs` object to apply the buffs from, or None if plain stats are resired.
         line_format: a string which will be used with `.format` to denote the format of each line.
         The keywords available are:
@@ -338,20 +329,12 @@ class Mech:
             for stat_name, value in bank.items()
         )
 
-    @property
+    @cached_slot_property
     def image(self) -> Image:
         """Returns `Image` object merging all item images.
         Requires the torso to be set, otherwise raises `RuntimeError`"""
-        if "image" in self._cache:
-            return self._cache["image"]
-
         canvas = ImageRenderer.from_mech(self)
-        self._cache["image"] = image = canvas.merge()
-        return image
-
-    @image.deleter
-    def image(self) -> None:
-        self._cache.pop("image", None)
+        return canvas.merge()
 
     def try_invalidate_cache(self, new: AnyInvItem | None, old: AnyInvItem | None) -> None:
         """Deletes cached image if the new item changes mech appearance."""
@@ -367,13 +350,13 @@ class Mech:
             del self.image
 
         if new is None or old is None or new.element is not old.element:
-            self._cache.pop("dominant_element", None)
+            del self.dominant_element
 
     @property
     def has_image_cached(self) -> bool:
         """Returns True if the image is in cache, False otherwise.
         Does not check if the cache has been changed."""
-        return "image" in self._cache
+        return hasattr(self, type(self).image.slot)
 
     @t.overload
     def iter_items(self, *, slots: t.Literal[False] = False) -> t.Iterator[AnyInvItem | None]:
@@ -499,11 +482,9 @@ class Mech:
             for slot in slot_set:
                 yield factory(slot)
 
-    def get_dominant_element(self) -> Element | None:
+    @cached_slot_property
+    def dominant_element(self) -> Element | None:
         """Guesses the mech type by equipped items."""
-        if "dominant_element" in self._cache:
-            return self._cache["dominant_element"]
-
         excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER, Type.MODULE}
         elements = Counter(
             item.element
@@ -515,9 +496,7 @@ class Mech:
         # return None when there are no elements
         # or the difference between the two most common is small
         if len(elements) == 0 or (len(elements) == 2 and elements[0][1] - elements[1][1] < 2):
-            self._cache["dominant_element"] = None
             return None
 
         # otherwise just return the most common one
-        self._cache["dominant_element"] = elements[0][0]
         return elements[0][0]

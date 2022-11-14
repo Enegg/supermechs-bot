@@ -50,7 +50,7 @@ BUFFS_COMMAND_ID = 919329829227229196
 
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
-        title=f'Mech build "{mech.name}"', color=(mech.get_dominant_element() or Element.OMNI).color
+        title=f'Mech build "{mech.name}"', color=(mech.dominant_element or Element.OMNI).color
     ).add_field("Stats:", mech.print_stats(included_buffs))
     return embed
 
@@ -111,10 +111,10 @@ class MechView(InteractionCheck, PaginatorView):
                 SelectOption(label=item.name, emoji=item.element.emoji)
             )
 
-        ref = [element.emoji for element in Element]
+        ref = {element.emoji: index for index, element in enumerate(Element)}
 
         for item_list in self.item_groups.values():
-            item_list.sort(key=lambda option: (ref.index(str(option.emoji)), option.label))
+            item_list.sort(key=lambda option: (ref[str(option.emoji)], option.label))
 
     async def slot_button_cb(
         self,
@@ -203,7 +203,7 @@ class MechView(InteractionCheck, PaginatorView):
 
         self.mech[self.active.custom_id] = item
 
-        if (dominant := self.mech.get_dominant_element()) is not None:
+        if (dominant := self.mech.dominant_element) is not None:
             self.embed.color = dominant.color
 
         elif self.mech.torso is not None:
@@ -230,21 +230,21 @@ class MechView(InteractionCheck, PaginatorView):
         self.embed.set_image(url=f"attachment://{file.filename}")
         await self.response_message.edit(embed=self.embed, file=file, attachments=[])
 
-    def sorted_options(self, item_type: Type) -> list[SelectOption]:
+    def sorted_options(self, options: list[SelectOption]) -> list[SelectOption]:
         """Returns a list of `SelectOption`s sorted by element."""
-        all_options = self.item_groups[item_type]
         new_options = [EMPTY_OPTION]
 
-        if len(all_options) <= 24:
-            return new_options + all_options
+        if len(options) <= 24:
+            return new_options + options
 
-        ref = [element.emoji for element in Element]
+        if (dominant := self.mech.dominant_element) is not None:
+            element_to_index = {element.emoji: index for index, element in enumerate(Element, 1)}
+            element_to_index[dominant.emoji] = 0
 
-        if (dominant := self.mech.get_dominant_element()) is not None:
-            ref.remove(dominant.emoji)
-            ref.insert(0, dominant.emoji)
+        else:
+            element_to_index = {element.emoji: index for index, element in enumerate(Element)}
 
-        new_options += sorted(all_options, key=lambda o: (ref.index(str(o.emoji)), o.label))
+        new_options += sorted(options, key=lambda o: (element_to_index[str(o.emoji)], o.label))
 
         return new_options
 
@@ -270,7 +270,8 @@ class MechView(InteractionCheck, PaginatorView):
         else:
             self.active.toggle()
 
-        self.item_select.all_options = self.sorted_options(slot_to_type(button.custom_id))
+        options = self.item_groups[slot_to_type(button.custom_id)]
+        self.item_select.all_options = self.sorted_options(options)
         self.item_select.placeholder = button.item.name if button.item else "empty"
         self.active = button
 
