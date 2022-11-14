@@ -13,7 +13,7 @@ from library_extensions import Markdown
 if t.TYPE_CHECKING:
     from bot import SMBot
 
-plugin = Plugin["SMBot"]()
+plugin = Plugin["SMBot"](name="Bot-status")
 
 
 @plugin.slash_command()

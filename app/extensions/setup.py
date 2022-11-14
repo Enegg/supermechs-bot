@@ -18,7 +18,7 @@ from library_extensions import Markdown, ensure_file
 if t.TYPE_CHECKING:
     from bot import SMBot
 
-plugin = plugins.Plugin["SMBot"](slash_command_attrs={"guild_ids": TEST_GUILDS})
+plugin = plugins.Plugin["SMBot"](name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS})
 LAST_EXTENSION = ContextVar[str | None]("last_extension", default=None)
 
 

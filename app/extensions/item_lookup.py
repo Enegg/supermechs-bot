@@ -31,7 +31,7 @@ else:
     LiteralTypeOrAny = t.Literal[t.get_args(LiteralType) + ("ANY",)]
     LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
 
-plugin = plugins.Plugin["SMBot"]()
+plugin = plugins.Plugin["SMBot"](name="Item-lookup")
 
 
 class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):

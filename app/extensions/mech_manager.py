@@ -40,8 +40,8 @@ if t.TYPE_CHECKING:
 
 MixedInteraction = CommandInteraction | MessageInteraction
 T = t.TypeVar("T")
-logger = logging.getLogger(__name__)
-plugin = plugins.Plugin["SMBot"]()
+LOGGER = logging.getLogger(__name__)
+plugin = plugins.Plugin["SMBot"](name="Mech-manager")
 
 # we need to hardcode it as bot.get_global_command_named fails in testing
 # due to the command being registered in test guilds only

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands, plugins
 
@@ -12,7 +14,10 @@ from ui.views import InteractionCheck, PaginatorView, positioned
 from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
 from SuperMechs.player import Player
 
-plugin = plugins.Plugin()
+if t.TYPE_CHECKING:
+    from bot import SMBot
+
+plugin = plugins.Plugin["SMBot"](name="ArenaBuffs")
 
 
 class ArenaBuffsView(InteractionCheck, PaginatorView):
