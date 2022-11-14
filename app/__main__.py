@@ -28,11 +28,11 @@ logging.getLogger("disnake").setLevel(logging.WARNING)
 logging.getLogger("disnake.ext.plugins.plugin").setLevel(logging.INFO)
 
 if __debug__:
-    format = "{asctime} [{levelname}] - {name}: {message}"
+    format = "{asctime} [{levelname}] {name} - {message}"
 
 else:
     # don't append timestamp as heroku does that already
-    format = "[{levelname}] - {name}: {message}"
+    format = "[{levelname}] {name} - {message}"
 
 stream.setFormatter(logging.Formatter(format, style="{"))
 
