@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib.util
 import logging
+import os
 import typing as t
 from datetime import datetime
 from functools import partial
@@ -19,7 +21,7 @@ from disnake.ext import commands
 from disnake.utils import MISSING
 
 from abstract.files import URL
-from library_extensions import ChannelHandler
+from library_extensions import ChannelHandler, walk_modules
 from shared import SESSION_CTX
 
 from SuperMechs.pack_interface import PackInterface
@@ -152,6 +154,35 @@ class SMBot(commands.InteractionBot):
     async def close(self) -> None:
         await self.close_aiohttp_session()
         await super().close()
+
+    def load_extensions(
+        self,
+        root_module: str,
+        *,
+        package: str | None = None,
+        ignore: t.Iterable[str] | t.Callable[[str], bool] | None = None,
+    ) -> None:
+        if "/" in root_module or "\\" in root_module:
+            path = os.path.relpath(root_module)
+            if ".." in path:
+                raise ValueError(
+                    "Paths outside the cwd are not supported. Try using the module name instead."
+                )
+            root_module = path.replace(os.sep, ".")
+
+        root_module = self._resolve_name(root_module, package)
+
+        if (spec := importlib.util.find_spec(root_module)) is None:
+            raise commands.ExtensionError(
+                f"Unable to find root module '{root_module}'", name=root_module
+            )
+
+        if (paths := spec.submodule_search_locations) is None:
+            raise commands.ExtensionError(
+                f"Module '{root_module}' is not a package", name=root_module
+            )
+        for module_name in walk_modules(paths, f"{spec.name}.", ignore):
+            self.load_extension(module_name)
 
     def get_player(self, data: User | Member | Interaction, /) -> Player:
         """Return a Player object from object containing user ID."""

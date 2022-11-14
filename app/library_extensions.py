@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import io
 import logging
+import pkgutil
 import traceback
 import typing as t
 
@@ -159,3 +161,40 @@ def hyperlink(text: str, url: str) -> str:
             return stripped
 
         return text
+
+
+def walk_modules(
+    paths: t.Iterable[str],
+    prefix: str = "",
+    ignore: t.Iterable[str] | t.Callable[[str], bool] | None = None
+) -> t.Iterator[str]:
+
+    if isinstance(ignore, t.Iterable):
+        ignore_tup = tuple(ignore)
+        ignore = lambda path: path.startswith(ignore_tup)
+
+    seen: set[str] = set()
+
+    for _, name, ispkg in pkgutil.iter_modules(paths, prefix):
+        if ignore is not None and ignore(name):
+            continue
+
+        if ispkg:
+            module = importlib.import_module(name)
+
+            if hasattr(module, "setup"):
+                yield name
+                continue
+
+            sub_paths: list[str] = []
+
+            for path in module.__path__ or ():
+                if path not in seen:
+                    seen.add(path)
+                    sub_paths.append(path)
+
+            if sub_paths:
+                yield from walk_modules(sub_paths, name + ".", ignore)
+
+        else:
+            yield name
