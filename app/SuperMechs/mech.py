@@ -96,7 +96,7 @@ def get_weight_utilization_emoji(mech: Mech, weight: int) -> str:
         "⛔"
         if weight >  vars.MAX_OVERWEIGHT   else "❕"
         if weight >  vars.MAX_WEIGHT       else "👌"
-        if weight >= vars.MAX_WEIGHT       else "🆗"
+        if weight == vars.MAX_WEIGHT       else "🆗"
         if weight >= vars.MAX_WEIGHT * .99 else "⚙️"
         if weight >= 0                     else "🗿"
     )
@@ -283,7 +283,7 @@ class Mech:
             for stat, penalty_mult in dict_items_as(int, self.game_vars.PENALTIES):
                 stats[stat] -= overweight * penalty_mult
 
-        for stat, value in tuple(stats.items()):
+        for stat, value in tuple(stats.items())[2:]:  # keep weight and health
             if value == 0:
                 del stats[stat]
 
