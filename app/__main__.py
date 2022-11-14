@@ -50,7 +50,7 @@ async def main() -> None:
     )
 
     bot.i18n.load("locale/")
-    bot.load_extensions("app/extensions")
+    bot.load_extensions("extensions")
 
     await bot.start(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
 

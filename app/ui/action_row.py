@@ -6,7 +6,7 @@ from disnake.ui.action_row import ActionRow, MessageUIComponent, StrictUICompone
 from disnake.ui.item import WrappedComponent
 from typing_extensions import Self
 
-from app.library_extensions import ReprMixin
+from library_extensions import ReprMixin
 
 ActionRowT = t.TypeVar("ActionRowT", bound=ActionRow[MessageUIComponent], covariant=True)
 
