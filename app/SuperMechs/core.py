@@ -293,7 +293,7 @@ class ArenaBuffs:
     @classmethod
     def iter_modifiers_of(cls, stat_name: str) -> t.Iterator[BuffModifier]:
         """Iterator over the modifiers of a stat from 0 to its maximum level."""
-        for level in range(cls.max_level_of(stat_name)):
+        for level in range(cls.max_level_of(stat_name) + 1):
             yield cls.modifier_at(stat_name, level)
 
     @classmethod
