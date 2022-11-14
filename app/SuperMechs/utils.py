@@ -6,7 +6,7 @@ from string import ascii_letters
 
 from typing_extensions import Self
 
-from .typeshed import SupportsSet, T
+from ..typeshed import SupportsSet, T
 
 
 class _MissingSentinel:

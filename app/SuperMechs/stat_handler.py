@@ -3,11 +3,11 @@ import typing as t
 from attrs import define
 from typing_extensions import Self
 
+from ..typeshed import dict_items_as
 from .core import MAX_LVL_FOR_TIER, TransformRange
 from .enums import Tier
 from .typedefs.game_types import AnyStats
 from .typedefs.pack_versioning import TiersMixin
-from .typeshed import dict_items_as
 
 
 @define
