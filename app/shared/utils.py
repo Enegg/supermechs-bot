@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import typing as t
-from typing_extensions import TypeVar, Self
+
+from typing_extensions import Self, TypeVar
 
 T = TypeVar("T")
 
