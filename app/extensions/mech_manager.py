@@ -29,7 +29,6 @@ from SuperMechs.core import STATS, ArenaBuffs
 from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
 from SuperMechs.inv_item import InvItem
-from SuperMechs.item import AnyItem
 from SuperMechs.mech import Mech, slot_to_icon_data, slot_to_type
 from SuperMechs.pack_interface import PackInterface
 from SuperMechs.player import Player
@@ -74,7 +73,7 @@ class MechView(InteractionCheck, PaginatorView):
         self.player = player
         self.user_id = player.id
 
-        self.active: TrinaryButton[AnyItem] | None = None
+        self.active: TrinaryButton[str] | None = None
         self.image_update_task = asyncio.Task(asyncio.sleep(0))
         self.embed = embed_mech(mech)
 
@@ -89,7 +88,7 @@ class MechView(InteractionCheck, PaginatorView):
                 add_callback(
                     TrinaryButton(
                         custom_id=id,
-                        item=mech[id],
+                        item=None if (item := mech[id]) is None else item.name,
                         emoji=slot_to_icon_data(id).emoji,
                     ),
                     self.slot_button_cb,
@@ -116,13 +115,17 @@ class MechView(InteractionCheck, PaginatorView):
         for item_list in self.item_groups.values():
             item_list.sort(key=lambda option: (ref[str(option.emoji)], option.label))
 
-    async def slot_button_cb(
-        self,
-        button: TrinaryButton[t.Any],
-        inter: MessageInteraction,
-    ) -> None:
+    async def slot_button_cb(self, button: TrinaryButton[str], inter: MessageInteraction) -> None:
         """Callback shared by all of the item slot buttons."""
-        self.update_style(button)
+        if button.on:
+            self.set_state_idle()
+
+        elif self.active is not None:
+            self.set_state_switched(button)
+
+        else:
+            self.set_state_pressed(button)
+
         await inter.response.edit_message(view=self)
 
     @positioned(0, 4)
@@ -184,35 +187,28 @@ class MechView(InteractionCheck, PaginatorView):
     async def item_select(self, select: PaginatedSelect, inter: MessageInteraction) -> None:
         """Dropdown menu with all the items."""
         assert self.active is not None
-        (item_name,) = select.values
+        (value,) = select.values
 
-        if select.check_option(item_name):
+        if select.check_option(value):
             return await inter.response.edit_message(view=self)
 
-        item = None if item_name == EMPTY_OPTION.label else self.pack.get_item_by_name(item_name)
+        item_name = None if value == EMPTY_OPTION.value else value
+
+        item = None if item_name is None else self.pack.get_item_by_name(item_name)
 
         # sanity check if the item is actually valid
         if item is not None and item.type is not slot_to_type(self.active.custom_id):
             raise DesyncError()
 
-        self.active.item = item
-        select.placeholder = item_name
+        self.active.item = select.placeholder = item_name
 
         if item is not None:
             item = InvItem.from_item(item, maxed=True)
 
         self.mech[self.active.custom_id] = item
 
-        if (dominant := self.mech.dominant_element) is not None:
-            self.embed.color = dominant.color
-
-        elif self.mech.torso is not None:
-            self.embed.color = self.mech.torso.element.color
-
-        elif self.active.custom_id == "torso" and item is None:
-            self.embed.color = Element.OMNI.color
-
-        self.update_style(self.active)
+        self.update_color(item is None)
+        self.set_state_idle()
 
         self.embed.set_field_at(
             0,
@@ -220,15 +216,20 @@ class MechView(InteractionCheck, PaginatorView):
             value=self.mech.print_stats(self.player.arena_buffs if self.buffs_button.on else None),
         )
 
-        await inter.response.edit_message(embed=self.embed, view=self)
+        if not self.mech.has_image_cached:
+            file = MISSING
+            url = None
 
-    async def update_image(self) -> None:
-        """Background task to update embed's image."""
-        await asyncio.sleep(2.0)
+            if self.mech.torso is not None:
+                file = image_to_file(self.mech.image, mech_to_id_str(self.mech))
+                url = f"attachment://{file.filename}"
 
-        file = image_to_file(self.mech.image, mech_to_id_str(self.mech))
-        self.embed.set_image(url=f"attachment://{file.filename}")
-        await self.response_message.edit(embed=self.embed, file=file, attachments=[])
+            await inter.response.edit_message(
+                embed=self.embed.set_image(url), file=file, view=self, attachments=[]
+            )
+
+        else:
+            await inter.response.edit_message(embed=self.embed, view=self)
 
     def sorted_options(self, options: list[SelectOption]) -> list[SelectOption]:
         """Returns a list of `SelectOption`s sorted by element."""
@@ -248,32 +249,40 @@ class MechView(InteractionCheck, PaginatorView):
 
         return new_options
 
-    def update_style(self, button: TrinaryButton[AnyItem], /) -> None:
-        """Changes active button, alters its and passed button's style,
-        updates dropdown description"""
-        button.toggle()
-
-        if self.active is button:
-            self.item_select.disabled = True
+    def set_state_idle(self) -> None:
+        if self.active is not None:
+            self.active.on = False
             self.active = None
+        self.item_select.disabled = True
 
-            if not self.mech.has_image_cached:
-                self.image_update_task = asyncio.create_task(self.update_image())
+    def set_state_pressed(self, button: TrinaryButton[str], /) -> None:
+        button.on = True
+        self.active = button
+        self.item_select.disabled = False
+        self.update_dropdown(button)
 
-            return
+    def set_state_switched(self, button: TrinaryButton[str], /) -> None:
+        assert self.active is not None
+        self.active.toggle()
+        button.on = True
+        self.active = button
+        self.update_dropdown(button)
 
-        self.image_update_task.cancel()
-
-        if self.active is None:
-            self.item_select.disabled = False
-
-        else:
-            self.active.toggle()
-
+    def update_dropdown(self, button: TrinaryButton[str], /) -> None:
         options = self.item_groups[slot_to_type(button.custom_id)]
         self.item_select.all_options = self.sorted_options(options)
-        self.item_select.placeholder = button.item.name if button.item else "empty"
-        self.active = button
+        self.item_select.placeholder = "empty" if button.item is None else button.item
+
+    def update_color(self, item_not_set: bool) -> None:
+        assert self.active is not None
+        if (dominant := self.mech.dominant_element) is not None:
+            self.embed.color = dominant.color
+
+        elif self.mech.torso is not None:
+            self.embed.color = self.mech.torso.element.color
+
+        elif self.active.custom_id == "torso" and item_not_set:
+            self.embed.color = Element.OMNI.color
 
 
 class BrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
