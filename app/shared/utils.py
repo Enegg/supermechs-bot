@@ -17,17 +17,7 @@ class cached_slot_property(t.Generic[T]):
         self.func = func
 
     def __set_name__(self, owner: t.Any, name: str) -> None:
-        if not hasattr(owner, "__slots__"):
-            raise RuntimeError(f"{owner!r} does not define __slots__")
-
-        slot = "_" + name
-
-        if slot not in owner.__slots__:
-            raise RuntimeError(
-                f"{type(self).__name__} requires a {slot!r} slot defined to function"
-            )
-
-        self.slot = slot
+        self.slot = "_" + name
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} of slot {getattr(self, 'attr', '<unassigned>')}>"
