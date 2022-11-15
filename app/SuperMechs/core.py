@@ -159,6 +159,7 @@ class GameVars(t.NamedTuple):
     MAX_WEIGHT: int = 1000
     OVERWEIGHT: int = 10
     PENALTIES: AnyMechStats = {"health": 15}
+    EXCLUSIVE_STATS: frozenset[str] = frozenset(("phyRes", "expRes", "eleRes"))
 
     @property
     def MAX_OVERWEIGHT(self) -> int:

@@ -107,20 +107,29 @@ def get_weight_utilization_emoji(mech: Mech, weight: int) -> str:
 
 # -------------------------------- Constraints --------------------------------
 
+def get_constraints_of_item(item: AnyInvItem, vars: GameVars) -> t.Callable[[Mech], bool] | None:
+    if item.type is Type.MODULE and item.has_any_of_stats(*vars.EXCLUSIVE_STATS):
+        return partial(no_duplicate_stats, module=item)
+
+    if item.tags.require_jump:
+        return jumping_required
+
+    return None
+
 
 def jumping_required(mech: Mech) -> bool:
     # unequipping legs is allowed, so no legs tests positive
     return mech.legs is None or "jumping" in mech.legs.stats
 
 
-def no_res_stacking(mech: Mech, module: AnyInvItem) -> bool:
-    existing_resistances = module.stats.keys() & {"phyRes", "expRes", "eleRes"}
+def no_duplicate_stats(mech: Mech, module: AnyInvItem) -> bool:
+    exclusive_stats = module.stats.keys() & mech.game_vars.EXCLUSIVE_STATS
 
     for equipped_module in mech.iter_items(modules=True):
         if equipped_module is None or equipped_module is module:
             continue
 
-        if equipped_module.has_any_of_stats(*existing_resistances):
+        if equipped_module.has_any_of_stats(*exclusive_stats):
             return False
 
     return True
@@ -198,11 +207,8 @@ class Mech:
             if (prev := self[slot]) is not None and prev.UUID in self.constraints:
                 del self.constraints[prev.UUID]
 
-            if item.type is Type.MODULE and item.has_any_of_stats("phyRes", "expRes", "eleRes"):
-                self.constraints[item.UUID] = partial(no_res_stacking, module=item)
-
-            elif item.tags.require_jump:
-                self.constraints[item.UUID] = jumping_required
+            if (constraint := get_constraints_of_item(item, self.game_vars)) is not None:
+                self.constraints[item.UUID] = constraint
 
         del self.stats
 
@@ -464,7 +470,6 @@ class Mech:
         if not (body or weapons or specials or modules):
             body = weapons = specials = modules = True
 
-        from functools import partial
         from itertools import compress
 
         if slots:
@@ -485,10 +490,10 @@ class Mech:
     @cached_slot_property
     def dominant_element(self) -> Element | None:
         """Guesses the mech type by equipped items."""
-        excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER, Type.MODULE}
+        excluded = {Type.CHARGE_ENGINE, Type.TELEPORTER}
         elements = Counter(
             item.element
-            for item in self.iter_items()
+            for item in self.iter_items(body=True, weapons=True, specials=True)
             if item is not None
             if item.type not in excluded
         ).most_common(2)
