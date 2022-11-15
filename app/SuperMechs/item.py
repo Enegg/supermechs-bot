@@ -5,6 +5,8 @@ import typing as t
 from attrs import field, frozen, validators
 from typing_extensions import Self
 
+from typeshed import ID, Name
+
 from .core import TransformRange
 from .enums import Element, Tier, Type
 from .images import AttachedImage, AttachmentType, parse_raw_attachment
@@ -62,8 +64,8 @@ class Tags:
 class Item(t.Generic[AttachmentType]):
     """Base item class with stats at every tier."""
 
-    id: int = field(validator=validators.ge(1))
-    name: str = field(validator=validators.min_len(1))
+    id: ID = field(validator=validators.ge(1))
+    name: Name = field(validator=validators.min_len(1))
     type: Type = field(validator=validators.in_(Type), repr=str)
     element: Element = field(validator=validators.in_(Element), repr=str)
     transform_range: TransformRange

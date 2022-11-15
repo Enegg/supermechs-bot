@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import Self
 
-T = TypeVar("T")
+from typeshed import T
 
 
 class cached_slot_property(t.Generic[T]):

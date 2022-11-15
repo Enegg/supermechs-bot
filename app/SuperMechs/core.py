@@ -7,6 +7,8 @@ from pathlib import Path
 from attrs import Factory, define, frozen
 from typing_extensions import Self
 
+from typeshed import Name
+
 from .enums import Tier
 from .typedefs.game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
 from .utils import MISSING
@@ -21,7 +23,7 @@ MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Tier, range(9, 50, 10))} 
     Note that in game levels start at 1."""
 
 
-class Name(t.NamedTuple):
+class Names(t.NamedTuple):
     default: str
     in_game: str = MISSING
     short: str = MISSING
@@ -46,7 +48,7 @@ class Name(t.NamedTuple):
 
 class Stat(t.NamedTuple):
     key: str
-    name: Name
+    name: Names
     emoji: str = "❔"
     beneficial: bool = True
     buff: t.Literal["+", "+%", "-%", "+2%"] | None = None
@@ -58,7 +60,7 @@ class Stat(t.NamedTuple):
     def from_dict(cls, json: StatDict, key: str) -> Self:
         return cls(
             key=key,
-            name=Name(**json["names"]),
+            name=Names(**json["names"]),
             emoji=json.get("emoji", "❔"),
             beneficial=json.get("beneficial", True),
             buff=json.get("buff", None),
@@ -321,9 +323,8 @@ class ArenaBuffs:
 MAX_BUFFS = ArenaBuffs.maxed()
 
 
-def abbreviate_names(names: t.Iterable[str], /) -> dict[str, set[str]]:
-    """Returns dict of abbrevs:
-    Energy Free Armor => EFA"""
+def abbreviate_names(names: t.Iterable[Name], /) -> dict[str, set[Name]]:
+    """Returns dict of abbrevs: EFA => Energy Free Armor"""
     abbrevs: dict[str, set[str]] = {}
 
     for name in names:

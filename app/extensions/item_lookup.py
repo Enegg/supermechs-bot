@@ -9,6 +9,7 @@ from disnake.ext import commands, plugins
 
 from config import TEST_GUILDS
 from library_extensions import image_to_file
+from typeshed import dict_items_as, twotuple
 from ui.action_row import ActionRow, MessageUIComponent
 from ui.buttons import Button, ToggleButton, button
 from ui.views import InteractionCheck, SaneView, positioned
@@ -17,7 +18,6 @@ from SuperMechs.core import MAX_BUFFS, STATS, Stat
 from SuperMechs.enums import Element, Type
 from SuperMechs.item import AnyItem
 from SuperMechs.typedefs.game_types import AnyStats, LiteralElement, LiteralType
-from SuperMechs.typeshed import dict_items_as, twotuple
 from SuperMechs.utils import search_for
 
 if t.TYPE_CHECKING:

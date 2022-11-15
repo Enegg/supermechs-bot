@@ -11,8 +11,7 @@ import yarl
 from typing_extensions import Self
 
 from shared import SESSION_CTX
-
-T = t.TypeVar("T")
+from typeshed import T
 
 Pathish = os.PathLike[str] | str
 """A literal file or path."""

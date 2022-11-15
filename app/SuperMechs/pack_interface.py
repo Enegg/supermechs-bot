@@ -11,6 +11,7 @@ from attrs import define, field
 
 from abstract.files import URL, Resource, Urlish
 from shared import SESSION_CTX
+from typeshed import ID, Name
 
 from .core import abbreviate_names
 from .images import AttachedImage
@@ -92,12 +93,12 @@ class PackInterface:
     name: str = MISSING
     description: str = MISSING
     # Item ID to Item
-    items: dict[int, AnyItem] = field(
+    items: dict[ID, AnyItem] = field(
         factory=dict, init=False, repr=lambda s: f"{{... {len(s)} items}}"
     )
     # Item name to item ID
-    names_to_ids: dict[str, int] = field(factory=dict, init=False, repr=False)
-    name_abbrevs: dict[str, set[str]] = field(factory=dict, init=False, repr=False)
+    names_to_ids: dict[Name, ID] = field(factory=dict, init=False, repr=False)
+    name_abbrevs: dict[str, set[Name]] = field(factory=dict, init=False, repr=False)
 
     # personal packs
     custom: bool = False
@@ -161,7 +162,7 @@ class PackInterface:
         AttachedImage.clear_cache()
         logger.info("Item images loaded")
 
-    def get_item_by_name(self, name: str) -> AnyItem:
+    def get_item_by_name(self, name: Name) -> AnyItem:
         try:
             id = self.names_to_ids[name]
             return self.items[id]
@@ -170,7 +171,7 @@ class PackInterface:
             err.args = (f"No item with name {name!r} in the pack",)
             raise
 
-    def get_item_by_id(self, item_id: int) -> AnyItem:
+    def get_item_by_id(self, item_id: ID) -> AnyItem:
         try:
             return self.items[item_id]
 
@@ -178,7 +179,7 @@ class PackInterface:
             err.args = (f"No item with id {item_id} in the pack",)
             raise
 
-    def iter_item_names(self) -> t.Iterator[str]:
+    def iter_item_names(self) -> t.Iterator[Name]:
         return iter(self.names_to_ids)
 
     def extract_info(self, pack: AnyItemPack) -> None:
