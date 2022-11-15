@@ -181,22 +181,22 @@ def walk_modules(
         if ignore is not None and ignore(name):
             continue
 
-        if ispkg:
-            module = importlib.import_module(name)
-
-            if hasattr(module, "setup"):
-                yield name
-                continue
-
-            sub_paths: list[str] = []
-
-            for path in module.__path__ or ():
-                if path not in seen:
-                    seen.add(path)
-                    sub_paths.append(path)
-
-            if sub_paths:
-                yield from walk_modules(sub_paths, name + ".", ignore)
-
-        else:
+        if not ispkg:
             yield name
+            continue
+
+        module = importlib.import_module(name)
+
+        if hasattr(module, "setup"):
+            yield name
+            continue
+
+        sub_paths: list[str] = []
+
+        for path in module.__path__ or ():
+            if path not in seen:
+                seen.add(path)
+                sub_paths.append(path)
+
+        if sub_paths:
+            yield from walk_modules(sub_paths, name + ".", ignore)
