@@ -12,16 +12,17 @@ class cached_slot_property(t.Generic[T]):
     It works by caching the value to an attribute of the same name as the descriptor
     is assigned to, prepended with _.
     """
-    __slots__ = ("func", "slot")
+    __slots__ = ("func",)
 
     def __init__(self, func: t.Callable[[t.Any], T]) -> None:
         self.func = func
 
-    def __set_name__(self, owner: t.Any, name: str) -> None:
-        self.slot = "_" + name
+    @property
+    def slot(self) -> str:
+        return "_" + self.func.__name__
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} of slot {getattr(self, 'attr', '<unassigned>')}>"
+        return f"<{type(self).__name__} of slot {self.slot!r}>"
 
     @t.overload
     def __get__(self, obj: None, obj_type: t.Any) -> Self:
