@@ -150,7 +150,7 @@ async def eval_(inter: CommandInteraction | ModalInteraction, input: str | None 
     """
     if input is None:
         text_input = TextInput(
-            label="Code to evaluate", custom_id="eval:input", style=TextInputStyle.multi_line
+            label="Code to evaluate", custom_id="eval:input", style=TextInputStyle.paragraph
         )
         await inter.response.send_modal(
             title="Prompt", custom_id="eval:modal", components=text_input
@@ -174,13 +174,18 @@ async def eval_(inter: CommandInteraction | ModalInteraction, input: str | None 
 
     with io.StringIO() as local_stdout:
         with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
+            tasks: list[t.Awaitable[t.Any]] = []
             try:
-                exec(input, globals() | {"bot": plugin.bot, "inter": inter})
+                exec(input, globals() | {"bot": plugin.bot, "inter": inter, "coros": tasks})
+                if tasks:
+                    await asyncio.gather(*tasks)
 
             except Exception as ex:
                 traceback.print_exception(type(ex), ex, ex.__traceback__, file=local_stdout)
 
         if local_stdout.tell() == 0:
+            if inter.response.is_done():
+                return
             text = "No output."
 
         else:
