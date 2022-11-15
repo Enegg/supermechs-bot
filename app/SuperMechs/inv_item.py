@@ -6,13 +6,15 @@ from pathlib import Path
 
 from attrs import Factory, define, field
 
+from shared.utils import cached_slot_property, proxied
+from typeshed import ID, Name
+
 from .core import TransformRange
 from .enums import Element, Tier, Type
 from .errors import MaxPowerReached, MaxTierReached
 from .images import AttachedImage, Attachment, Attachments, AttachmentType
 from .item import Item, Tags
 from .typedefs.game_types import AnyStats
-from .utils import Proxied, proxy
 
 __all__ = ("InvItem", "AnyInvItem", "SlotType")
 
@@ -36,25 +38,24 @@ REDUCED_COST_ITEMS = frozenset(("Archimonde", "Armor Annihilator"))
 
 
 @define(kw_only=True)
-@proxy("base")
 class InvItem(t.Generic[AttachmentType]):
     """Represents an item inside inventory."""
 
     base: Item[AttachmentType]
 
-    id: Proxied[int] = field(init=False)
-    name: Proxied[str] = field(init=False)
-    type: Proxied[Type] = field(init=False)
-    element: Proxied[Element] = field(init=False)
-    transform_range: Proxied[TransformRange] = field(init=False)
-    image: Proxied[AttachedImage[AttachmentType]] = field(init=False)
-    tags: Proxied[Tags] = field(init=False)
+    id = proxied[ID]("base")
+    name = proxied[Name]("base")
+    type = proxied[Type]("base")
+    element = proxied[Element]("base")
+    transform_range = proxied[TransformRange]("base")
+    image = proxied[AttachedImage[AttachmentType]]("base")
+    tags = proxied[Tags]("base")
 
     tier: Tier
     power: int = 0
     UUID: uuid.UUID = Factory(uuid.uuid4)
-    _level: int | None = field(default=None, init=False)
     maxed: bool = field(init=False)
+    _level: int = field(init=False)
 
     def __attrs_post_init__(self) -> None:
         self.maxed = self.tier is Tier.DIVINE or self.power >= self.max_power
@@ -100,23 +101,14 @@ class InvItem(t.Generic[AttachmentType]):
         """The stats of this item at its particular tier and level."""
         return self.base.stats.at(self.tier, self.level)
 
-    @property
+    @cached_slot_property
     def level(self) -> int:
         """The level of this item."""
-
-        if self._level is not None:
-            return self._level
-
         if self.tier is Tier.DIVINE:
             return 0
 
         levels = self.get_power_bank()[self.tier]
-        self._level = bisect_left(levels, self.power)
-        return self._level
-
-    @level.deleter
-    def level(self) -> None:
-        self._level = None
+        return bisect_left(levels, self.power)
 
     @property
     def max_power(self) -> int:

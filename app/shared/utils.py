@@ -51,3 +51,26 @@ class cached_slot_property(t.Generic[T]):
 
         except AttributeError:
             pass
+
+
+class proxied(t.Generic[T]):
+    """Property proxying an attribute of another slot."""
+    def __init__(self, proxied: str, /) -> None:
+        self.proxied = proxied
+
+    def __set_name__(self, obj: t.Any, name: str) -> None:
+        self.name = name
+
+    @t.overload
+    def __get__(self, obj: None, obj_type: t.Any) -> Self:
+        ...
+
+    @t.overload
+    def __get__(self, obj: t.Any, obj_type: t.Any) -> T:
+        ...
+
+    def __get__(self, obj: t.Any | None, obj_type: t.Any) -> T | Self:
+        if obj is None:
+            return self
+
+        return getattr(getattr(obj, self.proxied), self.name)
