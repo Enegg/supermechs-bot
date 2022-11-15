@@ -38,21 +38,23 @@ def ensure_file(data_or_fp: str | bytes | io.BufferedIOBase) -> io.BufferedIOBas
     return file
 
 
-def image_to_file(image: Image, filename: str | None = None, format: str = "png") -> File:
+def image_to_file(image: Image, filename: str, format: str = "png") -> File:
     """Creates a `disnake.File` object from `PIL.Image.Image`."""
-    # not using with as the stream is closed by the File object
-    if filename is not None:
-        filename = filename.replace(" ", "_")
-
-        ext = "." + format
-
-        if not filename.endswith(ext):
-            filename += ext
-
+    filename = validify_filename(filename, "." + format)
     stream = io.BytesIO()
     image.save(stream, format=format)
     stream.seek(0)
     return File(stream, filename)
+
+
+def validify_filename(filename: str, extension: str) -> str:
+    """Converts spaces to underscores, and adds extension if one isn't there."""
+    filename = filename.replace(" ", "_")
+
+    if not filename.endswith(extension):
+        filename += extension
+
+    return filename
 
 
 class FileRecord(logging.LogRecord):
