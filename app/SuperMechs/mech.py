@@ -10,8 +10,8 @@ from attrs import Attribute, define, field
 from typing_extensions import Self
 
 from shared.utils import cached_slot_property
+from typeshed import XOrTupleXY, dict_items_as
 
-from ..typeshed import XOrTupleXY, dict_items_as
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
 from .enums import Element, IconData, Type
 from .images import Attachment, Attachments, ImageRenderer

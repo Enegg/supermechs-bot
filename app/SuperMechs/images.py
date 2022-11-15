@@ -10,8 +10,8 @@ from attrs import define, field
 from typing_extensions import LiteralString, Self
 
 from abstract.files import Resource
+from typeshed import P, twotuple
 
-from ..typeshed import P, twotuple
 from .enums import Type
 from .typedefs.game_types import AnyRawAttachment, RawAttachment, RawAttachments
 from .typedefs.pack_versioning import SpritePosition
