@@ -449,15 +449,15 @@ class Mech:
         ----------
         body, weapons, specials, modules: `bool`
             Selectors denoting which groups of parts to yield.
-            If all set to `False`, acts as if all are set to `True`.
+            If none are set to `True`, yields from all groups.
             - `body` yields torso, legs and drone;
             - `weapons` yields side & top weapons;
             - `specials` yields teleport, charge and hook;
             - `modules` yields modules.
 
         slots: `bool`
-            If `True`, yields all selected items as tuple pairs of (`InvItem`, `str`). When False
-            yields only the items.
+            If `True`, yields all selected items as tuple pairs of (`InvItem`, `str`).
+            If `False`, yields only the items.
 
         Yields
         ------
