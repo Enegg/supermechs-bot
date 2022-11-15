@@ -5,21 +5,25 @@ import os
 import typing as t
 from functools import partial
 
-import disnake
-from disnake.ui import Button, MessageUIComponent, Select
+from disnake import MessageInteraction
+from disnake.ui.action_row import MessageUIComponent
 from disnake.ui.item import DecoratedItem, Item
 from disnake.ui.view import View
-from typing_extensions import Self
+from typing_extensions import Self, TypeVar
 
 from library_extensions import ReprMixin
+from typeshed import T
 
 from .action_row import ActionRow, ActionRowT, PaginatedRow
-from .item import I_CO, ItemCallbackType
 
-V_CO = t.TypeVar("V_CO", bound=View | None, covariant=True)
-T = t.TypeVar("T")
+__all__ = ("View", "InteractionCheck", "PaginatorView", "V", "positioned")
+
+V = TypeVar("V", bound=View | None, default=None, infer_variance=True)
+I = TypeVar("I", bound=Item[None], infer_variance=True)
+M = TypeVar("M", bound=MessageInteraction, default=MessageInteraction, infer_variance=True)
+# how do I exit this
+ItemCallbackType = t.Callable[[V, I, M], t.Coroutine[t.Any, t.Any, t.Any]]
 FactoryT = type[T] | t.Callable[[], T]
-__all__ = ("View", "InteractionCheck", "PaginatorView", "V_CO", "positioned")
 
 
 class InteractionCheck:
@@ -30,7 +34,7 @@ class InteractionCheck:
     user_id: int
     response = "Only the command invoker can interact with that."
 
-    async def interaction_check(self, interaction: disnake.MessageInteraction) -> bool:
+    async def interaction_check(self, interaction: MessageInteraction) -> bool:
         if interaction.author.id != self.user_id:
             await interaction.send(self.response, ephemeral=True)
             return False
@@ -41,7 +45,7 @@ class InteractionCheck:
 def positioned(row: int, column: int):
     """Denotes the position of an Item in the 5x5 grid."""
 
-    def decorator(func: ItemCallbackType[t.Any, I_CO] | DecoratedItem[I_CO]) -> DecoratedItem[I_CO]:
+    def decorator(func: ItemCallbackType[t.Any, I] | DecoratedItem[I]) -> DecoratedItem[I]:
         func.__discord_ui_position__ = (row, column)  # type: ignore
         return func  # type: ignore
 
@@ -73,7 +77,7 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
             member
             for base in reversed(cls.__mro__)
             for member in base.__dict__.values()
-            if hasattr(member, "__discord_ui_model_type__") or isinstance(member, (Button, Select))
+            if hasattr(member, "__discord_ui_model_type__")
         ]
 
         if len(children) > 25:
