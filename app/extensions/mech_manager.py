@@ -21,9 +21,8 @@ from disnake.utils import MISSING
 from library_extensions import DesyncError, image_to_file
 from ui.action_row import ActionRow, MessageUIComponent
 from ui.buttons import Button, ToggleButton, TrinaryButton, button
-from ui.item import add_callback
 from ui.selects import EMPTY_OPTION, PaginatedSelect, Select, select
-from ui.views import InteractionCheck, PaginatorView, SaneView, positioned
+from ui.views import InteractionCheck, PaginatorView, SaneView, add_callback, positioned
 
 from SuperMechs.core import STATS, ArenaBuffs
 from SuperMechs.enums import Element, Type

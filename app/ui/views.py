@@ -231,3 +231,10 @@ class PaginatorView(SaneView[PaginatedRow[MessageUIComponent]]):
     def page(self, value: int) -> None:
         for row in self.rows:
             row.page = value
+
+
+def add_callback(
+    item: I, callback: t.Callable[[I, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
+) -> I:
+    item.callback = partial(callback, item)
+    return item

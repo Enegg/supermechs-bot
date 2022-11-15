@@ -7,9 +7,8 @@ from disnake.ext import commands, plugins
 
 from config import TEST_GUILDS
 from ui.buttons import Button, TrinaryButton, button
-from ui.item import add_callback
 from ui.selects import EMPTY_OPTION, Select, select
-from ui.views import InteractionCheck, PaginatorView, positioned
+from ui.views import InteractionCheck, PaginatorView, add_callback, positioned
 
 from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
 from SuperMechs.player import Player
