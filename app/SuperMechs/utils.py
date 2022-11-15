@@ -6,8 +6,6 @@ from string import ascii_letters
 
 from typing_extensions import Self
 
-from typeshed import SupportsSet, T
-
 
 class _MissingSentinel:
     def __eq__(self, _: t.Any) -> bool:
@@ -20,7 +18,7 @@ class _MissingSentinel:
         return "..."
 
     def __hash__(self) -> int:
-        return hash((None,))
+        return hash((type(self),))
 
     def __copy__(self) -> Self:
         return self
@@ -33,63 +31,26 @@ class _MissingSentinel:
 
 
 MISSING: t.Final[t.Any] = _MissingSentinel()
-Proxied = t.Annotated[T, MISSING]
-
-
-def make_property(slot: str, attr: str):
-    return property(lambda self: getattr(getattr(self, slot), attr))
-
-
-def proxy(slot: str, /) -> t.Callable[[type[T]], type[T]]:
-    """Creates properties for attributes marked as Proxied."""
-
-    def wrap(cls: type[T]) -> type[T]:
-        for ann, tp in tuple(cls.__annotations__.items()):
-            match t.get_origin(tp), t.get_args(tp):
-                case t.Annotated, (_, _MissingSentinel()):
-                    del cls.__annotations__[ann]
-                    delattr(cls, ann)
-                    setattr(cls, ann, make_property(slot, ann))
-
-                case t.ClassVar, (t.Annotated as tp,) if t.get_args(tp)[1] is MISSING:
-                    del cls.__annotations__[ann]
-                    setattr(cls, ann, make_property(slot, ann))
-
-                case _:
-                    pass
-
-        return cls
-
-    return wrap
-
-
-def common_items(*items: t.Iterable[SupportsSet]) -> set[SupportsSet]:
-    """Returns intersection of items in iterables."""
-    iterables = iter(items)
-    result = set(next(iterables, ()))
-
-    for item in iterables:
-        result.intersection_update(item)
-
-    return result
 
 
 def search_for(
     phrase: str, iterable: t.Iterable[str], *, case_sensitive: bool = False
 ) -> t.Iterator[str]:
-    """Helper func capable of finding a specific string(s) in iterable.
+    """
+    Helper func capable of finding a specific string(s) in iterable.
     It is considered a match if every word in phrase appears in the name
     and in the same order. For example, both `burn scop` & `half scop`
     would match name `Half Burn Scope`, but not `burn half scop`.
 
     Parameters
-    -----------
+    ----------
     phrase:
         String of whitespace-separated words.
     iterable:
-        t.Iterable of strings to match against.
+        Iterable of strings to match against.
     case_sensitive:
-        Whether the search should be case sensitive."""
+        Whether the search should be case sensitive.
+    """
     parts = (phrase if case_sensitive else phrase.lower()).split()
 
     for name in iterable:
@@ -117,13 +78,6 @@ def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
 def random_str(length: int, /) -> str:
     """Generates a random string of given length from ascii letters."""
     return "".join(random.sample(ascii_letters, length))
-
-
-async def maybe_coroutine(coro: T | t.Coroutine[t.Any, t.Any, T]) -> T:
-    if isinstance(coro, t.Coroutine):
-        return await coro
-
-    return coro
 
 
 def truncate_name(input: str, length: int = 32) -> str:
