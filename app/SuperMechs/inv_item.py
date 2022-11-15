@@ -55,7 +55,7 @@ class InvItem(t.Generic[AttachmentType]):
     power: int = 0
     UUID: uuid.UUID = Factory(uuid.uuid4)
     maxed: bool = field(init=False)
-    _level: int = field(init=False)
+    _level: int = field(init=False, repr=False, eq=False)
 
     def __attrs_post_init__(self) -> None:
         self.maxed = self.tier is Tier.DIVINE or self.power >= self.max_power
