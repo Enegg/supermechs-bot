@@ -300,8 +300,8 @@ class Mech:
         included_buffs: ArenaBuffs | None = None,
         /,
         *,
-        line_format: str | None = None,
-        extra: dict[str, t.Callable[[Mech, int], str]] | None = None,
+        line_format: str = "{stat.emoji} **{value}** {stat.name}{extra}",
+        extra: t.Mapping[str, t.Callable[[Mech, int], t.Any]] = {"weight": get_weight_utilization_emoji},
     ) -> str:
         """Returns a string of lines formatted with mech stats.
 
@@ -314,23 +314,19 @@ class Mech:
             - `value` - the integer value of the stat.
             - `extra` - any extra data coming from a callable from the `extra` param.
         """
-        if line_format is None:
-            line_format = "{stat.emoji} **{value}** {stat.name}{extra}"
-
-        if extra is None:
-            extra = {"weight": get_weight_utilization_emoji}
-
         if included_buffs is None:
             bank = self.stats
 
         else:
             bank = included_buffs.buff_stats(self.stats, buff_health=True)
 
+        default_extra: t.Callable[[Mech, int], t.Any] = lambda mech, value: ""
+
         return "\n".join(
             line_format.format(
                 value=value,
                 stat=STATS[stat_name],
-                extra=extra.get(stat_name, lambda mech, value: "")(self, value),
+                extra=extra.get(stat_name, default_extra)(self, value),
             )
             for stat_name, value in bank.items()
         )
