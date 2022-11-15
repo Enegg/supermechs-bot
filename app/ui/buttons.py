@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-import asyncio
 import typing as t
 
 from disnake import ButtonStyle
 from disnake.ui.button import Button, button
-from typing_extensions import Self
 
-from .item import ItemCallbackType
+from typeshed import T
 
 if t.TYPE_CHECKING:
     from disnake import Emoji, PartialEmoji
 
 B_CO = t.TypeVar("B_CO", bound=Button[None], covariant=True)
-T = t.TypeVar("T")
 
 __all__ = ("button", "Button", "ToggleButton", "TrinaryButton", "B_CO")
 
@@ -31,27 +28,6 @@ class LinkButton(Button[None]):
         row: int | None = None,
     ) -> None:
         super().__init__(label=label, disabled=disabled, url=url, emoji=emoji, row=row)
-
-
-class DecoButton(Button[None]):
-    def __call__(self, func: ItemCallbackType[None, Self]) -> Self:
-        if not asyncio.iscoroutinefunction(func):
-            raise TypeError("button callback must be a coroutine function")
-
-        func.__discord_ui_model_type__ = type(self)
-        func.__discord_ui_model_kwargs__ = {
-            "style": self.style,
-            "label": self.label,
-            "disabled": self.disabled,
-            "custom_id": self.custom_id,
-            "url": self.url,
-            "emoji": self.emoji,
-            "row": self.row,
-        }
-
-        return func  # type: ignore
-
-    add_callback = __call__
 
 
 class ToggleButton(Button[None]):
