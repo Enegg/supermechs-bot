@@ -141,9 +141,9 @@ class Markdown:
     """Namespace class for functions related to markdown syntax."""
 
     @staticmethod
-def hyperlink(text: str, url: str) -> str:
-    """Return a hyperlink to a URL."""
-    return f"[{text}]({url})"
+    def hyperlink(text: str, url: str) -> str:
+        """Return a hyperlink to a URL."""
+        return f"[{text}]({url})"
 
     @staticmethod
     def codeblock(text: str, lang: str = "") -> str:
