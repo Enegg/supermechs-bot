@@ -74,3 +74,9 @@ class proxied(t.Generic[T]):
             return self
 
         return getattr(getattr(obj, self.proxied), self.name)
+
+
+class mutable_proxy(proxied[T]):
+    """Property proxying getting and setting an attribute of another slot."""
+    def __set__(self, obj: t.Any, value: T) -> None:
+        setattr(getattr(obj, self.proxied), self.name, value)
