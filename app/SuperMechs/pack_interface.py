@@ -11,12 +11,11 @@ from attrs import define, field
 
 from abstract.files import URL, Resource, Urlish
 from shared import SESSION_CTX
-from typeshed import ID, Name
 
 from .core import abbreviate_names
 from .images import AttachedImage
 from .item import AnyItem, Item
-from .typedefs.pack_versioning import AnyItemPack, ItemPackVer1, ItemPackVer2
+from .typedefs import ID, AnyItemPack, ItemPackVer1, ItemPackVer2, Name
 from .utils import MISSING, js_format
 
 __all__ = ("PackInterface",)
@@ -117,7 +116,7 @@ class PackInterface:
             case _:
                 return NotImplemented
 
-    async def load(self, resource: Resource[t.Any], /, **extra: t.Any) -> None:
+    async def load(self, resource: Resource, /, **extra: t.Any) -> None:
         """Load the item pack from a resource."""
 
         # TODO: split the logic in this method into functions

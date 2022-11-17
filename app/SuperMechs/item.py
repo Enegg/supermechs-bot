@@ -5,14 +5,11 @@ import typing as t
 from attrs import field, frozen, validators
 from typing_extensions import Self
 
-from typeshed import ID, Name
-
 from .core import TransformRange
 from .enums import Element, Tier, Type
 from .images import AttachedImage, AttachmentType, parse_raw_attachment
 from .stat_handler import StatHandler
-from .typedefs.game_types import AnyStats
-from .typedefs.pack_versioning import AnyItemDict, ItemDictVer1, ItemDictVer2, SpritePosition
+from .typedefs import ID, AnyItemDict, AnyStats, ItemDictVer1, ItemDictVer2, Name, SpritePosition
 from .utils import MISSING
 
 if t.TYPE_CHECKING:

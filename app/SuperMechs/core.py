@@ -7,10 +7,8 @@ from pathlib import Path
 from attrs import Factory, define, frozen
 from typing_extensions import Self
 
-from typeshed import Name
-
 from .enums import Tier
-from .typedefs.game_types import AnyMechStats, AnyStatKey, AnyStats, StatDict
+from .typedefs import AnyMechStats, AnyStatKey, AnyStats, Name, StatDict
 from .utils import MISSING
 
 ValueT = t.TypeVar("ValueT", bound=int | list[int])

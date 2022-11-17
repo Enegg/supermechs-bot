@@ -12,7 +12,7 @@ from disnake.ui.view import View
 from typing_extensions import Self, TypeVar
 
 from library_extensions import ReprMixin
-from typeshed import T
+from typeshed import Factory
 
 from .action_row import ActionRow, ActionRowT, PaginatedRow
 
@@ -23,7 +23,6 @@ I = TypeVar("I", bound=Item[None], infer_variance=True)
 M = TypeVar("M", bound=MessageInteraction, default=MessageInteraction, infer_variance=True)
 # how do I exit this
 ItemCallbackType = t.Callable[[V, I, M], t.Coroutine[t.Any, t.Any, t.Any]]
-FactoryT = type[T] | t.Callable[[], T]
 
 
 class InteractionCheck:
@@ -89,7 +88,7 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
         self,
         *,
         timeout: float = 180.0,
-        row_factory: FactoryT[ActionRowT] = ActionRow[MessageUIComponent],
+        row_factory: Factory[ActionRowT] = ActionRow[MessageUIComponent],
     ) -> None:
         # we *do not* call super().__init__() and instead do all the initialization
         # so as to overwrite how View initializes decorated callbacks

@@ -7,14 +7,13 @@ from pathlib import Path
 from attrs import Factory, define, field
 
 from shared.utils import cached_slot_property, proxied
-from typeshed import ID, Name
 
 from .core import TransformRange
 from .enums import Element, Tier, Type
 from .errors import MaxPowerReached, MaxTierReached
 from .images import AttachedImage, Attachment, Attachments, AttachmentType
 from .item import Item, Tags
-from .typedefs.game_types import AnyStats
+from .typedefs import ID, AnyStats, Name
 
 __all__ = ("InvItem", "AnyInvItem", "SlotType")
 

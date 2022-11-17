@@ -9,7 +9,7 @@ from ..inv_item import AnyInvItem, InvItem
 from ..item import AnyItem
 from ..mech import Mech
 from ..player import Player
-from ..typedefs.game_types import AnyStats
+from ..typedefs import AnyStats
 from ..utils import truncate_name
 
 if t.TYPE_CHECKING:

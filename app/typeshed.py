@@ -10,9 +10,7 @@ twotuple = tuple[T, T]
 XOrTupleXY = T | tuple[T, T2]
 SupportsSet = t.TypeVar("SupportsSet", bound=t.Hashable)
 Coro = t.Coroutine[t.Any, t.Any, T]
-
-Name: t.TypeAlias = str
-ID: t.TypeAlias = int
+Factory = t.Callable[[], T]
 
 
 def dict_items_as(value_type: type[VT], obj: t.Mapping[KT, t.Any]) -> t.ItemsView[KT, VT]:
