@@ -1,6 +1,8 @@
 import typing as t
 
-T = t.TypeVar("T")
+from typing_extensions import TypeVar
+
+T = TypeVar("T", default=t.Any, infer_variance=True)
 T2 = t.TypeVar("T2")
 KT = t.TypeVar("KT")
 VT = t.TypeVar("VT")

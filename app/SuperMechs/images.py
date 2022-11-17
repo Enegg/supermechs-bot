@@ -7,7 +7,7 @@ from collections import defaultdict
 from functools import partial
 
 from attrs import define, field
-from typing_extensions import LiteralString, Self
+from typing_extensions import LiteralString, Self, TypeVar
 
 from abstract.files import Resource
 from typeshed import P, twotuple
@@ -44,7 +44,7 @@ def raw_attachments_to_tupled(mapping: RawAttachments) -> Attachments:
 
 Attachments = dict[str, Attachment]
 AnyAttachment = Attachment | Attachments | None
-AttachmentType = t.TypeVar("AttachmentType", bound=AnyAttachment)
+AttachmentType = TypeVar("AttachmentType", bound=AnyAttachment, default=None)
 
 
 def parse_raw_attachment(raw_attachment: AnyRawAttachment) -> AnyAttachment:
