@@ -307,7 +307,7 @@ class ArenaBuffs:
 
     @classmethod
     def maxed(cls) -> Self:
-        """Alternate constructor returning the object with all levels set to max."""
+        """Factory method returning `ArenaBuffs` with all levels set to max."""
 
         max_buffs = cls()
         levels = max_buffs.levels
