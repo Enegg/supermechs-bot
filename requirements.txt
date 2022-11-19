@@ -1,6 +1,6 @@
 # General
 python-dotenv == 0.19.*
-typing-extensions == 4.4.*
+typing-extensions >= 4.4.1
 attrs == 22.1.*
 aiohttp == 3.8.*
 
