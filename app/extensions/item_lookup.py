@@ -516,7 +516,6 @@ def comparator(
     stats_a: AnyStats, stats_b: AnyStats
 ) -> t.Iterator[
     tuple[
-        str,
         Stat,
         twotuple[value_and_diff]
         | tuple[value_and_diff, value_and_diff, value_and_diff, value_and_diff],
@@ -529,7 +528,7 @@ def comparator(
         stat_b: int | list[int] | None = stats_b.get(stat_name)
 
         if stat_name in special_cases and not (stat_a is stat_b is None):
-            yield stat_name, stat, (
+            yield stat, (
                 tuple(stat_a) if isinstance(stat_a, list) else (None, 0),
                 tuple(stat_b) if isinstance(stat_b, list) else (None, 0),
             )
@@ -540,14 +539,14 @@ def comparator(
                 continue
 
             case (int() as a, int() as b):
-                yield stat_name, stat, cmp_num(a, b, not stat.beneficial)
+                yield stat, cmp_num(a, b, not stat.beneficial)
                 continue
 
             case ([int() as a1, int() as a2], [int() as b1, int() as b2]):
                 x_avg, x_inacc = standard_deviation(a1, a2)
                 y_avg, y_inacc = standard_deviation(b1, b2)
 
-                yield stat_name, stat, cmp_num(x_avg, y_avg, False) + cmp_num(
+                yield stat, cmp_num(x_avg, y_avg, False) + cmp_num(
                     x_inacc, y_inacc, True
                 )
                 continue
@@ -556,18 +555,18 @@ def comparator(
                 pass
 
         if isinstance(stat_a, int):
-            yield stat_name, stat, ((stat_a, 0), (None, 0))
+            yield stat, ((stat_a, 0), (None, 0))
 
         elif isinstance(stat_b, int):
-            yield stat_name, stat, ((None, 0), (stat_b, 0))
+            yield stat, ((None, 0), (stat_b, 0))
 
         elif stat_a is not None:
             avg, inacc = standard_deviation(*stat_a)
-            yield stat_name, stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
+            yield stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
 
         elif stat_b is not None:
             avg, inacc = standard_deviation(*stat_b)
-            yield stat_name, stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
+            yield stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
 def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], list[str], list[str]]:
@@ -575,15 +574,15 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
     first_item: list[str] = []
     second_item: list[str] = []
 
-    for stat_name, stat, long_boy in comparator(stats_a, stats_b):
+    for stat, long_boy in comparator(stats_a, stats_b):
         name_field.append(f"{stat.emoji} {stat.name}")
 
-        match (stat_name, long_boy):  # pyright: ignore[reportMatchNotExhaustive]
-            case ("range", ((a1, a2), (b1, b2))):
+        match stat.key, long_boy:
+            case "range", ((a1, a2), (b1, b2)):
                 first_item.append(f"**{a1}-{a2}**" if a1 is not None else "")
                 second_item.append(f"**{b1}-{b2}**" if b1 is not None else "")
 
-            case (_, ((_, _), (_, _)) as tup):
+            case _, ((_, _), (_, _)) as tup:
                 for (value, diff), field in zip(tup, (first_item, second_item)):
                     if value is None:
                         string = ""
@@ -596,7 +595,7 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
 
                     field.append(string)
 
-            case (_, ((_, _), (_, _), (_, _), (_, _)) as tup):
+            case _, ((_, _), (_, _), (_, _), (_, _)) as tup:
                 name_field.append("🎲 Damage spread")
 
                 for (avg, diff), (spread, s_diff), field in zip(
@@ -623,6 +622,9 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
                         string = f"**{spread:.1%}** {s_diff:+.1%}"
 
                     field.append(string)
+
+            case _:
+                raise ValueError("Invalid structure")
 
     return name_field, first_item, second_item
 
