@@ -39,28 +39,30 @@ class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
         self,
         embed: Embed,
         item: AnyItem,
-        callback: t.Callable[[Embed, AnyItem, bool, bool], None],
+        factory: t.Callable[[AnyItem, bool, bool], t.Iterable[tuple[str, str, bool]]],
         *,
         user_id: int,
         timeout: float = 180,
     ) -> None:
         super().__init__(timeout=timeout)
         self.user_id = user_id
-        self.call = callback
         self.embed = embed
         self.item = item
+        self.field_factory = factory
 
         if not item.stats.has_any_of_stats("phyDmg", "eleDmg", "expDmg"):
             self.remove_item(self.avg_button, 0)
 
-        callback(embed, item, False, False)
+        for name, value, inline in factory(item, False, False):
+            embed.add_field(name, value, inline=inline)
 
     @positioned(0, 0)
     @button(cls=ToggleButton, label="Buffs", custom_id="button:buffs")
     async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.embed.clear_fields()
-        self.call(self.embed, self.item, button.on, self.avg_button.on)
+        for name, value, inline in self.field_factory(self.item, button.on, self.avg_button.on):
+            self.embed.add_field(name, value, inline=inline)
         await inter.response.defer()
         await inter.edit_original_message(embed=self.embed, view=self)
 
@@ -69,7 +71,8 @@ class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
     async def avg_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.embed.clear_fields()
-        self.call(self.embed, self.item, self.buff_button.on, button.on)
+        for name, value, inline in self.field_factory(self.item, self.buff_button.on, button.on):
+            self.embed.add_field(name, value, inline=inline)
         await inter.response.defer()
         await inter.edit_original_message(embed=self.embed, view=self)
 
@@ -174,7 +177,7 @@ async def item(
             .set_thumbnail(url)
         )
         # fmt: on
-        embed_preset = compact_embed
+        field_factory = compact_fields
 
     else:
         # fmt: off
@@ -189,9 +192,9 @@ async def item(
             .set_image(url)
         )
         # fmt: on
-        embed_preset = default_embed
+        field_factory = default_fields
 
-    view = ItemView(embed, item, embed_preset, user_id=inter.author.id)
+    view = ItemView(embed, item, field_factory, user_id=inter.author.id)
     await inter.send(embed=embed, file=file, view=view, ephemeral=True)
 
     await view.wait()
@@ -323,36 +326,79 @@ def standard_deviation(*numbers: float) -> twotuple[float]:
 
 def buffed_stats(
     stats: AnyStats, buffs_enabled: bool
-) -> t.Iterator[tuple[str, twotuple[int] | twotuple[twotuple[int]]]]:
+) -> t.Iterator[tuple[str, twotuple[tuple[int, ...]]]]:
     if buffs_enabled:
         apply_buff = MAX_BUFFS.buff_with_difference
 
     else:
 
-        def apply_buff(stat_name: str, value: int, /) -> twotuple[int]:
+        def apply_buff(_: str, value: int, /) -> twotuple[int]:
             return (value, 0)
 
     for stat, value in dict_items_as(int | list[int], stats):
         if stat == "health":
             assert type(value) is int
-            yield stat, (value, 0)
+            yield stat, ((value,), (0,))
             continue
 
         match value:
             case int():
-                yield stat, apply_buff(stat, value)
+                value, diff = apply_buff(stat, value)
+                yield stat, ((value,), (diff,))
 
             case [int() as x, y] if x == y:
-                yield stat, apply_buff(stat, x)
+                value, diff = apply_buff(stat, x)
+                yield stat, ((value,), (diff,))
 
             case [x, y]:
-                yield stat, (apply_buff(stat, x), apply_buff(stat, y))
+                vx, dx = apply_buff(stat, x)
+                vy, dy = apply_buff(stat, y)
+                yield stat, ((vx, vy), (dx, dy))
 
             case _:
                 raise TypeError(f"Unexpected value: {value}")
 
 
-def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
+def value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
+    return "-".join(map(str, values))
+
+
+def diffs_formatter(diffs: tuple[int, ...], prec: int = 1) -> str:
+    return f"{sum(diffs) / len(diffs):+.{prec}g}" if diffs[0] else ""
+
+
+def avg_value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
+    avg, dev = standard_deviation(*values)
+    return f"{avg:g} ~{dev / avg:.{prec}%}"
+
+
+FormatterT = t.Callable[[tuple[int, ...]], str]
+PrecFormatterT = t.Callable[[tuple[int, ...], int], str]
+formatters: dict[str, tuple[FormatterT | None, FormatterT | None, PrecFormatterT | None]] = {
+    "range": (None, lambda _: "", value_formatter),
+}
+
+
+def shared_iter(stats: AnyStats, buffs_enabled: bool, avg: bool, prec: int = 1) -> t.Iterator[tuple[str, str, str]]:
+    for stat, (values, diffs) in buffed_stats(stats, buffs_enabled):
+        val_fmt, diff_fmt, avg_fmt = formatters.get(stat, (None, None, None))
+
+        val_fmt = val_fmt or value_formatter
+        diff_fmt = diff_fmt or diffs_formatter
+        avg_fmt = avg_fmt or avg_value_formatter
+
+        if avg and len(values) > 1:
+            str_value = avg_fmt(values, prec)
+
+        else:
+            str_value = val_fmt(values)
+
+        change = diff_fmt(diffs)
+
+        yield stat, str_value, change
+
+
+def default_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
 
     if item.transform_range.is_single_tier():
@@ -363,52 +409,34 @@ def default_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
         tiers[-1] = f"({tiers[-1]})"
         transform_range = "".join(tiers)
 
-    embed.add_field(name="Transform range: ", value=transform_range, inline=False)
+    yield ("Transform range: ", transform_range, False)
 
     spaced = False
     item_stats = ""  # the main string
     cost_stats = {"backfire", "heaCost", "eneCost"}
 
-    for stat, (value, diff) in buffed_stats(item.max_stats, buffs_enabled):
+    for stat, str_value, change in shared_iter(item.max_stats, buffs_enabled, avg):
         if not spaced and stat in cost_stats:
             item_stats += "\n"
             spaced = True
 
-        if not (isinstance(value, tuple) and isinstance(diff, tuple)):
-            text = str(value)
-            change = f" **{diff:+}**" if diff else ""
-
-        elif avg and stat != "range":
-            v1, d1 = value
-            v2, d2 = diff
-
-            avg_dmg, dev = standard_deviation(v1, v2)
-            avg_diff = (d1 + d2) / 2
-
-            text = f"{avg_dmg:g} ±{dev:.1%}"
-            change = f" **{avg_diff:+g}**" if avg_diff else ""
-
-        else:
-            v1, d1 = value
-            v2, d2 = diff
-
-            text = f"{v1}-{v2}"
-            change = f" **{d1:+} {d2:+}**" if d1 or d2 else ""
+        if change:
+            change = f" **{change}**"
 
         name = STATS[stat].name
 
         if stat == "uses":
-            name = "Use" if value == 1 else "Uses"
+            name = "Use" if str_value == "1" else "Uses"
 
-        item_stats += f"{STATS[stat].emoji} **{text}** {name}{change}\n"
+        item_stats += f"{STATS[stat].emoji} **{str_value}** {name}{change}\n"
 
     if item.tags.require_jump:
         item_stats += f"{STATS['jump'].emoji} **Jumping required**"
 
-    embed.add_field(name="Stats:", value=item_stats, inline=False)
+    yield ("Stats:", item_stats, False)
 
 
-def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -> None:
+def compact_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with reduced in size item info."""
 
     if item.transform_range.is_single_tier():
@@ -421,40 +449,30 @@ def compact_embed(embed: Embed, item: AnyItem, buffs_enabled: bool, avg: bool) -
 
     lines: list[str] = []
 
-    for stat, (value, diff) in buffed_stats(item.max_stats, buffs_enabled):
-        if not (isinstance(value, tuple) and isinstance(diff, tuple)):
-            text = str(value)
-
-        elif avg and stat != "range":
-            a, b = standard_deviation(value[0], diff[0])
-            text = f"{a:.0f} ±{b:.0%}"
-
-        else:
-            text = f"{value[0]}-{diff[0]}"
-
-        lines.append(f"{STATS[stat].emoji} **{text}**")
+    for stat, str_value, _ in shared_iter(item.max_stats, buffs_enabled, avg, 0):
+        lines.append(f"{STATS[stat].emoji} **{str_value}**")
 
     if item.tags.require_jump:
         lines.append(f"{STATS['jump'].emoji}❗")
 
     line_count = len(lines)
-
-    if line_count > 4 and not 0 != line_count % 4 < 3:  # == 0 or > 2
-        div = 4
-
-    elif not 0 != line_count % 3 < 2:  # == 0 or > 1
-        div = 3
-
-    elif line_count < 4:
-        div = 2
-
-    else:
-        div = 4
+    div = wrap_nicely(line_count, 4)
 
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
 
     for name, field in zip_longest((transform_range,), field_text, fillvalue="⠀"):
-        embed.add_field(name=name, value=field)
+        yield (name, field, True)
+
+
+def wrap_nicely(size: int, max: int) -> int:
+    """Returns the size for a slice of a sequence of given size, distributed evenly according to max."""
+    if size < max:
+        return max
+    for n in range(max, 2, -1):
+        rem = size % n
+        if rem == 0 or rem >= n - 1:
+            return n
+    return max
 
 
 @t.overload
