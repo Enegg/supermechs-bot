@@ -141,14 +141,14 @@ async def raise_autocomplete(_: CommandInteraction, input: str) -> list[str]:
 @plugin.slash_command(name="eval")
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
-async def eval_(inter: CommandInteraction | ModalInteraction, input: str | None = None) -> None:
+async def eval_(inter: CommandInteraction | ModalInteraction, code: str | None = None) -> None:
     """Evaluates the given input as code.
 
     Parameters
     ----------
-    input: code to execute.
+    code: code to execute.
     """
-    if input is None:
+    if code is None:
         text_input = TextInput(
             label="Code to evaluate", custom_id="eval:input", style=TextInputStyle.paragraph
         )
@@ -167,16 +167,16 @@ async def eval_(inter: CommandInteraction | ModalInteraction, input: str | None 
         except asyncio.TimeoutError:
             return await inter.send("Modal timed out.", ephemeral=True)
 
-        input = modal_inter.text_values[text_input.custom_id]
+        code = modal_inter.text_values[text_input.custom_id]
         inter = modal_inter
 
-    input = Markdown.strip_codeblock(input)
+    code = Markdown.strip_codeblock(code)
 
     with io.StringIO() as local_stdout:
         with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
             tasks: set[t.Awaitable[t.Any]] = set()
             try:
-                exec(input, globals() | {"bot": plugin.bot, "inter": inter, "coros": tasks})
+                exec(code, globals() | {"bot": plugin.bot, "inter": inter, "coros": tasks})
                 if tasks:
                     await asyncio.gather(*tasks)
 
