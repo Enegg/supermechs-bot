@@ -13,6 +13,8 @@ from library_extensions import Markdown
 if t.TYPE_CHECKING:
     from bot import SMBot
 
+python_version = ".".join(map(str, sys.version_info[:3]))
+
 plugin = Plugin["SMBot"](name="Bot-status")
 
 
@@ -50,10 +52,8 @@ async def self_info(inter: CommandInteraction) -> None:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
         desc_fields.append(Markdown.hyperlink("**Invite link**", invite))
 
-    python_version = ".".join(map(str, sys.version_info[:3]))
-
     tech_fields = [
-        f"Python build: {python_version} {sys.version_info.releaselevel}",
+        f"Python version: {python_version}",
         f"disnake version: {disnake_version}",
         f"Created: {format_dt(bot.user.created_at, 'R')}",
         f"Started: {format_dt(bot.started_at, 'R')}",
