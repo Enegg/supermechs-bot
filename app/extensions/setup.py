@@ -5,10 +5,9 @@ import io
 import traceback
 import typing as t
 from contextlib import redirect_stderr, redirect_stdout
-from contextvars import ContextVar
 from traceback import print_exception
 
-from disnake import AllowedMentions, CommandInteraction, File, ModalInteraction, TextInputStyle
+from disnake import CommandInteraction, File, ModalInteraction, TextInputStyle
 from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
@@ -19,7 +18,7 @@ if t.TYPE_CHECKING:
     from bot import SMBot
 
 plugin = plugins.Plugin["SMBot"](name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS})
-LAST_EXTENSION = ContextVar[str | None]("last_extension", default=None)
+last_extension: str | None = None
 
 
 @plugin.slash_command()
@@ -32,7 +31,8 @@ async def ext(inter: CommandInteraction) -> None:
 async def _ext_helper(
     inter: CommandInteraction, ext: str | None, func: t.Callable[[str], None]
 ) -> None:
-    ext = ext or LAST_EXTENSION.get()
+    global last_extension
+    ext = ext or last_extension
 
     if ext is None:
         return await inter.response.send_message("No extension cached.", ephemeral=True)
@@ -48,7 +48,7 @@ async def _ext_helper(
             await inter.send(sio.getvalue(), ephemeral=True)
 
     else:
-        LAST_EXTENSION.set(ext)
+        last_extension = ext
         await inter.response.send_message("Success", ephemeral=True)
 
 
