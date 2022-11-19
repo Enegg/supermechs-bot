@@ -359,17 +359,26 @@ def buffed_stats(
                 raise TypeError(f"Unexpected value: {value}")
 
 
+def truncate_float(num: float, digits: int) -> tuple[float, int]:
+    num = round(num, digits)
+    if num.is_integer():
+        return num, 0
+    return num, digits
+
+
 def value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
     return "-".join(map(str, values))
 
 
 def diffs_formatter(diffs: tuple[int, ...], prec: int = 1) -> str:
-    return f"{sum(diffs) / len(diffs):+.{prec}g}" if diffs[0] else ""
+    return "{0:+.{1}f}".format(*truncate_float(sum(diffs) / len(diffs), prec)) if diffs[0] else ""
 
 
 def avg_value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
     avg, dev = standard_deviation(*values)
-    return f"{avg:g} ~{dev / avg:.{prec}%}"
+    return "{0:.{1}f} ~{2:.{3}f}%".format(
+        *truncate_float(avg, 1), *truncate_float(dev / avg * 100, prec)
+    )
 
 
 FormatterT = t.Callable[[tuple[int, ...]], str]
@@ -400,16 +409,7 @@ def shared_iter(stats: AnyStats, buffs_enabled: bool, avg: bool, prec: int = 1) 
 
 def default_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
-
-    if item.transform_range.is_single_tier():
-        transform_range = f"({item.transform_range})"
-
-    else:
-        tiers = [tier.emoji for tier in item.transform_range]
-        tiers[-1] = f"({tiers[-1]})"
-        transform_range = "".join(tiers)
-
-    yield ("Transform range: ", transform_range, False)
+    yield ("Transform range: ", item.transform_range.as_tier_str(), False)
 
     spaced = False
     item_stats = ""  # the main string
@@ -438,15 +438,6 @@ def default_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[
 
 def compact_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with reduced in size item info."""
-
-    if item.transform_range.is_single_tier():
-        transform_range = f"({item.transform_range})"
-
-    else:
-        tiers = [tier.emoji for tier in item.transform_range]
-        tiers[-1] = f"({tiers[-1]})"
-        transform_range = "".join(tiers)
-
     lines: list[str] = []
 
     for stat, str_value, _ in shared_iter(item.max_stats, buffs_enabled, avg, 0):
@@ -459,6 +450,7 @@ def compact_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[
     div = wrap_nicely(line_count, 4)
 
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
+    transform_range = item.transform_range.as_tier_str()
 
     for name, field in zip_longest((transform_range,), field_text, fillvalue="⠀"):
         yield (name, field, True)

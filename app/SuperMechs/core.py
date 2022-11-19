@@ -114,6 +114,17 @@ class TransformRange:
         """Whether range has only one tier."""
         return len(self.range) == 1
 
+    def as_tier_str(self, level: int = -1, chars: str | tuple[str, str] = "()") -> str:
+        s = ""
+        if level == -1:
+            level = len(self) - 1
+        for i, rarity in enumerate(self):
+            if i == level:
+                s += f"{chars[0]}{rarity.emoji}{chars[-1]}"
+                continue
+            s += rarity.emoji
+        return s
+
     @classmethod
     def from_tiers(cls, lower: Tier | int, upper: Tier | int | None = None) -> Self:
         """Construct a TransformRange object from upper and lower bounds.
