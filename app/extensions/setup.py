@@ -174,7 +174,7 @@ async def eval_(inter: CommandInteraction | ModalInteraction, input: str | None 
 
     with io.StringIO() as local_stdout:
         with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
-            tasks: list[t.Awaitable[t.Any]] = []
+            tasks: set[t.Awaitable[t.Any]] = set()
             try:
                 exec(input, globals() | {"bot": plugin.bot, "inter": inter, "coros": tasks})
                 if tasks:
@@ -194,11 +194,7 @@ async def eval_(inter: CommandInteraction | ModalInteraction, input: str | None 
     line = "```\n{}```"
 
     if len(text) + len(line) - 2 <= 2000:
-        await inter.send(
-            line.format(text),
-            allowed_mentions=AllowedMentions.none(),
-            ephemeral=True,
-        )
+        await inter.send(line.format(text), ephemeral=True)
 
     else:
         file = File(ensure_file(text), "output.txt")
