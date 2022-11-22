@@ -90,15 +90,13 @@ class TransformRange:
         return len(self.range)
 
     def __contains__(self, item: Tier | TransformRange) -> bool:
-        match item:
-            case Tier():
-                return item.level in self.range
+        if isinstance(item, Tier):
+            return item.level in self.range
 
-            case TransformRange():
-                return item.range in self.range
+        if isinstance(item, type(self)):
+            return item.range in self.range
 
-            case _:
-                return NotImplemented
+        return NotImplemented
 
     @property
     def min(self) -> Tier:

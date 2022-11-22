@@ -24,18 +24,19 @@ class DesyncError(commands.CommandError):
     """Exception raised when due to external factors command's state goes out of sync"""
 
 
-def ensure_file(data_or_fp: str | bytes | io.BufferedIOBase) -> io.BufferedIOBase:
+def ensure_file(data: str | bytes | io.BufferedIOBase) -> io.BufferedIOBase:
     """Creates a readable file from a string, bytes or IO object."""
+    if isinstance(data, str):
+        file = io.BytesIO(data.encode())
 
-    match data_or_fp:
-        case str():
-            file = io.BytesIO(data_or_fp.encode())
+    elif isinstance(data, bytes):
+        file = io.BytesIO(data)
 
-        case bytes():
-            file = io.BytesIO(data_or_fp)
+    elif isinstance(data, io.BufferedIOBase):
+        file = data
 
-        case _:
-            file = data_or_fp
+    else:
+        raise TypeError(f"Unsupported data type: {data!r}")
 
     return file
 

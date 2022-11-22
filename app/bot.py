@@ -74,37 +74,37 @@ class SMBot(commands.InteractionBot):
     async def on_slash_command_error(
         self, inter: CommandInteraction, error: commands.CommandError
     ) -> None:
-        match error:
-            case commands.NotOwner():
-                info = "This is a developer-only command."
+        if isinstance(error, commands.NotOwner):
+            info = "This is a developer-only command."
 
-            case commands.UserInputError() | commands.CheckFailure():
-                info = str(error)
+        elif isinstance(error, (commands.UserInputError, commands.CheckFailure)):
+            info = str(error)
 
-            case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
+        elif isinstance(error, commands.MaxConcurrencyReached):
+            if error.number == 1 and error.per is commands.BucketType.user:
                 info = "Your previous invocation of this command has not finished executing."
 
-            case commands.MaxConcurrencyReached():
+            else:
                 info = str(error)
 
-            case _:
-                arguments = ", ".join(
-                    f"`{option}: {value}`" for option, value in inter.filled_options.items()
-                )
+        else:
+            arguments = ", ".join(
+                f"`{option}: {value}`" for option, value in inter.filled_options.items()
+            )
 
-                text = (
-                    f"{error}"
-                    f"\nPlace: `{inter.guild or inter.channel}`"
-                    f"\nCommand invocation: {inter.author.mention} ({inter.author.display_name})"
-                    f" `/{inter.application_command.qualified_name}` {arguments}"
-                )
+            text = (
+                f"{error}"
+                f"\nPlace: `{inter.guild or inter.channel}`"
+                f"\nCommand invocation: {inter.author.mention} ({inter.author.display_name})"
+                f" `/{inter.application_command.qualified_name}` {arguments}"
+            )
 
-                if self.dev_mode:
-                    info = text
+            if self.dev_mode:
+                info = text
 
-                else:
-                    LOGGER.exception(text, exc_info=error)
-                    info = "Command executed with an error..."
+            else:
+                LOGGER.exception(text, exc_info=error)
+                info = "Command executed with an error..."
         await inter.send(info, ephemeral=True)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
@@ -187,13 +187,12 @@ class SMBot(commands.InteractionBot):
     def get_player(self, data: User | Member | Interaction, /) -> Player:
         """Return a Player object from object containing user ID."""
         match data:
-            case User() | Member():
-                id = data.id
-                name = data.name
+            case User(id=id, name=name) | Member(id=id, name=name):
+                pass
 
-            case Interaction():
-                id = data.author.id
-                name = data.author.name
+            case Interaction(author=author):
+                id = author.id
+                name = author.name
 
             case _:
                 raise TypeError(f"Invalid type: {type(data)}")
