@@ -121,7 +121,7 @@ class MechView(InteractionCheck, PaginatorView):
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
         if self.player.arena_buffs.is_at_zero():
-            return await inter.send(
+            return await inter.response.send_message(
                 "This won't show any effect because all your buffs are at level zero.\n"
                 f"You can change that using </buffs:{BUFFS_COMMAND_ID}> command.",
                 ephemeral=True,

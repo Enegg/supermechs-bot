@@ -148,7 +148,7 @@ async def buffs(inter: CommandInteraction, player: Player) -> None:
 async def maxed(inter: CommandInteraction, player: Player) -> None:
     """Maxes out your arena buffs. {{ BUFFS_MAXED }}"""
     player.arena_buffs.levels.update(ArenaBuffs.maxed().levels)
-    await inter.send("Success", ephemeral=True)
+    await inter.response.send_message("Success", ephemeral=True)
 
 
 setup, teardown = plugin.create_extension_handlers()

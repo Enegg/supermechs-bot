@@ -45,7 +45,7 @@ async def _ext_helper(
             sio.write("An error occured:\n```py\n")
             print_exception(type(error), error, error.__traceback__, file=sio)
             sio.write("```")
-            await inter.send(sio.getvalue(), ephemeral=True)
+            await inter.response.send_message(sio.getvalue(), ephemeral=True)
 
     else:
         last_extension = ext
@@ -98,7 +98,7 @@ async def ext_autocomplete(_: CommandInteraction, input: str) -> list[str]:
 @commands.is_owner()
 async def shutdown(inter: CommandInteraction) -> None:
     """Terminates the bot connection."""
-    await inter.send("I will be back", ephemeral=True)
+    await inter.response.send_message("I will be back", ephemeral=True)
     await plugin.bot.close()
 
 

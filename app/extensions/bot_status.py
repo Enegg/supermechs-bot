@@ -26,7 +26,7 @@ async def frantic(inter: CommandInteraction) -> None:
         "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
     ]
     choice = random.choice(frantics)
-    await inter.send(choice)
+    await inter.response.send_message(choice)
 
 
 @plugin.slash_command()
@@ -65,7 +65,7 @@ async def self_info(inter: CommandInteraction) -> None:
         .add_field("Technical", "\n".join(tech_fields))
     )
 
-    await inter.send(embed=embed, ephemeral=True)
+    await inter.response.send_message(embed=embed, ephemeral=True)
 
 
 setup, teardown = plugin.create_extension_handlers()

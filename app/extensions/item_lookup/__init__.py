@@ -82,7 +82,7 @@ async def item(
         field_factory = default_fields
 
     view = ItemView(embed, item, field_factory, user_id=inter.author.id)
-    await inter.send(embed=embed, file=file, view=view, ephemeral=True)
+    await inter.response.send_message(embed=embed, file=file, view=view, ephemeral=True)
 
     await view.wait()
     await inter.edit_original_response(view=None)
