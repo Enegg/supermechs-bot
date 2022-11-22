@@ -12,7 +12,7 @@ from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
 from config import TEST_GUILDS
-from library_extensions import Markdown, ensure_file
+from library_extensions import Markdown
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -197,7 +197,7 @@ async def eval_(inter: CommandInteraction | ModalInteraction, code: str | None =
         await inter.send(line.format(text), ephemeral=True)
 
     else:
-        file = File(ensure_file(text), "output.txt")
+        file = File(io.BytesIO(text.encode()), "output.txt")
         await inter.send(file=file, ephemeral=True)
 
 

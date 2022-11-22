@@ -24,23 +24,6 @@ class DesyncError(commands.CommandError):
     """Exception raised when due to external factors command's state goes out of sync"""
 
 
-def ensure_file(data: str | bytes | io.BufferedIOBase) -> io.BufferedIOBase:
-    """Creates a readable file from a string, bytes or IO object."""
-    if isinstance(data, str):
-        file = io.BytesIO(data.encode())
-
-    elif isinstance(data, bytes):
-        file = io.BytesIO(data)
-
-    elif isinstance(data, io.BufferedIOBase):
-        file = data
-
-    else:
-        raise TypeError(f"Unsupported data type: {data!r}")
-
-    return file
-
-
 def image_to_file(image: Image, filename: str, format: str = "png") -> File:
     """Creates a `disnake.File` object from `PIL.Image.Image`."""
     filename = validify_filename(filename, "." + format)
@@ -90,7 +73,7 @@ class ChannelHandler(logging.Handler):
                 record.exc_text = stack
 
             if len(record.exc_text) + len(msg) + 8 > 2000:
-                record.file = ensure_file(record.exc_text)
+                record.file = io.BytesIO(record.exc_text.encode())
 
             else:
                 if not msg.endswith("\n"):
