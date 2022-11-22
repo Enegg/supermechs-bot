@@ -1,77 +1,48 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import typing as t
-from io import TextIOBase
-from pathlib import Path
 
 from attrs import define, field
 
-from abstract.files import URL, Resource, Urlish
-from shared import SESSION_CTX
+from abstract.files import URL, Resource
 
 from .core import abbreviate_names
-from .images import AttachedImage
+from .images import AttachedImage, parse_raw_attachment
 from .item import AnyItem, Item
-from .typedefs import ID, AnyItemPack, ItemPackVer1, ItemPackVer2, Name
+from .typedefs import ID, AnyItemPack, ItemPackVer1, ItemPackVer2, ItemPackVer3, Name
 from .utils import MISSING, js_format
 
 __all__ = ("PackInterface",)
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
-
-def load_json(fp: str | Path | TextIOBase, /) -> t.Any:
-    """Load data from local file."""
-
-    logger.info(f"Loading from file {fp}")
-
-    match fp:
-        case str() | Path():
-            with open(fp) as file:
-                return json.load(file)
-
-        case TextIOBase():
-            return json.load(fp)
-
-        case _:
-            raise TypeError("Unsuppored file type")
-
-
-async def fetch_json(url: Urlish, /) -> t.Any:
-    """Loads a json from url."""
-
-    logger.info(f"Fetching from url {url}")
-
-    async with SESSION_CTX.get().get(url) as response:
-        response.raise_for_status()
-        return await response.json(encoding="utf-8", content_type=None)
-
-
-HandleRet = tuple[t.Iterator[AnyItem], list[asyncio.Task[None]]]
+HandleRet = tuple[t.Iterator[AnyItem], set[t.Awaitable[None]]]
 
 
 async def pack_v1_handle(pack: ItemPackVer1, custom: bool = False) -> HandleRet:
-    base_url = pack["config"]["base_url"]
+    cfg = pack["config"]
+    pack_key = cfg["key"]
+    base_url = cfg["base_url"]
 
-    tasks: list[asyncio.Task[None]] = []
+    tasks: set[t.Awaitable[None]] = set()
 
     def loop():
         for item_dict in pack["items"]:
-            item = Item.from_json(item_dict, custom, MISSING, None)
+            resource = URL(js_format(item_dict["image"], url=base_url))
+            attachment = parse_raw_attachment(item_dict.get("attachment", None))
+            renderer, task = AttachedImage.from_resource(resource, attachment)
+            tasks.add(task)
 
-            url = js_format(item_dict["image"], url=base_url)
-            task = asyncio.create_task(item.image.with_resource(URL(url)))
-            tasks.append(task)
-            yield item
+            yield Item.from_json(item_dict, pack_key, custom, renderer)
 
     return loop(), tasks
 
 
 async def pack_v2_handle(pack: ItemPackVer2, custom: bool = False) -> HandleRet:
     sprite_map = pack["spritesMap"]
+    key = pack["key"]
 
     from PIL.Image import open
 
@@ -79,11 +50,20 @@ async def pack_v2_handle(pack: ItemPackVer2, custom: bool = False) -> HandleRet:
 
     def loop():
         for item_dict in pack["items"]:
-            key = item_dict["name"].replace(" ", "")
-            item = Item.from_json(item_dict, custom, base_image, sprite_map[key])
+            attachment = parse_raw_attachment(item_dict.get("attachment", None))
+            renderer = AttachedImage(base_image, attachment)
+            sprite_key = item_dict["name"].replace(" ", "")
+
+            renderer.crop(sprite_map[sprite_key])
+            item = Item.from_json(item_dict, key, custom, renderer)
             yield item
 
-    return loop(), []
+    return loop(), set()
+
+
+async def pack_v3_handle(pack: ItemPackVer3, custom: bool = False) -> HandleRet:
+    # TODO
+    raise NotImplementedError
 
 
 @define
@@ -97,24 +77,23 @@ class PackInterface:
     )
     # Item name to item ID
     names_to_ids: dict[Name, ID] = field(factory=dict, init=False, repr=False)
+    # Abbrev to a set of names the abbrev matches
     name_abbrevs: dict[str, set[Name]] = field(factory=dict, init=False, repr=False)
 
     # personal packs
     custom: bool = False
 
     def __contains__(self, value: str | int | AnyItem) -> bool:
-        match value:
-            case str() as name:
-                return name in self.names_to_ids
+        if isinstance(value, str):
+            return value in self.names_to_ids
 
-            case int() as id:
-                return id in self.items
+        if isinstance(value, int):
+            return value in self.items
 
-            case Item() as item:
-                return item.id in self.items
+        if isinstance(value, Item):
+            return value.id in self.items
 
-            case _:
-                return NotImplemented
+        return NotImplemented
 
     async def load(self, resource: Resource, /, **extra: t.Any) -> None:
         """Load the item pack from a resource."""
@@ -125,7 +104,6 @@ class PackInterface:
         pack |= extra  # type: ignore
 
         self.extract_info(pack)
-        logger.info(f"Pack {self.name!r} extracted; key: {self.key!r}")
 
         if "version" not in pack or pack["version"] == "1":
             handle = pack_v1_handle(pack, self.custom)
@@ -134,11 +112,10 @@ class PackInterface:
             handle = pack_v2_handle(pack, self.custom)
 
         elif pack["version"] == "3":
-            return
+            handle = pack_v3_handle(pack, self.custom)
 
         else:
-            logger.info("Pack version not recognized")
-            return
+            raise TypeError(f"Unknown pack version: {pack['version']!r}")
 
         iterator, tasks = await handle
 
@@ -146,9 +123,7 @@ class PackInterface:
             self.items[item.id] = item
             self.names_to_ids[item.name] = item.id
 
-        # logger.warning(f"Item {item.name!r} failed to load image")
-
-        self.name_abbrevs = abbreviate_names(self.names_to_ids)
+        self.name_abbrevs |= abbreviate_names(self.names_to_ids)
 
         if tasks:
             await asyncio.wait(tasks, timeout=5, return_when="ALL_COMPLETED")
@@ -158,8 +133,8 @@ class PackInterface:
             for func in funcs:
                 func()
 
-        AttachedImage.clear_cache()
-        logger.info("Item images loaded")
+        AttachedImage._clear_cache()
+        LOGGER.info("Item images loaded")
 
     def get_item_by_name(self, name: Name) -> AnyItem:
         try:
@@ -193,3 +168,4 @@ class PackInterface:
         self.key = config["key"]
         self.name = config["name"]
         self.description = config["description"]
+        LOGGER.info(f"Pack {self.name!r} extracted; key: {self.key!r}")

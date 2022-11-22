@@ -7,13 +7,9 @@ from typing_extensions import Self
 
 from .core import TransformRange
 from .enums import Element, Tier, Type
-from .images import AttachedImage, AttachmentType, parse_raw_attachment
+from .images import AttachedImage, AttachmentType
 from .stat_handler import StatHandler
-from .typedefs import ID, AnyItemDict, AnyStats, ItemDictVer1, ItemDictVer2, Name, SpritePosition
-from .utils import MISSING
-
-if t.TYPE_CHECKING:
-    from PIL.Image import Image
+from .typedefs import ID, AnyItemDict, AnyStats, ItemDictVer1, ItemDictVer2, Name
 
 __all__ = ("Item", "AnyItem")
 
@@ -62,6 +58,7 @@ class Item(t.Generic[AttachmentType]):
     """Base item class with stats at every tier."""
 
     id: ID = field(validator=validators.ge(1))
+    pack_key: str = field()
     name: Name = field(validator=validators.min_len(1))
     type: Type = field(validator=validators.in_(Type), repr=str)
     element: Element = field(validator=validators.in_(Element), repr=str)
@@ -79,10 +76,10 @@ class Item(t.Generic[AttachmentType]):
     def from_json(
         cls,
         data: AnyItemDict,
+        pack_key: str,
         custom: bool,
-        base_image: Image = MISSING,
-        sprite_pos: SpritePosition | None = None,
-    ) -> AnyItem:
+        renderer: AttachedImage[AttachmentType],
+    ) -> Self:
         transform_range = TransformRange.from_string(data["transform_range"])
         item_type = Type[data["type"].upper()]
 
@@ -93,19 +90,19 @@ class Item(t.Generic[AttachmentType]):
             data = t.cast(ItemDictVer1 | ItemDictVer2, data)
             stats = StatHandler.from_old_format(data["stats"], transform_range.max)
 
-        attachment = parse_raw_attachment(data.get("attachment", None))
-        renderer = AttachedImage(base_image, attachment)
+        width = data.get("width", 0)
+        height = data.get("height", 0)
 
-        if sprite_pos is not None:
-            renderer.crop(sprite_pos)
+        if not width == height == 0:
+            renderer.resize(width, height)
 
-        renderer.resize(data.get("width", 0), data.get("height", 0))
-        renderer.assert_attachment(item_type)
+        renderer.assert_attachment()
 
         tags = Tags.from_data(data.get("tags", ()), transform_range, stats, custom)
 
-        return cls(
+        self = cls(
             id=data["id"],
+            pack_key=pack_key,
             name=data["name"],
             type=item_type,
             element=Element[data["element"].upper()],
@@ -114,6 +111,9 @@ class Item(t.Generic[AttachmentType]):
             image=renderer,
             tags=tags,
         )
+
+        renderer.item = self
+        return self
 
 
 AnyItem = Item[t.Any]

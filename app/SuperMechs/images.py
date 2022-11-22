@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import logging
 import typing as t
+import weakref
 from collections import defaultdict
 from functools import partial
 
@@ -10,7 +11,7 @@ from attrs import define, field
 from typing_extensions import LiteralString, Self, TypeVar
 
 from abstract.files import Resource
-from typeshed import P, twotuple
+from typeshed import Coro, P, twotuple
 
 from .enums import Type
 from .typedefs import AnyRawAttachment, RawAttachment, RawAttachments, SpritePosition
@@ -19,10 +20,11 @@ from .utils import MISSING
 if t.TYPE_CHECKING:
     from PIL.Image import Image
 
+    from .item import AnyItem, Item
     from .mech import Mech
 
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 ImageMode = (
     t.Literal["1", "L", "P", "RGB", "RGBA", "CMYK", "YCbCr", "LAB", "HSV", "I", "F"] | LiteralString
@@ -278,13 +280,22 @@ def delegate(
     return deco
 
 
+async def loader(resource: Resource, renderer: AttachedImage[t.Any]) -> None:
+    from PIL.Image import open
+
+    with await resource.open() as file:
+        image = open(file)
+        image.load()
+    renderer.image = image
+
+
 @define
 class AttachedImage(t.Generic[AttachmentType]):
     image: Image = MISSING
     attachment: AttachmentType = field(default=None)
 
-    _resource_cache: t.ClassVar[dict[Resource[t.Any], Image]] = {}
     _postprocess: t.ClassVar[dict[int, list[t.Callable[[], None]]]] = defaultdict(list)
+    _item_refs: t.ClassVar = weakref.WeakValueDictionary[int, "AnyItem"]()
 
     @property
     def size(self) -> twotuple[int]:
@@ -298,12 +309,21 @@ class AttachedImage(t.Generic[AttachmentType]):
     def height(self) -> int:
         return self.image.height
 
+    @property
+    def item(self) -> Item[AttachmentType]:
+        """The Item this image belongs to. The item is weak referenced."""
+        return self._item_refs[id(self)]
+
+    @item.setter
+    def item(self, item: Item[AttachmentType]) -> None:
+        self._item_refs[id(self)] = item
+
     @delegate
     def crop(self, size: SpritePosition) -> None:
         """Queue the image to be cropped."""
         x, y, w, h = size["x"], size["y"], size["width"], size["height"]
         self.image = self.image.crop((x, y, x + w, y + h))
-        logger.debug(f"Image {self!r} cropped")
+        LOGGER.debug(f"Image {self!r} cropped")
 
     @delegate
     def convert(self, mode: ImageMode) -> None:
@@ -316,34 +336,26 @@ class AttachedImage(t.Generic[AttachmentType]):
         """Queue the image to be resized."""
         if not width == height == 0:
             self.image = self.image.resize((width or self.image.width, height or self.image.height))
-            logger.debug(f"Image {self!r} resized")
+            LOGGER.debug(f"Image {self!r} resized")
 
     @delegate
-    def assert_attachment(self, type: Type) -> None:
+    def assert_attachment(self) -> None:
         """Queue creating synthetic attachment in case one isn't set."""
-        if self.attachment is None and type.attachable:
+        item = self._item_refs[id(self)]
+
+        if self.attachment is None and item.type.attachable:
             self.attachment = t.cast(
-                AttachmentType, create_synthetic_attachment(*self.image.size, type)
+                AttachmentType, create_synthetic_attachment(*self.image.size, item.type)
             )
-            logger.info(f"Created attachment for image {self!r}")
+            LOGGER.info(f"Created attachment for item {item!r}")
 
-    async def with_resource(self, resource: Resource[t.Any], is_partial: bool = False) -> None:
-        """Load the image from Resource object."""
-        if resource in self._resource_cache:
-            image = self._resource_cache[resource]
-            logger.debug(f"Used cached image for {resource!r}")
-
-        else:
-            from PIL.Image import open
-
-            with await resource.open() as file:
-                image = open(file)
-                image.load()
-
-            if is_partial:
-                self._resource_cache[resource] = image
-
-        self.image = image
+    @classmethod
+    def from_resource(
+        cls, resource: Resource, attachment: AttachmentType
+    ) -> tuple[Self, Coro[None]]:
+        """Create the image from Resource object."""
+        self = cls(attachment=attachment)
+        return self, loader(resource, self)
 
     @classmethod
     def new(
@@ -355,6 +367,5 @@ class AttachedImage(t.Generic[AttachmentType]):
         return cls(new(mode, size), attachment)
 
     @classmethod
-    def clear_cache(cls) -> None:
-        cls._resource_cache.clear()
+    def _clear_cache(cls) -> None:
         cls._postprocess.clear()
