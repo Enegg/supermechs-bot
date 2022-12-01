@@ -26,14 +26,14 @@ class DesyncError(commands.CommandError):
 
 def image_to_file(image: Image, filename: str, format: str = "png") -> File:
     """Creates a `disnake.File` object from `PIL.Image.Image`."""
-    filename = validify_filename(filename, "." + format)
+    filename = sanitize_filename(filename, "." + format)
     stream = io.BytesIO()
     image.save(stream, format=format)
     stream.seek(0)
     return File(stream, filename)
 
 
-def validify_filename(filename: str, extension: str) -> str:
+def sanitize_filename(filename: str, extension: str) -> str:
     """Converts spaces to underscores, and adds extension if one isn't there."""
     filename = filename.replace(" ", "_")
 

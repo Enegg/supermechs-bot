@@ -91,14 +91,12 @@ class PackInterface:
             return value in self.items
 
         if isinstance(value, Item):
-            return value.id in self.items
+            return value.pack_key == self.key and value.id in self.items
 
         return NotImplemented
 
     async def load(self, resource: Resource, /, **extra: t.Any) -> None:
         """Load the item pack from a resource."""
-
-        # TODO: split the logic in this method into functions
 
         pack: AnyItemPack = await resource.json()
         pack |= extra  # type: ignore
@@ -142,7 +140,7 @@ class PackInterface:
             return self.items[id]
 
         except KeyError as err:
-            err.args = (f"No item with name {name!r} in the pack",)
+            err.args = (f"No item named {name!r} in the pack",)
             raise
 
     def get_item_by_id(self, item_id: ID) -> AnyItem:

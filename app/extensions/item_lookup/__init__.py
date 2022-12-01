@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import typing as t
 
-from disnake import CommandInteraction, Embed
+from disnake import CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 
 from config import TEST_GUILDS
-from library_extensions import image_to_file
+from library_extensions import sanitize_filename
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
 from SuperMechs.enums import Element, Type
+from SuperMechs.images import image_to_fp
 from SuperMechs.item import AnyItem
 from SuperMechs.typedefs import LiteralElement, LiteralType, Name
 from SuperMechs.utils import search_for
@@ -53,7 +54,8 @@ async def item(
 
     item = plugin.bot.default_pack.get_item_by_name(name)
 
-    file = image_to_file(item.image.image, item.name)
+    fp = image_to_fp(item.image.image)
+    file = File(fp, sanitize_filename(item.name, ".png"))
     url = f"attachment://{file.filename}"
 
     if compact:
@@ -75,7 +77,7 @@ async def item(
                 f"{item.type.name.replace('_', ' ').lower()}",
                 color=item.element.color,
             )
-            .set_thumbnail(url=item.type.image_url)
+            .set_thumbnail(item.type.image_url)
             .set_image(url)
         )
         # fmt: on
@@ -132,26 +134,32 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     except KeyError as e:
         raise commands.UserInputError(*e.args) from e
 
-    if item_a.type is item_b.type and item_a.element is item_b.element:
-        desc = f"{item_a.element.name.capitalize()} {item_a.type.name.replace('_', ' ').lower()}"
+    def str_type(type: Type) -> str:
+        return type.name.replace("_", " ").lower()
 
-        if not desc.endswith("s"):
-            desc += "s"
+    def str_elem(element: Element) -> str:
+        return element.name.capitalize()
+
+    if item_a.element is item_b.element:
+        desc = str_elem(item_a.element)
+        color = item_a.element.color
+
+        if item_a.type is item_b.type:
+            desc += " "
+            desc += str_type(item_a.type)
+
+            if not desc.endswith("s"):  # legs do end with s
+                desc += "s"
+
+        else:
+            desc += f" {str_type(item_a.type)} / {str_type(item_b.type)}"
 
     else:
-        desc = (
-            f"{item_a.element.name.capitalize()} "
-            f"{item_a.type.name.replace('_', ' ').lower()}"
-            " | "
-            f"{item_b.element.name.capitalize()} "
-            f"{item_b.type.name.replace('_', ' ').lower()}"
-        )
+        desc = f"{str_elem(item_a.element)} {str_type(item_a.type)}"
+        desc += f" | {str_elem(item_b.element)} {str_type(item_b.type)}"
+        color = inter.author.color
 
-    embed = Embed(
-        title=f"{item_a.name} vs {item_b.name}",
-        description=desc,
-        color=item_a.element.color if item_a.element is item_b.element else inter.author.color,
-    )
+    embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
 
     view = ItemCompareView(embed, item_a, item_b, user_id=inter.author.id)
     await inter.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -166,6 +174,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 @compare.autocomplete("item2")
 async def item_autocomplete(inter: CommandInteraction, input: str) -> list[Name]:
     """Autocomplete for items with regard for type & element."""
+    OPTION_LIMIT = 25
 
     pack = plugin.bot.default_pack
     filters: list[t.Callable[[AnyItem], bool]] = []
@@ -178,7 +187,7 @@ async def item_autocomplete(inter: CommandInteraction, input: str) -> list[Name]
 
     abbrevs = pack.name_abbrevs.get(input.lower(), set())
 
-    def filter_item_names(names: t.Iterable[str]) -> t.Iterator[str]:
+    def filter_item_names(names: t.Iterable[Name]) -> t.Iterator[Name]:
         items = map(pack.get_item_by_name, names)
         filtered_items = (item for item in items if all(func(item) for func in filters))
         return (item.name for item in filtered_items)
@@ -186,14 +195,19 @@ async def item_autocomplete(inter: CommandInteraction, input: str) -> list[Name]
     # place matching abbreviations at the top
     matching_item_names = sorted(filter_item_names(abbrevs))
 
+    # this shouldn't ever happen, but handle it anyway
+    if len(matching_item_names) >= OPTION_LIMIT:
+        del matching_item_names[OPTION_LIMIT:]
+        return matching_item_names
+
     import heapq
 
     # extra filter to exclude duplicates
     filters.append(lambda item: item.name not in abbrevs)
 
-    # extend names up to 25, avoiding repetitions
+    # extend names up to 25
     matching_item_names += heapq.nsmallest(
-        25 - len(matching_item_names),
+        OPTION_LIMIT - len(matching_item_names),
         filter_item_names(search_for(input, pack.iter_item_names())),
     )
     return matching_item_names

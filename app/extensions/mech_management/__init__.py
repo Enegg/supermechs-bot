@@ -8,13 +8,13 @@ from disnake import Attachment, CommandInteraction, Embed, File, MessageInteract
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from library_extensions import image_to_file
 from ui import Select
 
 from .mech_manager import MechView
 
 from SuperMechs.core import STATS
 from SuperMechs.enums import Type
+from SuperMechs.images import image_to_fp
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
 from SuperMechs.player import Player
 from SuperMechs.utils import truncate_name
@@ -105,7 +105,8 @@ async def build(inter: MixedInteraction, player: Player, name: str | None = None
     if mech.torso is not None:
         view.embed.color = mech.torso.element.color
 
-        file = image_to_file(mech.image, mech_to_id_str(mech))
+        fp = image_to_fp(mech.image)
+        file = File(fp, mech_to_id_str(mech) + ".png")
         url = f"attachment://{file.filename}"
         view.embed.set_image(url)
 

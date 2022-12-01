@@ -3,10 +3,10 @@ from __future__ import annotations
 import asyncio
 import typing as t
 
-from disnake import ButtonStyle, CommandInteraction, Embed, MessageInteraction, SelectOption
+from disnake import ButtonStyle, CommandInteraction, Embed, File, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
-from library_extensions import DesyncError, image_to_file
+from library_extensions import DesyncError
 from ui.action_row import ActionRow, MessageUIComponent
 from ui.buttons import Button, ToggleButton, TrinaryButton, button
 from ui.selects import EMPTY_OPTION, PaginatedSelect, select
@@ -15,6 +15,7 @@ from ui.views import InteractionCheck, PaginatorView, SaneView, add_callback, po
 from SuperMechs.core import ArenaBuffs
 from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import mech_to_id_str
+from SuperMechs.images import image_to_fp
 from SuperMechs.inv_item import InvItem
 from SuperMechs.mech import Mech, slot_to_icon_data, slot_to_type
 from SuperMechs.pack_interface import PackInterface
@@ -200,7 +201,8 @@ class MechView(InteractionCheck, PaginatorView):
             url = None
 
             if self.mech.torso is not None:
-                file = image_to_file(self.mech.image, mech_to_id_str(self.mech))
+                fp = image_to_fp(self.mech.image)
+                file = File(fp, mech_to_id_str(self.mech) + ".png")
                 url = f"attachment://{file.filename}"
 
             await inter.response.edit_message(
