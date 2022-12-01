@@ -12,7 +12,7 @@ from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fiel
 
 from SuperMechs.enums import Element, Type
 from SuperMechs.item import AnyItem
-from SuperMechs.typedefs import LiteralElement, LiteralType
+from SuperMechs.typedefs import LiteralElement, LiteralType, Name
 from SuperMechs.utils import search_for
 
 if t.TYPE_CHECKING:
@@ -33,7 +33,7 @@ plugin = plugins.Plugin["SMBot"](name="Item-lookup")
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
-    name: str,
+    name: Name,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
@@ -91,7 +91,7 @@ async def item(
 @plugin.slash_command(guild_ids=TEST_GUILDS)
 async def item_raw(
     inter: CommandInteraction,
-    name: str,
+    name: Name,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
 ) -> None:
@@ -116,7 +116,7 @@ async def item_raw(
 
 
 @plugin.slash_command()
-async def compare(inter: CommandInteraction, item1: str, item2: str) -> None:
+async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     """Shows an interactive comparison of two items. {{ COMPARE }}
 
     Parameters
@@ -164,7 +164,7 @@ async def compare(inter: CommandInteraction, item1: str, item2: str) -> None:
 @item_raw.autocomplete("name")
 @compare.autocomplete("item1")
 @compare.autocomplete("item2")
-async def item_autocomplete(inter: CommandInteraction, input: str) -> list[str]:
+async def item_autocomplete(inter: CommandInteraction, input: str) -> list[Name]:
     """Autocomplete for items with regard for type & element."""
 
     pack = plugin.bot.default_pack

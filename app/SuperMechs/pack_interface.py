@@ -83,7 +83,7 @@ class PackInterface:
     # personal packs
     custom: bool = False
 
-    def __contains__(self, value: str | int | AnyItem) -> bool:
+    def __contains__(self, value: Name | ID | AnyItem) -> bool:
         if isinstance(value, str):
             return value in self.names_to_ids
 
