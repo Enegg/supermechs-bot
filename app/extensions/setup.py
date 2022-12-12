@@ -5,9 +5,8 @@ import io
 import traceback
 import typing as t
 from contextlib import redirect_stderr, redirect_stdout
-from traceback import print_exception
 
-from disnake import CommandInteraction, File, ModalInteraction, TextInputStyle
+from disnake import CommandInteraction, File, TextInputStyle
 from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
@@ -44,7 +43,7 @@ async def _ext_helper(
     except commands.ExtensionError as error:
         with io.StringIO() as sio:
             sio.write("An error occured:\n```py\n")
-            print_exception(type(error), error, error.__traceback__, file=sio)
+            traceback.print_exception(error, file=sio)
             sio.write("```")
             await inter.response.send_message(sio.getvalue(), ephemeral=True)
 
@@ -142,13 +141,15 @@ async def raise_autocomplete(_: CommandInteraction, input: str) -> list[str]:
 @plugin.slash_command(name="eval")
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
-async def eval_(inter: CommandInteraction | ModalInteraction, code: str | None = None) -> None:
+async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
     """Evaluates the given input as code.
 
     Parameters
     ----------
     code: code to execute.
     """
+    response_inter = inter
+
     if code is None:
         text_input = TextInput(
             label="Code to evaluate", custom_id="eval:input", style=TextInputStyle.paragraph
@@ -158,43 +159,40 @@ async def eval_(inter: CommandInteraction | ModalInteraction, code: str | None =
         )
 
         try:
-            modal_inter = await wait_for_modal(plugin.bot, "eval:modal")
+            response_inter = await wait_for_modal(plugin.bot, "eval:modal")
 
         except asyncio.TimeoutError:
             return await inter.send("Modal timed out.", ephemeral=True)
 
-        code = modal_inter.text_values[text_input.custom_id]
-        inter = modal_inter
+        code = response_inter.text_values[text_input.custom_id]
 
     code = Markdown.strip_codeblock(code)
 
     with io.StringIO() as local_stdout:
         with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
-            tasks: set[t.Awaitable[t.Any]] = set()
+            tasks = set[t.Awaitable[t.Any]]()
             try:
-                exec(code, globals() | {"bot": plugin.bot, "inter": inter, "coros": tasks})
+                exec(code, globals() | {"bot": plugin.bot, "inter": response_inter, "coros": tasks})
                 if tasks:
                     await asyncio.gather(*tasks)
 
             except Exception as ex:
-                traceback.print_exception(type(ex), ex, ex.__traceback__, file=local_stdout)
+                traceback.print_exception(ex, file=local_stdout)
 
-        if local_stdout.tell() == 0:
-            if inter.response.is_done():
+        if len(text := local_stdout.getvalue()) == 0:
+            # response happened during exec
+            if response_inter.response.is_done():
                 return
             text = "No output."
-
-        else:
-            text = local_stdout.getvalue()
 
     line = "```\n{}```"
 
     if len(text) + len(line) - 2 <= 2000:
-        await inter.send(line.format(text), ephemeral=True)
+        await response_inter.send(line.format(text), ephemeral=True)
 
     else:
         file = File(io.BytesIO(text.encode()), "output.txt")
-        await inter.send(file=file, ephemeral=True)
+        await response_inter.send(file=file, ephemeral=True)
 
 
 setup, teardown = plugin.create_extension_handlers()
