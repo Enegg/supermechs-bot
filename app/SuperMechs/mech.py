@@ -77,8 +77,8 @@ def slot_name_converter(slot_: XOrTupleXY[str | Type, int], /):
         case Type():
             slot = _type_to_partial_slot(slot_)
 
-        case str() as slot:
-            slot = slot.lower()
+        case str():
+            slot = slot_.lower()
 
         case _:
             raise TypeError(f"{slot_!r} is not a valid slot")
@@ -89,32 +89,25 @@ def slot_name_converter(slot_: XOrTupleXY[str | Type, int], /):
     return slot
 
 
-def get_weight_utilization_emoji(mech: Mech, weight: int) -> str:
-    vars = mech.game_vars
-    # fmt: off
-    weight_usage = (
-        "⛔"
-        if weight >  vars.MAX_OVERWEIGHT   else "❕"
-        if weight >  vars.MAX_WEIGHT       else "👌"
-        if weight == vars.MAX_WEIGHT       else "🆗"
-        if weight >= vars.MAX_WEIGHT * .99 else "⚙️"
-        if weight >= 0                     else "🗿"
-    )
-    # fmt: on
+def get_weight_emoji(vars: GameVars, weight: int) -> str:
+    if weight < 0:
+        return "🗿"
+    if weight < vars.MAX_WEIGHT * 0.99:
+        return "⚙️"
+    if weight < vars.MAX_WEIGHT:
+        return "🆗"
+    if weight == vars.MAX_WEIGHT:
+        return "👌"
+    if weight <= vars.MAX_OVERWEIGHT:
+        return "❕"
+    return "⛔"
 
-    return " " + weight_usage
+
+def get_weight_usage(mech: Mech, weight: int) -> str:
+    return " " + get_weight_emoji(mech.game_vars, weight)
 
 
 # -------------------------------- Constraints --------------------------------
-
-def get_constraints_of_item(item: AnyInvItem, vars: GameVars) -> t.Callable[[Mech], bool] | None:
-    if item.type is Type.MODULE and item.has_any_of_stats(*vars.EXCLUSIVE_STATS):
-        return partial(no_duplicate_stats, module=item)
-
-    if item.tags.require_jump:
-        return jumping_required
-
-    return None
 
 
 def jumping_required(mech: Mech) -> bool:
@@ -133,6 +126,16 @@ def no_duplicate_stats(mech: Mech, module: AnyInvItem) -> bool:
             return False
 
     return True
+
+
+def get_constraints_of_item(item: AnyInvItem, vars: GameVars) -> t.Callable[[Mech], bool] | None:
+    if item.type is Type.MODULE and item.has_any_of_stats(*vars.EXCLUSIVE_STATS):
+        return partial(no_duplicate_stats, module=item)
+
+    if item.tags.require_jump:
+        return jumping_required
+
+    return None
 
 
 # -------------------------------- Validators ---------------------------------
@@ -165,8 +168,8 @@ class Mech:
     game_vars: GameVars = field(factory=GameVars.default)
     constraints: dict[UUID, t.Callable[[Self], bool]] = field(factory=dict, init=False)
     _stats: dict[str, int] = field(init=False, repr=False, eq=False)
-    _image: dict[str, int] = field(init=False, repr=False, eq=False)
-    _dominant_element: dict[str, int] = field(init=False, repr=False, eq=False)
+    _image: Image = field(init=False, repr=False, eq=False)
+    _dominant_element: Element | None = field(init=False, repr=False, eq=False)
 
     # fmt: off
     torso:  SlotType[Attachments] = field(default=None, validator=is_valid_type)
@@ -301,7 +304,7 @@ class Mech:
         /,
         *,
         line_format: str = "{stat.emoji} **{value}** {stat.name}{extra}",
-        extra: t.Mapping[str, t.Callable[[Mech, int], t.Any]] = {"weight": get_weight_utilization_emoji},
+        extra: t.Mapping[str, t.Callable[[Mech, int], t.Any]] = {"weight": get_weight_usage},
     ) -> str:
         """Returns a string of lines formatted with mech stats.
 
@@ -476,11 +479,11 @@ class Mech:
         else:
             factory = partial(getattr, self)
 
-        for slot_set in compress(
+        for slot_group in compress(
             (BODY_SLOTS, WEAPON_SLOTS, SPECIAL_SLOTS, MODULE_SLOTS),
             (body, weapons, specials, modules),
         ):
-            for slot in slot_set:
+            for slot in slot_group:
                 yield factory(slot)
 
     @cached_slot_property
