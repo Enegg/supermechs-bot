@@ -20,7 +20,7 @@ plugin = Plugin["SMBot"](name="Bot-status")
 
 @plugin.slash_command()
 async def frantic(inter: CommandInteraction) -> None:
-    """Humiliate frantic users"""
+    """Humiliate frantic users."""
     frantics = [
         "https://i.imgur.com/Bbbf4AH.mp4",
         "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",

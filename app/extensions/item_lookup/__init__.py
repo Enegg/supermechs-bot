@@ -39,14 +39,17 @@ async def item(
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
 ) -> None:
-    """Finds an item and returns its stats {{ ITEM }}
+    """Finds an item and returns its stats. {{ ITEM }}
 
     Parameters
     -----------
-    name: The name of the item {{ ITEM_NAME }}
+    name: The name of the item. {{ ITEM_NAME }}
+
     type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
+
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
-    compact: Whether the embed sent back should be compact (breaks on mobile) {{ ITEM_COMPACT }}
+
+    compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
 
     if name not in plugin.bot.default_pack:
@@ -96,12 +99,14 @@ async def item_raw(
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
 ) -> None:
-    """Finds an item and returns its raw stats {{ ITEM }}
+    """Finds an item and returns its raw stats. {{ ITEM }}
 
     Parameters
-    -----------
-    name: The name of the item or an abbreviation of it {{ ITEM_NAME }}
+    ----------
+    name: The name of the item or an abbreviation of it. {{ ITEM_NAME }}
+
     type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
+
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """
 
@@ -121,8 +126,9 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     """Shows an interactive comparison of two items. {{ COMPARE }}
 
     Parameters
-    -----------
+    ----------
     item1: First item to compare. {{ COMPARE_FIRST }}
+
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
 

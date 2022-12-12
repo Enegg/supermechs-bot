@@ -87,8 +87,10 @@ async def build(
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
 
     Parameters
-    -----------
-    name: The name of existing build or one to create. If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
+    ----------
+    name:
+        The name of existing build or one to create.
+        If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
 
     if name is None:
