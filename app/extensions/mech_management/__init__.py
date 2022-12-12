@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import json
+import io
 import logging
 import typing as t
 
@@ -133,10 +133,8 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
     if MAX_SIZE < file.size:
         raise commands.UserInputError(f"The maximum accepted file size is {MAX_SIZE >> 10}KiB.")
 
-    data = json.loads(await file.read())
-
     try:
-        mechs, failed = load_mechs(data, plugin.bot.default_pack)
+        mechs, failed = load_mechs(await file.read(), plugin.bot.default_pack)
 
     except ValueError as e:
         raise commands.UserInputError(str(e)) from None
