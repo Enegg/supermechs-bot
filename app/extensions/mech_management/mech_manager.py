@@ -6,6 +6,7 @@ import typing as t
 from disnake import ButtonStyle, CommandInteraction, Embed, File, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
+from abstract.files import Bytes
 from library_extensions import DesyncError
 from ui.action_row import ActionRow, MessageUIComponent
 from ui.buttons import Button, ToggleButton, TrinaryButton, button
@@ -15,7 +16,6 @@ from ui.views import InteractionCheck, PaginatorView, SaneView, add_callback, po
 from SuperMechs.core import ArenaBuffs
 from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import mech_to_id_str
-from SuperMechs.images import image_to_fp
 from SuperMechs.inv_item import InvItem
 from SuperMechs.mech import Mech, slot_to_icon_data, slot_to_type
 from SuperMechs.pack_interface import PackInterface
@@ -201,9 +201,9 @@ class MechView(InteractionCheck, PaginatorView):
             url = None
 
             if self.mech.torso is not None:
-                fp = image_to_fp(self.mech.image)
-                file = File(fp, mech_to_id_str(self.mech) + ".png")
-                url = f"attachment://{file.filename}"
+                resource = Bytes.from_image(self.mech.image, mech_to_id_str(self.mech) + ".png")
+                file = File(resource.fp, resource.filename)
+                url = resource.url
 
             await inter.response.edit_message(
                 embed=self.embed.set_image(url), file=file, view=self, attachments=[]

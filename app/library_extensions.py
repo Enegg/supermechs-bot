@@ -17,21 +17,9 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 from typing_extensions import LiteralString
 
-if t.TYPE_CHECKING:
-    from PIL.Image import Image
-
 
 class DesyncError(commands.CommandError):
     """Exception raised when due to external factors command's state goes out of sync"""
-
-
-def image_to_file(image: Image, filename: str, format: str = "png") -> File:
-    """Creates a `disnake.File` object from `PIL.Image.Image`."""
-    filename = sanitize_filename(filename, "." + format)
-    stream = io.BytesIO()
-    image.save(stream, format=format)
-    stream.seek(0)
-    return File(stream, filename)
 
 
 def sanitize_filename(filename: str, extension: str) -> str:

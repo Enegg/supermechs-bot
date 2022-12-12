@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import logging
 import typing as t
 import weakref
@@ -89,14 +88,6 @@ class HasWidthAndHeight(t.Protocol):
     @property
     def height(self) -> int:
         ...
-
-
-def image_to_fp(image: Image, format: str = "png") -> io.BytesIO:
-    """Save image to a file-like object."""
-    stream = io.BytesIO()
-    image.save(stream, format=format)
-    stream.seek(0)
-    return stream
 
 
 @define

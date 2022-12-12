@@ -5,13 +5,13 @@ import typing as t
 from disnake import CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 
+from abstract.files import Bytes
 from config import TEST_GUILDS
 from library_extensions import sanitize_filename
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
 from SuperMechs.enums import Element, Type
-from SuperMechs.images import image_to_fp
 from SuperMechs.item import AnyItem
 from SuperMechs.typedefs import LiteralElement, LiteralType, Name
 from SuperMechs.utils import search_for
@@ -54,16 +54,15 @@ async def item(
 
     item = plugin.bot.default_pack.get_item_by_name(name)
 
-    fp = image_to_fp(item.image.image)
-    file = File(fp, sanitize_filename(item.name, ".png"))
-    url = f"attachment://{file.filename}"
+    resource = Bytes.from_image(item.image.image, sanitize_filename(item.name, ".png"))
+    file = File(resource.fp, resource.filename)
 
     if compact:
         # fmt: off
         embed = (
             Embed(color=item.element.color)
             .set_author(name=item.name, icon_url=item.type.image_url)
-            .set_thumbnail(url)
+            .set_thumbnail(resource.url)
         )
         # fmt: on
         field_factory = compact_fields
@@ -78,7 +77,7 @@ async def item(
                 color=item.element.color,
             )
             .set_thumbnail(item.type.image_url)
-            .set_image(url)
+            .set_image(resource.url)
         )
         # fmt: on
         field_factory = default_fields
