@@ -34,5 +34,13 @@
     "MECH_BUILD_NAME": "buduj",
     "MECH_BUILD_DESCRIPTION": "Interaktywne UI do tworzenia i modyfikacji mechów.",
     "MECH_BUILD_NAME_NAME": "nazwa",
-    "MECH_BUILD_NAME_DESCRIPTION": "Nazwa istniejącego mecha lub do nadania nowemu."
+    "MECH_BUILD_NAME_DESCRIPTION": "Nazwa istniejącego mecha lub do nadania nowemu.",
+
+    "MECH_IMPORT_NAME": "importuj",
+    "MECH_IMPORT_DESCRIPTION": "importuj mechy z pliku .JSON.",
+    "MECH_IMPORT_FILE_NAME": "plik",
+    "MECH_IMPORT_FILE_DESCRIPTION": "Plik .JSON w formacie wspierającym WU.",
+
+    "MECH_EXPORT_NAME": "eksportuj",
+    "MECH_EXPORT_DESCRIPTION": "Eksportuj swoje mechy do pliku .JSON wspieranego przez WU."
 }

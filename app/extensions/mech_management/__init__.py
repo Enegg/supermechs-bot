@@ -126,11 +126,11 @@ async def build(
 
 @mech.sub_command(name="import")
 async def import_(inter: CommandInteraction, player: Player, file: Attachment) -> None:
-    """Import mech(s) from a .JSON file.
+    """Import mech(s) from a .JSON file. {{ MECH_IMPORT }}
 
     Parameters
     ----------
-    file: a .JSON file as exported from WU.
+    file: A .JSON file as exported from WU. {{ MECH_IMPORT_FILE }}
     """
     # file size of 16KiB sounds like a pretty beefy amount of mechs
     MAX_SIZE = 1 << 14
@@ -164,7 +164,7 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
 
 @mech.sub_command()
 async def export(inter: CommandInteraction, player: Player) -> None:
-    """Export selected mechs into a WU-compatible .JSON file."""
+    """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
 
     if not player.builds:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
