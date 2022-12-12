@@ -80,3 +80,20 @@ class mutable_proxy(proxied[T]):
     """Property proxying getting and setting an attribute of another slot."""
     def __set__(self, obj: t.Any, value: T) -> None:
         setattr(getattr(obj, self.proxied), self.name, value)
+
+
+def wrap_bytes(bytes: int) -> tuple[int, str]:
+    """Convert absolute byte size to suffixed unit."""
+    units = ("B", "KiB", "MiB", "GiB", "TiB")
+
+    if bytes == 0:
+        return 0, "B"
+
+    exp = (bytes.bit_length() - 1) // 10
+    bytes >>= 10 * exp
+
+    try:
+        return bytes, units[exp]
+
+    except IndexError:
+        return bytes, "?iB"

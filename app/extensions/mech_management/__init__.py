@@ -10,6 +10,7 @@ from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
 from abstract.files import Bytes
+from shared.utils import wrap_bytes
 from ui import Select, wait_for_component
 
 from .mech_manager import MechView
@@ -127,17 +128,20 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
     ----------
     file: A .JSON file as exported from WU. {{ MECH_IMPORT_FILE }}
     """
-    # file size of 16KiB sounds like a pretty beefy amount of mechs
-    MAX_SIZE = 1 << 14
+    # file size of 64KiB sounds like a pretty beefy amount of mechs
+    MAX_SIZE = 1 << 16
 
-    if MAX_SIZE < file.size:
-        raise commands.UserInputError(f"The maximum accepted file size is {MAX_SIZE >> 10}KiB.")
+    if file.size > MAX_SIZE:
+        size, unit = wrap_bytes(MAX_SIZE)
+        raise commands.UserInputError(f"The maximum accepted file size is {size}{unit}.")
+    # we could assert that content type is application/json, but we may just as well
+    # rely on the loader to fail
 
     try:
         mechs, failed = load_mechs(await file.read(), plugin.bot.default_pack)
 
-    except ValueError as e:
-        raise commands.UserInputError(str(e)) from None
+    except (ValueError, TypeError) as err:
+        raise commands.UserInputError(f"Parsing the file failed: {err}") from err
 
     if not mechs:
         message = "No mechs loaded."
@@ -148,8 +152,8 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
         message = "Loaded mechs: " + ", ".join(f"`{mech.name}`" for mech in mechs)
 
     if failed:
-        message += "\nFailed to load: " + ", ".join(
-            f"{name}, reason: {reason}" for name, reason in failed.items()
+        message += "\nFailed to load:\n" + "\n".join(
+            f"{index}: {reason}" for index, reason in failed
         )
 
     await inter.response.send_message(message, ephemeral=True)

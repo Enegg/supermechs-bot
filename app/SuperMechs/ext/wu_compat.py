@@ -126,8 +126,10 @@ def import_mech(data: WUMech, pack: "PackInterface") -> Mech:
 
 def import_mechs(
     json: ExportedMechsJSON, pack: "PackInterface"
-) -> tuple[list[Mech], dict[str, str]]:
+) -> tuple[list[Mech], list[tuple[int, str]]]:
     """Imports mechs from parsed .JSON file."""
+
+    # TODO: in 3.11 consider using ExceptionGroups to catch all problems at once
     try:
         version = json["version"]
         mech_list = json["mechs"][pack.key]
@@ -138,27 +140,25 @@ def import_mechs(
     if version != 1:
         raise ValueError(f"Expected version = 1, got {version}")
 
-    mechs: list[Mech] = []
-    failed: dict[str, str] = {}
+    if not isinstance(mech_list, list):
+        raise TypeError('Expected a list under "mechs" key')
 
-    for wu_mech in mech_list:
+    mechs: list[Mech] = []
+    failed: list[tuple[int, str]] = []
+
+    for i, wu_mech in enumerate(mech_list, 1):
         try:
             mechs.append(import_mech(wu_mech, pack))
 
         except Exception as e:
-            try:
-                name = wu_mech["name"]
-
-            except (KeyError, TypeError):
-                failed[str(wu_mech)] = str(e)
-
-            else:
-                failed[name] = str(e)
+            failed.append((i, str(e)))
 
     return mechs, failed
 
 
-def load_mechs(data: bytes, pack: "PackInterface") -> tuple[list[Mech], dict[str, str]]:
+def load_mechs(
+    data: bytes, pack: "PackInterface"
+) -> tuple[list[Mech], list[tuple[int, str]]]:
     """Loads mechs from bytes object, representing a .JSON file."""
     return import_mechs(orjson.loads(data), pack)
 
