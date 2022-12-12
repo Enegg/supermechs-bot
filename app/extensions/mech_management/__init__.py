@@ -159,13 +159,20 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
 async def export(inter: CommandInteraction, player: Player) -> None:
     """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
 
-    if not player.builds:
+    build_count = len(player.builds)
+
+    if build_count == 0:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
+
+    elif build_count == 1:
+        fp = dump_mechs(player.builds.values(), plugin.bot.default_pack.key)
+        file = File(fp, "mechs.json")
+        return await inter.response.send_message(file=file, ephemeral=True)
 
     mech_select = Select(
         placeholder="Select mechs to export",
         custom_id="select:exported_mechs",
-        max_values=min(25, len(player.builds)),
+        max_values=min(25, build_count),
         options=list(player.builds)[:25],
     )
     await inter.response.send_message(components=mech_select, ephemeral=True)
@@ -181,8 +188,8 @@ async def export(inter: CommandInteraction, player: Player) -> None:
     selected = frozenset(values)
 
     mechs = (mech for name, mech in player.builds.items() if name in selected)
-    fp = dump_mechs(mechs, plugin.bot.default_pack.key)
-    file = File(fp, "mechs.json")  # type: ignore
+    fp = io.BytesIO(dump_mechs(mechs, plugin.bot.default_pack.key))
+    file = File(fp, "mechs.json")
     await new_inter.response.edit_message(file=file, components=None)
 
 
