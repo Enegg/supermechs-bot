@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from enum import Enum
 import importlib
 import io
 import logging
@@ -198,3 +199,20 @@ class monospace:
     table = str.maketrans(
         string.digits + string.ascii_letters, digits + unicode_letters
     )
+
+
+class InteractionEvent(str, Enum):
+    """Enumeration of interaction related events."""
+
+    interaction = "interaction"
+    """Called when an interaction happened.
+    This currently happens due to application command invocations or components being used.
+    """
+    message_interaction = "message_interaction"
+    """Called when a message interaction happened. This currently happens due to components being used."""
+    modal_submit = "modal_submit"
+    """Called when a modal is submitted."""
+    button_click = "button_click"
+    """Called when a button is clicked."""
+    dropdown = "dropdown"
+    """Called when a select menu is clicked."""
