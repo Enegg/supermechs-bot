@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import typing as t
@@ -8,7 +9,7 @@ from disnake import Attachment, CommandInteraction, Embed, File, MessageInteract
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from ui import Select
+from ui import Select, wait_for_component
 
 from .mech_manager import MechView
 
@@ -173,10 +174,12 @@ async def export(inter: CommandInteraction, player: Player) -> None:
     )
     await inter.response.send_message(components=mech_select, ephemeral=True)
 
-    def check(inter: MessageInteraction) -> bool:
-        return inter.data.custom_id == mech_select.custom_id
+    try:
+        new_inter = await wait_for_component(plugin.bot, mech_select, timeout=600)
 
-    new_inter: MessageInteraction = await plugin.bot.wait_for("dropdown", check=check)
+    except asyncio.TimeoutError:
+        return await inter.delete_original_response()
+
     values = new_inter.values
     assert values is not None
     selected = frozenset(values)

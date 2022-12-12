@@ -13,6 +13,7 @@ from disnake.ui import TextInput
 
 from config import TEST_GUILDS
 from library_extensions import Markdown
+from ui import wait_for_modal
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -156,13 +157,8 @@ async def eval_(inter: CommandInteraction | ModalInteraction, code: str | None =
             title="Prompt", custom_id="eval:modal", components=text_input
         )
 
-        def check(inter: ModalInteraction) -> bool:
-            return inter.custom_id == "eval:modal"
-
         try:
-            modal_inter: ModalInteraction = await plugin.bot.wait_for(
-                "modal_submit", check=check, timeout=600
-            )
+            modal_inter = await wait_for_modal(plugin.bot, "eval:modal")
 
         except asyncio.TimeoutError:
             return await inter.send("Modal timed out.", ephemeral=True)
