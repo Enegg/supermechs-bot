@@ -7,6 +7,7 @@ aiohttp == 3.8.*
 # SuperMechs framework
 # git+https://github.com/Enegg/python-socketio
 Pillow == 9.3.*
+orjson
 
 # Bot
 disnake == 2.6.*

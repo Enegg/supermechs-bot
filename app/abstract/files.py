@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import contextlib
 import io
-import json
 import os
 import pathlib
 import typing as t
 
 import aiohttp
 import attrs
+import orjson
 import yarl
 from typing_extensions import Self
 
@@ -203,7 +203,7 @@ class File(Resource[pathlib.Path]):
 
     async def json(self) -> t.Any:
         with await self.open() as file:
-            return json.load(file)
+            return orjson.loads(file.read())
 
 
 @attrs.define
@@ -236,7 +236,7 @@ class Bytes(Resource[io.BytesIO]):
 
     async def json(self) -> t.Any:
         with self.fp as file:
-            return json.load(file)
+            return orjson.loads(file.read())
 
     @classmethod
     def from_image(cls, image: Image, filename: str) -> Self:
