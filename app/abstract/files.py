@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import io
 import json
@@ -12,6 +14,9 @@ from typing_extensions import Self
 
 from shared import SESSION_CTX
 from typeshed import T
+
+if t.TYPE_CHECKING:
+    from PIL.Image import Image
 
 Pathish = os.PathLike[str] | str
 """A literal file or path."""
@@ -201,8 +206,48 @@ class File(Resource[pathlib.Path]):
             return json.load(file)
 
 
-# class Bytes(Resource, resource=io.BytesIO):
-#     pass
+@attrs.define
+class Bytes(Resource[io.BytesIO]):
+    """An in-memory resource."""
+
+    fp: io.BytesIO
+    """The resource file object."""
+
+    filename: str
+    """The name for the resource."""
+
+    @property
+    def url(self) -> yarl.URL:
+        return yarl.URL(f"attachment://{self.filename}")
+
+    async def get_size(self) -> int | None:
+        return self.fp.getbuffer().nbytes
+
+    async def read(self) -> bytes:
+        return self.fp.getvalue()
+
+    async def open(self):
+        return self.fp
+
+    @contextlib.asynccontextmanager
+    async def stream(self):
+        with self.fp as file:
+            yield file
+
+    async def json(self) -> t.Any:
+        with self.fp as file:
+            return json.load(file)
+
+    @classmethod
+    def from_image(cls, image: Image, filename: str) -> Self:
+        """Construct a Bytes resource from `Image` object."""
+        fp = io.BytesIO()
+
+        _, ext = os.path.splitext(filename)
+        image.save(fp, format=ext)
+        fp.seek(0)
+
+        return cls(fp, filename)
 
 
 if __name__ == "__main__":
