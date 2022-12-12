@@ -43,8 +43,8 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 
     embed = Embed(title="Your builds", color=inter.author.color)
 
-    if player.active_build_name:
-        embed.description = f"Currently active: **{player.active_build_name}**"
+    if player.active_build is not None:
+        embed.description = f"Currently active: **{player.active_build.name}**"
 
     fields: list[tuple[str, str]] = []
 
@@ -94,15 +94,10 @@ async def build(
     """
 
     if name is None:
-        mech = player.get_or_create_active_build()
-        name = player.active_build_name
-
-    elif name not in player.builds:
-        mech = player.create_build(name)
+        mech = player.get_active_or_create_build()
 
     else:
-        mech = player.builds[name]
-        player.active_build_name = mech.name
+        mech = player.get_or_create_build(name)
 
     view = MechView(mech, plugin.bot.default_pack, player, timeout=100)
     file = MISSING
