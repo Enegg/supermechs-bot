@@ -1,14 +1,12 @@
-import io
-import json
 import typing as t
 
+import orjson
 from attrs import asdict
 
 from ..core import MAX_BUFFS
 from ..inv_item import AnyInvItem, InvItem
 from ..item import AnyItem
 from ..mech import Mech
-from ..player import Player
 from ..typedefs import AnyStats
 from ..utils import truncate_name
 
@@ -16,7 +14,7 @@ if t.TYPE_CHECKING:
     from ..pack_interface import PackInterface
 
 
-# ------------- Serialization -------------
+# ------------------------------------------ typed dicts -------------------------------------------
 
 
 class WUBattleItem(t.TypedDict):
@@ -86,7 +84,7 @@ def wu_slot_to_mech_slot(slot: str) -> str:
     return _slot_for_slot.get(slot, slot)
 
 
-def mech_items_in_wu_order(mech: Mech) -> t.Iterator[AnyInvItem | None]:
+def _mech_items_in_wu_order(mech: Mech) -> t.Iterator[AnyInvItem | None]:
     yield mech.torso
     yield mech.legs
     yield from mech.iter_items(weapons=True)
@@ -97,32 +95,21 @@ def mech_items_in_wu_order(mech: Mech) -> t.Iterator[AnyInvItem | None]:
     yield from mech.iter_items(modules=True)
 
 
-def iter_mech_item_ids(mech: Mech) -> t.Iterator[int]:
-    return (0 if item is None else item.id for item in mech_items_in_wu_order(mech))
+def _mech_items_ids_in_wu_order(mech: Mech) -> t.Iterator[int]:
+    """Iterator yielding mech item IDs in WU compatible order."""
+    return (0 if item is None else item.id for item in _mech_items_in_wu_order(mech))
 
 
 def mech_to_id_str(mech: Mech, sep: str = "_") -> str:
     """Helper function to serialize a mech into a string of item IDs."""
-    return sep.join(map(str, iter_mech_item_ids(mech)))
+    return sep.join(map(str, _mech_items_ids_in_wu_order(mech)))
 
 
-def export_mech(mech: Mech) -> WUMech:
-    return {"name": mech.name, "setup": list(iter_mech_item_ids(mech))}
-
-
-def export_mechs(mechs: t.Iterable[Mech], pack_key: str) -> ExportedMechsJSON:
-    wu_mechs = list(map(export_mech, mechs))
-    return {"version": 1, "mechs": {pack_key: wu_mechs}}
-
-
-def dump_mechs(mechs: t.Iterable[Mech], pack_key: str) -> io.StringIO:
-    fp = io.StringIO()
-    json.dump(export_mechs(mechs, pack_key), fp, indent=2)
-    fp.seek(0)
-    return fp
+# -------------------------------------------- imports ---------------------------------------------
 
 
 def import_mech(data: WUMech, pack: "PackInterface") -> Mech:
+    """Imports a mech from WU mech."""
     mech = Mech(name=truncate_name(data["name"]))
 
     for item_id, wu_slot in zip(data["setup"], WU_SLOT_NAMES + WU_MODULE_SLOT_NAMES):
@@ -137,10 +124,13 @@ def import_mech(data: WUMech, pack: "PackInterface") -> Mech:
     return mech
 
 
-def load_mechs(data: ExportedMechsJSON, pack: "PackInterface") -> tuple[list[Mech], dict[str, str]]:
+def import_mechs(
+    json: ExportedMechsJSON, pack: "PackInterface"
+) -> tuple[list[Mech], dict[str, str]]:
+    """Imports mechs from parsed .JSON file."""
     try:
-        version = data["version"]
-        mech_list = data["mechs"][pack.key]
+        version = json["version"]
+        mech_list = json["mechs"][pack.key]
 
     except KeyError as e:
         raise ValueError(f'Malformed data: key "{e}" not found.') from e
@@ -168,6 +158,30 @@ def load_mechs(data: ExportedMechsJSON, pack: "PackInterface") -> tuple[list[Mec
     return mechs, failed
 
 
+def load_mechs(data: bytes, pack: "PackInterface") -> tuple[list[Mech], dict[str, str]]:
+    """Loads mechs from bytes object, representing a .JSON file."""
+    return import_mechs(orjson.loads(data), pack)
+
+
+# -------------------------------------------- exports ---------------------------------------------
+
+
+def export_mech(mech: Mech) -> WUMech:
+    """Exports a mech to WU mech."""
+    return {"name": mech.name, "setup": list(_mech_items_ids_in_wu_order(mech))}
+
+
+def export_mechs(mechs: t.Iterable[Mech], pack_key: str) -> ExportedMechsJSON:
+    """Exports mechs to WU compatible format."""
+    wu_mechs = list(map(export_mech, mechs))
+    return {"version": 1, "mechs": {pack_key: wu_mechs}}
+
+
+def dump_mechs(mechs: t.Iterable[Mech], pack_key: str) -> bytes:
+    """Dumps mechs into bytes representing a .JSON file."""
+    return orjson.dumps(export_mechs(mechs, pack_key), option=orjson.OPT_INDENT_2)
+
+
 def wu_serialize_item(item: AnyItem, slot_name: str) -> WUBattleItem:
     return {
         "slotName": slot_name,
@@ -187,31 +201,12 @@ def wu_serialize_mech(mech: Mech, player_name: str) -> WUSerialized:
 
     serialized_items_without_modules = [
         None if inv_item is None else wu_serialize_item(inv_item.base, slot)
-        for slot, inv_item in zip(WU_SLOT_NAMES, mech_items_in_wu_order(mech))
+        for slot, inv_item in zip(WU_SLOT_NAMES, _mech_items_in_wu_order(mech))
     ]
     # lazy import
     import hashlib
-    import json
 
-    json_string = json.dumps(serialized_items_without_modules, indent=None)
-    hash = hashlib.sha256(json_string.encode()).hexdigest()
+    data = orjson.dumps(serialized_items_without_modules)
+    hash = hashlib.sha256(data).hexdigest()
 
     return {"name": str(player_name), "itemsHash": hash, "mech": export_mech(mech)}
-
-
-def build_to_json(
-    player: Player, player_name: str | None = None, build_name: str | None = None
-) -> WUSerialized:
-    """Parses a build to WU acceptable JSON format."""
-
-    name = player.active_build_name or build_name
-
-    if name is None:
-        raise ValueError("Player has no active build and name was not passed.")
-
-    build = player.builds.get(name)
-
-    if build is None:
-        raise TypeError(f"Player does not have a build {name}.")
-
-    return wu_serialize_mech(build, player_name or player.name)
