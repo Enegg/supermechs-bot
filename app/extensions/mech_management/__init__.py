@@ -81,7 +81,9 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 
 @mech.sub_command()
 @commands.max_concurrency(1, commands.BucketType.user)
-async def build(inter: MixedInteraction, player: Player, name: str | None = None) -> None:
+async def build(
+    inter: MixedInteraction, player: Player, name: commands.String[1, 32] | None = None
+) -> None:
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
 
     Parameters
