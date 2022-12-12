@@ -16,7 +16,7 @@ from SuperMechs.player import Player
 if t.TYPE_CHECKING:
     from bot import SMBot
 
-plugin = plugins.Plugin["SMBot"](name="ArenaBuffs")
+plugin = plugins.Plugin["SMBot"](name="ArenaBuffs", logger=__name__)
 
 
 class ArenaBuffsView(InteractionCheck, PaginatorView):

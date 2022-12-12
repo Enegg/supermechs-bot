@@ -17,7 +17,9 @@ from ui import wait_for_modal
 if t.TYPE_CHECKING:
     from bot import SMBot
 
-plugin = plugins.Plugin["SMBot"](name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS})
+plugin = plugins.Plugin["SMBot"](
+    name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
+)
 last_extension: str | None = None
 
 
@@ -99,6 +101,7 @@ async def ext_autocomplete(_: CommandInteraction, input: str) -> list[str]:
 async def shutdown(inter: CommandInteraction) -> None:
     """Terminates the bot connection."""
     await inter.response.send_message("I will be back", ephemeral=True)
+    plugin.logger.warning("Bot shutdown initiated")
     await plugin.bot.close()
 
 

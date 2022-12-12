@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import io
-import logging
 import typing as t
 
 from disnake import Attachment, CommandInteraction, Embed, File, MessageInteraction
@@ -24,8 +23,7 @@ from SuperMechs.utils import truncate_name
 if t.TYPE_CHECKING:
     from bot import SMBot
 
-LOGGER = logging.getLogger(__name__)
-plugin = plugins.Plugin["SMBot"](name="Mech-manager")
+plugin = plugins.Plugin["SMBot"](name="Mech-manager", logger=__name__)
 
 MixedInteraction = CommandInteraction | MessageInteraction
 

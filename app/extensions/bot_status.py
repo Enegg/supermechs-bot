@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:
 
 python_version = ".".join(map(str, sys.version_info[:3]))
 
-plugin = Plugin["SMBot"](name="Bot-status")
+plugin = Plugin["SMBot"](name="Bot-status", logger=__name__)
 
 
 @plugin.slash_command()

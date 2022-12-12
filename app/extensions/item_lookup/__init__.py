@@ -28,7 +28,7 @@ else:
     LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
 
 
-plugin = plugins.Plugin["SMBot"](name="Item-lookup")
+plugin = plugins.Plugin["SMBot"](name="Item-lookup", logger=__name__)
 
 
 @plugin.slash_command()
@@ -110,14 +110,10 @@ async def item_raw(
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """
 
-    if name not in plugin.bot.default_pack.names_to_ids:
-        if name == "Start typing to get suggestions...":
-            raise commands.UserInputError("This is only an information and not an option")
-
+    if name not in plugin.bot.default_pack:
         raise commands.UserInputError("Item not found.")
 
     item = plugin.bot.default_pack.get_item_by_name(name)
-
     await inter.response.send_message(f"`{item!r}`", ephemeral=True)
 
 
