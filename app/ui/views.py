@@ -28,7 +28,8 @@ ItemCallbackType = t.Callable[[V, I, M], t.Coroutine[t.Any, t.Any, t.Any]]
 class InteractionCheck:
     """Mixin to add an interaction_check which locks interactions to user_id.
     Note: remember to place this class before the view class, otherwise the view
-    will overwrite the method."""
+    will overwrite the method.
+    """
 
     user_id: int
     response = "Only the command invoker can interact with that."
@@ -58,7 +59,7 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
 
     Parameters
     ----------
-    timeout: Optional[:class:`float`]
+    timeout:
         Timeout in seconds from last interaction with the UI before no longer accepting input.
         If ``None`` then there is no timeout.
     """
@@ -66,13 +67,11 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
     __repr_attributes__ = ("timeout", "rows")
     rows: tuple[ActionRowT, ActionRowT, ActionRowT, ActionRowT, ActionRowT]
 
-    __view_children_items__: t.ClassVar[
-        list[MessageUIComponent | ItemCallbackType[Self, MessageUIComponent]]
-    ] = []
+    __view_children_items__: t.ClassVar[list[ItemCallbackType[Self, MessageUIComponent]]] = []
 
     def __init_subclass__(cls, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init_subclass__(*args, **kwargs)
-        children: list[MessageUIComponent | ItemCallbackType[Self, MessageUIComponent]] = [
+        children: list[ItemCallbackType[Self, MessageUIComponent]] = [
             member
             for base in reversed(cls.__mro__)
             for member in base.__dict__.values()
@@ -99,21 +98,16 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
         for item_or_func in self.__view_children_items__:
             column: int | None = None
 
-            if not isinstance(item_or_func, Item):
-                item: MessageUIComponent = item_or_func.__discord_ui_model_type__(
-                    **item_or_func.__discord_ui_model_kwargs__
-                )
-                item.callback = partial(item_or_func, self, item)
-                setattr(self, item_or_func.__name__, item)
-                row = getattr(item, "row", None)  # futureproofing in case I decide to remove rows
-                # from items
+            item: MessageUIComponent = item_or_func.__discord_ui_model_type__(
+                **item_or_func.__discord_ui_model_kwargs__
+            )
+            item.callback = partial(item_or_func, self, item)
+            setattr(self, item_or_func.__name__, item)
+            row = getattr(item, "row", None)  # futureproofing in case I decide to remove rows
+            # from items
 
-                if hasattr(item_or_func, "__discord_ui_position__"):
-                    row, column = item_or_func.__discord_ui_position__
-
-            else:
-                item = item_or_func
-                row = getattr(item, "row", None)
+            if hasattr(item_or_func, "__discord_ui_position__"):
+                row, column = item_or_func.__discord_ui_position__
 
             item._view = self
 
