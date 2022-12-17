@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import warnings
 
 from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
@@ -16,16 +15,9 @@ load_dotenv()
 
 logging.Formatter.default_time_format = "%d.%m.%Y %H:%M:%S"
 logging.setLogRecordFactory(FileRecord)
-warnings.filterwarnings("ignore", "PyNaCl")
 logging.captureWarnings(True)
-ROOT_LOGGER = logging.getLogger()
-ROOT_LOGGER.setLevel(logging.INFO)
 stream = logging.StreamHandler()
 stream.setLevel(logging.INFO)
-ROOT_LOGGER.addHandler(stream)
-
-logging.getLogger("disnake").setLevel(logging.WARNING)
-logging.getLogger("disnake.ext.plugins.plugin").setLevel(logging.INFO)
 
 if __debug__:
     format = "{asctime} [{levelname}] {name} - {message}"
@@ -35,12 +27,15 @@ else:
     format = "[{levelname}] {name} - {message}"
 
 stream.setFormatter(logging.Formatter(format, style="{"))
+ROOT_LOGGER = logging.getLogger()
+ROOT_LOGGER.setLevel(logging.INFO)
+ROOT_LOGGER.addHandler(stream)
 
+logging.getLogger("disnake").setLevel(logging.ERROR)
+# logging.getLogger("disnake.ext.plugins.plugin").setLevel(logging.INFO)
 
 async def main() -> None:
     bot = SMBot(
-        dev_mode=__debug__,
-        logs_channel_id=LOGS_CHANNEL,
         intents=Intents(guilds=True),
         activity=Game("SuperMechs"),
         test_guilds=TEST_GUILDS if __debug__ else None,
