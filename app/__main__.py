@@ -40,14 +40,18 @@ async def main() -> None:
         activity=Game("SuperMechs"),
         test_guilds=TEST_GUILDS if __debug__ else None,
         allowed_mentions=AllowedMentions.none(),
-        strict_localization=__debug__,
+        strict_localization=True,
         # sync_commands_debug=True,
     )
 
     bot.i18n.load("locale/")
     bot.load_extensions("extensions")
+    bot.create_aiohttp_session()
 
-    await bot.start(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
+    await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
+    await bot.setup_channel_logger(LOGS_CHANNEL)
+    await bot.before_connect()
+    await bot.connect()
 
 
 if __name__ == "__main__":
@@ -56,4 +60,6 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         pass
-    logging.shutdown()
+
+    finally:
+        logging.shutdown()

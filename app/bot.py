@@ -99,7 +99,7 @@ class SMBot(commands.InteractionBot):
                 f" `/{inter.application_command.qualified_name}` {arguments}"
             )
 
-            if self.dev_mode:
+            if __debug__:
                 info = text
 
             else:
@@ -107,30 +107,30 @@ class SMBot(commands.InteractionBot):
                 info = "Command executed with an error..."
         await inter.send(info, ephemeral=True)
 
-    async def start(self, token: str, *, reconnect: bool = True) -> None:
-        LOGGER.info("Starting bot")
+    async def login(self, token: str) -> None:
+        LOGGER.info("Starting...")
         self.started_at = datetime.now()
-        await self.login(token)
-        self.create_aiohttp_session()
-        await self.setup_channel_logger()
-        await self.before_connect()
-        await self.connect(reconnect=reconnect)
+        await super().login(token)
 
     async def before_connect(self) -> None:
         try:
             await self.default_pack.load(URL(PACK_V2_URL))
 
-        except Exception as e:
-            LOGGER.warning("Failed to load items: ", exc_info=e)
+        except Exception as err:
+            LOGGER.warning("Failed to load items: ", exc_info=err)
 
     async def on_ready(self) -> None:
         LOGGER.info(f"{self.user.name} is online")
 
-    async def setup_channel_logger(self) -> None:
-        if self.logs_channel is None:
-            return
+        if __debug__:
+            limit = self.session_start_limit
+            assert limit is not None
+            LOGGER.info(
+                f"Session start limit: {limit.total=}, {limit.remaining=}, {limit.reset_time=:%d.%m.%Y %H:%M:%S}"
+            )
 
-        channel = await self.fetch_channel(self.logs_channel)
+    async def setup_channel_logger(self, channel_id: int) -> None:
+        channel = await self.fetch_channel(channel_id)
 
         if not isinstance(channel, Messageable):
             raise TypeError("Channel is not Messageable")
