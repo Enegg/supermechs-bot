@@ -7,15 +7,7 @@ import typing as t
 from datetime import datetime
 from functools import partial
 
-from disnake import (
-    AllowedMentions,
-    BaseActivity,
-    CommandInteraction,
-    Intents,
-    Interaction,
-    Member,
-    User,
-)
+from disnake import CommandInteraction
 from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.utils import MISSING
@@ -33,43 +25,14 @@ LOGGER = logging.getLogger(__name__)
 
 class SMBot(commands.InteractionBot):
     started_at: datetime
-    players: dict[int, Player]
     default_pack: PackInterface
-    dev_mode: bool
 
-    def __init__(
-        self,
-        *,
-        dev_mode: bool = False,
-        logs_channel_id: int | None = None,
-        owner_id: int | None = None,
-        reload: bool = False,
-        sync_commands: bool = True,
-        sync_commands_debug: bool = False,
-        sync_commands_on_cog_unload: bool = True,
-        test_guilds: t.Sequence[int] | None = None,
-        allowed_mentions: AllowedMentions | None = None,
-        activity: BaseActivity | None = None,
-        intents: Intents | None = None,
-        strict_localization: bool = False,
-    ):
-        super().__init__(
-            owner_id=owner_id,
-            reload=reload,
-            sync_commands=sync_commands,
-            sync_commands_debug=sync_commands_debug,
-            sync_commands_on_cog_unload=sync_commands_on_cog_unload,
-            test_guilds=test_guilds,
-            allowed_mentions=allowed_mentions,
-            activity=activity,
-            intents=intents,
-            strict_localization=strict_localization,
-        )
-        self.started_at = MISSING
-        self.players = {}
-        self.logs_channel = logs_channel_id
-        self.default_pack = PackInterface()
-        self.dev_mode = dev_mode
+    if not t.TYPE_CHECKING:
+        # this is to avoid retyping all of the kwargs
+        def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+            super().__init__(*args, **kwargs)
+            self.started_at = MISSING
+            self.default_pack = PackInterface()
 
     async def on_slash_command_error(
         self, inter: CommandInteraction, error: commands.CommandError

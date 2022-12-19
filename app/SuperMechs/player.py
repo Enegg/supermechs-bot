@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-import uuid
+import logging
+import typing as t
 
 from attrs import Factory, define
+from typing_extensions import Self
 
 from .core import ArenaBuffs
-from .inv_item import AnyInvItem
 from .mech import Mech
-from .utils import MISSING, truncate_name
+from .utils import truncate_name
+
+LOGGER = logging.getLogger(__name__)
 
 
 @define
@@ -19,13 +22,22 @@ class Player:
     id: int
     name: str
     builds: dict[str, Mech] = Factory(dict)
-    teams: dict[str, list[Mech]] = Factory(dict)
     arena_buffs: ArenaBuffs = Factory(ArenaBuffs)
-    inventory: dict[uuid.UUID, AnyInvItem] = Factory(dict)
     active_build: Mech | None = None
-    active_team_name: str = MISSING
-    level: int = 0
-    exp: int = 0
+    # inventory: dict[uuid.UUID, AnyInvItem] = Factory(dict)
+    # teams: dict[str, list[Mech]] = Factory(dict)
+    # active_team_name: str = MISSING
+    # level: int = 0
+    # exp: int = 0
+
+    _cache: t.ClassVar[dict[int, Self]] = {}
+
+    def __new__(cls, id: int, name: str, *args: t.Any, **kwargs: t.Any) -> Self:
+        if id not in cls._cache:
+            cls._cache[id] = object.__new__(cls)
+            LOGGER.info(f"New player created: {id} ({name})")
+
+        return cls._cache[id]
 
     def get_active_or_create_build(self, possible_name: str | None = None, /) -> Mech:
         """Retrieves active build if the player has one, otherwise creates a new one.
