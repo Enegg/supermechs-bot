@@ -38,4 +38,4 @@ def get_player(data: UserLike | HasAuthor, /) -> Player:
     else:
         raise TypeError(f"{data!r} isn't a user nor has .author attribute")
 
-    return Player(id=id, name=name)
+    return Player.get_cached(id, name)

@@ -32,9 +32,11 @@ class Player:
 
     _cache: t.ClassVar[dict[int, Self]] = {}
 
-    def __new__(cls, id: int, name: str, *args: t.Any, **kwargs: t.Any) -> Self:
+    @classmethod
+    def get_cached(cls, id: int, name: str) -> Self:
+        """Creates a Player object and caches it by ID."""
         if id not in cls._cache:
-            cls._cache[id] = object.__new__(cls)
+            cls._cache[id] = cls(id, name)
             LOGGER.info(f"New player created: {id} ({name})")
 
         return cls._cache[id]
