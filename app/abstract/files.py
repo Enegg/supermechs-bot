@@ -10,10 +10,9 @@ import aiohttp
 import attrs
 import orjson
 import yarl
-from typing_extensions import Self
+from typing_extensions import Self, override
 
 from shared import SESSION_CTX
-from typeshed import T
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
@@ -66,15 +65,13 @@ def webresource_size(response: aiohttp.ClientResponse) -> int | None:
     return length
 
 
-class Resource(t.Generic[T]):
+class Resource:
     """Base for any uploadable or downloadable representation of information."""
 
     __slots__ = ()
-    _registered_type: t.ClassVar[type] = type(None)
-    _registry: t.ClassVar[dict[type, type[Self]]] = {}
 
     @property
-    def url(self) -> Urlish:
+    def url(self) -> yarl.URL:
         """URL of the resource."""
         raise NotImplementedError
 
@@ -83,38 +80,18 @@ class Resource(t.Generic[T]):
         """Filename of the resource."""
         raise NotImplementedError
 
-    async def get_size(self) -> int | None:
-        """Get the size of the resource, in bytes, if possible."""
-        return None
-
-    def __new__(cls, arg: T, /, *args: t.Any, **kwargs: t.Any) -> Self:
-        if cls is not Resource:
-            return object.__new__(cls)
-
-        for bound_type, subclass in cls._registry.items():
-            if isinstance(arg, bound_type):
-                return object.__new__(subclass)
-
-        else:
-            raise ValueError(f"No valid resource handler for {type(arg)} registered")
-
-    def __init_subclass__(cls, *args: t.Any, **kwargs: t.Any) -> None:
-        super().__init_subclass__(*args, **kwargs)
-        # __init_subclass__ will be called twice due to attrs reconstructing a slotted class
-        cls._registry[cls._registered_type] = cls
-
-    def __class_getitem__(cls, param: type[T]) -> type[Self]:
-        cls._registered_type = param
-        return super().__class_getitem__(param)  # type: ignore
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}(url={self.url!r}, filename={self.filename!r})"
-
     @property
     def extension(self) -> str | None:
         """File extension, if there is one."""
         _, ext = os.path.splitext(self.filename)
         return ext or None
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(url={self.url!r}, filename={self.filename!r})"
+
+    async def get_size(self) -> int | None:
+        """Get the size of the resource, in bytes, if possible."""
+        return None
 
     async def read(self) -> bytes:
         """Read the data of the resource, all at once."""
@@ -128,30 +105,38 @@ class Resource(t.Generic[T]):
         """Stream context manager for the resource."""
         raise NotImplementedError
 
-    def json(self) -> t.Any:
+    async def json(self) -> t.Any:
         """Get the contents of the resource loaded as json."""
         raise NotImplementedError
 
 
 @attrs.define
-class URL(Resource[yarl.URL]):
+class URL(Resource):
     """A URL that represents a web resource."""
 
-    url: Urlish = attrs.field(converter=ensure_valid_url)
+    url: yarl.URL = attrs.field(converter=ensure_valid_url)
     """URL of the resource."""
 
-    @property
-    def filename(self) -> str:
-        return os.path.basename(t.cast(yarl.URL, self.url).path)
+    if t.TYPE_CHECKING:
+        def __init__(self, url: Urlish, /) -> None:
+            ...
 
+    @property
+    @override
+    def filename(self) -> str:
+        return os.path.basename(self.url.path)
+
+    @override
     async def get_size(self) -> int | None:
         async with SESSION_CTX.get().head(self.url) as response:
             return webresource_size(response)
 
+    @override
     async def read(self) -> bytes:
         async with self.stream() as stream:
             return await stream.read()
 
+    @override
     async def open(self) -> io.BytesIO:
         return io.BytesIO(await self.read())
 
@@ -161,79 +146,98 @@ class URL(Resource[yarl.URL]):
             response.raise_for_status()
             yield response
 
+    @override
     @contextlib.asynccontextmanager
     async def stream(self):
         async with self.get() as response:
             yield response.content
 
+    @override
     async def json(self) -> t.Any:
         async with self.get() as response:
             return await response.json(content_type=None)
 
 
 @attrs.define
-class File(Resource[pathlib.Path]):
+class File(Resource):
     """A resource located on the local machine's storage."""
 
     path: pathlib.Path = attrs.field(converter=ensure_valid_path)
     """The path to the file."""
 
+    if t.TYPE_CHECKING:
+        def __init__(self, path: Pathish, /) -> None:
+            ...
+
     @property
+    @override
     def url(self) -> yarl.URL:
         return yarl.URL(f"attachment://{self.filename}")
 
     @property
+    @override
     def filename(self) -> str:
         return self.path.name
 
+    @override
     async def get_size(self) -> int:
         return self.path.stat().st_size
 
+    @override
     async def read(self) -> bytes:
         with await self.open() as file:
             return file.read()
 
+    @override
     async def open(self):
         return self.path.open("rb")
 
+    @override
     @contextlib.asynccontextmanager
     async def stream(self):
         with await self.open() as file:
             yield file
 
+    @override
     async def json(self) -> t.Any:
         with await self.open() as file:
             return orjson.loads(file.read())
 
 
 @attrs.define
-class Bytes(Resource[io.BytesIO]):
+class Bytes(Resource):
     """An in-memory resource."""
 
     fp: io.BytesIO
     """The resource file object."""
 
     filename: str
-    """The name for the resource."""
+    """Filename of the resource."""
 
     @property
+    @override
     def url(self) -> yarl.URL:
         return yarl.URL(f"attachment://{self.filename}")
 
-    async def get_size(self) -> int | None:
+    @override
+    async def get_size(self) -> int:
         return self.fp.getbuffer().nbytes
 
+    @override
     async def read(self) -> bytes:
         return self.fp.getvalue()
 
+    @override
     async def open(self):
         return self.fp
 
+    @override
     @contextlib.asynccontextmanager
     async def stream(self):
         with self.fp as file:
             yield file
 
+    @override
     async def json(self) -> t.Any:
         with self.fp as file:
             return orjson.loads(file.read())
@@ -241,12 +245,21 @@ class Bytes(Resource[io.BytesIO]):
     @classmethod
     def from_image(cls, image: Image, filename: str) -> Self:
         """Construct a Bytes resource from `Image` object."""
+        try:
+            ext = filename[filename.rindex(".") + 1:]
+        except ValueError:
+            raise ValueError("filename has no extension") from None
+
         fp = io.BytesIO()
+        try:
+            image.save(fp, format=ext)
 
-        _, ext = os.path.splitext(filename)
-        image.save(fp, format=ext)
+        except KeyError:
+            # PIL does not cleanly handle invalid formats and instead it just causes
+            # a vague mapping lookup error when not found
+            raise ValueError(f"Invalid file extension: {ext!r}") from None
+
         fp.seek(0)
-
         return cls(fp, filename)
 
 
@@ -258,21 +271,16 @@ if __name__ == "__main__":
         async with aiohttp.ClientSession() as session:
             SESSION_CTX.set(session)
 
-            res = Resource(yarl.URL("https://i.imgur.com/3jO2cXo.png"))
+            res = URL("https://i.imgur.com/3jO2cXo.png")
             size = await res.get_size()
             print(f"The size of {res.url} is {size}B")
-
-            res = Resource(pathlib.Path("D:/Obrazy/Games/SuperMechs/Sprites/Fanart/Deatomizer.png"))
-            size = await res.get_size()
-            print(f"The size of {res.filename} is {size}B")
-
-            # test direct instances
-            res = URL(yarl.URL("https://i.imgur.com/3jO2cXo.png"))
-            image = open(io.BytesIO(await res.read()))
+            image = open(await res.open())
             image.show(res.filename)
 
-            res = File(pathlib.Path("D:/Obrazy/Games/SuperMechs/Sprites/Fanart/Deatomizer.png"))
-            image = open(io.BytesIO(await res.read()))
+            res = File("D:/Obrazy/Games/SuperMechs/Sprites/Fanart/Deatomizer.png")
+            size = await res.get_size()
+            print(f"The size of {res.filename} is {size}B")
+            image = open(await res.open())
             image.show(res.filename)
 
     import asyncio
