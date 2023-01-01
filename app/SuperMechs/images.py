@@ -271,13 +271,16 @@ def delegate(
     return deco
 
 
-async def loader(resource: Resource, renderer: AttachedImage[t.Any]) -> None:
+async def loader(renderer: AttachedImage[t.Any], resource: Resource) -> None:
     from PIL.Image import open
 
     with await resource.open() as file:
         image = open(file)
         image.load()
     renderer.image = image
+
+
+Loader = t.Callable[[Resource], Coro[None]]
 
 
 @define
@@ -287,6 +290,7 @@ class AttachedImage(t.Generic[AttachmentType]):
 
     _postprocess: t.ClassVar[dict[int, list[t.Callable[[], None]]]] = defaultdict(list)
     _item_refs: t.ClassVar = weakref.WeakValueDictionary[int, "AnyItem"]()
+    _loaders: t.ClassVar = weakref.WeakKeyDictionary[Self, t.Any]()
 
     @property
     def size(self) -> twotuple[int]:
@@ -308,6 +312,24 @@ class AttachedImage(t.Generic[AttachmentType]):
     @item.setter
     def item(self, item: Item[AttachmentType]) -> None:
         self._item_refs[id(self)] = item
+
+    @property
+    def loader(self) -> t.Any:
+        return self._loaders.pop(self)
+
+    def get_loader(self) -> Loader:
+        return partial(loader, self)
+
+    async def load(self) -> None:
+        await self.loader
+        self.image.load()
+
+    def __hash__(self) -> int:
+        return hash((type(self), id(self)))
+
+    def paste_onto(self, image: Image, dest: twotuple[int]) -> None:
+        """Paste this image onto another."""
+        image.alpha_composite(self.image, dest)
 
     @delegate
     def crop(self, size: SpritePosition) -> None:
@@ -346,7 +368,7 @@ class AttachedImage(t.Generic[AttachmentType]):
     ) -> tuple[Self, Coro[None]]:
         """Create the image from Resource object."""
         self = cls(attachment=attachment)
-        return self, loader(resource, self)
+        return self, loader(self, resource)
 
     @classmethod
     def new(
