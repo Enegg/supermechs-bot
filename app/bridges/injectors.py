@@ -1,7 +1,8 @@
 import typing as t
 
-from disnake import CommandInteraction
 from disnake.ext import commands
+
+from library_extensions import CommandInteraction
 
 from .player_factory import get_player
 
@@ -11,11 +12,9 @@ from SuperMechs.player import Player
 from SuperMechs.typedefs import Name
 from SuperMechs.utils import search_for
 
-if t.TYPE_CHECKING:
-    from bot import SMBot
-
 # TODO: these register as a *side effect* of importing this module
 # think of a cleaner way?
+
 
 @commands.register_injection
 def player_injector(inter: CommandInteraction) -> Player:
@@ -30,7 +29,6 @@ def item_injector(inter: CommandInteraction, name: Name) -> AnyItem:
     ----------
     name: The name of the item. {{ ITEM_NAME }}
     """
-    assert isinstance(inter.bot, SMBot)
     try:
         return inter.bot.default_pack.get_item_by_name(name)
 
@@ -53,7 +51,6 @@ def get_item_filters(inter: CommandInteraction) -> list[t.Callable[[AnyItem], bo
 @item_injector.autocomplete("name")
 async def item_name_autocomplete(inter: CommandInteraction, input: str) -> list[Name]:
     """Autocomplete for items with regard for type & element."""
-    assert isinstance(inter.bot, SMBot)
     OPTION_LIMIT = 25
 
     pack = inter.bot.default_pack

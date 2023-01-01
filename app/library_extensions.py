@@ -12,14 +12,21 @@ import traceback
 import typing as t
 from enum import Enum
 
-from disnake import File
+from disnake import File, Locale, LocalizationProtocol, ApplicationCommandInteraction
 from disnake.abc import Messageable
 from disnake.ext import commands
 from typing_extensions import LiteralString
 
+if t.TYPE_CHECKING:
+    from bot import SMBot
+
 
 class DesyncError(commands.CommandError):
     """Exception raised when due to external factors command's state goes out of sync"""
+
+
+class CommandInteraction(ApplicationCommandInteraction):
+    bot: SMBot
 
 
 def sanitize_filename(filename: str, extension: str) -> str:
