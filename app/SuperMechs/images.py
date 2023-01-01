@@ -45,7 +45,9 @@ def raw_attachments_to_tupled(mapping: RawAttachments) -> Attachments:
 
 Attachments = dict[str, Attachment]
 AnyAttachment = Attachment | Attachments | None
-AttachmentType = TypeVar("AttachmentType", bound=AnyAttachment, default=None)
+AttachmentType = TypeVar(
+    "AttachmentType", bound=AnyAttachment, default=AnyAttachment, infer_variance=True
+)
 
 
 def parse_raw_attachment(raw_attachment: AnyRawAttachment) -> AnyAttachment:
