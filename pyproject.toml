@@ -22,6 +22,7 @@ pythonVersion = "3.10"
 reportUnnecessaryTypeIgnoreComment = true
 reportUnnecessaryCast = true
 reportMatchNotExhaustive = "warning"
+reportUnusedImport = "warning"
 
 reportOverlappingOverload = false
 reportPrivateUsage = false
