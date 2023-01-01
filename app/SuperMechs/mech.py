@@ -13,10 +13,11 @@ from shared.utils import cached_slot_property
 from typeshed import XOrTupleXY, dict_items_as
 
 from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
-from .enums import Element, IconData, Type
+from .enums import Element, Type
 from .images import Attachment, Attachments, ImageRenderer
 from .inv_item import AnyInvItem, InvItem, SlotType
 from .utils import format_count
+from .converters import slot_to_type, get_slot_name
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
@@ -25,68 +26,6 @@ BODY_SLOTS = ("torso", "legs", "drone")
 WEAPON_SLOTS = ("side1", "side2", "side3", "side4", "top1", "top2")
 SPECIAL_SLOTS = ("tele", "charge", "hook")
 MODULE_SLOTS = ("mod1", "mod2", "mod3", "mod4", "mod5", "mod6", "mod7", "mod8")
-_SLOTS_SET = frozenset(BODY_SLOTS).union(WEAPON_SLOTS, SPECIAL_SLOTS, MODULE_SLOTS)
-
-
-# -------------------------------- Converters ---------------------------------
-
-_type_to_slot_lookup = {
-    Type.SIDE_WEAPON: "side",
-    Type.TOP_WEAPON: "top",
-    Type.TELEPORTER: "tele",
-    Type.CHARGE_ENGINE: "charge",
-    Type.GRAPPLING_HOOK: "hook",
-}
-
-
-def _type_to_partial_slot(type: Type) -> str:
-    return _type_to_slot_lookup.get(type) or type.name.lower()
-
-
-def slot_to_type(slot: str) -> Type:
-    """Convert slot literal to corresponding type enum."""
-    if slot.startswith("side"):
-        return Type.SIDE_WEAPON
-
-    if slot.startswith("top"):
-        return Type.TOP_WEAPON
-
-    if slot.startswith("mod"):
-        return Type.MODULE
-
-    return Type[slot.upper()]
-
-
-def slot_to_icon_data(slot: str) -> IconData:
-    """Same as slot_to_type but returns alternate icon for items mounted on the right side."""
-    if slot.startswith(("top", "side")) and int(slot[-1]) % 2 == 1:
-        return slot_to_type(slot).alt
-
-    return slot_to_type(slot)
-
-
-def slot_name_converter(slot_: XOrTupleXY[str | Type, int], /):
-    """Parse a slot to appropriate name. Raises TypeError if invalid."""
-    match slot_:
-        case (str() as slot, int() as pos):
-            slot = slot.lower() + str(pos)
-
-        case (Type() as slot, int() as pos):
-            slot = _type_to_partial_slot(slot) + str(pos)
-
-        case Type():
-            slot = _type_to_partial_slot(slot_)
-
-        case str():
-            slot = slot_.lower()
-
-        case _:
-            raise TypeError(f"{slot_!r} is not a valid slot")
-
-    if slot not in _SLOTS_SET:
-        raise TypeError(f"{slot_!r} is not a valid slot")
-
-    return slot
 
 
 def get_weight_emoji(vars: GameVars, weight: int) -> str:
@@ -198,7 +137,7 @@ class Mech:
         if not isinstance(item, (InvItem, type(None))):
             raise TypeError(f"Expected Item object or None, got {type(item)}")
 
-        slot = slot_name_converter(slot)
+        slot = get_slot_name(slot)
 
         if item is not None:
             if slot_to_type(slot) is not item.type:
@@ -219,7 +158,7 @@ class Mech:
         setattr(self, slot, item)
 
     def __getitem__(self, slot: XOrTupleXY[str | Type, int]) -> AnyInvItem | None:
-        return getattr(self, slot_name_converter(slot))
+        return getattr(self, get_slot_name(slot))
 
     def __str__(self) -> str:
         string_parts = [

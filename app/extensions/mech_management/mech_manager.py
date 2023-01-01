@@ -13,11 +13,12 @@ from ui.buttons import Button, ToggleButton, TrinaryButton, button
 from ui.selects import EMPTY_OPTION, PaginatedSelect, select
 from ui.views import InteractionCheck, PaginatorView, SaneView, add_callback, positioned
 
+from SuperMechs.converters import slot_to_icon_data, slot_to_type
 from SuperMechs.core import ArenaBuffs
 from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import mech_to_id_str
 from SuperMechs.inv_item import InvItem
-from SuperMechs.mech import Mech, slot_to_icon_data, slot_to_type
+from SuperMechs.mech import Mech
 from SuperMechs.pack_interface import PackInterface
 from SuperMechs.player import Player
 
