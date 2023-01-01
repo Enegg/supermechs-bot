@@ -9,6 +9,7 @@ from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
 from abstract.files import Bytes
+from bridges import get_player
 from shared.utils import wrap_bytes
 from ui import Select, wait_for_component
 
@@ -200,7 +201,7 @@ async def mech_name_autocomplete(
     inter: CommandInteraction, input: str
 ) -> list[str] | dict[str, str]:
     """Autocomplete for player builds."""
-    player = plugin.bot.get_player(inter)
+    player = get_player(inter)
     input = truncate_name(input)
     case_insensitive = input.lower()
 

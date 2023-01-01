@@ -17,7 +17,6 @@ from library_extensions import ChannelHandler, walk_modules
 from shared import SESSION_CTX
 
 from SuperMechs.pack_interface import PackInterface
-from SuperMechs.player import Player
 from SuperMechs.urls import PACK_V2_URL
 
 LOGGER = logging.getLogger(__name__)
@@ -146,29 +145,3 @@ class SMBot(commands.InteractionBot):
             )
         for module_name in walk_modules(paths, f"{spec.name}.", ignore):
             self.load_extension(module_name)
-
-    def get_player(self, data: User | Member | Interaction, /) -> Player:
-        """Return a Player object from object containing user ID."""
-        match data:
-            case User(id=id, name=name) | Member(id=id, name=name):
-                pass
-
-            case Interaction(author=author):
-                id = author.id
-                name = author.name
-
-            case _:
-                raise TypeError(f"Invalid type: {type(data)}")
-
-        if id not in self.players:
-            LOGGER.info(f"New player created: {id} ({name})")
-            self.players[id] = Player(id=id, name=name)
-
-        return self.players[id]
-
-
-# due to disnake bug this cannot be Bot method
-@commands.register_injection
-def player_injector(inter: CommandInteraction) -> Player:
-    assert isinstance(inter.bot, SMBot)
-    return inter.bot.get_player(inter)

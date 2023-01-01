@@ -6,6 +6,7 @@ from disnake import CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 
 from abstract.files import Bytes
+from bridges.injectors import item_name_autocomplete
 from config import TEST_GUILDS
 from library_extensions import sanitize_filename
 
@@ -14,7 +15,6 @@ from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fiel
 from SuperMechs.enums import Element, Type
 from SuperMechs.item import AnyItem
 from SuperMechs.typedefs import LiteralElement, LiteralType, Name
-from SuperMechs.utils import search_for
 
 if t.TYPE_CHECKING:
     from bot import SMBot
@@ -34,7 +34,7 @@ plugin = plugins.Plugin["SMBot"](name="Item-lookup", logger=__name__)
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
-    name: Name,
+    item: AnyItem,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
@@ -43,20 +43,12 @@ async def item(
 
     Parameters
     -----------
-    name: The name of the item. {{ ITEM_NAME }}
-
     type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
 
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
 
     compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
-
-    if name not in plugin.bot.default_pack:
-        raise commands.UserInputError("Item not found.")
-
-    item = plugin.bot.default_pack.get_item_by_name(name)
-
     resource = Bytes.from_image(item.image.image, sanitize_filename(item.name, ".png"))
     file = File(resource.fp, resource.filename)
 
@@ -95,7 +87,7 @@ async def item(
 @plugin.slash_command(guild_ids=TEST_GUILDS)
 async def item_raw(
     inter: CommandInteraction,
-    name: Name,
+    item: AnyItem,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
 ) -> None:
@@ -103,22 +95,19 @@ async def item_raw(
 
     Parameters
     ----------
-    name: The name of the item or an abbreviation of it. {{ ITEM_NAME }}
-
     type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
 
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """
-
-    if name not in plugin.bot.default_pack:
-        raise commands.UserInputError("Item not found.")
-
-    item = plugin.bot.default_pack.get_item_by_name(name)
     await inter.response.send_message(f"`{item!r}`", ephemeral=True)
 
 
 @plugin.slash_command()
-async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
+async def compare(
+    inter: CommandInteraction,
+    item1: Name = commands.Param(autocomplete=item_name_autocomplete),
+    item2: Name = commands.Param(autocomplete=item_name_autocomplete),
+) -> None:
     """Shows an interactive comparison of two items. {{ COMPARE }}
 
     Parameters
@@ -127,13 +116,14 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
+    pack = plugin.bot.default_pack
 
     try:
-        item_a = plugin.bot.default_pack.get_item_by_name(item1)
-        item_b = plugin.bot.default_pack.get_item_by_name(item2)
+        item_a = pack.get_item_by_name(item1)
+        item_b = pack.get_item_by_name(item2)
 
-    except KeyError as e:
-        raise commands.UserInputError(*e.args) from e
+    except KeyError as err:
+        raise commands.UserInputError(str(err)) from err
 
     def str_type(type: Type) -> str:
         return type.name.replace("_", " ").lower()
@@ -167,51 +157,6 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 
     await view.wait()
     await inter.edit_original_response(view=None)
-
-
-@item.autocomplete("name")
-@item_raw.autocomplete("name")
-@compare.autocomplete("item1")
-@compare.autocomplete("item2")
-async def item_autocomplete(inter: CommandInteraction, input: str) -> list[Name]:
-    """Autocomplete for items with regard for type & element."""
-    OPTION_LIMIT = 25
-
-    pack = plugin.bot.default_pack
-    filters: list[t.Callable[[AnyItem], bool]] = []
-
-    if (type_name := inter.filled_options.get("type", "ANY")) != "ANY":
-        filters.append(lambda item: item.type is Type[type_name])
-
-    if (element_name := inter.filled_options.get("element", "ANY")) != "ANY":
-        filters.append(lambda item: item.element is Element[element_name])
-
-    abbrevs = pack.name_abbrevs.get(input.lower(), set())
-
-    def filter_item_names(names: t.Iterable[Name]) -> t.Iterator[Name]:
-        items = map(pack.get_item_by_name, names)
-        filtered_items = (item for item in items if all(func(item) for func in filters))
-        return (item.name for item in filtered_items)
-
-    # place matching abbreviations at the top
-    matching_item_names = sorted(filter_item_names(abbrevs))
-
-    # this shouldn't ever happen, but handle it anyway
-    if len(matching_item_names) >= OPTION_LIMIT:
-        del matching_item_names[OPTION_LIMIT:]
-        return matching_item_names
-
-    import heapq
-
-    # extra filter to exclude duplicates
-    filters.append(lambda item: item.name not in abbrevs)
-
-    # extend names up to 25
-    matching_item_names += heapq.nsmallest(
-        OPTION_LIMIT - len(matching_item_names),
-        filter_item_names(search_for(input, pack.iter_item_names())),
-    )
-    return matching_item_names
 
 
 setup, teardown = plugin.create_extension_handlers()

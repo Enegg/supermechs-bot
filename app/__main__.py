@@ -8,6 +8,7 @@ from disnake import AllowedMentions, Game, Intents
 from dotenv import load_dotenv
 
 from bot import SMBot
+from bridges import register_injections
 from config import LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import FileRecord
 
@@ -34,6 +35,7 @@ ROOT_LOGGER.addHandler(stream)
 logging.getLogger("disnake").setLevel(logging.ERROR)
 # logging.getLogger("disnake.ext.plugins.plugin").setLevel(logging.INFO)
 
+
 async def main() -> None:
     bot = SMBot(
         intents=Intents(guilds=True),
@@ -45,6 +47,7 @@ async def main() -> None:
     )
 
     bot.i18n.load("locale/")
+    register_injections()
     bot.load_extensions("extensions")
     bot.create_aiohttp_session()
 
