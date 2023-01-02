@@ -210,3 +210,8 @@ class InteractionEvent(str, Enum):
     """Called when a button is clicked."""
     dropdown = "dropdown"
     """Called when a select menu is clicked."""
+
+
+def localized_text(content: str, key: str, i18n: LocalizationProtocol, locale: Locale) -> str:
+    locs = i18n.get(key) or {}
+    return locs.get(str(locale), content)

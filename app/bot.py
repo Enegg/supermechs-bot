@@ -13,7 +13,7 @@ from disnake.ext import commands
 from disnake.utils import MISSING
 
 from abstract.files import URL
-from library_extensions import ChannelHandler, walk_modules
+from library_extensions import ChannelHandler, localized_text, walk_modules
 from shared import SESSION_CTX
 
 from SuperMechs.pack_interface import PackInterface
@@ -37,14 +37,21 @@ class SMBot(commands.InteractionBot):
         self, inter: CommandInteraction, error: commands.CommandError
     ) -> None:
         if isinstance(error, commands.NotOwner):
-            info = "This is a developer-only command."
+            info = localized_text(
+                "This is a developer-only command.", "CMD_DEV", self.i18n, inter.locale
+            )
 
         elif isinstance(error, (commands.UserInputError, commands.CheckFailure)):
             info = str(error)
 
         elif isinstance(error, commands.MaxConcurrencyReached):
             if error.number == 1 and error.per is commands.BucketType.user:
-                info = "Your previous invocation of this command has not finished executing."
+                info = localized_text(
+                    "Your previous invocation of this command has not finished executing.",
+                    "CMD_RUNNING",
+                    self.i18n,
+                    inter.locale,
+                )
 
             else:
                 info = str(error)
@@ -66,7 +73,11 @@ class SMBot(commands.InteractionBot):
 
             else:
                 LOGGER.exception(text, exc_info=error)
-                info = "Command executed with an error..."
+
+                info = localized_text(
+                    "Command executed with an error...", "CMD_ERROR", self.i18n, inter.locale
+                )
+
         await inter.send(info, ephemeral=True)
 
     async def login(self, token: str) -> None:
@@ -88,7 +99,8 @@ class SMBot(commands.InteractionBot):
             limit = self.session_start_limit
             assert limit is not None
             LOGGER.info(
-                f"Session start limit: {limit.total=}, {limit.remaining=}, {limit.reset_time=:%d.%m.%Y %H:%M:%S}"
+                f"Session start limit: {limit.total=}, {limit.remaining=}"
+                f", {limit.reset_time=:%d.%m.%Y %H:%M:%S}"
             )
 
     async def setup_channel_logger(self, channel_id: int) -> None:

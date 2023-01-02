@@ -1,4 +1,8 @@
 {
+    "CMD_DEV": "To komenda wyłącznie deweloperska.",
+    "CMD_RUNNING": "Twoje poprzednie wywołanie tej komendy nie zakończyło się.",
+    "CMD_ERROR": "Podczas wywołania wystąpił błąd...",
+
     "ARENA_BUFFS_NAME": "buffy",
     "ARENA_BUFFS_DESCRIPTION": "Interaktywne menu do modyfikacji arena buffów.",
 
