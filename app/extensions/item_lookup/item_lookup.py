@@ -421,10 +421,10 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
                         string = ""
 
                     elif s_diff == 0:
-                        string = f"**{spread:.1%}**"
+                        string = f"**{spread / 100:.1g}%**"
 
                     else:
-                        string = f"**{spread:.1%}** {s_diff:+.1%}"
+                        string = f"**{spread / 100:.1g}%** {s_diff / 100:+.1g}%"
 
                     field.append(string)
 
