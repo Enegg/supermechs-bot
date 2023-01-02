@@ -36,7 +36,7 @@ def sanitize_filename(filename: str, extension: str) -> str:
     if not filename.endswith(extension):
         filename += extension
 
-    return filename
+    return filename.lower()
 
 
 class FileRecord(logging.LogRecord):
