@@ -33,7 +33,7 @@ def _load_power_data_files():
 
 
 DEFAULT_POWERS, LM_ITEM_POWERS, REDUCED_POWERS = _load_power_data_files()
-REDUCED_COST_ITEMS = frozenset(("Archimonde", "Armor Annihilator"))
+REDUCED_COST_ITEMS = frozenset(("Archimonde", "Armor Annihilator", "BigDaddy", "Chaos Bringer"))
 
 
 @define(kw_only=True)
