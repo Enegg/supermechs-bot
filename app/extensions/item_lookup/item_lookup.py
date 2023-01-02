@@ -298,19 +298,16 @@ def cmp_num(x: float, y: float, lower_is_better: bool = False) -> twotuple[twotu
 
 
 @t.overload
-def compare_numbers(x: int, y: int, lower_is_better: bool = ...) -> twotuple[int]:
+def compare_numbers(x: int, y: int, lower_is_better: bool = False) -> twotuple[int]:
     ...
 
 
 @t.overload
-def compare_numbers(x: float, y: float, lower_is_better: bool = ...) -> twotuple[int]:
+def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
     ...
 
 
 def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
-    if x == y:
-        return (0, 0)
-
     return (x - y, 0) if lower_is_better ^ (x > y) else (0, y - x)
 
 
@@ -439,3 +436,20 @@ def try_shorten(name: str) -> str:
         return name
 
     return "".join(s for s in name if s.isupper())
+
+
+import re
+
+_pattern = re.compile(r"\.(\d+)")
+
+
+def fmt_float(value: float, spec: str) -> str:
+    """Formats a float to at most n digits after decimal point."""
+
+    if (match := re.search(_pattern, spec)) is not None:
+        value, prec = truncate_float(value, int(match[1]))
+        start, end = match.span()
+
+        return format(value, f"{spec[:start]}.{prec}{spec[end:]}")
+
+    return format(value, spec)
