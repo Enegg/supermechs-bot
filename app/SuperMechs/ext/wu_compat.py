@@ -4,7 +4,7 @@ import orjson
 from attrs import asdict
 
 from ..core import MAX_BUFFS
-from ..inv_item import AnyInvItem, InvItem
+from ..inv_item import InvItem
 from ..item import AnyItem
 from ..mech import Mech
 from ..typedefs import AnyStats
@@ -84,7 +84,7 @@ def wu_slot_to_mech_slot(slot: str) -> str:
     return _slot_for_slot.get(slot, slot)
 
 
-def _mech_items_in_wu_order(mech: Mech) -> t.Iterator[AnyInvItem | None]:
+def _mech_items_in_wu_order(mech: Mech) -> t.Iterator[InvItem | None]:
     yield mech.torso
     yield mech.legs
     yield from mech.iter_items(weapons=True)
@@ -156,9 +156,7 @@ def import_mechs(
     return mechs, failed
 
 
-def load_mechs(
-    data: bytes, pack: "PackInterface"
-) -> tuple[list[Mech], list[tuple[int, str]]]:
+def load_mechs(data: bytes, pack: "PackInterface") -> tuple[list[Mech], list[tuple[int, str]]]:
     """Loads mechs from bytes object, representing a .JSON file."""
     return import_mechs(orjson.loads(data), pack)
 

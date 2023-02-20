@@ -155,7 +155,7 @@ class URL(Resource):
     @override
     async def json(self) -> t.Any:
         async with self.get() as response:
-            return await response.json(content_type=None)
+            return await response.json(content_type=None, loads=orjson.loads)
 
 
 @attrs.define

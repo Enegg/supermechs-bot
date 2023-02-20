@@ -16,7 +16,7 @@ ValueT = t.TypeVar("ValueT", bound=int | list[int])
 WORKSHOP_STATS = tuple(AnyMechStats.__annotations__)
 """The stats that can appear in mech summary, in order."""
 
-MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Tier, range(9, 50, 10))} | {Tier.D: 0}
+MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Tier, range(9, 50, 10))} | {Tier.DIVINE: 0}
 """A mapping of a tier to the maximum level an item can have at this tier.
     Note that in game levels start at 1."""
 

@@ -105,7 +105,8 @@ class Player:
         if new_name in self.builds and not overwrite:
             raise ValueError("Provided name is already in use")
 
-        self.builds[new_name] = self.builds.pop(old_name)
+        mech = self.builds[new_name] = self.builds.pop(old_name)
+        mech.name = new_name
 
     def delete_build(self, name: str, /) -> None:
         """Deletes build from player's builds.

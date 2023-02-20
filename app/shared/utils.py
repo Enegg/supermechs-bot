@@ -9,8 +9,7 @@ from typeshed import T
 
 class cached_slot_property(t.Generic[T]):
     """Descriptor similar to functools.cached_property, but designed for slotted classes.
-    It works by caching the value to an attribute of the same name as the descriptor
-    is assigned to, prepended with _.
+    Caches the value to an attribute of the same name as the decorated function, prepended with _.
     """
     __slots__ = ("func",)
 

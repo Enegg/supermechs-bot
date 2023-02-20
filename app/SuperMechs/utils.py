@@ -75,9 +75,9 @@ def format_count(it: t.Iterable[t.Any], /) -> t.Iterator[str]:
     )
 
 
-def random_str(length: int, /) -> str:
+def random_str(length: int, /, charset: str = ascii_letters) -> str:
     """Generates a random string of given length from ascii letters."""
-    return "".join(random.sample(ascii_letters, length))
+    return "".join(random.sample(charset, length))
 
 
 def truncate_name(input: str, length: int = 32) -> str:
