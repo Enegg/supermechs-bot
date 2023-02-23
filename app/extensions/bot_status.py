@@ -11,7 +11,7 @@ from disnake.utils import format_dt, oauth_url
 from library_extensions import Markdown
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from bot import SMBot  # noqa: F401
 
 python_version = ".".join(map(str, sys.version_info[:3]))
 

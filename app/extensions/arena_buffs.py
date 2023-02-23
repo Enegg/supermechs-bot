@@ -14,7 +14,7 @@ from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
 from SuperMechs.player import Player
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from bot import SMBot  # noqa: F401
 
 plugin = plugins.Plugin["SMBot"](name="ArenaBuffs", logger=__name__)
 
@@ -80,8 +80,8 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
         self.stop()
 
         for row in self.rows[:3]:
-            for button in row:
-                button.disabled = True
+            for btn in row:
+                btn.disabled = True
 
         for row in self.rows[3:]:
             row.clear_items()

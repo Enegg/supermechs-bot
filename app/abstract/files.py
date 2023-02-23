@@ -98,7 +98,7 @@ class Resource:
         raise NotImplementedError
 
     async def open(self) -> io.BufferedIOBase:
-        """Get a (possibly arbitrary) file pointer for the resource. Remember to close the file afterwards."""
+        """Get a (possibly arbitrary) file pointer for the resource."""
         raise NotImplementedError
 
     def stream(self) -> contextlib.AbstractAsyncContextManager[t.Any]:
@@ -118,6 +118,7 @@ class URL(Resource):
     """URL of the resource."""
 
     if t.TYPE_CHECKING:
+
         def __init__(self, url: Urlish, /) -> None:
             ...
 
@@ -166,6 +167,7 @@ class File(Resource):
     """The path to the file."""
 
     if t.TYPE_CHECKING:
+
         def __init__(self, path: Pathish, /) -> None:
             ...
 
@@ -246,7 +248,7 @@ class Bytes(Resource):
     def from_image(cls, image: Image, filename: str) -> Self:
         """Construct a Bytes resource from `Image` object."""
         try:
-            ext = filename[filename.rindex(".") + 1:]
+            ext = filename[filename.rindex(".") + 1 :]
         except ValueError:
             raise ValueError("filename has no extension") from None
 

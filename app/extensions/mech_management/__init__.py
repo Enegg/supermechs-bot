@@ -22,7 +22,7 @@ from SuperMechs.player import Player
 from SuperMechs.utils import truncate_name
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from bot import SMBot  # noqa: F401
 
 plugin = plugins.Plugin["SMBot"](name="Mech-manager", logger=__name__)
 

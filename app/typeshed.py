@@ -3,7 +3,7 @@ import typing as t
 from typing_extensions import TypeVar
 
 T = TypeVar("T", default=t.Any, infer_variance=True)
-T2 = t.TypeVar("T2")
+T2 = TypeVar("T2", default=t.Any, infer_variance=True)
 KT = t.TypeVar("KT")
 VT = t.TypeVar("VT")
 P = t.ParamSpec("P")

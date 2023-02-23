@@ -6,7 +6,7 @@ from disnake import CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 
 from abstract.files import Bytes
-from bridges.injectors import item_name_autocomplete
+from bridges import item_name_autocomplete
 from config import TEST_GUILDS
 from library_extensions import sanitize_filename
 
@@ -17,7 +17,7 @@ from SuperMechs.item import AnyItem
 from SuperMechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from bot import SMBot  # noqa: F401
 
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]

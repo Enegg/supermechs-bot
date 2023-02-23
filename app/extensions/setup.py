@@ -15,7 +15,7 @@ from library_extensions import Markdown
 from ui import wait_for_modal
 
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from bot import SMBot  # noqa: F401
 
 plugin = plugins.Plugin["SMBot"](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
