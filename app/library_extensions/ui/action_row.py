@@ -4,13 +4,18 @@ import typing as t
 
 from disnake.ui.action_row import ActionRow, MessageUIComponent, StrictUIComponentT, UIComponentT
 from disnake.ui.item import WrappedComponent
-from typing_extensions import Self
+from typing_extensions import Self, TypeVar
 
-from library_extensions import ReprMixin
+from shared.utils import ReprMixin
 
-ActionRowT = t.TypeVar("ActionRowT", bound=ActionRow[MessageUIComponent], covariant=True)
+ActionRowT = TypeVar(
+    "ActionRowT",
+    bound=ActionRow[MessageUIComponent],
+    default=ActionRow[MessageUIComponent],
+    infer_variance=True,
+)
 
-__all__ = ("ActionRowT", "ActionRow", "PaginatedRow")
+__all__ = ("ActionRowT", "MessageUIComponent", "ActionRow", "PaginatedRow")
 
 
 class PaginatedRow(ReprMixin, ActionRow[UIComponentT]):

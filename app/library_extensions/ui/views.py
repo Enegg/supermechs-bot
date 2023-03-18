@@ -11,15 +11,23 @@ from disnake.ui.item import DecoratedItem, Item
 from disnake.ui.view import View
 from typing_extensions import Self, TypeVar
 
-from library_extensions import ReprMixin
+from shared.utils import ReprMixin
 from typeshed import Factory
 
 from .action_row import ActionRow, ActionRowT, PaginatedRow
 
-__all__ = ("View", "InteractionCheck", "PaginatorView", "V", "positioned")
+__all__ = (
+    "InteractionCheck",
+    "View",
+    "SaneView",
+    "PaginatorView",
+    "V",
+    "positioned",
+    "add_callback",
+)
 
 V = TypeVar("V", bound=View | None, default=None, infer_variance=True)
-I = TypeVar("I", bound=Item[None], infer_variance=True)
+I = TypeVar("I", bound=Item[None], default=Item[None], infer_variance=True)  # noqa: E741
 M = TypeVar("M", bound=MessageInteraction, default=MessageInteraction, infer_variance=True)
 # how do I exit this
 ItemCallbackType = t.Callable[[V, I, M], t.Coroutine[t.Any, t.Any, t.Any]]
@@ -103,8 +111,8 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
             )
             item.callback = partial(item_or_func, self, item)
             setattr(self, item_or_func.__name__, item)
-            row = getattr(item, "row", None)  # futureproofing in case I decide to remove rows
-            # from items
+            # futureproofing in case I decide to remove rows from items
+            row: int | None = getattr(item, "row", None)
 
             if hasattr(item_or_func, "__discord_ui_position__"):
                 row, column = item_or_func.__discord_ui_position__
@@ -113,7 +121,8 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
 
             if row is None:
                 raise TypeError(
-                    f"This view does not support auto rows, set row for item {item.custom_id} via @positioned"
+                    "This view does not support auto rows,"
+                    f" set row for item {item.custom_id} via @positioned"
                 )
 
             action_row = self.rows[row]
