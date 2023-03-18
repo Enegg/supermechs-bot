@@ -1,0 +1,42 @@
+{
+    "id": 144,
+    "name": "Snack",
+    "type": "DRONE",
+    "element": "ELECTRIC",
+    "transform_range": "E-D",
+    "epic": {
+        "weight": 30,
+        "eleDmg": [32, 40],
+        "eneDmg": 16,
+        "eleResDmg": 2,
+        "eneCost": 11
+    },
+    "max_epic": {
+        "eleDmg": [44, 55],
+        "eneDmg": 22
+    },
+    "legendary": {
+        "eleDmg": [52, 67],
+        "eneDmg": 25,
+        "eleResDmg": 4,
+        "eneCost": 20
+    },
+    "max_legendary": {
+        "eleDmg": [null, 91],
+        "eneDmg": 34
+    },
+    "mythical": {
+        "eleDmg": [null, null],
+        "eneDmg": null,
+        "eleResDmg": 6,
+        "eneCost": 31
+    },
+    "max_mythical": {
+        "eleDmg": [103, 135],
+        "eneDmg": 48
+    },
+    "divine": {
+        "eleDmg": [105, 138],
+        "eneDmg": 49
+    }
+}

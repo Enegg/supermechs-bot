@@ -3,11 +3,11 @@ import typing as t
 import orjson
 from attrs import asdict
 
-from ..core import MAX_BUFFS
+from ..core import MAX_BUFFS, AnyStats
 from ..inv_item import InvItem
-from ..item import AnyItem
+from ..item import Item
 from ..mech import Mech
-from ..typedefs import AnyStats
+from ..typedefs import ID, Name
 from ..utils import truncate_name
 
 if t.TYPE_CHECKING:
@@ -19,8 +19,8 @@ if t.TYPE_CHECKING:
 
 class WUBattleItem(t.TypedDict):
     slotName: str
-    id: int
-    name: str
+    id: ID
+    name: Name
     type: str
     stats: AnyStats
     tags: dict[str, bool]
@@ -30,10 +30,10 @@ class WUBattleItem(t.TypedDict):
 
 class WUMech(t.TypedDict):
     name: str
-    setup: list[int]
+    setup: list[ID]
 
 
-class WUSerialized(t.TypedDict):
+class WUPlayer(t.TypedDict):
     name: str
     itemsHash: str
     mech: WUMech
@@ -133,6 +133,7 @@ def import_mechs(
     try:
         version = json["version"]
         mech_list = json["mechs"][pack.key]
+        # TODO: file can contain mechs from different pack than default
 
     except KeyError as e:
         raise ValueError(f'Malformed data: key "{e}" not found.') from e
@@ -180,7 +181,7 @@ def dump_mechs(mechs: t.Iterable[Mech], pack_key: str) -> bytes:
     return orjson.dumps(export_mechs(mechs, pack_key), option=orjson.OPT_INDENT_2)
 
 
-def wu_serialize_item(item: AnyItem, slot_name: str) -> WUBattleItem:
+def wu_serialize_item(item: Item, slot_name: str) -> WUBattleItem:
     return {
         "slotName": slot_name,
         "id": item.id,
@@ -193,7 +194,7 @@ def wu_serialize_item(item: AnyItem, slot_name: str) -> WUBattleItem:
     }
 
 
-def wu_serialize_mech(mech: Mech, player_name: str) -> WUSerialized:
+def wu_serialize_mech(mech: Mech, player_name: str) -> WUPlayer:
     if mech.custom:
         raise TypeError("Cannot serialize a custom mech into WU format")
 

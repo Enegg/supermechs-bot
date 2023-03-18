@@ -116,7 +116,7 @@ async def force_error(
     """Explicitly raises provided exception.
 
     Parameters
-    -----------
+    ----------
     exception: Name of the exception to raise.
 
     arguments: Optional arguments to pass to the exception.
@@ -180,8 +180,8 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
                 if tasks:
                     await asyncio.gather(*tasks)
 
-            except Exception as ex:
-                traceback.print_exception(ex, file=local_stdout)
+            except Exception as exc:
+                traceback.print_exception(exc, file=local_stdout)
 
         if len(text := local_stdout.getvalue()) == 0:
             # response happened during exec
@@ -189,10 +189,9 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
                 return
             text = "No output."
 
-    line = "```\n{}```"
-
-    if len(text) + len(line) - 2 <= 2000:
-        await response_inter.send(line.format(text), ephemeral=True)
+    # newline and 6 backticks
+    if len(text) + 7 <= 2000:
+        await response_inter.send(f"```\n{text}```", ephemeral=True)
 
     else:
         file = File(io.BytesIO(text.encode()), "output.txt")
