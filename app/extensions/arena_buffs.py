@@ -6,17 +6,29 @@ from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectO
 from disnake.ext import commands, plugins
 
 from config import TEST_GUILDS
-from ui.buttons import Button, TrinaryButton, button
-from ui.selects import EMPTY_OPTION, Select, select
-from ui.views import InteractionCheck, PaginatorView, add_callback, positioned
+from library_extensions import INVISIBLE_CHARACTER
+from library_extensions.ui import (
+    EMPTY_OPTION,
+    Button,
+    InteractionCheck,
+    PaginatorView,
+    Select,
+    TrinaryButton,
+    add_callback,
+    button,
+    positioned,
+    select,
+)
 
 from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
 from SuperMechs.player import Player
 
 if t.TYPE_CHECKING:
-    from bot import SMBot  # noqa: F401
+    from bot import ModularBot  # noqa: F401
 
-plugin = plugins.Plugin["SMBot"](name="ArenaBuffs", logger=__name__)
+    from SuperMechs.client import SMClient  # noqa: F401
+
+plugin = plugins.Plugin["ModularBot[SMClient]"](name="ArenaBuffs", logger=__name__)
 
 
 class ArenaBuffsView(InteractionCheck, PaginatorView):
@@ -37,7 +49,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
                 add_callback(
                     TrinaryButton(
                         item=buffs[id] == MAX_BUFFS[id] or None,
-                        label=str(buffs.modifier_of(id)).rjust(4, "⠀"),
+                        label=str(buffs.modifier_of(id)).rjust(4, INVISIBLE_CHARACTER),
                         custom_id=f"slotbutton:{id}",
                         emoji=STATS[id].emoji,
                     ),
@@ -103,7 +115,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
         else:
             self.active.item = None
 
-        self.active.label = str(self.buffs.modifier_of(id)).rjust(4, "⠀")
+        self.active.label = str(self.buffs.modifier_of(id)).rjust(4, INVISIBLE_CHARACTER)
         self.toggle_style(self.active)
 
         await inter.response.edit_message(view=self)

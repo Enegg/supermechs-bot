@@ -4,7 +4,6 @@ import typing as t
 
 if t.TYPE_CHECKING:
     from .inv_item import InvItem
-# don't use AnyInvItem as it causes invariance issues
 
 
 class GameError(Exception):
@@ -14,7 +13,7 @@ class GameError(Exception):
 class MaxPowerReached(GameError):
     """Exception raised when attempting to add power to an already maxed item"""
 
-    def __init__(self, item: InvItem[t.Any]) -> None:
+    def __init__(self, item: InvItem) -> None:
         """Exception raised when attempting to add power to an already maxed item"""
         super().__init__(f"Maximum power for item {item.name} reached")
 
@@ -22,6 +21,6 @@ class MaxPowerReached(GameError):
 class MaxTierReached(GameError):
     """Exception raised when attempting to transform an item at max tier"""
 
-    def __init__(self, item: InvItem[t.Any]) -> None:
+    def __init__(self, item: InvItem) -> None:
         """Exception raised when attempting to transform an item at max tier"""
         super().__init__(f"Maximum tier for item {item.name} reached")

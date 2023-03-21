@@ -1,29 +1,30 @@
 from __future__ import annotations
 
-import asyncio
-import typing as t
-
-from disnake import ButtonStyle, CommandInteraction, Embed, File, MessageInteraction, SelectOption
+from disnake import ButtonStyle, Embed, File, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
 from abstract.files import Bytes
-from library_extensions import DesyncError
-from ui.action_row import ActionRow, MessageUIComponent
-from ui.buttons import Button, ToggleButton, TrinaryButton, button
-from ui.selects import EMPTY_OPTION, PaginatedSelect, select
-from ui.views import InteractionCheck, PaginatorView, SaneView, add_callback, positioned
+from library_extensions.ui import (
+    EMPTY_OPTION,
+    ActionRow,
+    Button,
+    InteractionCheck,
+    MessageUIComponent,
+    PaginatedSelect,
+    PaginatorView,
+    SaneView,
+    ToggleButton,
+    TrinaryButton,
+    add_callback,
+    button,
+    positioned,
+    select,
+)
 
+from SuperMechs.api import ArenaBuffs, Element, InvItem, ItemPack, Mech, Player, Type
 from SuperMechs.converters import slot_to_icon_data, slot_to_type
-from SuperMechs.core import ArenaBuffs
-from SuperMechs.enums import Element, Type
 from SuperMechs.ext.wu_compat import mech_to_id_str
-from SuperMechs.inv_item import InvItem
-from SuperMechs.mech import Mech
-from SuperMechs.pack_interface import PackInterface
-from SuperMechs.player import Player
-
-MixedInteraction = CommandInteraction | MessageInteraction
-T = t.TypeVar("T")
+from SuperMechs.rendering import PackRenderer
 
 # we need to hardcode it as bot.get_global_command_named fails in testing
 # due to the command being registered in test guilds only
@@ -32,7 +33,7 @@ BUFFS_COMMAND_ID = 919329829227229196
 
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
-        title=f'Mech build "{mech.name}"', color=(mech.dominant_element or Element.OMNI).color
+        title=f'Mech build "{mech.name}"', color=(mech.dominant_element or Element.UNKNOWN).color
     ).add_field("Stats:", mech.print_stats(included_buffs))
     return embed
 
@@ -43,7 +44,8 @@ class MechView(InteractionCheck, PaginatorView):
     def __init__(
         self,
         mech: Mech,
-        pack: PackInterface,
+        pack: ItemPack,
+        renderer: PackRenderer,
         player: Player,
         *,
         timeout: float = 180.0,
@@ -52,10 +54,10 @@ class MechView(InteractionCheck, PaginatorView):
         self.pack = pack
         self.mech = mech
         self.player = player
+        self.renderer = renderer
         self.user_id = player.id
 
         self.active: TrinaryButton[str] | None = None
-        self.image_update_task = asyncio.Task(asyncio.sleep(0))
         self.embed = embed_mech(mech)
 
         for pos, row in enumerate(
@@ -179,7 +181,7 @@ class MechView(InteractionCheck, PaginatorView):
 
         # sanity check if the item is actually valid
         if item is not None and item.type is not slot_to_type(self.active.custom_id):
-            raise DesyncError()
+            raise RuntimeWarning(f"{item.type} is not valid for slot {self.active.custom_id}")
 
         self.active.item = select.placeholder = item_name
 
@@ -197,21 +199,21 @@ class MechView(InteractionCheck, PaginatorView):
             value=self.mech.print_stats(self.player.arena_buffs if self.buffs_button.on else None),
         )
 
-        if not self.mech.has_image_cached:
-            file = MISSING
-            url = None
+        if "TODO: condition_for_cached_image":
+            return await inter.response.edit_message(embed=self.embed, view=self)
 
-            if self.mech.torso is not None:
-                resource = Bytes.from_image(self.mech.image, mech_to_id_str(self.mech) + ".png")
-                file = File(resource.fp, resource.filename)
-                url = resource.url
+        file = MISSING
+        url = None
 
-            await inter.response.edit_message(
-                embed=self.embed.set_image(url), file=file, view=self, attachments=[]
-            )
+        if self.mech.torso is not None:
+            image = self.renderer.get_mech_image(self.mech)
+            resource = Bytes.from_image(image, mech_to_id_str(self.mech) + ".png")
+            file = File(resource.fp, resource.filename)
+            url = resource.url
 
-        else:
-            await inter.response.edit_message(embed=self.embed, view=self)
+        await inter.response.edit_message(
+            embed=self.embed.set_image(url), file=file, view=self, attachments=[]
+        )
 
     def sorted_options(self, options: list[SelectOption]) -> list[SelectOption]:
         """Returns a list of `SelectOption`s sorted by element."""
@@ -264,7 +266,7 @@ class MechView(InteractionCheck, PaginatorView):
             self.embed.color = self.mech.torso.element.color
 
         elif self.active.custom_id == "torso" and item_not_set:
-            self.embed.color = Element.OMNI.color
+            self.embed.color = Element.UNKNOWN.color
 
 
 class BrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):

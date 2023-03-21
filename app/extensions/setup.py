@@ -12,12 +12,12 @@ from disnake.ui import TextInput
 
 from config import TEST_GUILDS
 from library_extensions import Markdown
-from ui import wait_for_modal
+from library_extensions.ui import wait_for_modal
 
 if t.TYPE_CHECKING:
-    from bot import SMBot  # noqa: F401
+    from bot import ModularBot  # noqa: F401
 
-plugin = plugins.Plugin["SMBot"](
+plugin = plugins.Plugin["ModularBot"](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
 )
 last_extension: str | None = None

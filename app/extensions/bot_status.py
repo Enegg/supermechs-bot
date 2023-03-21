@@ -11,11 +11,13 @@ from disnake.utils import format_dt, oauth_url
 from library_extensions import Markdown
 
 if t.TYPE_CHECKING:
-    from bot import SMBot  # noqa: F401
+    from bot import ModularBot  # noqa: F401
+
+    from SuperMechs.client import SMClient  # noqa: F401
 
 python_version = ".".join(map(str, sys.version_info[:3]))
 
-plugin = Plugin["SMBot"](name="Bot-status", logger=__name__)
+plugin = Plugin["ModularBot[SMClient]"](name="Bot-status", logger=__name__)
 
 
 @plugin.slash_command()

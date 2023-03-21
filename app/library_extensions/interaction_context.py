@@ -3,12 +3,14 @@ import typing as t
 from disnake import ApplicationCommandInteraction, InteractionResponse, MessageInteraction
 from typing_extensions import Self, override
 
+from typeshed import T
+
 if t.TYPE_CHECKING:
-    from bot import SMBot
+    from bot import ModularBot
 
 
-class CommandInteraction(ApplicationCommandInteraction):
-    bot: SMBot
+class CommandInteraction(ApplicationCommandInteraction, t.Generic[T]):
+    bot: ModularBot[T]
 
 
 MixedInteraction = CommandInteraction | MessageInteraction

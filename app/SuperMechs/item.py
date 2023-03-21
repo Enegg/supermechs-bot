@@ -5,13 +5,46 @@ import typing as t
 from attrs import field, frozen, validators
 from typing_extensions import Self
 
-from .core import TransformRange
+from .core import AnyStats, TransformRange
 from .enums import Element, Tier, Type
-from .images import AttachedImage, AttachmentType
-from .stat_handler import StatHandler
-from .typedefs import ID, AnyItemDict, AnyStats, ItemDictVer1, ItemDictVer2, Name
+from .stat_handler import ItemStatsContainer
+from .typedefs import ID, AnyItemDict, ItemDictVer1, ItemDictVer2, Name
 
-__all__ = ("Item", "AnyItem")
+__all__ = ("Item", "ItemProto", "Tags")
+
+
+class ItemProto(t.Protocol):
+    @property
+    def id(self) -> ID:
+        ...
+
+    @property
+    def pack_key(self) -> str:
+        ...
+
+    @property
+    def name(self) -> Name:
+        ...
+
+    @property
+    def type(self) -> Type:
+        ...
+
+    @property
+    def element(self) -> Element:
+        ...
+
+    @property
+    def transform_range(self) -> TransformRange:
+        ...
+
+    @property
+    def stats(self) -> ItemStatsContainer:
+        ...
+
+    @property
+    def tags(self) -> Tags:
+        ...
 
 
 @frozen
@@ -33,18 +66,19 @@ class Tags:
         cls,
         tags: t.Iterable[str],
         transform_range: TransformRange,
-        stats: StatHandler,
+        stats: ItemStatsContainer,
         custom: bool,
     ) -> Self:
         literal_tags = set(tags)
 
-        if "legacy" not in literal_tags and transform_range.min >= Tier.LEGENDARY:
+        if "legacy" in literal_tags:
+            if transform_range.min is Tier.MYTHICAL:
+                literal_tags.add("premium")
+
+        elif transform_range.min >= Tier.LEGENDARY:
             literal_tags.add("premium")
 
-        elif transform_range.min is Tier.MYTHICAL:
-            literal_tags.add("premium")
-
-        if "advance" in stats or "retreat" in stats:
+        if stats.has_any_of_stats("advance", "retreat"):
             literal_tags.add("require_jump")
 
         if custom:
@@ -54,23 +88,22 @@ class Tags:
 
 
 @frozen(kw_only=True, order=False)
-class Item(t.Generic[AttachmentType]):
+class Item:
     """Base item class with stats at every tier."""
 
     id: ID = field(validator=validators.ge(1))
-    pack_key: str = field()
+    pack_key: str
     name: Name = field(validator=validators.min_len(1))
     type: Type = field(validator=validators.in_(Type), repr=str)
     element: Element = field(validator=validators.in_(Element), repr=str)
     transform_range: TransformRange
-    stats: StatHandler
-    image: AttachedImage[AttachmentType] = field(eq=False)
+    stats: ItemStatsContainer
     tags: Tags
 
     @property
     def max_stats(self) -> AnyStats:
         """The max stats this item can have, excluding buffs."""
-        return self.stats.at(self.transform_range.max)
+        return self.stats[self.transform_range.max].max
 
     @classmethod
     def from_json(
@@ -78,25 +111,15 @@ class Item(t.Generic[AttachmentType]):
         data: AnyItemDict,
         pack_key: str,
         custom: bool,
-        renderer: AttachedImage[AttachmentType],
     ) -> Self:
         transform_range = TransformRange.from_string(data["transform_range"])
-        item_type = Type[data["type"].upper()]
 
         if "stats" not in data:
-            stats = StatHandler.from_new_format(data)
+            stats = ItemStatsContainer.from_json_v3(data)
 
         else:
             data = t.cast(ItemDictVer1 | ItemDictVer2, data)
-            stats = StatHandler.from_old_format(data["stats"], transform_range.max)
-
-        width = data.get("width", 0)
-        height = data.get("height", 0)
-
-        if not width == height == 0:
-            renderer.resize(width, height)
-
-        renderer.assert_attachment()
+            stats = ItemStatsContainer.from_json_v1_v2(data)
 
         tags = Tags.from_data(data.get("tags", ()), transform_range, stats, custom)
 
@@ -104,16 +127,11 @@ class Item(t.Generic[AttachmentType]):
             id=data["id"],
             pack_key=pack_key,
             name=data["name"],
-            type=item_type,
+            type=Type[data["type"].upper()],
             element=Element[data["element"].upper()],
             transform_range=transform_range,
             stats=stats,
-            image=renderer,
             tags=tags,
         )
 
-        renderer.item = self
         return self
-
-
-AnyItem = Item[t.Any]

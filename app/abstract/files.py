@@ -161,7 +161,7 @@ class URL(Resource):
 
 @attrs.define
 class File(Resource):
-    """A resource located on the local machine's storage."""
+    """A resource located in the local machine's storage."""
 
     path: pathlib.Path = attrs.field(converter=ensure_valid_path)
     """The path to the file."""

@@ -9,37 +9,34 @@ from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
 from abstract.files import Bytes
-from bridges import get_player
+from bridges import mech_name_autocomplete
+from library_extensions.ui import Select, wait_for_component
 from shared.utils import wrap_bytes
-from ui import Select, wait_for_component
 
 from .mech_manager import MechView
 
-from SuperMechs.core import STATS
-from SuperMechs.enums import Type
+from SuperMechs.api import STATS, Player, Type
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
-from SuperMechs.player import Player
-from SuperMechs.utils import truncate_name
+from SuperMechs.rendering import PackRenderer
 
 if t.TYPE_CHECKING:
-    from bot import SMBot  # noqa: F401
+    from bot import ModularBot  # noqa: F401
 
-plugin = plugins.Plugin["SMBot"](name="Mech-manager", logger=__name__)
+    from SuperMechs.client import SMClient  # noqa: F401
 
-MixedInteraction = CommandInteraction | MessageInteraction
+plugin = plugins.Plugin["ModularBot[SMClient]"](name="Mech-manager", logger=__name__)
 
 
 @plugin.slash_command()
-async def mech(_: CommandInteraction) -> None:
-    pass
+async def mech(inter: CommandInteraction) -> None:
+    del inter
 
 
 @mech.sub_command(name="list")
 async def browse(inter: CommandInteraction, player: Player) -> None:
     """Displays a list of your builds. {{ MECH_BROWSE }}"""
     if not player.builds:
-        await inter.send("You do not have any builds.", ephemeral=True)
-        return
+        return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
     embed = Embed(title="Your builds", color=inter.author.color)
 
@@ -58,7 +55,7 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
     fmt_string = (
         f"• {Type.TORSO.emoji} {{TORSO}}\n"
         f"• {Type.LEGS.emoji} {{LEGS}}\n"
-        f"• {Type.SIDE_WEAPON.emoji} {{WEAPONS}} weapon(s)\n"
+        f"• {Type.SIDE_WEAPON.right.emoji} {{WEAPONS}} weapon(s)\n"
         f"• {Type.MODULE.emoji} {{MODULES}} module(s)\n"
         f"• {STATS['weight'].emoji} {{WEIGHT}} weight"
     )
@@ -82,7 +79,7 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 @mech.sub_command()
 @commands.max_concurrency(1, commands.BucketType.user)
 async def build(
-    inter: MixedInteraction, player: Player, name: commands.String[1, 32] | None = None
+    inter: CommandInteraction, player: Player, name: commands.String[1, 32] | None = None
 ) -> None:
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
 
@@ -99,13 +96,18 @@ async def build(
     else:
         mech = player.get_or_create_build(name)
 
-    view = MechView(mech, plugin.bot.default_pack, player, timeout=100)
+    sm_client = plugin.bot.app
+
+    renderer: PackRenderer = object()  # FIXME
+
+    view = MechView(mech, sm_client.default_pack, renderer, player, timeout=100)
     file = MISSING
 
     if mech.torso is not None:
         view.embed.color = mech.torso.element.color
 
-        resource = Bytes.from_image(mech.image, mech_to_id_str(mech) + ".png")
+        image = renderer.get_mech_image(mech)
+        resource = Bytes.from_image(image, mech_to_id_str(mech) + ".png")
         file = File(resource.fp, resource.filename)
         view.embed.set_image(resource.url)
 
@@ -136,8 +138,9 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
     # we could assert that content type is application/json, but we may just as well
     # rely on the loader to fail
 
+    # TODO: make load_mechs ask for item packs
     try:
-        mechs, failed = load_mechs(await file.read(), plugin.bot.default_pack)
+        mechs, failed = load_mechs(await file.read(), plugin.bot.app.default_pack)
 
     except (ValueError, TypeError) as err:
         raise commands.UserInputError(f"Parsing the file failed: {err}") from err
@@ -168,7 +171,7 @@ async def export(inter: CommandInteraction, player: Player) -> None:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
     elif build_count == 1:
-        fp = dump_mechs(player.builds.values(), plugin.bot.default_pack.key)
+        fp = dump_mechs(player.builds.values(), plugin.bot.app.default_pack.key)
         file = File(fp, "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
@@ -191,29 +194,12 @@ async def export(inter: CommandInteraction, player: Player) -> None:
     selected = frozenset(values)
 
     mechs = (mech for name, mech in player.builds.items() if name in selected)
-    fp = io.BytesIO(dump_mechs(mechs, plugin.bot.default_pack.key))
+    fp = io.BytesIO(dump_mechs(mechs, plugin.bot.app.default_pack.key))
     file = File(fp, "mechs.json")
     await new_inter.response.edit_message(file=file, components=None)
 
 
-@build.autocomplete("name")
-async def mech_name_autocomplete(
-    inter: CommandInteraction, input: str
-) -> list[str] | dict[str, str]:
-    """Autocomplete for player builds."""
-    player = get_player(inter)
-    input = truncate_name(input)
-    case_insensitive = input.lower()
-
-    matching = [name for name in player.builds if name.lower().startswith(case_insensitive)]
-
-    if matching:
-        return matching
-
-    if input:
-        return {f'Enter to create mech "{input}"...': input}
-
-    return []
+build.autocomplete("name")(mech_name_autocomplete)
 
 
 setup, teardown = plugin.create_extension_handlers()

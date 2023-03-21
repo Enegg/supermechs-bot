@@ -1,27 +1,33 @@
 from __future__ import annotations
 
-import math
+import re
 import typing as t
 from itertools import zip_longest
 
 from disnake import ButtonStyle, Embed, MessageInteraction
 
+from library_extensions.ui import (
+    ActionRow,
+    Button,
+    InteractionCheck,
+    MessageUIComponent,
+    SaneView,
+    ToggleButton,
+    button,
+    positioned,
+)
 from typeshed import dict_items_as, twotuple
-from ui.action_row import ActionRow, MessageUIComponent
-from ui.buttons import Button, ToggleButton, button
-from ui.views import InteractionCheck, SaneView, positioned
 
-from SuperMechs.core import MAX_BUFFS, STATS, Stat
-from SuperMechs.item import AnyItem
-from SuperMechs.typedefs import AnyStats
+from SuperMechs.api import MAX_BUFFS, STATS, AnyStats, Item, Stat, ValueRange
+from SuperMechs.utils import standard_deviation
 
 
 class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
     def __init__(
         self,
         embed: Embed,
-        item: AnyItem,
-        factory: t.Callable[[AnyItem, bool, bool], t.Iterable[tuple[str, str, bool]]],
+        item: Item,
+        factory: t.Callable[[Item, bool, bool], t.Iterable[tuple[str, str, bool]]],
         *,
         user_id: int,
         timeout: float = 180,
@@ -69,8 +75,8 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
     def __init__(
         self,
         embed: Embed,
-        item_a: AnyItem,
-        item_b: AnyItem,
+        item_a: Item,
+        item_b: Item,
         *,
         user_id: int,
         timeout: float = 180,
@@ -125,18 +131,6 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
         modify_field_at(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
 
-def standard_deviation(*numbers: float) -> twotuple[float]:
-    """Calculate the average and the standard deviation from a sequence of numbers."""
-    if not numbers:
-        raise ValueError("No arguments passed")
-
-    avg = sum(numbers) / len(numbers)
-    # √(∑(x-avg)² ÷ n)
-    deviation = math.sqrt(sum((x - avg) ** 2 for x in numbers) / len(numbers))
-
-    return avg, deviation
-
-
 def buffed_stats(
     stats: AnyStats, buffs_enabled: bool
 ) -> t.Iterator[tuple[str, twotuple[tuple[int, ...]]]]:
@@ -148,9 +142,9 @@ def buffed_stats(
         def apply_buff(_: str, value: int, /) -> twotuple[int]:
             return (value, 0)
 
-    for stat, value in dict_items_as(int | list[int], stats):
+    for stat, value in dict_items_as(int | ValueRange, stats):
         if stat == "health":
-            assert type(value) is int
+            assert isinstance(value, int)
             yield stat, ((value,), (0,))
             continue
 
@@ -201,7 +195,9 @@ formatters: dict[str, tuple[FormatterT | None, FormatterT | None, PrecFormatterT
 }
 
 
-def shared_iter(stats: AnyStats, buffs_enabled: bool, avg: bool, prec: int = 1) -> t.Iterator[tuple[str, str, str]]:
+def shared_iter(
+    stats: AnyStats, buffs_enabled: bool, avg: bool, prec: int = 1
+) -> t.Iterator[tuple[str, str, str]]:
     for stat, (values, diffs) in buffed_stats(stats, buffs_enabled):
         val_fmt, diff_fmt, avg_fmt = formatters.get(stat, (None, None, None))
 
@@ -220,7 +216,7 @@ def shared_iter(stats: AnyStats, buffs_enabled: bool, avg: bool, prec: int = 1) 
         yield stat, str_value, change
 
 
-def default_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
+def default_fields(item: Item, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
     yield ("Transform range: ", item.transform_range.as_tier_str(), False)
 
@@ -249,7 +245,7 @@ def default_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[
     yield ("Stats:", item_stats, False)
 
 
-def compact_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
+def compact_fields(item: Item, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with reduced in size item info."""
     lines: list[str] = []
 
@@ -270,7 +266,9 @@ def compact_fields(item: AnyItem, buffs_enabled: bool, avg: bool) -> t.Iterator[
 
 
 def wrap_nicely(size: int, max: int) -> int:
-    """Returns the size for a slice of a sequence of given size, distributed evenly according to max."""
+    """Returns the size for a slice of a sequence of given size,
+    distributed evenly according to max.
+    """
     if size < max:
         return max
     for n in range(max, 2, -1):
@@ -326,13 +324,13 @@ def comparator(
     special_cases = {"range"}
 
     for stat_name, stat in STATS.items():
-        stat_a: int | list[int] | None = stats_a.get(stat_name)
-        stat_b: int | list[int] | None = stats_b.get(stat_name)
+        stat_a: int | ValueRange | None = stats_a.get(stat_name)
+        stat_b: int | ValueRange | None = stats_b.get(stat_name)
 
-        if stat_name in special_cases and not (stat_a is stat_b is None):
+        if stat_name in special_cases and stat_a is not None and stat_b is not None:
             yield stat, (
-                tuple(stat_a) if isinstance(stat_a, list) else (None, 0),
-                tuple(stat_b) if isinstance(stat_b, list) else (None, 0),
+                stat_a if isinstance(stat_a, ValueRange) else (None, 0),
+                stat_b if isinstance(stat_b, ValueRange) else (None, 0),
             )
             continue
 
@@ -348,9 +346,7 @@ def comparator(
                 x_avg, x_inacc = standard_deviation(a1, a2)
                 y_avg, y_inacc = standard_deviation(b1, b2)
 
-                yield stat, cmp_num(x_avg, y_avg, False) + cmp_num(
-                    x_inacc, y_inacc, True
-                )
+                yield stat, cmp_num(x_avg, y_avg, False) + cmp_num(x_inacc, y_inacc, True)
                 continue
 
             case _:
@@ -438,15 +434,13 @@ def try_shorten(name: str) -> str:
     return "".join(s for s in name if s.isupper())
 
 
-import re
-
 _pattern = re.compile(r"\.(\d+)")
 
 
 def fmt_float(value: float, spec: str) -> str:
     """Formats a float to at most n digits after decimal point."""
 
-    if (match := re.search(_pattern, spec)) is not None:
+    if (match := _pattern.search(spec)) is not None:
         value, prec = truncate_float(value, int(match[1]))
         start, end = match.span()
 

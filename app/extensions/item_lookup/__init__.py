@@ -12,12 +12,14 @@ from library_extensions import sanitize_filename
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
-from SuperMechs.enums import Element, Type
-from SuperMechs.item import AnyItem
+from SuperMechs.api import Element, Item, Type
+from SuperMechs.rendering import PackRenderer
 from SuperMechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
-    from bot import SMBot  # noqa: F401
+    from bot import ModularBot  # noqa: F401
+
+    from SuperMechs.client import SMClient  # noqa: F401
 
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
@@ -28,13 +30,13 @@ else:
     LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
 
 
-plugin = plugins.Plugin["SMBot"](name="Item-lookup", logger=__name__)
+plugin = plugins.Plugin["ModularBot[SMClient]"](name="Item-lookup", logger=__name__)
 
 
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
-    item: AnyItem,
+    item: Item,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
@@ -49,7 +51,10 @@ async def item(
 
     compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
-    resource = Bytes.from_image(item.image.image, sanitize_filename(item.name, ".png"))
+    plugin.bot.app
+    renderer: PackRenderer = object()  # FIXME
+    image = renderer.get_item_image(item)
+    resource = Bytes.from_image(image, sanitize_filename(item.name, ".png"))
     file = File(resource.fp, resource.filename)
 
     if compact:
@@ -87,7 +92,7 @@ async def item(
 @plugin.slash_command(guild_ids=TEST_GUILDS)
 async def item_raw(
     inter: CommandInteraction,
-    item: AnyItem,
+    item: Item,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
 ) -> None:
@@ -103,11 +108,7 @@ async def item_raw(
 
 
 @plugin.slash_command()
-async def compare(
-    inter: CommandInteraction,
-    item1: Name = commands.Param(autocomplete=item_name_autocomplete),
-    item2: Name = commands.Param(autocomplete=item_name_autocomplete),
-) -> None:
+async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     """Shows an interactive comparison of two items. {{ COMPARE }}
 
     Parameters
@@ -116,7 +117,7 @@ async def compare(
 
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    pack = plugin.bot.default_pack
+    pack = plugin.bot.app.default_pack
 
     try:
         item_a = pack.get_item_by_name(item1)
@@ -157,6 +158,10 @@ async def compare(
 
     await view.wait()
     await inter.edit_original_response(view=None)
+
+
+compare.autocomplete("item1")(item_name_autocomplete)
+compare.autocomplete("item2")(item_name_autocomplete)
 
 
 setup, teardown = plugin.create_extension_handlers()

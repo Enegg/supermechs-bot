@@ -1,78 +1,56 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import typing as t
 
 from attrs import define, field
 
-from abstract.files import URL, Resource
-
 from .core import abbreviate_names
-from .images import AttachedImage, parse_raw_attachment
-from .item import AnyItem, Item
-from .typedefs import ID, AnyItemPack, ItemPackVer1, ItemPackVer2, ItemPackVer3, Name
-from .utils import MISSING, js_format
+from .item import Item
+from .typedefs import ID, AnyItemPack, Name
 
-__all__ = ("PackInterface",)
+__all__ = ("ItemPack", "extract_info")
 
 LOGGER = logging.getLogger(__name__)
 
-HandleRet = tuple[t.Iterator[AnyItem], set[t.Awaitable[None]]]
+
+class PackConfig(t.NamedTuple):
+    version: str
+    key: str
+    name: str
+    description: str
 
 
-async def pack_v1_handle(pack: ItemPackVer1, custom: bool = False) -> HandleRet:
-    cfg = pack["config"]
-    pack_key = cfg["key"]
-    base_url = cfg["base_url"]
+def extract_info(pack: AnyItemPack) -> PackConfig:
+    """Extract version, key, name and description of the pack.
+    Raises TypeError on unknown version."""
 
-    tasks: set[t.Awaitable[None]] = set()
+    if "version" not in pack or pack["version"] == "1":
+        config = pack["config"]
+        version = "1"
 
-    def loop():
-        for item_dict in pack["items"]:
-            resource = URL(js_format(item_dict["image"], url=base_url))
-            attachment = parse_raw_attachment(item_dict.get("attachment", None))
-            renderer, task = AttachedImage.from_resource(resource, attachment)
-            tasks.add(task)
+    elif pack["version"] in ("2", "3"):
+        config = pack
+        version = pack["version"]
 
-            yield Item.from_json(item_dict, pack_key, custom, renderer)
+    else:
+        raise TypeError(f"Unknown pack version: {pack['version']!r}")
 
-    return loop(), tasks
-
-
-async def pack_v2_handle(pack: ItemPackVer2, custom: bool = False) -> HandleRet:
-    sprite_map = pack["spritesMap"]
-    key = pack["key"]
-
-    from PIL.Image import open
-
-    base_image = open(await URL(pack["spritesSheet"]).open())
-
-    def loop():
-        for item_dict in pack["items"]:
-            attachment = parse_raw_attachment(item_dict.get("attachment", None))
-            renderer = AttachedImage(base_image, attachment)
-            sprite_key = item_dict["name"].replace(" ", "")
-
-            renderer.crop(sprite_map[sprite_key])
-            item = Item.from_json(item_dict, key, custom, renderer)
-            yield item
-
-    return loop(), set()
-
-
-async def pack_v3_handle(pack: ItemPackVer3, custom: bool = False) -> HandleRet:
-    # TODO
-    raise NotImplementedError
+    return PackConfig(version, config["key"], config["name"], config["description"])
 
 
 @define
-class PackInterface:
-    key: str = MISSING
-    name: str = MISSING
-    description: str = MISSING
+class ItemPack:
+    """Object representing an item pack."""
+
+    key: str
+    name: str = "<no name>"
+    description: str = "<no description>"
+    # personal packs
+    custom: bool = False
+
     # Item ID to Item
-    items: dict[ID, AnyItem] = field(
+    items: dict[ID, Item] = field(
         factory=dict, init=False, repr=lambda s: f"{{... {len(s)} items}}"
     )
     # Item name to item ID
@@ -80,10 +58,7 @@ class PackInterface:
     # Abbrev to a set of names the abbrev matches
     name_abbrevs: dict[str, set[Name]] = field(factory=dict, init=False, repr=False)
 
-    # personal packs
-    custom: bool = False
-
-    def __contains__(self, value: Name | ID | AnyItem) -> bool:
+    def __contains__(self, value: Name | ID | Item) -> bool:
         if isinstance(value, str):
             return value in self.names_to_ids
 
@@ -95,46 +70,17 @@ class PackInterface:
 
         return NotImplemented
 
-    async def load(self, resource: Resource, /, **extra: t.Any) -> None:
-        """Load the item pack from a resource."""
+    def load(self, pack: AnyItemPack, /) -> None:
+        """Load pack items from data."""
 
-        pack: AnyItemPack = await resource.json()
-        pack |= extra  # type: ignore
-
-        self.extract_info(pack)
-
-        if "version" not in pack or pack["version"] == "1":
-            handle = pack_v1_handle(pack, self.custom)
-
-        elif pack["version"] == "2":
-            handle = pack_v2_handle(pack, self.custom)
-
-        elif pack["version"] == "3":
-            handle = pack_v3_handle(pack, self.custom)
-
-        else:
-            raise TypeError(f"Unknown pack version: {pack['version']!r}")
-
-        iterator, tasks = await handle
-
-        for item in iterator:
+        for item_dict in pack["items"]:
+            item = Item.from_json(item_dict, self.key, self.custom)
             self.items[item.id] = item
             self.names_to_ids[item.name] = item.id
 
         self.name_abbrevs |= abbreviate_names(self.names_to_ids)
 
-        if tasks:
-            await asyncio.wait(tasks, timeout=5, return_when="ALL_COMPLETED")
-
-        # TODO: this may be eligible to run in an executor
-        for funcs in AttachedImage._postprocess.values():
-            for func in funcs:
-                func()
-
-        AttachedImage._clear_cache()
-        LOGGER.info("Item images loaded")
-
-    def get_item_by_name(self, name: Name) -> AnyItem:
+    def get_item_by_name(self, name: Name) -> Item:
         try:
             id = self.names_to_ids[name]
             return self.items[id]
@@ -143,7 +89,7 @@ class PackInterface:
             err.args = (f"No item named {name!r} in the pack",)
             raise
 
-    def get_item_by_id(self, item_id: ID) -> AnyItem:
+    def get_item_by_id(self, item_id: ID) -> Item:
         try:
             return self.items[item_id]
 
@@ -153,17 +99,3 @@ class PackInterface:
 
     def iter_item_names(self) -> t.Iterator[Name]:
         return iter(self.names_to_ids)
-
-    def extract_info(self, pack: AnyItemPack) -> None:
-        """Extract key, name and description of the pack."""
-
-        if "version" not in pack or pack["version"] == "1":
-            config = pack["config"]
-
-        else:
-            config = pack
-
-        self.key = config["key"]
-        self.name = config["name"]
-        self.description = config["description"]
-        LOGGER.info(f"Pack {self.name!r} extracted; key: {self.key!r}")

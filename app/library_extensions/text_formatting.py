@@ -1,9 +1,13 @@
 import string
+import typing as t
 
 from disnake import Locale, LocalizationProtocol
 from typing_extensions import LiteralString
 
-__all__ = ("Markdown", "monospace", "localized_text", "sanitize_filename")
+__all__ = ("INVISIBLE_CHARACTER", "Markdown", "monospace", "localized_text", "sanitize_filename")
+
+
+INVISIBLE_CHARACTER: t.Final = "⠀"
 
 
 class Markdown:

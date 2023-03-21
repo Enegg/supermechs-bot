@@ -1,45 +1,37 @@
 from __future__ import annotations
 
-import logging
-import typing as t
-
-from attrs import Factory, define
-from typing_extensions import Self
+from attrs import define, field
 
 from .core import ArenaBuffs
 from .mech import Mech
 from .utils import truncate_name
-
-LOGGER = logging.getLogger(__name__)
 
 
 @define
 class Player:
     """Represents a SuperMechs player."""
 
-    # TODO: add mech teams, and methods related to managing them
-
     id: int
     name: str
-    builds: dict[str, Mech] = Factory(dict)
-    arena_buffs: ArenaBuffs = Factory(ArenaBuffs)
-    active_build: Mech | None = None
+    builds: dict[str, Mech] = field(factory=dict, init=False)
+    arena_buffs: ArenaBuffs = field(factory=ArenaBuffs, init=False)
+    _active_build: Mech | None = field(default=None, init=False)
     # inventory: dict[uuid.UUID, AnyInvItem] = Factory(dict)
     # teams: dict[str, list[Mech]] = Factory(dict)
     # active_team_name: str = MISSING
     # level: int = 0
     # exp: int = 0
 
-    _cache: t.ClassVar[dict[int, Self]] = {}
+    @property
+    def active_build(self) -> Mech | None:
+        return self._active_build
 
-    @classmethod
-    def get_cached(cls, id: int, name: str) -> Self:
-        """Creates a Player object and caches it by ID."""
-        if id not in cls._cache:
-            cls._cache[id] = cls(id, name)
-            LOGGER.info(f"New player created: {id} ({name})")
+    @active_build.setter
+    def active_build(self, mech: Mech) -> None:
+        if mech.name not in self.builds:
+            raise ValueError("Active build set to a mech not belonging to the player")
 
-        return cls._cache[id]
+        self._active_build = mech
 
     def get_active_or_create_build(self, possible_name: str | None = None, /) -> Mech:
         """Retrieves active build if the player has one, otherwise creates a new one.
@@ -85,7 +77,7 @@ class Player:
             name = truncate_name(name)
 
         build = Mech(name=name)
-        self.builds[name] = self.active_build = build
+        self.builds[name] = self._active_build = build
         return build
 
     def rename_build(self, old_name: str, new_name: str, *, overwrite: bool = False) -> None:

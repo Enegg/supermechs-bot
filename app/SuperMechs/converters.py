@@ -39,9 +39,9 @@ def slot_to_type(slot: str) -> Type:
 def slot_to_icon_data(slot: str) -> IconData:
     """Same as slot_to_type but returns alternate icon for items mounted on the right side."""
     if slot.startswith(("top", "side")) and int(slot[-1]) % 2 == 1:
-        return slot_to_type(slot).alt
+        return slot_to_type(slot).left
 
-    return slot_to_type(slot)
+    return slot_to_type(slot).right
 
 
 def get_slot_name(slot_: XOrTupleXY[str | Type, int], /):

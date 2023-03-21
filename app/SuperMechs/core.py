@@ -8,12 +8,12 @@ from attrs import Factory, define, frozen
 from typing_extensions import Self
 
 from .enums import Tier
-from .typedefs import AnyMechStats, AnyStatKey, AnyStats, Name, StatDict
+from .typedefs import AnyMechStatKey, AnyStatKey, Name, StatDict
 from .utils import MISSING
 
-ValueT = t.TypeVar("ValueT", bound=int | list[int])
+ValueT = t.TypeVar("ValueT", int, "ValueRange")
 
-WORKSHOP_STATS = tuple(AnyMechStats.__annotations__)
+WORKSHOP_STATS: tuple[str, ...] = t.get_args(AnyMechStatKey)
 """The stats that can appear in mech summary, in order."""
 
 MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Tier, range(9, 50, 10))} | {Tier.DIVINE: 0}
@@ -137,11 +137,8 @@ class TransformRange:
         elif isinstance(upper, int):
             upper = Tier.__call__(upper)
 
-        if not Tier.C <= lower <= upper:
-            if lower > upper:
-                raise ValueError("Upper tier below lower tier")
-
-            raise ValueError("Tiers out of bounds")
+        if lower > upper:
+            raise ValueError("Upper tier below lower tier")
 
         return cls(range(lower.level, upper.level + 1))
 
@@ -151,15 +148,9 @@ class TransformRange:
         up, _, down = string.strip().partition("-")
 
         if down:
-            return cls.from_tiers(Tier[up.upper()], Tier[down.upper()])
+            return cls.from_tiers(Tier.from_letter(up), Tier.from_letter(down))
 
-        return cls.from_tiers(Tier[up.upper()])
-
-    def next_tier(self, current: Tier, /) -> Tier:
-        if current >= self.max:
-            raise ValueError("Highest tier already achieved")
-
-        return Tier.__call__(current.level + 1)
+        return cls.from_tiers(Tier.from_letter(up))
 
 
 class GameVars(t.NamedTuple):
@@ -180,6 +171,48 @@ class GameVars(t.NamedTuple):
 DEFAULT_VARS = GameVars()
 
 
+class ValueRange(t.NamedTuple):
+    """Lightweight tuple to represent a range of values."""
+
+    lower: int
+    upper: int
+
+    def __str__(self) -> str:
+        if self.is_single:  # this is false if either is NaN
+            return str(self.lower)
+        return f"{self.lower}-{self.upper}"
+
+    def __format__(self, format_spec: str, /) -> str:
+        # the general format to expect is "number_spec:separator"
+        val_fmt, colon, sep = format_spec.partition(":")
+
+        if not colon:
+            sep = "-"
+
+        if self.is_single:
+            return format(self.lower, val_fmt)
+
+        return f"{self.lower:{val_fmt}}{sep}{self.upper:{val_fmt}}"
+
+    @property
+    def is_single(self) -> bool:
+        """Whether the range bounds are equal value."""
+        return self.lower == self.upper
+
+    @property
+    def average(self) -> float:
+        """Average of the value range."""
+        if self.is_single:
+            return self.lower
+        return (self.lower + self.upper) / 2
+
+    def __add__(self, value: tuple[int, int]) -> Self:
+        return type(self)(self.lower + value[0], self.upper + value[1])
+
+    def __mul__(self, value: int) -> Self:
+        return type(self)(self.lower * value, self.upper * value)
+
+
 class BuffModifier(t.NamedTuple):
     value: int
     percent: bool = True
@@ -194,6 +227,51 @@ class BuffModifier(t.NamedTuple):
         return self.value
 
 
+class AnyMechStats(t.TypedDict, total=False):
+    weight: int
+    health: int
+    eneCap: int
+    eneReg: int
+    heaCap: int
+    heaCol: int
+    phyRes: int
+    expRes: int
+    eleRes: int
+    bulletsCap: int
+    rocketsCap: int
+    walk: int
+    jump: int
+
+
+class AnyStats(AnyMechStats, total=False):
+    # stats sorted in order they appear in-game
+    phyDmg: ValueRange
+    phyResDmg: int
+    eleDmg: ValueRange
+    eneDmg: int
+    eneCapDmg: int
+    eneRegDmg: int
+    eleResDmg: int
+    expDmg: ValueRange
+    heaDmg: int
+    heaCapDmg: int
+    heaColDmg: int
+    expResDmg: int
+    # walk, jump
+    range: ValueRange
+    push: int
+    pull: int
+    recoil: int
+    advance: int
+    retreat: int
+    uses: int
+    backfire: int
+    heaCost: int
+    eneCost: int
+    bulletsCost: int
+    rocketsCost: int
+
+
 @define
 class ArenaBuffs:
     BASE_PERCENT: t.ClassVar = (0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20)
@@ -203,7 +281,7 @@ class ArenaBuffs:
         "eneCap", "eneReg", "eneDmg", "heaCap", "heaCol", "heaDmg", "phyDmg",
         "expDmg", "eleDmg", "phyRes", "expRes", "eleRes", "health", "backfire"
     )
-    # XXX: perhaps include +% titan damage?
+    # TODO: perhaps include +% titan damage?
     # fmt: on
     levels: dict[str, int] = Factory(lambda: dict.fromkeys(ArenaBuffs.BUFFABLE_STATS, 0))
 
@@ -233,6 +311,18 @@ class ArenaBuffs:
 
         return value + abs_or_percent_increase
 
+    def buff_damage_range(self, stat_name: str, value: ValueRange, /) -> ValueRange:
+        """Buff a value range according to given stat."""
+        if stat_name not in self.levels:
+            return value
+
+        level = self.levels[stat_name]
+        increase, _ = self.modifier_at(stat_name, level)
+
+        return ValueRange(
+            round(value.lower * (1 + increase / 100)), round(value.upper * (1 + increase / 100))
+        )
+
     def buff_with_difference(self, stat_name: str, value: int, /) -> tuple[int, int]:
         """Returns buffed value and the difference between the result and the initial value."""
         buffed = self.buff(stat_name, value)
@@ -260,8 +350,8 @@ class ArenaBuffs:
             if key == "health" and not buff_health:
                 buffed[key] = value
 
-            elif isinstance(value, list):
-                buffed[key] = [self.buff(key, v) for v in value]  # type: ignore
+            elif isinstance(value, ValueRange):
+                buffed[key] = self.buff_damage_range(key, value)
 
             else:
                 buffed[key] = self.buff(key, value)
@@ -270,7 +360,9 @@ class ArenaBuffs:
 
     @classmethod
     def modifier_at(cls, stat_name: str, level: int, /) -> BuffModifier:
-        """Returns an object that can be interpreted as an int or the buff's str representation at given level."""
+        """Returns an object interpretable as an int or the buff's str representation
+        at given level.
+        """
         if STATS[stat_name].buff == "+":
             return BuffModifier(cls.HP_INCREASES[level], False)
 
@@ -284,21 +376,21 @@ class ArenaBuffs:
     def get_percent(cls, stat_name: str, level: int) -> int:
         """Returns an int representing the precentage for the stat's modifier."""
 
-        match STATS[stat_name].buff:
-            case "+%":
-                return cls.BASE_PERCENT[level]
+        literal_buff = STATS[stat_name].buff
 
-            case "+2%":
-                return cls.BASE_PERCENT[level] * 2
+        if literal_buff == "+%":
+            return cls.BASE_PERCENT[level]
 
-            case "-%":
-                return -cls.BASE_PERCENT[level]
+        if literal_buff == "+2%":
+            return cls.BASE_PERCENT[level] * 2
 
-            case "+":
-                raise TypeError(f"Stat {stat_name!r} has absolute increase")
+        if literal_buff == "-%":
+            return -cls.BASE_PERCENT[level]
 
-            case None:
-                raise ValueError(f"Stat {stat_name!r} has no buffs associated")
+        if literal_buff == "+":
+            raise TypeError(f"Stat {stat_name!r} has absolute increase")
+
+        raise ValueError(f"Stat {stat_name!r} has no buffs associated")
 
     @classmethod
     def iter_modifiers_of(cls, stat_name: str) -> t.Iterator[BuffModifier]:
@@ -364,3 +456,8 @@ def abbreviate_names(names: t.Iterable[Name], /) -> dict[str, set[Name]]:
             abbrevs.setdefault(abb, {name}).add(name)
 
     return abbrevs
+
+
+def next_tier(current: Tier, /) -> Tier:
+    """Returns the next tier in line."""
+    return Tier.__call__(current.level + 1)

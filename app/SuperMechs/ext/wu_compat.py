@@ -11,7 +11,7 @@ from ..typedefs import ID, Name
 from ..utils import truncate_name
 
 if t.TYPE_CHECKING:
-    from ..pack_interface import PackInterface
+    from ..pack_interface import ItemPack
 
 
 # ------------------------------------------ typed dicts -------------------------------------------
@@ -108,7 +108,7 @@ def mech_to_id_str(mech: Mech, sep: str = "_") -> str:
 # -------------------------------------------- imports ---------------------------------------------
 
 
-def import_mech(data: WUMech, pack: "PackInterface") -> Mech:
+def import_mech(data: WUMech, pack: "ItemPack") -> Mech:
     """Imports a mech from WU mech."""
     mech = Mech(name=truncate_name(data["name"]))
 
@@ -125,7 +125,7 @@ def import_mech(data: WUMech, pack: "PackInterface") -> Mech:
 
 
 def import_mechs(
-    json: ExportedMechsJSON, pack: "PackInterface"
+    json: ExportedMechsJSON, pack: "ItemPack"
 ) -> tuple[list[Mech], list[tuple[int, str]]]:
     """Imports mechs from parsed .JSON file."""
 
@@ -157,7 +157,7 @@ def import_mechs(
     return mechs, failed
 
 
-def load_mechs(data: bytes, pack: "PackInterface") -> tuple[list[Mech], list[tuple[int, str]]]:
+def load_mechs(data: bytes, pack: "ItemPack") -> tuple[list[Mech], list[tuple[int, str]]]:
     """Loads mechs from bytes object, representing a .JSON file."""
     return import_mechs(orjson.loads(data), pack)
 
