@@ -6,6 +6,7 @@ src = ["app"]
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F403"]
+"api.py" = ["F403"]
 
 
 [tool.ruff.isort]
