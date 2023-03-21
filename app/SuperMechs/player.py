@@ -6,6 +6,8 @@ from .core import ArenaBuffs
 from .mech import Mech
 from .utils import truncate_name
 
+__all__ = ("Player",)
+
 
 @define
 class Player:

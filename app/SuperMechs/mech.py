@@ -18,6 +18,8 @@ from .enums import Element, Type
 from .inv_item import InvItem
 from .utils import format_count
 
+__all__ = ("Mech",)
+
 BODY_SLOTS = ("torso", "legs", "drone")
 WEAPON_SLOTS = ("side1", "side2", "side3", "side4", "top1", "top2")
 SPECIAL_SLOTS = ("tele", "charge", "hook")
