@@ -22,7 +22,7 @@ def get_sloc(directory: str = ".") -> int:
         with open(path, encoding="utf8") as file:
             for line in file:
                 if not line or line.startswith("#"):
-                    pass
+                    continue
 
                 sloc += 1
 
