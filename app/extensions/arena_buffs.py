@@ -20,15 +20,12 @@ from library_extensions.ui import (
     select,
 )
 
-from SuperMechs.core import MAX_BUFFS, STATS, ArenaBuffs
-from SuperMechs.player import Player
+from SuperMechs.api import MAX_BUFFS, STATS, ArenaBuffs, Player
 
 if t.TYPE_CHECKING:
     from bot import ModularBot  # noqa: F401
 
-    from SuperMechs.client import SMClient  # noqa: F401
-
-plugin = plugins.Plugin["ModularBot[SMClient]"](name="ArenaBuffs", logger=__name__)
+plugin = plugins.Plugin["ModularBot"](name="ArenaBuffs", logger=__name__)
 
 
 class ArenaBuffsView(InteractionCheck, PaginatorView):
@@ -61,7 +58,8 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
         self.page = 0
 
     async def buff_buttons(self, button: TrinaryButton[bool], inter: MessageInteraction) -> None:
-        self.toggle_style(button)
+        button.toggle()
+        self.change_style(button)
         await inter.response.edit_message(view=self)
 
     @positioned(3, 2)
@@ -116,34 +114,34 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
             self.active.item = None
 
         self.active.label = str(self.buffs.modifier_of(id)).rjust(4, INVISIBLE_CHARACTER)
-        self.toggle_style(self.active)
+        self.active.toggle()
+        self.change_style(self.active)
 
         await inter.response.edit_message(view=self)
 
-    def toggle_style(self, button: TrinaryButton[bool]) -> None:
-        button.toggle()
-
+    def change_style(self, button: TrinaryButton[bool]) -> None:
+        select = self.select_menu
         if self.active is button:
-            self.select_menu.placeholder = None
-            self.select_menu.disabled = True
+            select.placeholder = None
+            select.disabled = True
             self.active = None
             return
 
         if self.active is None:
-            self.select_menu.disabled = False
+            select.disabled = False
 
         else:
             self.active.toggle()
 
-        self.select_menu.placeholder = button.label
-        self.select_menu.options = [
+        self.active = button
+
+        select.placeholder = button.label
+        select.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
             for level, buff in enumerate(
                 self.buffs.iter_modifiers_of(button.custom_id.rsplit(":", 1)[-1])
             )
         ]
-
-        self.active = button
 
 
 @plugin.slash_command()

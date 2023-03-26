@@ -5,33 +5,66 @@ import logging
 import os
 import typing as t
 from datetime import datetime
-from functools import partial
 
 from disnake import CommandInteraction
-from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-from abstract.files import URL
-from library_extensions import ChannelHandler, localized_text, walk_modules
-from shared import SESSION_CTX
+from library_extensions import localized_text, walk_modules
 
-from SuperMechs.pack_interface import PackInterface
-from SuperMechs.urls import PACK_V2_URL
+if t.TYPE_CHECKING:
+    import asyncio
+
+    import aiohttp
+    from disnake import (
+        AllowedMentions,
+        BaseActivity,
+        GatewayParams,
+        Intents,
+        LocalizationProtocol,
+        MemberCacheFlags,
+        Status,
+    )
+
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SMBot(commands.InteractionBot):
-    started_at: datetime
-    default_pack: PackInterface
+class BotParams(t.TypedDict, total=False):
+    owner_id: int | None
+    owner_ids: set[int] | None
+    reload: bool
+    sync_commands: bool
+    sync_commands_debug: bool
+    sync_commands_on_cog_unload: bool
+    test_guilds: t.Sequence[int] | None
+    asyncio_debug: bool
+    loop: asyncio.AbstractEventLoop | None
+    shard_id: int | None
+    shard_count: int | None
+    enable_debug_events: bool
+    enable_gateway_error_handler: bool
+    gateway_params: GatewayParams | None
+    connector: aiohttp.BaseConnector | None
+    proxy: str | None
+    proxy_auth: aiohttp.BasicAuth | None
+    assume_unsync_clock: bool
+    max_messages: int | None
+    application_id: int | None
+    heartbeat_timeout: float
+    guild_ready_timeout: float
+    allowed_mentions: AllowedMentions | None
+    activity: BaseActivity | None
+    status: Status | str | None
+    intents: Intents | None
+    chunk_guilds_at_startup: bool | None
+    member_cache_flags: MemberCacheFlags | None
+    localization_provider: LocalizationProtocol | None
+    strict_localization: bool
 
-    if not t.TYPE_CHECKING:
-        # this is to avoid retyping all of the kwargs
-        def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-            super().__init__(*args, **kwargs)
-            self.started_at = MISSING
-            self.default_pack = PackInterface()
+
+class ModularBot(commands.InteractionBot):
+    started_at: datetime = MISSING
 
     async def on_slash_command_error(
         self, inter: CommandInteraction, error: commands.CommandError
@@ -80,18 +113,6 @@ class SMBot(commands.InteractionBot):
 
         await inter.send(info, ephemeral=True)
 
-    async def login(self, token: str) -> None:
-        LOGGER.info("Starting...")
-        self.started_at = datetime.now()
-        await super().login(token)
-
-    async def before_connect(self) -> None:
-        try:
-            await self.default_pack.load(URL(PACK_V2_URL))
-
-        except Exception as err:
-            LOGGER.warning("Failed to load items: ", exc_info=err)
-
     async def on_ready(self) -> None:
         LOGGER.info(f"{self.user.name} is online")
 
@@ -103,31 +124,10 @@ class SMBot(commands.InteractionBot):
                 f", {limit.reset_time=:%d.%m.%Y %H:%M:%S}"
             )
 
-    async def setup_channel_logger(self, channel_id: int) -> None:
-        channel = await self.fetch_channel(channel_id)
-
-        if not isinstance(channel, Messageable):
-            raise TypeError("Channel is not Messageable")
-
-        LOGGER.addHandler(ChannelHandler(channel, logging.WARNING))
-        LOGGER.info("Warnings & errors redirected to logs channel")
-
-    def create_aiohttp_session(self) -> None:
-        from aiohttp import ClientSession, ClientTimeout
-
-        session = ClientSession(connector=self.http.connector, timeout=ClientTimeout(total=30))
-        session._request = partial(session._request, proxy=self.http.proxy)
-        SESSION_CTX.set(session)
-
-    async def close_aiohttp_session(self) -> None:
-        session = SESSION_CTX.get(None)
-
-        if session is not None:
-            await session.close()
-
-    async def close(self) -> None:
-        await self.close_aiohttp_session()
-        await super().close()
+    async def login(self, token: str) -> None:
+        LOGGER.info("Starting...")
+        self.started_at = datetime.now()
+        await super().login(token)
 
     def load_extensions(
         self,
