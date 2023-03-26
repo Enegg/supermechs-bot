@@ -8,12 +8,13 @@ from functools import partial
 
 from aiohttp import ClientSession, ClientTimeout
 from disnake import AllowedMentions, Client, Game, Intents
+from disnake.abc import Messageable
 from dotenv import load_dotenv
 
-from bot import SMBot
+from bot import ModularBot
 from bridges import register_injections
 from config import LOGS_CHANNEL, TEST_GUILDS
-from library_extensions import FileRecord, setup_channel_logger
+from library_extensions import ChannelHandler, FileRecord
 from shared import SESSION_CTX
 
 from SuperMechs.client import SMClient
@@ -53,8 +54,7 @@ async def create_aiohttp_session(client: Client, /):
 
 async def main() -> None:
     client = SMClient()
-    bot = SMBot(
-        object=client,
+    bot = ModularBot(
         intents=Intents(guilds=True),
         activity=Game("SuperMechs"),
         test_guilds=TEST_GUILDS if __debug__ else None,
@@ -63,14 +63,19 @@ async def main() -> None:
     )
 
     bot.i18n.load("locale/")
-    register_injections()
+    register_injections(client)
     bot.load_extensions("extensions")
 
     async with create_aiohttp_session(bot) as session:
         SESSION_CTX.set(session)
         await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
-        await setup_channel_logger(bot, LOGS_CHANNEL, ROOT_LOGGER)
-        await client.load_default_item_pack()
+
+        logs_channel = await bot.fetch_channel(LOGS_CHANNEL)
+        assert isinstance(logs_channel, Messageable), "Channel is not messageable"
+        ROOT_LOGGER.addHandler(ChannelHandler(logs_channel.send, logging.WARNING))
+        ROOT_LOGGER.info(f"Warnings+ redirected to {logs_channel}")
+
+        await client.fetch_default_item_pack()
         await bot.connect()
 
 
