@@ -5,6 +5,8 @@ from disnake import CommandInteraction
 
 from SuperMechs.api import Player, SMClient
 
+__all__ = ("AppContext",)
+
 
 @define
 class AppContext:
