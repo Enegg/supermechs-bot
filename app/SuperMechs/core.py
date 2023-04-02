@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing as t
-from json import load
+from orjson import loads
 from pathlib import Path
 
 from attrs import Factory, define, frozen
@@ -32,7 +32,8 @@ WORKSHOP_STATS: tuple[str, ...] = t.get_args(AnyMechStatKey)
 
 MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Tier, range(9, 50, 10))} | {Tier.DIVINE: 0}
 """A mapping of a tier to the maximum level an item can have at this tier.
-    Note that in game levels start at 1."""
+    Note that in game levels start at 1.
+"""
 
 
 class Names(t.NamedTuple):
@@ -57,7 +58,7 @@ class Names(t.NamedTuple):
 
         return self.default if len(self.default) <= len(self.game_name) else self.game_name
 
-
+# TODO: make this locale aware
 class Stat(t.NamedTuple):
     key: str
     name: Names
@@ -81,8 +82,9 @@ class Stat(t.NamedTuple):
 
 def _load_stats():
     with open(Path(__file__).parent / "static/StatData.json") as file:
-        json: dict[AnyStatKey, StatDict] = load(file)
-        return {stat_key: Stat.from_dict(value, stat_key) for stat_key, value in json.items()}
+        json: dict[AnyStatKey, StatDict] = loads(file.read())
+
+    return {stat_key: Stat.from_dict(value, stat_key) for stat_key, value in json.items()}
 
 
 STATS = _load_stats()
@@ -227,18 +229,39 @@ class ValueRange(t.NamedTuple):
         return type(self)(self.lower * value, self.upper * value)
 
 
-class BuffModifier(t.NamedTuple):
+class BuffModifier(t.Protocol):
+    @property
+    def value(self) -> int:
+        ...
+
+    def apply(self, __value: int, /) -> int:
+        ...
+
+
+class PercentageBuffModifier(t.NamedTuple):
     value: int
-    percent: bool = True
 
     def __str__(self) -> str:
-        if self.percent:
-            return f"{self.value:+}%"
+        return f"{self.value:+}%"
 
+    def __int__(self) -> int:
+        return self.value
+
+    def apply(self, value: int, /) -> int:
+        return round(value * (1 + self.value / 100))
+
+
+class AbsoluteBuffModifier(t.NamedTuple):
+    value: int
+
+    def __str__(self) -> str:
         return f"+{self.value}"
 
     def __int__(self) -> int:
         return self.value
+
+    def apply(self, value: int, /) -> int:
+        return value + self.value
 
 
 class AnyMechStats(t.TypedDict, total=False):
@@ -318,12 +341,7 @@ class ArenaBuffs:
             return value
 
         level = self.levels[stat_name]
-        abs_or_percent_increase, is_percent = self.modifier_at(stat_name, level)
-
-        if is_percent:
-            return round(value * (1 + abs_or_percent_increase / 100))
-
-        return value + abs_or_percent_increase
+        return self.modifier_at(stat_name, level).apply(value)
 
     def buff_damage_range(self, stat_name: str, value: ValueRange, /) -> ValueRange:
         """Buff a value range according to given stat."""
@@ -331,11 +349,8 @@ class ArenaBuffs:
             return value
 
         level = self.levels[stat_name]
-        increase, _ = self.modifier_at(stat_name, level)
-
-        return ValueRange(
-            round(value.lower * (1 + increase / 100)), round(value.upper * (1 + increase / 100))
-        )
+        modifier = self.modifier_at(stat_name, level)
+        return ValueRange(*map(modifier.apply, value))
 
     def buff_with_difference(self, stat_name: str, value: int, /) -> tuple[int, int]:
         """Returns buffed value and the difference between the result and the initial value."""
@@ -378,9 +393,9 @@ class ArenaBuffs:
         at given level.
         """
         if STATS[stat_name].buff == "+":
-            return BuffModifier(cls.HP_INCREASES[level], False)
+            return AbsoluteBuffModifier(cls.HP_INCREASES[level])
 
-        return BuffModifier(cls.get_percent(stat_name, level))
+        return PercentageBuffModifier(cls.get_percent(stat_name, level))
 
     def modifier_of(self, stat_name: str, /) -> BuffModifier:
         """Returns an object that can be interpreted as an int or the buff's str representation."""
@@ -428,8 +443,6 @@ class ArenaBuffs:
         levels = max_buffs.levels
         for key in levels:
             levels[key] = cls.max_level_of(key)
-
-        setattr(cls, "maxed", staticmethod(lambda: max_buffs))
 
         return max_buffs
 

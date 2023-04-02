@@ -136,11 +136,10 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
         self.active = button
 
         select.placeholder = button.label
+        stat_name = button.custom_id.rsplit(":", 1)[-1]
         select.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
-            for level, buff in enumerate(
-                self.buffs.iter_modifiers_of(button.custom_id.rsplit(":", 1)[-1])
-            )
+            for level, buff in enumerate(self.buffs.iter_modifiers_of(stat_name))
         ]
 
 

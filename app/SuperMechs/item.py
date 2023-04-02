@@ -111,15 +111,17 @@ class Item:
         data: AnyItemDict,
         pack_key: str,
         custom: bool,
+        *,
+        strict: bool = False,
     ) -> Self:
         transform_range = TransformRange.from_string(data["transform_range"])
 
         if "stats" not in data:
-            stats = ItemStatsContainer.from_json_v3(data)
+            stats = ItemStatsContainer.from_json_v3(data, strict=strict)
 
         else:
             data = t.cast(ItemDictVer1 | ItemDictVer2, data)
-            stats = ItemStatsContainer.from_json_v1_v2(data)
+            stats = ItemStatsContainer.from_json_v1_v2(data, strict=strict)
 
         tags = Tags.from_data(data.get("tags", ()), transform_range, stats, custom)
 

@@ -24,6 +24,7 @@ class SMClient:
         self.default_pack = MISSING
 
     async def fetch_default_item_pack(self) -> None:
+        """Downloads & parses the default item pack."""
         resource = URL(urls.PACK_V2)
         data = await resource.json()
         try:

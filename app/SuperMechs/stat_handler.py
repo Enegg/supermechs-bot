@@ -15,7 +15,7 @@ __all__ = ("ItemStatsContainer",)
 LOGGER = logging.getLogger(__name__)
 
 
-def as_inbetween(lower: int, upper: int, fraction: float) -> int:
+def as_gradient(lower: int, upper: int, fraction: float) -> int:
     """Returns a value between the lower and upper numbers,
     with fraction denoting how close to the upper the value gets.
     In other words, at fraction = 0 returns lower, and at fraction = 1 returns upper.
@@ -23,18 +23,18 @@ def as_inbetween(lower: int, upper: int, fraction: float) -> int:
     return lower + round((upper - lower) * fraction)
 
 
-def as_inbetween_ranges(base: ValueRange, elevation: ValueRange, fraction: float) -> ValueRange:
-    """Returns a range between the base and elevated ranges,
-    with fraction denoting how close to the elevation the value gets.
-    In other words, at fraction = 0 returns base, and at fraction = 1 returns elevation.
+def as_ranges_gradient(minor: ValueRange, major: ValueRange, fraction: float) -> ValueRange:
+    """Returns a range between the minor and major ranges,
+    with fraction denoting how close to the major the value gets.
+    In other words, at fraction = 0 returns minor, and at fraction = 1 returns major.
     """
-    return base + (
-        round((elevation.lower - base.lower) * fraction),
-        round((elevation.upper - base.upper) * fraction),
+    return minor + (
+        round((major.lower - minor.lower) * fraction),
+        round((major.upper - minor.upper) * fraction),
     )
 
 
-def transform_raw_stats(data: RawStats) -> AnyStats:
+def transform_raw_stats(data: RawStats, *, strict: bool = False) -> AnyStats:
     """Ensures the data is valid by grabbing factual keys and type checking values.
     Transforms None values to NaNs."""
     final_stats: AnyStats = {}
@@ -56,10 +56,14 @@ def transform_raw_stats(data: RawStats) -> AnyStats:
                 )
 
             case unknown:
-                LOGGER.warning(
-                    f"Malformed data: expected {data_type.__name__} on key '{key}'"
+                msg = (
+                    f"Expected {data_type.__name__} on key '{key}'"
                     f", got {type(unknown)}"
                 )
+                if strict:
+                    raise TypeError(msg)
+
+                LOGGER.warning(msg)
 
     return final_stats
 
@@ -99,11 +103,11 @@ class TierStats:
 
             if isinstance(value, ValueRange):
                 assert isinstance(base_value, ValueRange)
-                stats[key] = as_inbetween_ranges(base_value, value, fraction)
+                stats[key] = as_ranges_gradient(base_value, value, fraction)
 
             else:
                 assert not isinstance(base_value, ValueRange)
-                stats[key] = as_inbetween(base_value, value, fraction)
+                stats[key] = as_gradient(base_value, value, fraction)
 
         return stats
 
@@ -163,14 +167,14 @@ class ItemStatsContainer:
         return False
 
     @classmethod
-    def from_json_v1_v2(cls, data: ItemDictVer1 | ItemDictVer2) -> Self:
+    def from_json_v1_v2(cls, data: ItemDictVer1 | ItemDictVer2, *, strict: bool = False) -> Self:
         tier = Tier.from_letter(data["transform_range"][-1])
-        bases = {tier: transform_raw_stats(data["stats"])}
+        bases = {tier: transform_raw_stats(data["stats"], strict=strict)}
         max_stats = {}
         return cls(bases, max_stats)
 
     @classmethod
-    def from_json_v3(cls, data: ItemDictVer3) -> Self:
+    def from_json_v3(cls, data: ItemDictVer3, *, strict: bool = False) -> Self:
         tier_bases = dict[Tier, AnyStats]()
         max_stats = dict[Tier, AnyStats]()
         hit = False
@@ -188,18 +192,21 @@ class ItemStatsContainer:
                 continue
 
             hit = True
-            tier_bases[rarity] = transform_raw_stats(data[key])
+            tier_bases[rarity] = transform_raw_stats(data[key], strict=strict)
 
             try:
                 max_level_data = data["max_" + key]
 
             except KeyError:
                 if rarity is not Tier.DIVINE:
+                    if strict:
+                        raise
+
                     LOGGER.warning(f"max_{key} key not found for item {data['name']}")
 
                 max_stats[rarity] = {}
 
             else:
-                max_stats[rarity] = transform_raw_stats(max_level_data)
+                max_stats[rarity] = transform_raw_stats(max_level_data, strict=strict)
 
         return cls(tier_bases, max_stats)
