@@ -4,6 +4,7 @@ import importlib.util
 import logging
 import os
 import typing as t
+from collections import Counter
 from datetime import datetime
 
 from disnake import CommandInteraction
@@ -25,6 +26,7 @@ if t.TYPE_CHECKING:
         MemberCacheFlags,
         Status,
     )
+    from typing_extensions import Unpack
 
 
 LOGGER = logging.getLogger(__name__)
@@ -64,7 +66,14 @@ class BotParams(t.TypedDict, total=False):
 
 
 class ModularBot(commands.InteractionBot):
-    started_at: datetime = MISSING
+    started_at: datetime
+    command_invocations: Counter[commands.InvokableApplicationCommand]
+
+    if not t.TYPE_CHECKING:
+        def __init__(self, **kwargs: Unpack[BotParams]) -> None:
+            super().__init__(**kwargs)
+            self.started_at = MISSING
+            self.command_invocations = Counter()
 
     async def on_slash_command_error(
         self, inter: CommandInteraction, error: commands.CommandError
@@ -95,9 +104,9 @@ class ModularBot(commands.InteractionBot):
             )
 
             text = (
-                f"{error}"
-                f"\nPlace: `{inter.guild or inter.channel}`"
-                f"\nCommand invocation: {inter.author.mention} ({inter.author.display_name})"
+                f"{error}\n"
+                f"Place: `{inter.guild or inter.channel}`\n"
+                f"Command invocation: {inter.author.mention} ({inter.author.display_name})"
                 f" `/{inter.application_command.qualified_name}` {arguments}"
             )
 
@@ -112,6 +121,10 @@ class ModularBot(commands.InteractionBot):
                 )
 
         await inter.send(info, ephemeral=True)
+
+    async def on_application_command(self, interaction: CommandInteraction) -> None:
+        await super().on_application_command(interaction)
+        self.command_invocations[interaction.application_command] += 1
 
     async def on_ready(self) -> None:
         LOGGER.info(f"{self.user.name} is online")
