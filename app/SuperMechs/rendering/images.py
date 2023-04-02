@@ -12,15 +12,14 @@ from typing_extensions import LiteralString, Self, TypeVar
 from abstract.files import Resource
 from typeshed import Coro, P, twotuple
 
-from .enums import Type
-from .typedefs import AnyRawAttachment, RawAttachment, RawAttachments, SpritePosition
-from .utils import MISSING
+from ..enums import Type
+from ..typedefs import AnyRawAttachment, RawAttachment, RawAttachments, SpritePosition
+from ..utils import MISSING
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
 
-    from .item import AnyItem, Item
-    from .mech import Mech
+    from ..item import Item
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,7 +60,7 @@ def parse_raw_attachment(raw_attachment: AnyRawAttachment) -> AnyAttachment:
             "side4": {},
             "top1": {},
             "top2": {},
-        }:
+        }:  # noqa: E999
             return raw_attachments_to_tupled(raw_attachment)
 
         case {"x": int(), "y": int()}:
@@ -114,121 +113,6 @@ class Offsets:
             self.left + max(base_image.width, self.right),
             self.above + max(base_image.height, self.below),
         )
-
-
-@define
-class ImageRenderer:
-    """Class responsible for creating mech image."""
-
-    base: HasImage[Attachments]
-    layers: t.Sequence[str]
-    offsets: Offsets = field(factory=Offsets)
-    images: list[tuple[int, int, Image] | None] = field(init=False)
-
-    def __attrs_post_init__(self) -> None:
-        self.images = [None] * len(self.layers)
-
-    @t.overload
-    def add_image(self, item: HasImage[None], layer: str, attach_at: tuple[int, int]) -> None:
-        ...
-
-    @t.overload
-    def add_image(
-        self, item: HasImage[Attachment], layer: str, attach_at: tuple[int, int] = ...
-    ) -> None:
-        ...
-
-    def add_image(
-        self,
-        item: HasImage[Attachment] | HasImage[None],
-        layer: str,
-        attach_at: tuple[int, int] | None = None,
-    ) -> None:
-        """Adds the image of the item to the canvas."""
-        attachment = item.attachment or attach_at
-
-        if attachment is None:
-            raise TypeError("Item without attachment needs the attachment parameter provided")
-
-        elif len(attachment) != 2:
-            raise TypeError(f"Invalid attachment for layer {layer!r}: {attachment!r}")
-
-        else:
-            item_x, item_y = attachment
-
-        if layer in self.base.attachment:
-            offset = self.base.attachment[layer]
-            x = offset.x - item_x
-            y = offset.y - item_y
-
-        else:
-            x, y = -item_x, -item_y
-
-        self.offsets.adjust(item.image, x, y)
-        self.put_image(item.image, layer, x, y)
-
-    def put_image(self, image: Image, layer: str, x: int, y: int) -> None:
-        """Place the image on the canvas."""
-        self.images[self.layers.index(layer)] = (x, y, image)
-
-    def merge(self) -> Image:
-        """Merges all images into one and returns it."""
-        self.put_image(self.base.image, "torso", 0, 0)
-
-        from PIL.Image import new
-
-        canvas = new(
-            "RGBA",
-            self.offsets.final_size(self.base.image),
-            (0, 0, 0, 0),
-        )
-
-        for x, y, image in filter(None, self.images):
-            canvas.alpha_composite(image, (x + self.offsets.left, y + self.offsets.above))
-
-        return canvas
-
-    @classmethod
-    def from_mech(cls, mech: Mech) -> Self:
-        if mech.torso is None:
-            raise RuntimeError("Cannot create image without torso set")
-
-        LAYER_ORDER = (
-            "drone",
-            "side2",
-            "side4",
-            "top2",
-            "leg2",
-            "torso",
-            "leg1",
-            "top1",
-            "side1",
-            "side3",
-        )
-
-        self = cls(mech.torso.image, LAYER_ORDER)
-
-        if mech.legs is not None:
-            self.add_image(mech.legs.image, "leg1")
-            self.add_image(mech.legs.image, "leg2")
-
-        for item, layer in mech.iter_items(weapons=True, slots=True):
-            if item is None:
-                continue
-
-            self.add_image(item.image, layer)
-
-        if mech.drone is not None:
-            self.add_image(
-                mech.drone.image,
-                "drone",
-                (
-                    self.offsets.left + mech.drone.image.width // 2,
-                    self.offsets.above + mech.drone.image.height + 25,
-                ),
-            )
-
-        return self
 
 
 def create_synthetic_attachment(width: int, height: int, type: Type) -> AnyAttachment:
@@ -291,7 +175,7 @@ class AttachedImage(t.Generic[AttachmentType]):
     attachment: AttachmentType = field(default=None)
 
     _postprocess: t.ClassVar[dict[int, list[t.Callable[[], None]]]] = defaultdict(list)
-    _item_refs: t.ClassVar = weakref.WeakValueDictionary[int, "AnyItem"]()
+    _item_refs: t.ClassVar = weakref.WeakValueDictionary[int, "Item"]()
     _loaders: t.ClassVar = weakref.WeakKeyDictionary[Self, t.Any]()
 
     @property
@@ -307,12 +191,12 @@ class AttachedImage(t.Generic[AttachmentType]):
         return self.image.height
 
     @property
-    def item(self) -> Item[AttachmentType]:
+    def item(self) -> Item:
         """The Item this image belongs to. The item is weak referenced."""
         return self._item_refs[id(self)]
 
     @item.setter
-    def item(self, item: Item[AttachmentType]) -> None:
+    def item(self, item: Item) -> None:
         self._item_refs[id(self)] = item
 
     @property
