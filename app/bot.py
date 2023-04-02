@@ -11,7 +11,7 @@ from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-from library_extensions import localized_text, walk_modules
+from library_extensions import walk_modules
 
 if t.TYPE_CHECKING:
     import asyncio
@@ -70,57 +70,11 @@ class ModularBot(commands.InteractionBot):
     command_invocations: Counter[commands.InvokableApplicationCommand]
 
     if not t.TYPE_CHECKING:
+
         def __init__(self, **kwargs: Unpack[BotParams]) -> None:
             super().__init__(**kwargs)
             self.started_at = MISSING
             self.command_invocations = Counter()
-
-    async def on_slash_command_error(
-        self, inter: CommandInteraction, error: commands.CommandError
-    ) -> None:
-        if isinstance(error, commands.NotOwner):
-            info = localized_text(
-                "This is a developer-only command.", "CMD_DEV", self.i18n, inter.locale
-            )
-
-        elif isinstance(error, (commands.UserInputError, commands.CheckFailure)):
-            info = str(error)
-
-        elif isinstance(error, commands.MaxConcurrencyReached):
-            if error.number == 1 and error.per is commands.BucketType.user:
-                info = localized_text(
-                    "Your previous invocation of this command has not finished executing.",
-                    "CMD_RUNNING",
-                    self.i18n,
-                    inter.locale,
-                )
-
-            else:
-                info = str(error)
-
-        else:
-            arguments = ", ".join(
-                f"`{option}: {value}`" for option, value in inter.filled_options.items()
-            )
-
-            text = (
-                f"{error}\n"
-                f"Place: `{inter.guild or inter.channel}`\n"
-                f"Command invocation: {inter.author.mention} ({inter.author.display_name})"
-                f" `/{inter.application_command.qualified_name}` {arguments}"
-            )
-
-            if __debug__:
-                info = text
-
-            else:
-                LOGGER.exception(text, exc_info=error)
-
-                info = localized_text(
-                    "Command executed with an error...", "CMD_ERROR", self.i18n, inter.locale
-                )
-
-        await inter.send(info, ephemeral=True)
 
     async def on_application_command(self, interaction: CommandInteraction) -> None:
         await super().on_application_command(interaction)

@@ -4,17 +4,18 @@ import asyncio
 import contextlib
 import logging
 import os
+import typing as t
 from functools import partial
 
 from aiohttp import ClientSession, ClientTimeout
-from disnake import AllowedMentions, Client, Game, Intents
-from disnake.abc import Messageable
+from disnake import AllowedMentions, Game, Intents
+from disnake.http import HTTPClient
 from dotenv import load_dotenv
 
 from bot import ModularBot
 from bridges import register_injections
 from config import LOGS_CHANNEL, TEST_GUILDS
-from library_extensions import ChannelHandler, FileRecord
+from library_extensions import setup_channel_logger
 from shared import SESSION_CTX
 
 from SuperMechs.client import SMClient
@@ -22,7 +23,6 @@ from SuperMechs.client import SMClient
 load_dotenv()
 
 logging.Formatter.default_time_format = "%d.%m.%Y %H:%M:%S"
-logging.setLogRecordFactory(FileRecord)
 logging.captureWarnings(True)
 stream = logging.StreamHandler()
 stream.setLevel(logging.INFO)
@@ -43,12 +43,12 @@ logging.getLogger("disnake").setLevel(logging.ERROR)
 
 
 @contextlib.asynccontextmanager
-async def create_aiohttp_session(client: Client, /):
+async def create_aiohttp_session(client: HTTPClient, /) -> t.AsyncIterator[ClientSession]:
     """Context manager establishing a client session, reusing client's connector & proxy."""
     async with ClientSession(
-        connector=client.http.connector, timeout=ClientTimeout(total=30)
+        connector=client.connector, timeout=ClientTimeout(total=30)
     ) as session:
-        session._request = partial(session._request, proxy=client.http.proxy)
+        session._request = partial(session._request, proxy=client.proxy)
         yield session
 
 
@@ -65,16 +65,11 @@ async def main() -> None:
     bot.i18n.load("locale/")
     register_injections(client)
     bot.load_extensions("extensions")
+    await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
+    await setup_channel_logger(bot, LOGS_CHANNEL, ROOT_LOGGER)
 
-    async with create_aiohttp_session(bot) as session:
+    async with create_aiohttp_session(bot.http) as session:
         SESSION_CTX.set(session)
-        await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
-
-        logs_channel = await bot.fetch_channel(LOGS_CHANNEL)
-        assert isinstance(logs_channel, Messageable), "Channel is not messageable"
-        ROOT_LOGGER.addHandler(ChannelHandler(logs_channel.send, logging.WARNING))
-        ROOT_LOGGER.info(f"Warnings+ redirected to {logs_channel}")
-
         await client.fetch_default_item_pack()
         await bot.connect()
 
