@@ -5,10 +5,11 @@ import typing as t
 
 from attrs import define, field
 from attrs.validators import max_len
+from typing_extensions import Self
 
 from .core import StringLimits, abbreviate_names, sanitize_name
 from .item import Item
-from .typedefs import ID, AnyItemPack, Name
+from .typedefs import ID, AnyItemDict, AnyItemPack, Name
 
 __all__ = ("ItemPack", "extract_info")
 
@@ -88,10 +89,10 @@ class ItemPack:
 
         return NotImplemented
 
-    def load(self, pack: AnyItemPack, /) -> None:
+    def load(self, items: t.Iterable[AnyItemDict], /) -> None:
         """Load pack items from data."""
 
-        for item_dict in pack["items"]:
+        for item_dict in items:
             item = Item.from_json(item_dict, self.key, self.custom)
             self.items[item.id] = item
             self.names_to_ids[item.name] = item.id
@@ -117,3 +118,15 @@ class ItemPack:
 
     def iter_item_names(self) -> t.Iterator[Name]:
         return iter(self.names_to_ids)
+
+    @classmethod
+    def from_json(cls, data: AnyItemPack, /, custom: bool = False) -> Self:
+        pack_info = extract_info(data)
+        self = cls(
+            key=pack_info.key,
+            name=pack_info.name,
+            description=pack_info.description,
+            custom=custom,
+        )
+        self.load(data["items"])
+        return self

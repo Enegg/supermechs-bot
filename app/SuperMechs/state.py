@@ -45,14 +45,7 @@ class AppState:
         return id in self._players
 
     def create_item_pack(self, data: AnyItemPack, custom: bool = False) -> ItemPack:
-        pack_info = extract_info(data)
-        pack = ItemPack(
-            key=pack_info.key,
-            name=pack_info.name,
-            description=pack_info.description,
-            custom=custom,
-        )
-        pack.load(data)
+        pack = ItemPack.from_json(data, custom=custom)
         LOGGER.info(f"Item pack created: {pack.key} ({pack.name})")
         return pack
 
