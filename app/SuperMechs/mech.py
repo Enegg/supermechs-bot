@@ -381,7 +381,7 @@ class Mech:
 
         # return None when there are no elements
         # or the difference between the two most common is small
-        if len(elements) == 0 or (len(elements) == 2 and elements[0][1] - elements[1][1] < 2):
+        if len(elements) == 0 or (len(elements) >= 2 and elements[0][1] - elements[1][1] < 2):
             return None
 
         # otherwise just return the most common one

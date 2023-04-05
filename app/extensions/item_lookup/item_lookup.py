@@ -162,7 +162,7 @@ def buffed_stats(
                 vy, dy = apply_buff(stat, y)
                 yield stat, ((vx, vy), (dx, dy))
 
-            case _:
+            case _:  # pyright: ignore[reportUnnecessaryComparison]
                 raise TypeError(f"Unexpected value: {value}")
 
 

@@ -44,13 +44,9 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
     fields: list[tuple[str, str]] = []
 
     def count_not_none(it: t.Iterable[t.Any | None]) -> int:
-        i = 0
-        for item in it:
-            if item is not None:
-                i += 1
-        return i
+        return sum(1 for item in it if item is not None)
 
-    fmt_string = (
+    template = (
         f"• {Type.TORSO.emoji} {{TORSO}}\n"
         f"• {Type.LEGS.emoji} {{LEGS}}\n"
         f"• {Type.SIDE_WEAPON.right.emoji} {{WEAPONS}} weapon(s)\n"
@@ -59,7 +55,7 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
     )
 
     for name, build in player.builds.items():
-        value = fmt_string.format(
+        value = template.format(
             TORSO="no torso" if build.torso is None else build.torso.name,
             LEGS="no legs" if build.legs is None else build.legs.name,
             WEAPONS=count_not_none(build.iter_items(weapons=True)),
