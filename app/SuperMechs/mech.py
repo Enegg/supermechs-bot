@@ -7,13 +7,14 @@ from types import MappingProxyType
 from uuid import UUID
 
 from attrs import Attribute, define, field
+from attrs.validators import max_len
 from typing_extensions import Self
 
 from shared.decorators import cached_slot_property
 from typeshed import XOrTupleXY, dict_items_as
 
 from .converters import get_slot_name, slot_to_type
-from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars
+from .core import STATS, WORKSHOP_STATS, ArenaBuffs, GameVars, StringLimits
 from .enums import Element, Type
 from .inv_item import InvItem
 from .utils import format_count
@@ -102,7 +103,7 @@ def _is_valid_type(
 class Mech:
     """Represents a mech build."""
 
-    name: str
+    name: str = field(validator=max_len(StringLimits.name))
     custom: bool = False
     game_vars: GameVars = field(factory=GameVars.default)
     constraints: dict[UUID, t.Callable[[Self], bool]] = field(factory=dict, init=False)

@@ -3,12 +3,11 @@ import typing as t
 import orjson
 from attrs import asdict
 
-from ..core import MAX_BUFFS, AnyStats
+from ..core import MAX_BUFFS, AnyStats, sanitize_name
 from ..inv_item import InvItem
 from ..item import Item
 from ..mech import Mech
 from ..typedefs import ID, Name
-from ..utils import truncate_name
 
 if t.TYPE_CHECKING:
     from ..pack_interface import ItemPack
@@ -110,7 +109,7 @@ def mech_to_id_str(mech: Mech, sep: str = "_") -> str:
 
 def import_mech(data: WUMech, pack: "ItemPack") -> Mech:
     """Imports a mech from WU mech."""
-    mech = Mech(name=truncate_name(data["name"]))
+    mech = Mech(name=sanitize_name(data["name"]))
 
     for item_id, wu_slot in zip(data["setup"], WU_SLOT_NAMES + WU_MODULE_SLOT_NAMES):
         slot = wu_slot_to_mech_slot(wu_slot)

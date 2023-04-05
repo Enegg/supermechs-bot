@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import typing as t
-from orjson import loads
 from pathlib import Path
 
 from attrs import Factory, define, frozen
+from orjson import loads
 from typing_extensions import Self
 
 from .enums import Tier
@@ -16,6 +16,7 @@ __all__ = (
     "STATS",
     "DEFAULT_VARS",
     "MAX_BUFFS",
+    "StringLimits",
     "TransformRange",
     "GameVars",
     "ValueRange",
@@ -23,6 +24,7 @@ __all__ = (
     "AnyStats",
     "ArenaBuffs",
     "Stat",
+    "sanitize_name",
 )
 
 ValueT = t.TypeVar("ValueT", int, "ValueRange")
@@ -34,6 +36,18 @@ MAX_LVL_FOR_TIER = {tier: level for tier, level in zip(Tier, range(9, 50, 10))} 
 """A mapping of a tier to the maximum level an item can have at this tier.
     Note that in game levels start at 1.
 """
+
+class StringLimits:
+    """Namespace for length limits of various kinds of strings."""
+
+    name: t.Final[int] = 32
+    description: t.Final[int] = 100
+
+
+def sanitize_name(string: str, /, max_length: int = StringLimits.name) -> str:
+    chars = (char if char.isalnum() else "_" for char in string)
+
+    return "".join(chars)[:max_length]
 
 
 class Names(t.NamedTuple):
@@ -57,6 +71,7 @@ class Names(t.NamedTuple):
             return self.short
 
         return self.default if len(self.default) <= len(self.game_name) else self.game_name
+
 
 # TODO: make this locale aware
 class Stat(t.NamedTuple):

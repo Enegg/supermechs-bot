@@ -83,10 +83,6 @@ def random_str(length: int, /, charset: str = ascii_letters) -> str:
     return "".join(random.sample(charset, length))
 
 
-def truncate_name(input: str, length: int = 32) -> str:
-    return input[:length]
-
-
 def standard_deviation(*numbers: float) -> twotuple[float]:
     """Calculate the average and the standard deviation from a sequence of numbers."""
     if not numbers:

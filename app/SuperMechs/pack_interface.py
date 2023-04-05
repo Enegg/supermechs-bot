@@ -4,8 +4,9 @@ import logging
 import typing as t
 
 from attrs import define, field
+from attrs.validators import max_len
 
-from .core import abbreviate_names
+from .core import StringLimits, abbreviate_names, sanitize_name
 from .item import Item
 from .typedefs import ID, AnyItemPack, Name
 
@@ -23,8 +24,11 @@ class PackConfig(t.NamedTuple):
 
 def extract_info(pack: AnyItemPack) -> PackConfig:
     """Extract version, key, name and description of the pack.
-    Raises TypeError on unknown version."""
 
+    Raises
+    ------
+    TypeError on unknown version.
+    """
     if "version" not in pack or pack["version"] == "1":
         config = pack["config"]
         version = "1"
@@ -36,16 +40,30 @@ def extract_info(pack: AnyItemPack) -> PackConfig:
     else:
         raise TypeError(f"Unknown pack version: {pack['version']!r}")
 
-    return PackConfig(version, config["key"], config["name"], config["description"])
+    if (name := pack.get("name")) is None:
+        name = "<no name>"
+
+    else:
+        name = sanitize_name(name)
+
+    if (description := pack.get("description")) is None:
+        description = "<no description>"
+
+    else:
+        description = sanitize_name(description, StringLimits.description)
+
+    return PackConfig(version, config["key"], name, description)
 
 
 @define
 class ItemPack:
     """Object representing an item pack."""
 
-    key: str
-    name: str = "<no name>"
-    description: str = "<no description>"
+    key: str = field(validator=max_len(20))
+    name: str = field(default="<no name>", validator=max_len(StringLimits.name))
+    description: str = field(
+        default="<no description>", validator=max_len(StringLimits.description)
+    )
     # personal packs
     custom: bool = False
 

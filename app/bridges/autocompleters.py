@@ -2,9 +2,9 @@ import typing as t
 
 from disnake import CommandInteraction
 
-from SuperMechs.api import Element, Item, SMClient, Type
+from SuperMechs.api import Element, Item, SMClient, Type, sanitize_name
 from SuperMechs.typedefs import Name
-from SuperMechs.utils import search_for, truncate_name
+from SuperMechs.utils import search_for
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
@@ -64,13 +64,14 @@ async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
     client: SMClient = inter.bot.client  # type: ignore
 
     player = client.state.store_player(inter.author)
-    input = truncate_name(input)
     case_insensitive = input.lower()
 
     matching = [name for name in player.builds if name.lower().startswith(case_insensitive)]
 
     if matching:
         return matching
+
+    input = sanitize_name(input)
 
     if input:
         return {f'Enter to create mech "{input}"...': input}

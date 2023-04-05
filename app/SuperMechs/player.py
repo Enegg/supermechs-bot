@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from attrs import define, field
 
-from .core import ArenaBuffs
+from .core import ArenaBuffs, sanitize_name
 from .mech import Mech
-from .utils import truncate_name
 
 __all__ = ("Player",)
 
@@ -76,7 +75,7 @@ class Player:
                 n += 1
 
         else:
-            name = truncate_name(name)
+            name = sanitize_name(name)
 
         build = Mech(name=name)
         self.builds[name] = self._active_build = build
@@ -94,7 +93,7 @@ class Player:
         if old_name not in self.builds:
             raise ValueError(f"No build named {old_name!r}")
 
-        new_name = truncate_name(new_name)
+        new_name = sanitize_name(new_name)
 
         if new_name in self.builds and not overwrite:
             raise ValueError("Provided name is already in use")

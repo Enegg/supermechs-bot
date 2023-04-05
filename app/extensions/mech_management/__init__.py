@@ -16,7 +16,7 @@ from shared.utils import wrap_bytes
 
 from .mech_manager import MechView
 
-from SuperMechs.api import STATS, Player, Type
+from SuperMechs.api import STATS, Player, Type, sanitize_name
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
 
 if t.TYPE_CHECKING:
@@ -91,7 +91,7 @@ async def build(
         mech = player.get_active_or_create_build()
 
     else:
-        mech = player.get_or_create_build(name)
+        mech = player.get_or_create_build(sanitize_name(name))
 
     renderer = context.client.get_default_renderer()
     view = MechView(mech, context.client.default_pack, renderer, player, timeout=100)
