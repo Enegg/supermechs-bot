@@ -1,4 +1,6 @@
 import logging
+import typing as t
+from itertools import chain
 
 from attrs import define
 from typing_extensions import Self
@@ -7,7 +9,7 @@ from typeshed import dict_items_as
 
 from .core import MAX_LVL_FOR_TIER, AnyStats, TransformRange, ValueRange
 from .enums import Tier
-from .typedefs import ItemDictVer1, ItemDictVer2, ItemDictVer3, RawStats, iter_stat_keys_and_types
+from .typedefs import ItemDictVer1, ItemDictVer2, ItemDictVer3, RawMechStats, RawStats
 from .utils import NaN
 
 __all__ = ("ItemStatsContainer",)
@@ -32,6 +34,22 @@ def as_ranges_gradient(minor: ValueRange, major: ValueRange, fraction: float) ->
         round((major.lower - minor.lower) * fraction),
         round((major.upper - minor.upper) * fraction),
     )
+
+
+def iter_stat_keys_and_types() -> t.Iterator[tuple[str, type]]:
+    iterator = chain(t.get_type_hints(RawMechStats).items(), t.get_type_hints(RawStats).items())
+    import types
+
+    for key, data_type in iterator:
+        match t.get_origin(data_type), t.get_args(data_type):
+            case types.UnionType() | t.Union(), (int(), None):
+                yield key, int
+
+            case list(), _:
+                yield key, list
+
+            case _:
+                raise ValueError("Unexpected type found")
 
 
 def transform_raw_stats(data: RawStats, *, strict: bool = False) -> AnyStats:
