@@ -6,20 +6,17 @@ from disnake import CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 
 from abstract.files import Bytes
-from bridges import item_name_autocomplete
+from bridges import AppContext, item_name_autocomplete
 from config import TEST_GUILDS
 from library_extensions import sanitize_filename
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
 from SuperMechs.api import Element, Item, Type
-from SuperMechs.rendering import PackRenderer
 from SuperMechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
     from bot import ModularBot  # noqa: F401
-
-    from SuperMechs.client import SMClient  # noqa: F401
 
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
@@ -30,12 +27,13 @@ else:
     LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
 
 
-plugin = plugins.Plugin["ModularBot[SMClient]"](name="Item-lookup", logger=__name__)
+plugin = plugins.Plugin["ModularBot"](name="Item-lookup", logger=__name__)
 
 
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
+    context: AppContext,
     item: Item,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
@@ -51,9 +49,9 @@ async def item(
 
     compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
-    plugin.bot.app
-    renderer: PackRenderer = object()  # FIXME
-    image = renderer.get_item_image(item)
+    del type, element  # used for autocomplete only
+    renderer = context.client.get_default_renderer()
+    image = await renderer.get_item_image(item)
     resource = Bytes.from_image(image, sanitize_filename(item.name, ".png"))
     file = File(resource.fp, resource.filename)
 
@@ -104,11 +102,12 @@ async def item_raw(
 
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """
+    del type, element  # used for autocomplete only
     await inter.response.send_message(f"`{item!r}`", ephemeral=True)
 
 
 @plugin.slash_command()
-async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
+async def compare(inter: CommandInteraction, context: AppContext, item1: Name, item2: Name) -> None:
     """Shows an interactive comparison of two items. {{ COMPARE }}
 
     Parameters
@@ -117,7 +116,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    pack = plugin.bot.app.default_pack
+    pack = context.client.default_pack
 
     try:
         item_a = pack.get_item_by_name(item1)

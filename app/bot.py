@@ -68,13 +68,13 @@ class BotParams(t.TypedDict, total=False):
 class ModularBot(commands.InteractionBot):
     started_at: datetime
     command_invocations: Counter[commands.InvokableApplicationCommand]
+    _client: t.Any
 
-    if not t.TYPE_CHECKING:
-
-        def __init__(self, **kwargs: Unpack[BotParams]) -> None:
-            super().__init__(**kwargs)
-            self.started_at = MISSING
-            self.command_invocations = Counter()
+    def __init__(self, *, client: t.Any, **kwargs: Unpack[BotParams]) -> None:
+        super().__init__(**kwargs)
+        self._client = client
+        self.started_at = MISSING
+        self.command_invocations = Counter()
 
     async def on_application_command(self, interaction: CommandInteraction) -> None:
         await super().on_application_command(interaction)

@@ -10,6 +10,7 @@ from disnake.utils import MISSING
 
 from abstract.files import Bytes
 from bridges import mech_name_autocomplete
+from bridges.context import AppContext
 from library_extensions.ui import Select, wait_for_component
 from shared.utils import wrap_bytes
 
@@ -17,14 +18,11 @@ from .mech_manager import MechView
 
 from SuperMechs.api import STATS, Player, Type
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
-from SuperMechs.rendering import PackRenderer
 
 if t.TYPE_CHECKING:
     from bot import ModularBot  # noqa: F401
 
-    from SuperMechs.client import SMClient  # noqa: F401
-
-plugin = plugins.Plugin["ModularBot[SMClient]"](name="Mech-manager", logger=__name__)
+plugin = plugins.Plugin["ModularBot"](name="Mech-manager", logger=__name__)
 
 
 @plugin.slash_command()
@@ -79,7 +77,9 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 @mech.sub_command()
 @commands.max_concurrency(1, commands.BucketType.user)
 async def build(
-    inter: CommandInteraction, player: Player, name: commands.String[1, 32] | None = None
+    inter: CommandInteraction,
+    context: AppContext,
+    name: str | None = commands.Param(None, min_length=1, max_length=32),
 ) -> None:
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
 
@@ -89,6 +89,7 @@ async def build(
         The name of existing build or one to create.
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
+    player = context.player
 
     if name is None:
         mech = player.get_active_or_create_build()
@@ -96,11 +97,8 @@ async def build(
     else:
         mech = player.get_or_create_build(name)
 
-    sm_client = plugin.bot.app
-
-    renderer: PackRenderer = object()  # FIXME
-
-    view = MechView(mech, sm_client.default_pack, renderer, player, timeout=100)
+    renderer = context.client.get_default_renderer()
+    view = MechView(mech, context.client.default_pack, renderer, player, timeout=100)
     file = MISSING
 
     if mech.torso is not None:
@@ -122,7 +120,7 @@ async def build(
 
 
 @mech.sub_command(name="import")
-async def import_(inter: CommandInteraction, player: Player, file: Attachment) -> None:
+async def import_(inter: CommandInteraction, context: AppContext, file: Attachment) -> None:
     """Import mech(s) from a .JSON file. {{ MECH_IMPORT }}
 
     Parameters
@@ -140,7 +138,7 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
 
     # TODO: make load_mechs ask for item packs
     try:
-        mechs, failed = load_mechs(await file.read(), plugin.bot.app.default_pack)
+        mechs, failed = load_mechs(await file.read(), context.client.default_pack)
 
     except (ValueError, TypeError) as err:
         raise commands.UserInputError(f"Parsing the file failed: {err}") from err
@@ -150,7 +148,7 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
 
     else:
         # TODO: warn about overwriting
-        player.builds.update((mech.name, mech) for mech in mechs)
+        context.player.builds.update((mech.name, mech) for mech in mechs)
         message = "Loaded mechs: " + ", ".join(f"`{mech.name}`" for mech in mechs)
 
     if failed:
@@ -162,16 +160,17 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
 
 
 @mech.sub_command()
-async def export(inter: CommandInteraction, player: Player) -> None:
+async def export(inter: CommandInteraction, context: AppContext) -> None:
     """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
 
+    player = context.player
     build_count = len(player.builds)
 
     if build_count == 0:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
-    elif build_count == 1:
-        fp = dump_mechs(player.builds.values(), plugin.bot.app.default_pack.key)
+    if build_count == 1:
+        fp = io.BytesIO(dump_mechs(player.builds.values(), context.client.default_pack.key))
         file = File(fp, "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
@@ -194,7 +193,7 @@ async def export(inter: CommandInteraction, player: Player) -> None:
     selected = frozenset(values)
 
     mechs = (mech for name, mech in player.builds.items() if name in selected)
-    fp = io.BytesIO(dump_mechs(mechs, plugin.bot.app.default_pack.key))
+    fp = io.BytesIO(dump_mechs(mechs, context.client.default_pack.key))
     file = File(fp, "mechs.json")
     await new_inter.response.edit_message(file=file, components=None)
 

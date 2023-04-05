@@ -1,5 +1,5 @@
-from disnake.ext import commands
 from disnake import CommandInteraction
+from disnake.ext import commands
 
 from .autocompleters import item_name_autocomplete
 from .context import AppContext
