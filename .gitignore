@@ -1,5 +1,3 @@
-*.log
-
 # python compiled files
 __pycache__
 *.py[cod]
@@ -10,6 +8,7 @@ __pycache__
 venv
 .venv
 !example.env
+*.log
 
 TODO.md
 dev/
