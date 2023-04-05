@@ -12,3 +12,6 @@ venv
 
 TODO.md
 dev/
+
+# local data files
+tests/data/
