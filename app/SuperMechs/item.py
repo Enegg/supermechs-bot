@@ -89,7 +89,27 @@ class Tags:
 
 @frozen(kw_only=True, order=False)
 class Item:
-    """Base item class with stats at every tier."""
+    """Base item class with stats at every tier.
+
+    Parameters
+    ----------
+    id:
+        The ID of the item, unique within its pack.
+    pack_key:
+        The key of the pack this item comes from.
+    name:
+        The name of the item.
+    type:
+        One of the members of Type enum denoting the function of the item.
+    element:
+        One of the members of Element enum denoting the element of the item.
+    transform_range:
+        The range of transformations this item can have.
+    stats:
+        A container for the stats of the item at any of its transform tiers.
+    tags:
+        A set of tags which alter item's behavior which otherwise have no significance.
+    """
 
     id: ID = field(validator=validators.ge(1))
     pack_key: str
@@ -114,6 +134,19 @@ class Item:
         *,
         strict: bool = False,
     ) -> Self:
+        """Construct an Item from its serialized form.
+
+        Parameters
+        ----------
+        data:
+            Mapping of serialized data.
+        pack_key:
+            The key of a pack this item comes from.
+        custom:
+            Whether the item comes from arbitrary or official source.
+        strict:
+            Whether to fail parsing when encountering missing data.
+        """
         transform_range = TransformRange.from_string(data["transform_range"])
 
         if "stats" not in data:

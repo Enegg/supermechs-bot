@@ -7,6 +7,8 @@ from attrs import Factory, define, frozen
 from orjson import loads
 from typing_extensions import Self
 
+from shared.utils import is_pascal
+
 from .enums import Tier
 from .typedefs import AnyMechStatKey, AnyStatKey, Name, StatDict
 from .utils import MISSING
@@ -465,9 +467,27 @@ class ArenaBuffs:
 MAX_BUFFS = ArenaBuffs.maxed()
 
 
+def abbreviate_name(name: Name, /) -> str | None:
+    """Returns an acronym of the name, or None if one cannot (shouldn't) be made.
+
+    The acronym consists of capital letters in item's name;
+    it will not be made for non-PascalCase single-word names, or names which themselves
+    are an acronym for something (like EMP).
+    """
+    if is_pascal(name):
+        # check if there is at least one more capital letter aside from first one
+        if name[1:].islower():
+            return None
+    # at this point, we still need to filter out names like "EMP"
+    if name.isupper():
+        return None
+    # Overloaded EMP is fine to make an abbreviation for though
+    return "".join(filter(str.isupper, name)).lower()
+
+
 def abbreviate_names(names: t.Iterable[Name], /) -> dict[str, set[Name]]:
     """Returns dict of abbrevs: EFA => Energy Free Armor"""
-    abbrevs: dict[str, set[str]] = {}
+    abbreviations_to_names: dict[str, set[Name]] = {}
 
     for name in names:
         if len(name) < 8:
@@ -478,26 +498,30 @@ def abbreviate_names(names: t.Iterable[Name], /) -> dict[str, set[Name]]:
         if (IsNotPascal := not name.isupper() and name[1:].islower()) and is_single_word:
             continue
 
-        abbrev = {"".join(a for a in name if a.isupper()).lower()}
+        abbreviations = {"".join(a for a in name if a.isupper()).lower()}
 
         if not is_single_word:
-            abbrev.add(name.replace(" ", "").lower())  # Fire Fly => firefly
+            abbreviations.add(name.replace(" ", "").lower())  # Fire Fly => firefly
 
         if not IsNotPascal and is_single_word:  # takes care of PascalCase names
             last = 0
             for i, a in enumerate(name):
                 if a.isupper():
                     if string := name[last:i].lower():
-                        abbrev.add(string)
+                        abbreviations.add(string)
 
                     last = i
 
-            abbrev.add(name[last:].lower())
+            abbreviations.add(name[last:].lower())
 
-        for abb in abbrev:
-            abbrevs.setdefault(abb, {name}).add(name)
+        for abbreviation in abbreviations:
+            if (bucket := abbreviations_to_names.get(abbreviation)) is not None:
+                bucket.add(name)
 
-    return abbrevs
+            else:
+                abbreviations_to_names[abbreviation] = {name}
+
+    return abbreviations_to_names
 
 
 def next_tier(current: Tier, /) -> Tier:

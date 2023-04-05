@@ -11,4 +11,4 @@ __all__ = ("SESSION_CTX",)
 
 
 SESSION_CTX: ContextVar["ClientSession"] = ContextVar("session")
-"""The aiohttp.ClientSession instantiated by the bot."""
+"""The aiohttp.ClientSession available for general use."""

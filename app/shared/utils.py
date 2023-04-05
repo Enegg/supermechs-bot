@@ -6,7 +6,7 @@ from typing_extensions import Self
 
 from typeshed import T
 
-__all__ = ("proxied", "mutable_proxy", "wrap_bytes", "ReprMixin")
+__all__ = ("proxied", "mutable_proxy", "wrap_bytes", "is_pascal", "ReprMixin")
 
 
 class proxied(t.Generic[T]):
@@ -66,3 +66,11 @@ class ReprMixin:
     def __repr__(self) -> str:
         attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
         return f"<{type(self).__name__} {attrs} at 0x{id(self):016X}>"
+
+
+def is_pascal(string: str) -> bool:
+    """Returns True if the string is pascal-cased string, False otherwise.
+
+    A string is pascal-cased if it is a single word that starts with a capitalized letter.
+    """
+    return string[:1].isupper() and " " not in string

@@ -99,6 +99,14 @@ def _is_valid_type(
         raise ValueError(f"Mech slot {attr.name} expects a type {valid_type}, got {value.type}")
 
 
+def assert_not_custom(mech: Mech) -> bool:
+    for item in filter(None, mech.iter_items()):
+        if item.tags.custom:
+            return False
+
+    return True
+
+
 @define(kw_only=True)
 class Mech:
     """Represents a mech build."""

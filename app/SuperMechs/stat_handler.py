@@ -56,10 +56,7 @@ def transform_raw_stats(data: RawStats, *, strict: bool = False) -> AnyStats:
                 )
 
             case unknown:
-                msg = (
-                    f"Expected {data_type.__name__} on key '{key}'"
-                    f", got {type(unknown)}"
-                )
+                msg = f"Expected {data_type.__name__} on key '{key}', got {type(unknown)}"
                 if strict:
                     raise TypeError(msg)
 

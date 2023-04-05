@@ -69,7 +69,7 @@ class ItemPack:
 
     # Item ID to Item
     items: dict[ID, Item] = field(
-        factory=dict, init=False, repr=lambda s: f"{{... {len(s)} items}}"
+        factory=dict, init=False, repr=lambda items: f"{{<{len(items)} items>}}"
     )
     # Item name to item ID
     names_to_ids: dict[Name, ID] = field(factory=dict, init=False, repr=False)
