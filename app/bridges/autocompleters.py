@@ -25,7 +25,7 @@ def _get_item_filters(inter: CommandInteraction) -> list[t.Callable[[Item], bool
 
 async def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteRetT:
     """Autocomplete for items with regard for type & element."""
-    client: SMClient = inter.bot.client  # type: ignore
+    client: SMClient = inter.bot._client  # type: ignore
 
     OPTION_LIMIT = 25
 
@@ -61,7 +61,7 @@ async def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
 
 async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteRetT:
     """Autocomplete for player builds."""
-    client: SMClient = inter.bot.client  # type: ignore
+    client: SMClient = inter.bot._client  # type: ignore
 
     player = client.state.store_player(inter.author)
     case_insensitive = input.lower()
