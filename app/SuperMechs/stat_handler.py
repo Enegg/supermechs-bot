@@ -106,7 +106,7 @@ class TierStats:
         max_level = MAX_LVL_FOR_TIER[self.tier]
 
         if not 0 <= level <= max_level:
-            raise ValueError(f"Level outside range 0-{max_level+1}")
+            raise ValueError(f"Level {level} outside range 1-{max_level+1}")
 
         if level == 0:
             return self.base_stats.copy()

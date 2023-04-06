@@ -51,7 +51,7 @@ async def item(
     """
     del type, element  # used for autocomplete only
     renderer = context.client.get_default_renderer()
-    image = await renderer.get_item_image(item)
+    image = renderer.get_item_sprite(item, item.transform_range.max).image
     resource = Bytes.from_image(image, sanitize_filename(item.name, ".png"))
     file = File(resource.fp, resource.filename)
 

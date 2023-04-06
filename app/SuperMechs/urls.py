@@ -11,3 +11,6 @@ PACK_V3: t.Final[str] = "https://raw.githubusercontent.com/Enegg/Item-packs/mast
 
 WU_SERVER: t.Final[str] = "https://supermechs-workshop-server.thearchives.repl.co"
 """The websocket server URL."""
+
+MISSING_IMAGE: t.Final[str] = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
+"""Placeholder URL for a missing image."""

@@ -3,6 +3,7 @@ import typing as t
 
 from .pack_interface import ItemPack, extract_info
 from .player import Player
+from .rendering import PackRenderer, RendererStore
 from .typedefs import AnyItemPack
 
 LOGGER = logging.getLogger(__name__)
@@ -24,6 +25,12 @@ class AppState:
 
     _players: dict[int, Player]
     _packs: dict[str, ItemPack]
+    _renderer_store: RendererStore
+
+    def __init__(self) -> None:
+        self._players = {}
+        self._packs = {}
+        self._renderer_store = RendererStore()
 
     def create_player(self, user: UserLike) -> Player:
         LOGGER.info(f"New player created: {user.id} ({user.name})")
@@ -64,3 +71,25 @@ class AppState:
 
     def has_item_pack(self, key: str) -> bool:
         return key in self._packs
+
+    def create_pack_renderer(self, data: AnyItemPack) -> PackRenderer:
+        key = extract_info(data).key
+        renderer = PackRenderer(key)
+        # renderer.load(data)
+        return renderer
+
+    def store_pack_renderer(self, data: AnyItemPack) -> PackRenderer:
+        key = extract_info(data).key
+        try:
+            return self._renderer_store[key]
+
+        except KeyError:
+            renderer = self.create_pack_renderer(data)
+            self._renderer_store[key] = renderer
+            return renderer
+
+    def get_pack_renderer(self, key: str) -> PackRenderer:
+        return self._renderer_store[key]
+
+    def has_pack_renderer(self, key: str) -> bool:
+        return key in self._renderer_store._renderers

@@ -18,7 +18,7 @@ from .item import Item, ItemProto, Tags
 from .stat_handler import ItemStatsContainer
 from .typedefs import ID, Name
 
-__all__ = ("InvItem",)
+__all__ = ("InvItem", "InvItemProto")
 
 
 def _load_power_data_files() -> t.Iterator[dict[Tier, tuple[int, ...]]]:
@@ -55,8 +55,22 @@ def get_power_bank(item: ItemProto) -> dict[Tier, tuple[int, ...]]:
     return DEFAULT_POWERS
 
 
-def get_power_levels_of_item(item: InvItem) -> tuple[int, ...]:
+def get_power_levels_of_item(item: InvItemProto) -> tuple[int, ...]:
     return get_power_bank(item).get(item.tier, (0,))
+
+
+class InvItemProto(ItemProto, t.Protocol):
+    @property
+    def tier(self) -> Tier:
+        ...
+
+    @cached_slot_property
+    def level(self) -> int:
+        ...
+
+    @cached_slot_property
+    def current_stats(self) -> AnyStats:
+        ...
 
 
 @define(kw_only=True)
@@ -123,7 +137,7 @@ class InvItem:
         """The level of this item."""
         del self.current_stats
         levels = get_power_levels_of_item(self)
-        return bisect_left(levels, self.power)
+        return bisect_left(levels, self.power) + 1
 
     def __str__(self) -> str:
         level = "max" if self.maxed else self.level

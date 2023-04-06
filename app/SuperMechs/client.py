@@ -6,6 +6,7 @@ from abstract.files import URL
 
 from . import urls
 from .pack_interface import ItemPack
+from .rendering import PackRenderer
 from .state import AppState
 from .utils import MISSING
 
@@ -18,6 +19,7 @@ class SMClient:
     """Represents the SuperMechs app."""
 
     default_pack: ItemPack
+    default_renderer: PackRenderer
 
     def __init__(self) -> None:
         self.state = AppState()
@@ -27,11 +29,9 @@ class SMClient:
         """Downloads & parses the default item pack."""
         resource = URL(urls.PACK_V2)
         data = await resource.json()
-        try:
-            pack = self.state.store_item_pack(data, False)
+        self.default_pack = self.state.store_item_pack(data, False)
+        self.default_renderer = self.state.store_pack_renderer(data)
+        await self.default_renderer.load(data)
 
-        except Exception as err:
-            LOGGER.warning("Failed to load default pack: ", exc_info=err)
-
-        else:
-            self.default_pack = pack
+    def get_default_renderer(self) -> PackRenderer:
+        return self.state.get_pack_renderer(self.default_pack.key)
