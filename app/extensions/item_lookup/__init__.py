@@ -103,7 +103,7 @@ async def item_raw(
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """
     del type, element  # used for autocomplete only
-    await inter.response.send_message(f"`{item!r}`", ephemeral=True)
+    await inter.response.send_message(f"`{item!r:.1998}`", ephemeral=True)
 
 
 @plugin.slash_command()
