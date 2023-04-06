@@ -17,8 +17,8 @@ __all__ = ("setup_channel_logger",)
 def exception_to_message(content: str, exception: BaseException) -> tuple[str, File]:
     """Formats exception data and returns message content & file to send a message with.
 
-    Formatted traceback is appended to text if the resulting string stays under 2000 character
-    limit, otherwise creates a File and returns text unaffected.
+    Formatted traceback is wrapped in a codeblock and appended to content if the resulting string
+    stays under 2000 character limit, otherwise creates a File and returns content unaffected.
     """
     traceback_text = "".join(traceback.format_exception(exception))
 
@@ -47,7 +47,7 @@ async def on_slash_command_error(
         info = localized_text("This is a developer-only command.", "CMD_DEV", i18n, inter.locale)
 
     elif isinstance(error, (commands.UserInputError, commands.CheckFailure)):
-        info = str(error)
+        info = str(error)  # TODO: this isn't localized
 
     elif isinstance(error, commands.MaxConcurrencyReached):
         if error.number == 1 and error.per is commands.BucketType.user:
