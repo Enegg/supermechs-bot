@@ -37,19 +37,24 @@ def as_ranges_gradient(minor: ValueRange, major: ValueRange, fraction: float) ->
 
 
 def iter_stat_keys_and_types() -> t.Iterator[tuple[str, type]]:
-    iterator = chain(t.get_type_hints(RawMechStats).items(), t.get_type_hints(RawStats).items())
     import types
 
-    for key, data_type in iterator:
-        match t.get_origin(data_type), t.get_args(data_type):
-            case types.UnionType() | t.Union(), (int(), None):
-                yield key, int
+    for key, data_type in chain(
+        t.get_type_hints(RawMechStats).items(), t.get_type_hints(RawStats).items()
+    ):
+        origin, args = t.get_origin(data_type), t.get_args(data_type)
 
-            case list(), _:
-                yield key, list
+        if origin is int:
+            yield key, int
 
-            case _:
-                raise ValueError("Unexpected type found")
+        elif origin in (types.UnionType, t.Union) and set(args).issubset((int, type(None))):
+            yield key, int
+
+        elif origin is list:
+            yield key, list
+
+        else:
+            raise ValueError(f"Unexpected type for key {key!r} found: {data_type!r} ({origin})")
 
 
 def transform_raw_stats(data: RawStats, *, strict: bool = False) -> AnyStats:
