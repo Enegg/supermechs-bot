@@ -2,7 +2,13 @@ import typing as t
 
 from typing_extensions import NotRequired
 
-from .game_types import AnyStats, LiteralElement, LiteralType, RawAttachment, RawAttachments
+from .game_types import (
+    LiteralElement,
+    LiteralType,
+    RawAttachment,
+    RawAttachments,
+    RawStats,
+)
 
 # fmt: off
 __all__ = (
@@ -16,17 +22,17 @@ __all__ = (
 
 
 class TiersMixin(t.TypedDict, total=False):
-    common: AnyStats
-    max_common: AnyStats
-    rare: AnyStats
-    max_rare: AnyStats
-    epic: AnyStats
-    max_epic: AnyStats
-    legendary: AnyStats
-    max_legendary: AnyStats
-    mythical: AnyStats
-    max_mythical: AnyStats
-    divine: AnyStats
+    common: RawStats
+    max_common: RawStats
+    rare: RawStats
+    max_rare: RawStats
+    epic: RawStats
+    max_epic: RawStats
+    legendary: RawStats
+    max_legendary: RawStats
+    mythical: RawStats
+    max_mythical: RawStats
+    divine: RawStats
 
 
 class SpritePosition(t.TypedDict):
@@ -61,7 +67,7 @@ class ItemDictBase(t.TypedDict):
 
 
 class ItemDictVer1(ItemDictBase):
-    stats: AnyStats
+    stats: RawStats
     image: str
 
 
@@ -86,7 +92,7 @@ class ItemPackVer1(t.TypedDict):
 
 
 class ItemDictVer2(ItemDictBase):
-    stats: AnyStats
+    stats: RawStats
 
 
 class ItemPackVer2(SpritesSheetMixin):
