@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from disnake import ButtonStyle, Embed, File, MessageInteraction, SelectOption
+from disnake.app_commands import APIApplicationCommand
 from disnake.utils import MISSING
 
 from abstract.files import Bytes
@@ -26,10 +27,6 @@ from SuperMechs.converters import slot_to_icon_data, slot_to_type
 from SuperMechs.ext.wu_compat import mech_to_id_str
 from SuperMechs.rendering import PackRenderer
 
-# we need to hardcode it as bot.get_global_command_named fails in testing
-# due to the command being registered in test guilds only
-BUFFS_COMMAND_ID = 919329829227229196
-
 
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
@@ -47,6 +44,7 @@ class MechView(InteractionCheck, PaginatorView):
         pack: ItemPack,
         renderer: PackRenderer,
         player: Player,
+        buffs_command: APIApplicationCommand,
         *,
         timeout: float = 180.0,
     ) -> None:
@@ -55,6 +53,7 @@ class MechView(InteractionCheck, PaginatorView):
         self.mech = mech
         self.player = player
         self.renderer = renderer
+        self.buffs_command = buffs_command
         self.user_id = player.id
 
         self.active: TrinaryButton[str] | None = None
@@ -125,9 +124,10 @@ class MechView(InteractionCheck, PaginatorView):
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
         if self.player.arena_buffs.is_at_zero():
+            command_mention = "</{0.name}:{0.id}>".format(self.buffs_command)
             return await inter.response.send_message(
                 "This won't show any effect because all your buffs are at level zero.\n"
-                f"You can change that using </buffs:{BUFFS_COMMAND_ID}> command.",
+                f"You can change that using {command_mention} command.",
                 ephemeral=True,
             )
 

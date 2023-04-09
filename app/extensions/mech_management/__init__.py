@@ -4,7 +4,7 @@ import asyncio
 import io
 import typing as t
 
-from disnake import Attachment, CommandInteraction, Embed, File, MessageInteraction
+from disnake import Attachment, CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
@@ -94,7 +94,16 @@ async def build(
         mech = player.get_or_create_build(sanitize_name(name))
 
     renderer = context.client.get_default_renderer()
-    view = MechView(mech, context.client.default_pack, renderer, player, timeout=100)
+    buffs_command = plugin.bot.get_global_command_named("buffs")
+    assert buffs_command is not None
+    view = MechView(
+        mech=mech,
+        pack=context.client.default_pack,
+        renderer=renderer,
+        player=player,
+        buffs_command=buffs_command,
+        timeout=100,
+    )
     file = MISSING
 
     if mech.torso is not None:
@@ -105,12 +114,7 @@ async def build(
         file = File(resource.fp, resource.filename)
         view.embed.set_image(resource.url)
 
-    if isinstance(inter, MessageInteraction):
-        await inter.response.edit_message(embed=view.embed, file=file, view=view)
-
-    else:
-        await inter.response.send_message(embed=view.embed, file=file, view=view, ephemeral=True)
-
+    await inter.response.send_message(embed=view.embed, file=file, view=view, ephemeral=True)
     await view.wait()
     await inter.edit_original_response(view=None)
 
