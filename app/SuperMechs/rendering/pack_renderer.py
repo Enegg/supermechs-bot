@@ -86,7 +86,7 @@ class Offsets:
         )
 
 
-def calculate_attachment(position: twotuple[int], offset: twotuple[int]) -> twotuple[int]:
+def calculate_position(position: twotuple[int], offset: twotuple[int]) -> twotuple[int]:
     corner_x, corner_y = position
     offset_x, offset_y = offset
     return (offset_x - corner_x, offset_y - corner_y)
@@ -109,11 +109,11 @@ class Canvas(t.Generic[T]):
         image: Image,
         layer: T,
         position: twotuple[int],
-        offset: twotuple[int] | None = None,
+        offset: twotuple[int] = (0, 0),
     ) -> None:
         """Adds an image as a layer on the canvas."""
-        if offset is not None:
-            position = calculate_attachment(position, offset)
+        # if offset is not None:
+        position = calculate_position(position, offset)
 
         self.offsets.adjust(image, *position)
         self._put_image(image, layer, *position)
