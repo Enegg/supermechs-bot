@@ -35,24 +35,35 @@ def _load_power_data_files() -> t.Iterator[dict[Tier, tuple[int, ...]]]:
             yield {rarity: tuple(map(int, row)) for rarity, row in zip(rarities, rows)}
 
 
-DEFAULT_POWERS, LM_ITEM_POWERS, REDUCED_POWERS = _load_power_data_files()
+_default_powers: dict[Tier, tuple[int, ...]]
+_premium_powers: dict[Tier, tuple[int, ...]]
+_reduced_powers: dict[Tier, tuple[int, ...]]
+_loaded: bool = False
+
+
+# this could very well be by IDs, but names are easier to read
 REDUCED_COST_ITEMS = frozenset(("Archimonde", "Armor Annihilator", "BigDaddy", "Chaos Bringer"))
 
 
 def get_power_bank(item: ItemProto) -> dict[Tier, tuple[int, ...]]:
     """Returns the power per level bank for the item."""
+    global _default_powers, _premium_powers, _reduced_powers, _loaded
+
+    if not _loaded:
+        _default_powers, _premium_powers, _reduced_powers = _load_power_data_files()
+        _loaded = True
 
     if item.name in REDUCED_COST_ITEMS:
-        return REDUCED_POWERS
+        return _reduced_powers
 
     if item.transform_range.min >= Tier.LEGENDARY:
-        return LM_ITEM_POWERS
+        return _premium_powers
 
     if item.transform_range.max <= Tier.EPIC:
         # TODO: this has special case too, but currently I have no data on that
-        return DEFAULT_POWERS
+        return _default_powers
 
-    return DEFAULT_POWERS
+    return _default_powers
 
 
 def get_power_levels_of_item(item: InvItemProto) -> tuple[int, ...]:
