@@ -5,6 +5,7 @@ from disnake.app_commands import APIApplicationCommand
 from disnake.utils import MISSING
 
 from abstract.files import Bytes
+from library_extensions import INVISIBLE_CHARACTER
 from library_extensions.ui import (
     EMPTY_OPTION,
     ActionRow,
@@ -24,7 +25,6 @@ from library_extensions.ui import (
 
 from SuperMechs.api import ArenaBuffs, Element, InvItem, ItemPack, Mech, Player, Type
 from SuperMechs.converters import slot_to_icon_data, slot_to_type
-from SuperMechs.ext.wu_compat import mech_to_id_str
 from SuperMechs.rendering import PackRenderer
 
 
@@ -33,6 +33,37 @@ def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
         title=f'Mech build "{mech.name}"', color=(mech.dominant_element or Element.UNKNOWN).color
     ).add_field("Stats:", mech.print_stats(included_buffs))
     return embed
+
+
+def get_mech_config(mech: Mech) -> str:
+    """Returns a str of item IDs that are visible on image."""
+    return "_".join(
+        "0" if item is None else str(item.id) for item in mech.iter_items(body=True, weapons=True)
+    )
+
+
+def get_sorted_options(
+    options: list[SelectOption], primary_element: Element | None, /
+) -> list[SelectOption]:
+    """Returns a list of `SelectOption`s sorted by element.
+
+    Note: this does not respect the 25 option limit.
+    """
+    new_options = [EMPTY_OPTION]
+
+    if len(options) <= 24:
+        return new_options + options
+
+    if primary_element is not None:
+        element_to_index = {element.emoji: index for index, element in enumerate(Element, 1)}
+        element_to_index[primary_element.emoji] = 0
+
+    else:
+        element_to_index = {element.emoji: index for index, element in enumerate(Element)}
+
+    new_options += sorted(options, key=lambda o: (element_to_index[str(o.emoji)], o.label))
+
+    return new_options
 
 
 class MechView(InteractionCheck, PaginatorView):
@@ -55,6 +86,7 @@ class MechView(InteractionCheck, PaginatorView):
         self.renderer = renderer
         self.buffs_command = buffs_command
         self.user_id = player.id
+        self.mech_config = get_mech_config(mech)
 
         self.active: TrinaryButton[str] | None = None
         self.embed = embed_mech(mech)
@@ -79,7 +111,8 @@ class MechView(InteractionCheck, PaginatorView):
             )
 
         self.rows[2].extend_page_items(
-            Button(label="⠀", custom_id=f"button:no_op{i}", disabled=True, row=2) for i in range(4)
+            Button(label=INVISIBLE_CHARACTER, custom_id=f"button:no_op{i}", disabled=True, row=2)
+            for i in range(4)
         )
 
         # property updates the rows
@@ -103,7 +136,7 @@ class MechView(InteractionCheck, PaginatorView):
             self.set_state_idle()
 
         elif self.active is not None:
-            self.set_state_switched(button)
+            self.switch_active_button(button)
 
         else:
             self.set_state_pressed(button)
@@ -190,7 +223,7 @@ class MechView(InteractionCheck, PaginatorView):
 
         self.mech[self.active.custom_id] = item
 
-        self.update_color(item is None)
+        self.update_embed_color(item is None)
         self.set_state_idle()
 
         self.embed.set_field_at(
@@ -199,39 +232,22 @@ class MechView(InteractionCheck, PaginatorView):
             value=self.mech.print_stats(self.player.arena_buffs if self.buffs_button.on else None),
         )
 
-        if "TODO: condition_for_cached_image":
+        if (new_config := get_mech_config(self.mech)) == self.mech_config:
             return await inter.response.edit_message(embed=self.embed, view=self)
 
+        self.mech_config = new_config
         file = MISSING
         url = None
 
         if self.mech.torso is not None:
             image = self.renderer.get_mech_image(self.mech)
-            resource = Bytes.from_image(image, mech_to_id_str(self.mech) + ".png")
+            resource = Bytes.from_image(image, new_config + ".png")
             file = File(resource.fp, resource.filename)
             url = resource.url
 
         await inter.response.edit_message(
             embed=self.embed.set_image(url), file=file, view=self, attachments=[]
         )
-
-    def sorted_options(self, options: list[SelectOption]) -> list[SelectOption]:
-        """Returns a list of `SelectOption`s sorted by element."""
-        new_options = [EMPTY_OPTION]
-
-        if len(options) <= 24:
-            return new_options + options
-
-        if (dominant := self.mech.dominant_element) is not None:
-            element_to_index = {element.emoji: index for index, element in enumerate(Element, 1)}
-            element_to_index[dominant.emoji] = 0
-
-        else:
-            element_to_index = {element.emoji: index for index, element in enumerate(Element)}
-
-        new_options += sorted(options, key=lambda o: (element_to_index[str(o.emoji)], o.label))
-
-        return new_options
 
     def set_state_idle(self) -> None:
         if self.active is not None:
@@ -245,7 +261,7 @@ class MechView(InteractionCheck, PaginatorView):
         self.item_select.disabled = False
         self.update_dropdown(button)
 
-    def set_state_switched(self, button: TrinaryButton[str], /) -> None:
+    def switch_active_button(self, button: TrinaryButton[str], /) -> None:
         assert self.active is not None
         self.active.toggle()
         button.on = True
@@ -254,10 +270,10 @@ class MechView(InteractionCheck, PaginatorView):
 
     def update_dropdown(self, button: TrinaryButton[str], /) -> None:
         options = self.item_groups[slot_to_type(button.custom_id)]
-        self.item_select.all_options = self.sorted_options(options)
+        self.item_select.all_options = get_sorted_options(options, self.mech.dominant_element)
         self.item_select.placeholder = "empty" if button.item is None else button.item
 
-    def update_color(self, item_not_set: bool) -> None:
+    def update_embed_color(self, item_not_set: bool) -> None:
         assert self.active is not None
         if (dominant := self.mech.dominant_element) is not None:
             self.embed.color = dominant.color
