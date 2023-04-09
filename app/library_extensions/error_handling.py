@@ -28,7 +28,7 @@ def exception_to_message(content: str, exception: BaseException) -> tuple[str, F
 
     else:
         file = MISSING
-        content = f"{content}\n{Markdown.codeblock(traceback_text), 'py'}"
+        content = f"{content}\n{Markdown.codeblock(traceback_text, 'py')}"
 
     return content, file
 
