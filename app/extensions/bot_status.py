@@ -57,7 +57,7 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
         f"Started: {format_dt(bot.started_at, 'R')}",
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bits}{exponent}",
-        f"Lines of code: {get_sloc('app')}",
+        f"Lines of code: {get_sloc()}",
     ]
 
     if app_info.bot_public:
