@@ -1,7 +1,6 @@
-from __future__ import annotations
+import typing as t
 
 from disnake import ButtonStyle, Embed, File, MessageInteraction, SelectOption
-from disnake.app_commands import APIApplicationCommand
 from disnake.utils import MISSING
 
 from abstract.files import Bytes
@@ -26,6 +25,9 @@ from library_extensions.ui import (
 from SuperMechs.api import ArenaBuffs, Element, InvItem, ItemPack, Mech, Player, Type
 from SuperMechs.converters import slot_to_icon_data, slot_to_type
 from SuperMechs.rendering import PackRenderer
+
+if t.TYPE_CHECKING:
+    from disnake.app_commands import APIApplicationCommand
 
 
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
@@ -75,7 +77,7 @@ class MechView(InteractionCheck, PaginatorView):
         pack: ItemPack,
         renderer: PackRenderer,
         player: Player,
-        buffs_command: APIApplicationCommand,
+        buffs_command: "APIApplicationCommand",
         *,
         timeout: float = 180.0,
     ) -> None:
