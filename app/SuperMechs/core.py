@@ -47,7 +47,7 @@ class StringLimits:
 
 
 def sanitize_name(string: str, /, max_length: int = StringLimits.name) -> str:
-    chars = (char if char.isalnum() else "_" for char in string)
+    chars = (char if char.isascii() else "_" for char in string)
 
     return "".join(chars)[:max_length]
 
