@@ -87,8 +87,8 @@ class ModularBot(commands.InteractionBot):
             limit = self.session_start_limit
             assert limit is not None
             LOGGER.info(
-                f"Session start limit: {limit.total=}, {limit.remaining=}"
-                f", {limit.reset_time=:%d.%m.%Y %H:%M:%S}"
+                f"Session start limit: total={limit.total}, remaining={limit.remaining}"
+                f", reset={limit.reset_time:%d.%m.%Y %H:%M:%S}"
             )
 
     async def login(self, token: str) -> None:
