@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 from bot import ModularBot
 from bridges import register_injections
-from config import LOGS_CHANNEL, TEST_GUILDS
+from config import HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import setup_channel_logger
 from shared import SESSION_CTX
 
@@ -62,6 +62,8 @@ async def main() -> None:
         allowed_mentions=AllowedMentions.none(),
         strict_localization=True,
     )
+    if __debug__:
+        bot.get_global_command_named = partial(bot.get_guild_command_named, HOME_GUILD_ID)
 
     bot.i18n.load("locale/")
     register_injections(client)
