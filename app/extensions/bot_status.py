@@ -9,6 +9,7 @@ from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
 from bridges import AppContext
+from config import TEST_GUILDS
 from library_extensions import Markdown
 from shared.metrics import get_ram_utilization, get_sloc
 
@@ -73,6 +74,21 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
     )
 
     await inter.response.send_message(embed=embed, ephemeral=True)
+
+
+@plugin.slash_command(guild_ids=TEST_GUILDS)
+async def activity(inter: CommandInteraction) -> None:
+    """Displays command invocation activity."""
+    desc = (
+        "\n".join(
+            f"{command.qualified_name}: {invocations}"
+            for command, invocations in plugin.bot.command_invocations.items()
+        )
+        or "No invocations since bot started"
+    )
+
+    embed = Embed(title="Command activity", description=desc, timestamp=plugin.bot.started_at)
+    await inter.response.send_message(embed=embed)
 
 
 setup, teardown = plugin.create_extension_handlers()
