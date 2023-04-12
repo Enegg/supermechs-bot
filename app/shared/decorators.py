@@ -1,15 +1,38 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import typing as t
 from collections import OrderedDict
 
 from attrs import define, field
-from typing_extensions import Self
+from typing_extensions import Self, TypeVar
 
-from typeshed import VT, P, T
+from typeshed import KT, VT, Coro, P, T
 
 __all__ = ("cached_slot_property", "lru_cache")
+
+
+MappingT = TypeVar("MappingT", bound=t.MutableMapping[t.Hashable, t.Any])
+
+
+async def async_on_hit(value: VT) -> VT:
+    return value
+
+
+async def async_on_miss(value: Coro[VT], key: KT, callback: t.Callable[[KT, VT], None]) -> VT:
+    result = await value
+    callback(key, result)
+    return result
+
+
+def sync_on_hit(value: VT) -> VT:
+    return value
+
+
+def sync_on_miss(value: VT, key: KT, callback: t.Callable[[KT, VT], None]) -> VT:
+    callback(key, value)
+    return value
 
 
 class cached_slot_property(t.Generic[T]):
@@ -58,15 +81,36 @@ class cached_slot_property(t.Generic[T]):
             pass
 
 
+class _OrderedSizedDict(OrderedDict[KT, VT]):
+    maxsize: int
+
+    def __init__(self, maxsize: int = 128) -> None:
+        super().__init__()
+        self.maxsize = maxsize
+
+    def __getitem__(self, key: KT, /) -> VT:
+        self.move_to_end(key)
+        return super().__getitem__(key)
+
+    def __setitem__(self, __key: KT, __value: VT) -> None:
+        # precondition: key not in self
+        if len(self) >= self.maxsize:
+            self.popitem(False)
+        return super().__setitem__(__key, __value)
+
+
+# P is the ParamSpec of the function, VT the type of stored value, and T is the return type
 @define
-class _Cache(t.Generic[P, VT]):
+class _Cache(t.Generic[P, VT, T]):
     func: t.Callable[P, VT]
     key_func: t.Callable[P, t.Hashable]
+    on_hit: t.Callable[[VT], T] = field(repr=False)
+    on_miss: t.Callable[[VT, t.Hashable, t.Callable[[t.Hashable, VT], None]], T] = field(repr=False)
+    _cache: t.MutableMapping[t.Hashable, VT] = field()
     hits: int = field(default=0, init=False)
     misses: int = field(default=0, init=False)
-    _cache: t.MutableMapping[t.Hashable, VT] = field(factory=dict, init=False)
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
         key = self.key_func(*args, **kwargs)
 
         try:
@@ -74,52 +118,13 @@ class _Cache(t.Generic[P, VT]):
 
         except KeyError:
             self.misses += 1
-            self._cache[key] = value = self.func(*args, **kwargs)
+            ret = self.on_miss(self.func(*args, **kwargs), key, self._cache.__setitem__)
 
         else:
             self.hits += 1
+            ret = self.on_hit(value)
 
-        return value
-
-    @property
-    def current_size(self) -> int:
-        return len(self._cache)
-
-    def clear(self) -> None:
-        """Clear the cache."""
-        self.hits = self.misses = 0
-        self._cache.clear()
-
-
-@define
-class _SizedCache(t.Generic[P, VT]):
-    func: t.Callable[P, VT]
-    key_func: t.Callable[P, t.Hashable]
-    max_size: int = 128
-    hits: int = field(default=0, init=False)
-    misses: int = field(default=0, init=False)
-    _cache: OrderedDict[t.Hashable, VT] = field(factory=OrderedDict, init=False)
-
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        key = self.key_func(*args, **kwargs)
-
-        try:
-            value = self._cache[key]
-
-        except KeyError:
-            self.misses += 1
-            value = self.func(*args, **kwargs)
-
-            if len(self._cache) >= self.max_size:
-                self._cache.popitem(False)
-
-            self._cache[key] = value
-
-        else:
-            self.hits += 1
-            self._cache.move_to_end(key)
-
-        return value
+        return ret
 
     @property
     def current_size(self) -> int:
@@ -149,21 +154,21 @@ def default_key(*args: t.Hashable, **kwargs: t.Hashable) -> tuple[t.Hashable, ..
 # the decorated function's signature (in the default hash_key case)
 @t.overload
 def lru_cache(
-    *, maxsize: int = 128, hash_key: t.Callable[..., t.Hashable] = ...
-) -> t.Callable[[t.Callable[P, T]], _SizedCache[P, T]]:
+    *, maxsize: int | None = 128, hash_key: t.Callable[..., t.Hashable] = ...
+) -> t.Callable[[t.Callable[P, Coro[T]]], _Cache[P, T, Coro[T]]]:
     ...
 
 
 @t.overload
 def lru_cache(
-    *, maxsize: None, hash_key: t.Callable[..., t.Hashable] = ...
-) -> t.Callable[[t.Callable[P, T]], _Cache[P, T]]:
+    *, maxsize: int | None = 128, hash_key: t.Callable[..., t.Hashable] = ...
+) -> t.Callable[[t.Callable[P, T]], _Cache[P, T, T]]:
     ...
 
 
 def lru_cache(
     *, maxsize: int | None = 128, hash_key: t.Callable[P, t.Hashable] = default_key
-) -> t.Callable[[t.Callable[P, T]], _Cache[P, T] | _SizedCache[P, T]]:
+) -> t.Callable[[t.Callable[P, T]], _Cache[P, T, T]]:
     """Least-recently-used cache decorator.
 
     Parameters
@@ -177,11 +182,18 @@ def lru_cache(
         The default behavior creates a tuple of positional and keyword arguments.
     """
 
-    def decorator(func: t.Callable[P, T]) -> _Cache[P, T] | _SizedCache[P, T]:
+    def decorator(func: t.Callable[P, T]) -> _Cache[P, T, T]:
         if maxsize is None:
-            return _Cache(func, hash_key)
+            cache_mapping = dict[t.Hashable, T]()
 
-        return _SizedCache(func, hash_key, maxsize)
+        else:
+            cache_mapping = _OrderedSizedDict(maxsize)
+
+        if asyncio.iscoroutinefunction(func):
+            return _Cache(func, hash_key, async_on_hit, async_on_miss, cache_mapping)
+
+        else:
+            return _Cache(func, hash_key, sync_on_hit, sync_on_miss, cache_mapping)
 
     return decorator
 
@@ -189,34 +201,46 @@ def lru_cache(
 @t.overload
 @contextlib.contextmanager
 def temporal_cache(
-    func: t.Callable[P, T], *, maxsize: int = 128, hash_key: t.Callable[..., t.Hashable] = ...
-) -> t.Iterator[_SizedCache[P, T]]:
+    func: t.Callable[P, Coro[T]],
+    *,
+    maxsize: int | None = 128,
+    hash_key: t.Callable[..., t.Hashable] = ...,
+) -> t.Iterator[_Cache[P, T, Coro[T]]]:
     ...
 
 
 @t.overload
 @contextlib.contextmanager
 def temporal_cache(
-    func: t.Callable[P, T], *, maxsize: None, hash_key: t.Callable[..., t.Hashable] = ...
-) -> t.Iterator[_Cache[P, T]]:
+    func: t.Callable[P, T],
+    *,
+    maxsize: int | None = 128,
+    hash_key: t.Callable[..., t.Hashable] = ...,
+) -> t.Iterator[_Cache[P, T, T]]:
     ...
 
 
 @contextlib.contextmanager
 def temporal_cache(
-    func: t.Callable[P, T],
+    func: t.Callable[P, T] | t.Callable[P, Coro[T]],
     *,
     maxsize: int | None = 128,
     hash_key: t.Callable[P, t.Hashable] = default_key,
-) -> t.Iterator[_Cache[P, T] | _SizedCache[P, T]]:
+) -> t.Iterator[_Cache[P, T, Coro[T]]] | t.Iterator[_Cache[P, T, T]]:
     """Context manager which caches function calls by keys computed from the arguments.
     The cache is cleared when leaving the manager's scope.
     """
     if maxsize is None:
-        cache = _Cache(func, hash_key)
+        cache_mapping = dict[t.Hashable, t.Any]()
 
     else:
-        cache = _SizedCache(func, hash_key, maxsize)
+        cache_mapping = _OrderedSizedDict(maxsize)
+
+    if asyncio.iscoroutinefunction(func):
+        cache = _Cache(func, hash_key, async_on_hit, async_on_miss, cache_mapping)
+
+    else:
+        cache = _Cache(func, hash_key, sync_on_hit, sync_on_miss, cache_mapping)
 
     try:
         yield cache
