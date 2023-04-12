@@ -1,6 +1,6 @@
-import math
 import random
 import re
+import statistics
 import typing as t
 from collections import Counter
 from string import ascii_letters
@@ -83,16 +83,10 @@ def random_str(length: int, /, charset: str = ascii_letters) -> str:
     return "".join(random.sample(charset, length))
 
 
-def standard_deviation(*numbers: float) -> twotuple[float]:
-    """Calculate the average and the standard deviation from a sequence of numbers."""
-    if not numbers:
-        raise ValueError("No arguments passed")
-
-    avg = sum(numbers) / len(numbers)
-    # √(∑(x-avg)² ÷ n)
-    deviation = math.sqrt(sum((x - avg) ** 2 for x in numbers) / len(numbers))
-
-    return avg, deviation
+def mean_and_deviation(*numbers: float) -> twotuple[float]:
+    """Returns the arithmetric mean and the standard deviation of a sequence of numbers."""
+    mean = statistics.fmean(numbers)
+    return mean, statistics.pstdev(numbers, mean)
 
 
 class NanMeta(type):
