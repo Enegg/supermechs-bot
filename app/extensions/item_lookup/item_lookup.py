@@ -6,6 +6,7 @@ from itertools import zip_longest
 
 from disnake import ButtonStyle, Embed, MessageInteraction
 
+from library_extensions import INVISIBLE_CHARACTER
 from library_extensions.ui import (
     ActionRow,
     Button,
@@ -19,7 +20,7 @@ from library_extensions.ui import (
 from typeshed import dict_items_as, twotuple
 
 from SuperMechs.api import MAX_BUFFS, STATS, AnyStats, Item, Stat, ValueRange
-from SuperMechs.utils import standard_deviation
+from SuperMechs.utils import mean_and_deviation
 
 
 class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
@@ -182,7 +183,7 @@ def diffs_formatter(diffs: tuple[int, ...], prec: int = 1) -> str:
 
 
 def avg_value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
-    avg, dev = standard_deviation(*values)
+    avg, dev = mean_and_deviation(*values)
     return "{0:.{1}f} ~{2:.{3}f}%".format(
         *truncate_float(avg, 1), *truncate_float(dev / avg * 100, prec)
     )
@@ -261,7 +262,7 @@ def compact_fields(item: Item, buffs_enabled: bool, avg: bool) -> t.Iterator[tup
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
     transform_range = item.transform_range.as_tier_str()
 
-    for name, field in zip_longest((transform_range,), field_text, fillvalue="⠀"):
+    for name, field in zip_longest((transform_range,), field_text, fillvalue=INVISIBLE_CHARACTER):
         yield (name, field, True)
 
 
@@ -343,8 +344,10 @@ def comparator(
                 continue
 
             case ([int() as a1, int() as a2], [int() as b1, int() as b2]):
-                x_avg, x_inacc = standard_deviation(a1, a2)
-                y_avg, y_inacc = standard_deviation(b1, b2)
+                x_avg, x_inacc = mean_and_deviation(a1, a2)
+                y_avg, y_inacc = mean_and_deviation(b1, b2)
+                x_inacc /= x_avg
+                y_inacc /= y_avg
 
                 yield stat, cmp_num(x_avg, y_avg, False) + cmp_num(x_inacc, y_inacc, True)
                 continue
@@ -359,11 +362,13 @@ def comparator(
             yield stat, ((None, 0), (stat_b, 0))
 
         elif stat_a is not None:
-            avg, inacc = standard_deviation(*stat_a)
+            avg, inacc = mean_and_deviation(*stat_a)
+            inacc /= avg
             yield stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
 
         elif stat_b is not None:
-            avg, inacc = standard_deviation(*stat_b)
+            avg, inacc = mean_and_deviation(*stat_b)
+            inacc /= avg
             yield stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
@@ -414,10 +419,10 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
                         string = ""
 
                     elif s_diff == 0:
-                        string = f"**{spread / 100:.1g}%**"
+                        string = f"**{spread * 100:.1f}%**"
 
                     else:
-                        string = f"**{spread / 100:.1g}%** {s_diff / 100:+.1g}%"
+                        string = f"**{spread * 100:.1f}%** {s_diff * 100:+.1f}%"
 
                     field.append(string)
 
