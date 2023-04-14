@@ -1,12 +1,16 @@
 """
 Things that have pending PRs and/or will eventually be found in future library releases.
 """
+
 import importlib
 import pkgutil
 import typing as t
 from enum import Enum
 
-__all__ = ("walk_modules", "InteractionEvent")
+if t.TYPE_CHECKING:
+    from disnake.app_commands import APIApplicationCommand
+
+__all__ = ("walk_modules", "command_mention", "InteractionEvent")
 
 
 def walk_modules(
@@ -63,3 +67,8 @@ class InteractionEvent(str, Enum):
     """Called when a button is clicked."""
     dropdown = "dropdown"
     """Called when a select menu is clicked."""
+
+
+def command_mention(command: "APIApplicationCommand") -> str:
+    """Returns a string allowing to mention a slash command."""
+    return f"</{command.name}:{command.id}>"
