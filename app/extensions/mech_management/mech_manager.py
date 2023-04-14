@@ -1,10 +1,9 @@
 import typing as t
 
-from disnake import ButtonStyle, Embed, File, MessageInteraction, SelectOption
+from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
-from abstract.files import Bytes
-from library_extensions import INVISIBLE_CHARACTER
+from library_extensions import INVISIBLE_CHARACTER, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
     ActionRow,
@@ -243,13 +242,14 @@ class MechView(InteractionCheck, PaginatorView):
 
         if self.mech.torso is not None:
             image = self.renderer.get_mech_image(self.mech)
-            resource = Bytes.from_image(image, new_config + ".png")
-            file = File(resource.fp, resource.filename)
-            url = resource.url
+            url, file = embed_image(image, new_config + ".png")
 
-        await inter.response.edit_message(
-            embed=self.embed.set_image(url), file=file, view=self, attachments=[]
-        )
+        self.embed.set_image(url)
+
+        if __debug__:
+            embed_to_footer(self.embed)
+
+        await inter.response.edit_message(embed=self.embed, file=file, view=self, attachments=[])
 
     def set_state_idle(self) -> None:
         if self.active is not None:

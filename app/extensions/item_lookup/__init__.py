@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import typing as t
 
-from disnake import CommandInteraction, Embed, File
+from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 
-from abstract.files import Bytes
 from bridges import AppContext, item_name_autocomplete
 from config import TEST_GUILDS
-from library_extensions import sanitize_filename
+from library_extensions import embed_image, sanitize_filename
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
@@ -52,15 +51,14 @@ async def item(
     del type, element  # used for autocomplete only
     renderer = context.client.get_default_renderer()
     image = renderer.get_item_sprite(item, item.transform_range.max).image
-    resource = Bytes.from_image(image, sanitize_filename(item.name, ".png"))
-    file = File(resource.fp, resource.filename)
+    url, file = embed_image(image, sanitize_filename(item.name, ".png"))
 
     if compact:
         # fmt: off
         embed = (
             Embed(color=item.element.color)
             .set_author(name=item.name, icon_url=item.type.image_url)
-            .set_thumbnail(resource.url)
+            .set_thumbnail(url)
         )
         # fmt: on
         field_factory = compact_fields
@@ -75,7 +73,7 @@ async def item(
                 color=item.element.color,
             )
             .set_thumbnail(item.type.image_url)
-            .set_image(resource.url)
+            .set_image(url)
         )
         # fmt: on
         field_factory = default_fields
