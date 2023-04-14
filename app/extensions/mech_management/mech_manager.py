@@ -3,7 +3,7 @@ import typing as t
 from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
-from library_extensions import INVISIBLE_CHARACTER, embed_image, embed_to_footer
+from library_extensions import INVISIBLE_CHARACTER, command_mention, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
     ActionRow,
@@ -158,10 +158,9 @@ class MechView(InteractionCheck, PaginatorView):
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
         if self.player.arena_buffs.is_at_zero():
-            command_mention = "</{0.name}:{0.id}>".format(self.buffs_command)
             return await inter.response.send_message(
                 "This won't show any effect because all your buffs are at level zero.\n"
-                f"You can change that using {command_mention} command.",
+                f"You can change that using {command_mention(self.buffs_command)} command.",
                 ephemeral=True,
             )
 
