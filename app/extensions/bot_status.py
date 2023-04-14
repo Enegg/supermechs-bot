@@ -68,9 +68,9 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
     embed = (
         Embed(title="Bot info", color=inter.me.color)
         .set_thumbnail(inter.me.display_avatar.url)
-        .add_field("General", "\n".join(general_fields))
-        .add_field("Activity", "\n".join(activity_fields))
-        .add_field("Performance", "\n".join(perf_fields))
+        .add_field("General", "\n".join(general_fields), inline=False)
+        .add_field("Activity", "\n".join(activity_fields), inline=False)
+        .add_field("Performance", "\n".join(perf_fields), inline=False)
     )
 
     await inter.response.send_message(embed=embed, ephemeral=True)
