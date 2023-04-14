@@ -23,24 +23,24 @@ plugin = plugins.Plugin["ModularBot"](
 last_extension: str | None = None
 
 
-@plugin.slash_command()
+@plugin.slash_command(name="plugin")
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
-async def ext(inter: CommandInteraction) -> None:
+async def plugin_(inter: CommandInteraction) -> None:
     pass
 
 
 async def _ext_helper(
-    inter: CommandInteraction, ext: str | None, func: t.Callable[[str], None]
+    inter: CommandInteraction, plugin: str | None, func: t.Callable[[str], None]
 ) -> None:
     global last_extension
-    ext = ext or last_extension
+    plugin = plugin or last_extension
 
-    if ext is None:
+    if plugin is None:
         return await inter.response.send_message("No extension cached.", ephemeral=True)
 
     try:
-        func(ext)
+        func(plugin)
 
     except commands.ExtensionError as error:
         with io.StringIO() as sio:
@@ -50,11 +50,11 @@ async def _ext_helper(
             await inter.response.send_message(sio.getvalue(), ephemeral=True)
 
     else:
-        last_extension = ext
+        last_extension = plugin
         await inter.response.send_message("Success", ephemeral=True)
 
 
-@ext.sub_command()
+@plugin_.sub_command()
 async def load(inter: CommandInteraction, ext: str | None = None) -> None:
     """Load an extension.
 
@@ -65,7 +65,7 @@ async def load(inter: CommandInteraction, ext: str | None = None) -> None:
     await _ext_helper(inter, ext, plugin.bot.load_extension)
 
 
-@ext.sub_command()
+@plugin_.sub_command()
 async def reload(inter: CommandInteraction, ext: str | None = None) -> None:
     """Reload an extension.
 
@@ -76,7 +76,7 @@ async def reload(inter: CommandInteraction, ext: str | None = None) -> None:
     await _ext_helper(inter, ext, plugin.bot.reload_extension)
 
 
-@ext.sub_command()
+@plugin_.sub_command()
 async def unload(inter: CommandInteraction, ext: str | None = None) -> None:
     """Unload an extension.
 
@@ -90,7 +90,7 @@ async def unload(inter: CommandInteraction, ext: str | None = None) -> None:
 @load.autocomplete("ext")
 @reload.autocomplete("ext")
 @unload.autocomplete("ext")
-async def ext_autocomplete(_: CommandInteraction, input: str) -> list[str]:
+async def plugin_name_autocomplete(_: CommandInteraction, input: str) -> list[str]:
     input = input.lower()
     return [ext for ext in plugin.bot.extensions if input in ext.lower()]
 
