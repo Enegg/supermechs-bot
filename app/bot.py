@@ -11,7 +11,7 @@ from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-from library_extensions import walk_modules
+from library_extensions import command_mention, walk_modules
 
 if t.TYPE_CHECKING:
     import asyncio
@@ -67,7 +67,7 @@ class BotParams(t.TypedDict, total=False):
 
 class ModularBot(commands.InteractionBot):
     started_at: datetime
-    command_invocations: Counter[commands.InvokableApplicationCommand]
+    command_invocations: Counter[str]
     _client: t.Any
 
     def __init__(self, *, client: t.Any, **kwargs: Unpack[BotParams]) -> None:
@@ -78,7 +78,13 @@ class ModularBot(commands.InteractionBot):
 
     async def on_application_command(self, interaction: CommandInteraction) -> None:
         await super().on_application_command(interaction)
-        self.command_invocations[interaction.application_command] += 1
+        command_name = interaction.application_command.qualified_name
+        api_command = self.get_global_command_named(command_name)
+
+        if api_command is None:
+            LOGGER.warning(f"API command not found for {command_name}")
+        else:
+            self.command_invocations[command_mention(api_command)] += 1
 
     async def on_ready(self) -> None:
         LOGGER.info(f"{self.user.name} is online")

@@ -81,8 +81,8 @@ async def activity(inter: CommandInteraction) -> None:
     """Displays command invocation activity."""
     desc = (
         "\n".join(
-            f"{command.qualified_name}: {invocations}"
-            for command, invocations in plugin.bot.command_invocations.items()
+            f"{command_mention}: {invocations}"
+            for command_mention, invocations in plugin.bot.command_invocations.items()
         )
         or "No invocations since bot started"
     )
