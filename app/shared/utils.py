@@ -41,14 +41,15 @@ class mutable_proxy(proxied[T]):
 
 
 def wrap_bytes(
-    value: int, base: int = 1024, unit: LiteralString = "iB"
+    value: int, unit: LiteralString = "iB"
 ) -> tuple[int, LiteralString]:
     """Convert absolute byte size to suffixed unit."""
     if value == 0:
         return 0, unit
 
+    exp = (value.bit_length() - 1) // 10
+    value >>= 10 * exp
     prefixes = ("", "K", "M", "G", "T", "?")
-    value, exp = divmod(value, base)
     exp = min(exp, len(prefixes) - 1)
     return value, prefixes[exp] + unit
 
