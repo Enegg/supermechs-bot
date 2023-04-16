@@ -8,9 +8,9 @@ from disnake import Attachment, CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from abstract.files import Bytes
 from bridges import mech_name_autocomplete
 from bridges.context import AppContext
+from files import Bytes
 from library_extensions.ui import Select, wait_for_component
 from shared.utils import wrap_bytes
 

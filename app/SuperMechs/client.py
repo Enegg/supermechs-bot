@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from abstract.files import URL
+from files import URL
 
 from . import urls
 from .pack_interface import ItemPack

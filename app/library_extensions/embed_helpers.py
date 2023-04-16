@@ -2,7 +2,7 @@ import typing as t
 
 from disnake import Embed, File
 
-from abstract.files import Bytes
+from files import Bytes
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image

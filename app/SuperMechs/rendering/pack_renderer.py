@@ -7,7 +7,7 @@ from functools import partial
 
 from attrs import Factory, define, field
 
-from abstract.files import URL, Resource
+from files import URL, Resource
 from typeshed import T, twotuple
 
 from ..enums import Tier, Type
