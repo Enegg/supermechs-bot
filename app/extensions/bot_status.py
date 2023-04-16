@@ -13,6 +13,8 @@ from config import TEST_GUILDS
 from library_extensions import Markdown
 from shared.metrics import get_ram_utilization, get_sloc
 
+from SuperMechs.urls import PACK_V2
+
 if t.TYPE_CHECKING:
     from bot import ModularBot  # noqa: F401
 
@@ -32,24 +34,27 @@ async def frantic(inter: CommandInteraction) -> None:
     await inter.response.send_message(choice)
 
 
-@plugin.slash_command(name="self")
+@plugin.slash_command()
 async def info(inter: CommandInteraction, context: AppContext) -> None:
     """Displays information about the bot."""
 
     bot = plugin.bot
+    client = context.client
     app_info = await bot.application_info()
 
     general_fields = [
         f"Python version: {python_version}",
         f"disnake version: {disnake_version}",
         f"Created: {format_dt(bot.user.created_at, 'R')}",
-        f"Author: {app_info.owner.mention}",
+        f"Developer: {app_info.owner.mention}",
+        f"Servers: {len(bot.guilds)}",
     ]
 
-    activity_fields = [
-        f"Servers: {len(bot.guilds)}",
-        f"Registered players: {len(context.client.state._players)}",
+    supermechs_fields = [
+        f"Registered players: {len(client.state._players)}",
         f"Invoked commands: {bot.command_invocations.total()}",
+        f"Default item pack: {Markdown.hyperlink(client.default_pack.key, PACK_V2)}",
+        f"Total items: {len(client.default_pack.items)}",
     ]
 
     bits, exponent = get_ram_utilization()
@@ -69,7 +74,7 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
         Embed(title="Bot info", color=inter.me.color)
         .set_thumbnail(inter.me.display_avatar.url)
         .add_field("General", "\n".join(general_fields), inline=False)
-        .add_field("Activity", "\n".join(activity_fields), inline=False)
+        .add_field("SuperMechs", "\n".join(supermechs_fields), inline=False)
         .add_field("Performance", "\n".join(perf_fields), inline=False)
     )
 
