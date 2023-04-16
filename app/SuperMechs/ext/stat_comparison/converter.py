@@ -1,8 +1,6 @@
 import statistics
 import typing as t
 
-from typeshed import KT, VT, twotuple
-
 from SuperMechs.api import STATS, AnyStats, Element, Stat, ValueRange
 from SuperMechs.core import Names
 
@@ -135,6 +133,3 @@ class EntryConverter:
 
         if ctx.damage_spread:
             self.insert_damage_spread_entry()
-
-        if ctx.damage_average:
-            pass
