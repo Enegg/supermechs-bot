@@ -5,11 +5,11 @@ import typing as t
 from typing_extensions import Self
 
 from ..enums import Type
-from ..typedefs import RawAttachment, RawAttachments, AnyRawAttachment
+from ..typedefs import AnyRawAttachment, RawPoint2D, RawTorsoAttachments
 
 __all__ = (
-    "Attachment",
-    "Attachments",
+    "Point2D",
+    "TorsoAttachments",
     "AnyAttachment",
     "parse_raw_attachment",
     "is_attachable",
@@ -18,12 +18,12 @@ __all__ = (
 )
 
 
-class Attachment(t.NamedTuple):
+class Point2D(t.NamedTuple):
     x: int
     y: int
 
     @classmethod
-    def from_dict(cls, mapping: RawAttachment) -> Self:
+    def from_dict(cls, mapping: RawPoint2D, /) -> Self:
         x, y = mapping["x"], mapping["y"]
 
         if not (isinstance(x, int) and isinstance(y, int)):
@@ -32,8 +32,8 @@ class Attachment(t.NamedTuple):
         return cls(x, y)
 
 
-Attachments = dict[str, Attachment]
-AnyAttachment = Attachment | Attachments | None
+TorsoAttachments = dict[str, Point2D]
+AnyAttachment = Point2D | TorsoAttachments | None
 
 
 def is_attachable(type: Type) -> bool:
@@ -41,14 +41,14 @@ def is_attachable(type: Type) -> bool:
     return type.displayable and type is not Type.DRONE
 
 
-def attachments_from_raw(mapping: RawAttachments) -> Attachments:
-    return {key: Attachment.from_dict(mapping) for key, mapping in mapping.items()}
+def attachments_from_raw(mapping: RawTorsoAttachments) -> TorsoAttachments:
+    return {key: Point2D.from_dict(mapping) for key, mapping in mapping.items()}
 
 
 def parse_raw_attachment(raw_attachment: AnyRawAttachment) -> AnyAttachment:
     match raw_attachment:
         case {"x": int(), "y": int()}:
-            return Attachment.from_dict(raw_attachment)
+            return Point2D.from_dict(raw_attachment)
 
         case {
             "leg1": {},
@@ -77,32 +77,32 @@ def create_synthetic_attachment(width: int, height: int, type: Type) -> AnyAttac
     Note: taken directly from WU, credits to Raul."""
 
     if type is Type.TORSO:
-        return Attachments(
-            leg1=Attachment(round(width * 0.40), round(height * 0.9)),
-            leg2=Attachment(round(width * 0.80), round(height * 0.9)),
-            side1=Attachment(round(width * 0.25), round(height * 0.6)),
-            side2=Attachment(round(width * 0.75), round(height * 0.6)),
-            side3=Attachment(round(width * 0.20), round(height * 0.3)),
-            side4=Attachment(round(width * 0.80), round(height * 0.3)),
-            top1=Attachment(round(width * 0.25), round(height * 0.1)),
-            top2=Attachment(round(width * 0.75), round(height * 0.1)),
+        return TorsoAttachments(
+            leg1=Point2D(round(width * 0.40), round(height * 0.9)),
+            leg2=Point2D(round(width * 0.80), round(height * 0.9)),
+            side1=Point2D(round(width * 0.25), round(height * 0.6)),
+            side2=Point2D(round(width * 0.75), round(height * 0.6)),
+            side3=Point2D(round(width * 0.20), round(height * 0.3)),
+            side4=Point2D(round(width * 0.80), round(height * 0.3)),
+            top1=Point2D(round(width * 0.25), round(height * 0.1)),
+            top2=Point2D(round(width * 0.75), round(height * 0.1)),
         )
 
     if coeffs := position_coeffs.get(type, None):
-        return Attachment(round(width * coeffs[0]), round(height * coeffs[1]))
+        return Point2D(round(width * coeffs[0]), round(height * coeffs[1]))
 
     return None
 
 
 @t.overload
-def cast_attachment(attachment: AnyAttachment, type: t.Literal[Type.TORSO]) -> Attachments:
+def cast_attachment(attachment: AnyAttachment, type: t.Literal[Type.TORSO]) -> TorsoAttachments:
     ...
 
 
 @t.overload
 def cast_attachment(
     attachment: AnyAttachment, type: t.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON, Type.LEGS]
-) -> Attachment:
+) -> Point2D:
     ...
 
 

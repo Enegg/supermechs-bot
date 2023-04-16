@@ -9,7 +9,6 @@ __all__ = (
     "LiteralType", "LiteralElement",
     "AnyMechStatKey", "AnyStatKey",
     "RawMechStats", "RawStats", "StatDict",
-    "RawAttachment", "RawAttachments", "AnyRawAttachment",
 )
 # fmt: on
 
@@ -105,12 +104,3 @@ class RawStats(RawMechStats, total=False):
     eneCost: int | None
     bulletsCost: int | None
     rocketsCost: int | None
-
-
-class RawAttachment(t.TypedDict):
-    x: int
-    y: int
-
-
-RawAttachments = dict[str, RawAttachment]
-AnyRawAttachment = RawAttachment | RawAttachments | None

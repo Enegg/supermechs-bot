@@ -2,23 +2,22 @@ import typing as t
 
 from typing_extensions import NotRequired
 
-from .game_types import (
-    LiteralElement,
-    LiteralType,
-    RawAttachment,
-    RawAttachments,
-    RawStats,
-)
+from typeshed import LiteralURL
+
+from .game_types import LiteralElement, LiteralType, RawStats
+from .graphics import RawPoint2D, RawTorsoAttachments, Rectangle
 
 # fmt: off
 __all__ = (
-    "TiersMixin", "SpritePosition",
+    "TiersMixin",
     "ItemDictVer1", "ItemPackVer1",
     "ItemDictVer2", "ItemPackVer2",
     "ItemDictVer3", "ItemPackVer3",
     "AnyItemDict", "AnyItemPack"
 )
 # fmt: on
+
+LiteralTag = t.Literal["sword", "melee", "roller"]
 
 
 class TiersMixin(t.TypedDict, total=False):
@@ -35,16 +34,9 @@ class TiersMixin(t.TypedDict, total=False):
     divine: RawStats
 
 
-class SpritePosition(t.TypedDict):
-    width: int
-    height: int
-    x: int
-    y: int
-
-
 class SpritesSheetMixin(t.TypedDict):
-    spritesSheet: str
-    spritesMap: dict[str, SpritePosition]
+    spritesSheet: LiteralURL
+    spritesMap: dict[str, Rectangle]
 
 
 class ItemDictBase(t.TypedDict):
@@ -53,10 +45,10 @@ class ItemDictBase(t.TypedDict):
     type: LiteralType
     element: LiteralElement
     transform_range: str
-    tags: NotRequired[list[t.Literal["sword", "melee", "roller"]]]
+    tags: NotRequired[list[LiteralTag]]
     width: NotRequired[int]
     height: NotRequired[int]
-    attachment: NotRequired[RawAttachment | RawAttachments]
+    attachment: NotRequired[RawPoint2D | RawTorsoAttachments]
 
 
 # -------------------------------------- v1 --------------------------------------
@@ -75,7 +67,7 @@ class PackConfig(t.TypedDict):
     key: str
     name: str
     description: str
-    base_url: str
+    base_url: LiteralURL
 
 
 class ItemPackVer1(t.TypedDict):

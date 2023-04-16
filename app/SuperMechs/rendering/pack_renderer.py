@@ -23,7 +23,7 @@ from ..typedefs import (
     ItemPackVer1,
     ItemPackVer2,
     ItemPackVer3,
-    SpritePosition,
+    Rectangle,
 )
 from ..utils import js_format
 from .attachments import cast_attachment, is_attachable, parse_raw_attachment
@@ -289,7 +289,7 @@ class PackRenderer:
         return renderer.merge("torso")
 
 
-def crop_from_spritesheet(spritesheet: Image, pos: SpritePosition) -> Image:
+def crop_from_spritesheet(spritesheet: Image, pos: Rectangle) -> Image:
     x, y, w, h = pos["x"], pos["y"], pos["width"], pos["height"]
     return spritesheet.crop((x, y, x + w, y + h))
 
