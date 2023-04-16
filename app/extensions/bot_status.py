@@ -12,6 +12,7 @@ from bridges import AppContext
 from config import TEST_GUILDS
 from library_extensions import Markdown
 from shared.metrics import get_ram_utilization, get_sloc
+from shared.utils import wrap_bytes
 
 from SuperMechs.urls import PACK_V2
 
@@ -57,7 +58,7 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
         f"Total items: {len(client.default_pack.items)}",
     ]
 
-    bits, exponent = get_ram_utilization()
+    bits, exponent = wrap_bytes(get_ram_utilization())
 
     perf_fields = [
         f"Started: {format_dt(bot.started_at, 'R')}",

@@ -5,8 +5,6 @@ from glob import iglob
 
 import psutil
 
-from .utils import wrap_bytes
-
 _sloc: int | None = None
 
 
@@ -35,7 +33,6 @@ async def get_sloc(directory: str = ".") -> int:
     return _sloc
 
 
-def get_ram_utilization() -> tuple[int, str]:
-    """Returns the current process RAM utilization as a tuple of (bits, exponent)"""
-    process = psutil.Process()
-    return wrap_bytes(process.memory_info().rss)
+def get_ram_utilization(pid: int | None = None, /) -> int:
+    """Returns the current process RAM utilization, in bytes."""
+    return psutil.Process(pid).memory_info().rss

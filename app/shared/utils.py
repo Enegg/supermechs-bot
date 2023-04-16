@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from typing_extensions import Self
+from typing_extensions import LiteralString, Self
 
 from typeshed import T
 
@@ -40,21 +40,17 @@ class mutable_proxy(proxied[T]):
         setattr(getattr(obj, self.proxied), self.name, value)
 
 
-def wrap_bytes(bytes: int) -> tuple[int, str]:
+def wrap_bytes(
+    value: int, base: int = 1024, unit: LiteralString = "iB"
+) -> tuple[int, LiteralString]:
     """Convert absolute byte size to suffixed unit."""
-    units = ("B", "KiB", "MiB", "GiB", "TiB")
+    if value == 0:
+        return 0, unit
 
-    if bytes == 0:
-        return 0, "B"
-
-    exp = (bytes.bit_length() - 1) // 10
-    bytes >>= 10 * exp
-
-    try:
-        return bytes, units[exp]
-
-    except IndexError:
-        return bytes, "?iB"
+    prefixes = ("", "K", "M", "G", "T", "?")
+    value, exp = divmod(value, base)
+    exp = min(exp, len(prefixes) - 1)
+    return value, prefixes[exp] + unit
 
 
 class ReprMixin:
