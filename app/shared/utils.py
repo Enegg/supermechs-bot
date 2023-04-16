@@ -72,5 +72,11 @@ def is_pascal(string: str) -> bool:
     """Returns True if the string is pascal-cased string, False otherwise.
 
     A string is pascal-cased if it is a single word that starts with a capitalized letter.
+        >>> is_pascal("fooBar")
+        False
+        >>> is_pascal("FooBar")
+        True
+        >>> is_pascal("Foo Bar")
+        False
     """
     return string[:1].isupper() and " " not in string
