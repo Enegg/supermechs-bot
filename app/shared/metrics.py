@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from glob import iglob
 
 import psutil
@@ -9,13 +10,7 @@ from .utils import wrap_bytes
 _sloc: int | None = None
 
 
-def get_sloc(directory: str = ".") -> int:
-    """Get the source lines of code of python files within the directory."""
-    global _sloc
-
-    if _sloc is not None:
-        return _sloc
-
+def _get_sloc(directory: str) -> int:
     sloc = 0
 
     for path in iglob("**/*.py", root_dir=directory, recursive=True):
@@ -26,8 +21,18 @@ def get_sloc(directory: str = ".") -> int:
 
                 sloc += 1
 
-    _sloc = sloc
     return sloc
+
+
+async def get_sloc(directory: str = ".") -> int:
+    """Get the source lines of code of python files within the directory."""
+    global _sloc
+
+    if _sloc is not None:
+        return _sloc
+
+    _sloc = await asyncio.to_thread(_get_sloc, directory)
+    return _sloc
 
 
 def get_ram_utilization() -> tuple[int, str]:
