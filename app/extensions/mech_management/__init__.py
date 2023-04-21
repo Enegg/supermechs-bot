@@ -10,14 +10,14 @@ from disnake.utils import MISSING
 
 from bridges import mech_name_autocomplete
 from bridges.context import AppContext
-from files import Bytes
+from library_extensions import embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
 from shared.utils import wrap_bytes
 
 from .mech_manager import MechView
 
 from SuperMechs.api import STATS, Player, Type, sanitize_name
-from SuperMechs.ext.wu_compat import dump_mechs, load_mechs, mech_to_id_str
+from SuperMechs.ext.wu_compat import dump_mechs, load_mechs
 
 if t.TYPE_CHECKING:
     from bot import ModularBot  # noqa: F401
@@ -110,9 +110,11 @@ async def build(
         view.embed.color = mech.torso.element.color
 
         image = renderer.get_mech_image(mech)
-        resource = Bytes.from_image(image, mech_to_id_str(mech) + ".png")
-        file = File(resource.fp, resource.filename)
-        view.embed.set_image(resource.url)
+        url, file = embed_image(image, view.mech_config + ".png")
+        view.embed.set_image(url)
+
+    if __debug__:
+        embed_to_footer(view.embed)
 
     await inter.response.send_message(embed=view.embed, file=file, view=view, ephemeral=True)
     await view.wait()
