@@ -15,7 +15,7 @@ from library_extensions import Markdown
 from library_extensions.ui import wait_for_modal
 
 if t.TYPE_CHECKING:
-    from bot import ModularBot  # noqa: F401
+    from library_extensions.bot import ModularBot  # noqa: F401
 
 plugin = plugins.Plugin["ModularBot"](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__

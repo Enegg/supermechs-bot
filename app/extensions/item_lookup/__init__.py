@@ -15,7 +15,7 @@ from SuperMechs.api import Element, Item, Type
 from SuperMechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
-    from bot import ModularBot  # noqa: F401
+    from library_extensions.bot import ModularBot  # noqa: F401
 
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]

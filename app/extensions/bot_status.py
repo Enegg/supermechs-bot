@@ -17,7 +17,7 @@ from shared.utils import wrap_bytes
 from SuperMechs.urls import PACK_V2
 
 if t.TYPE_CHECKING:
-    from bot import ModularBot  # noqa: F401
+    from library_extensions.bot import ModularBot  # noqa: F401
 
 python_version = ".".join(map(str, sys.version_info[:3]))
 

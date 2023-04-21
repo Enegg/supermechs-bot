@@ -12,10 +12,10 @@ from disnake import AllowedMentions, Game, Intents
 from disnake.http import HTTPClient
 from dotenv import load_dotenv
 
-from bot import ModularBot
 from bridges import register_injections
 from config import HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import setup_channel_logger
+from library_extensions.bot import ModularBot
 from shared import SESSION_CTX
 
 from SuperMechs.client import SMClient

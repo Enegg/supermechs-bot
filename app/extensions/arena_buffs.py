@@ -22,7 +22,7 @@ from library_extensions.ui import (
 from SuperMechs.api import MAX_BUFFS, STATS, ArenaBuffs, Player
 
 if t.TYPE_CHECKING:
-    from bot import ModularBot  # noqa: F401
+    from library_extensions.bot import ModularBot  # noqa: F401
 
 plugin = plugins.Plugin["ModularBot"](name="ArenaBuffs", logger=__name__)
 

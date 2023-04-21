@@ -78,11 +78,11 @@ class ModularBot(commands.InteractionBot):
 
     async def on_application_command(self, interaction: CommandInteraction) -> None:
         await super().on_application_command(interaction)
-        command_name = interaction.application_command.qualified_name
+        command_name = interaction.application_command.name
         api_command = self.get_global_command_named(command_name)
 
         if api_command is None:
-            LOGGER.warning(f"API command not found for {command_name}")
+            LOGGER.warning(f"API command not found for {command_name!r}")
         else:
             self.command_invocations[command_mention(api_command)] += 1
 

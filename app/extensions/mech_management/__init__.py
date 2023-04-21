@@ -20,7 +20,7 @@ from SuperMechs.api import STATS, Player, Type, sanitize_name
 from SuperMechs.ext.wu_compat import dump_mechs, load_mechs
 
 if t.TYPE_CHECKING:
-    from bot import ModularBot  # noqa: F401
+    from library_extensions.bot import ModularBot  # noqa: F401
 
 plugin = plugins.Plugin["ModularBot"](name="Mech-manager", logger=__name__)
 
