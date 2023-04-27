@@ -79,11 +79,31 @@ class EntryConverter:
         return "\n".join(f"{key}: {value}" for key, value in self)
 
     def __repr__(self) -> str:
-        return f"<Comparator {self.key_order} {self.entries}>"
+        return f"<{type(self).__name__} {self.key_order} {self.entries}>"
 
     def __iter__(self) -> t.Iterator[tuple[str, Entry]]:
         for key in self.key_order:
             yield key, self.entries[key]
+
+    def get_entry(self, key: str) -> Entry:
+        """Return the entry at given key."""
+        return self.entries[key]
+
+    def insert_entry(self, key: str, index: int, entry: Entry) -> None:
+        """Insert given key: entry pair at given index."""
+        self.key_order.insert(index, key)
+        self.entries[key] = entry
+
+    def insert_after(self, key: str, after: str, entry: Entry) -> int:
+        """Insert 'key' after another key. Returns the index it inserted at."""
+        index = self.key_order.index(after) + 1
+        self.insert_entry(key, index, entry)
+        return index
+
+    def remove_entry(self, key: str) -> Entry:
+        """Remove and return an existing entry."""
+        self.key_order.remove(key)
+        return self.entries.pop(key)
 
     def coerce_damage_entries(self) -> None:
         present_damage_keys = self.entries.keys() & damage_keys
@@ -102,9 +122,7 @@ class EntryConverter:
         if not present_damage_keys:
             return
 
-        total_damage = sum_damage_entries(
-            map(self.entries.__getitem__, present_damage_keys), self.entry_size
-        )
+        total_damage = sum_damage_entries(map(self.get_entry, present_damage_keys), self.entry_size)
 
         # insert after the last damage entry
         index = max(map(self.key_order.index, present_damage_keys)) + 1
@@ -114,22 +132,6 @@ class EntryConverter:
             index,
             tuple(None if value is None else statistics.pstdev(value) for value in total_damage),
         )
-
-    def insert_entry(self, key: str, index: int, entry: Entry) -> None:
-        """Insert given key: entry pair at given index."""
-        self.key_order.insert(index, key)
-        self.entries[key] = entry
-
-    def insert_after(self, key: str, after: str, entry: Entry) -> int:
-        """Insert 'key' after another key. Returns the index it inserted at."""
-        index = self.key_order.index(after) + 1
-        self.insert_entry(key, index, entry)
-        return index
-
-    def remove_entry(self, key: str) -> Entry:
-        """Remove and return an existing entry."""
-        self.key_order.remove(key)
-        return self.entries.pop(key)
 
     def run_conversions(self, ctx: ComparisonContext) -> None:
         if ctx.coerce_damage_types:
