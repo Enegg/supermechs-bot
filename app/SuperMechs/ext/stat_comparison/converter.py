@@ -52,18 +52,22 @@ damage_keys = frozenset(("phyDmg", "expDmg", "eleDmg", "anyDmg"))
 class EntryConverter:
     """Class responsible for merging a set of mappings and ."""
 
-    size: int
-    """The number of side to side entries to compare."""
     key_order: list[str]
     """The order in which final keys should appear."""
     entries: dict[str, Entry]
     """Current set of entries."""
+    _entry_size: int
+
+    @property
+    def entry_size(self) -> int:
+        """The number of side to side entries to compare."""
+        return self._entry_size
 
     def __init__(self, *stat_mappings: AnyStats, key_order: t.Sequence[str]) -> None:
         if len(stat_mappings) < 2:
             raise ValueError("Need at least two mappings to compare")
 
-        self.size = len(stat_mappings)
+        self._entry_size = len(stat_mappings)
         self.key_order = sorted(
             set[str]().union(*map(AnyStats.keys, stat_mappings)), key=key_order.index
         )
@@ -89,7 +93,7 @@ class EntryConverter:
 
         # don't add one since the entry will be gone at the time of insert
         index = min(map(self.key_order.index, present_damage_keys))
-        entry = sum_damage_entries(map(self.remove_entry, present_damage_keys), self.size)
+        entry = sum_damage_entries(map(self.remove_entry, present_damage_keys), self.entry_size)
         self.insert_entry("anyDmg", index, entry)
 
     def insert_damage_spread_entry(self) -> None:
@@ -99,7 +103,7 @@ class EntryConverter:
             return
 
         total_damage = sum_damage_entries(
-            map(self.entries.__getitem__, present_damage_keys), self.size
+            map(self.entries.__getitem__, present_damage_keys), self.entry_size
         )
 
         # insert after the last damage entry
