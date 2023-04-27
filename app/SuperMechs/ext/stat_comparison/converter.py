@@ -1,25 +1,12 @@
 import statistics
 import typing as t
 
-from SuperMechs.api import STATS, AnyStats, Element, Stat, ValueRange
-from SuperMechs.core import Names
+from SuperMechs.api import AnyStats, ValueRange
+
+if t.TYPE_CHECKING:
+    from .stat_comparator import ComparisonContext
 
 Entry = tuple[t.Any, ...]
-
-
-custom_stats: dict[str, Stat] = {
-    "spread": Stat("spread", Names("Damage spread"), "🎲", False),
-    "anyDmg": Stat("anyDmg", Names("Damage"), Element.COMBINED.emoji),
-    "totalDmg": Stat("totalDmg", Names("Damage potential"), "🎯"),
-}
-STAT_KEY_ORDER = tuple(STATS)
-
-
-class ComparisonContext(t.NamedTuple):
-    coerce_damage_types: bool = False
-    damage_average: bool = False
-    damage_spread: bool = False
-    damage_potential: bool = False
 
 
 def sum_damage_entries(
