@@ -122,10 +122,9 @@ class EntryConverter:
         if not present_damage_keys:
             return
 
-        total_damage = sum_damage_entries(map(self.get_entry, present_damage_keys), self.entry_size)
-
         # insert after the last damage entry
         index = max(map(self.key_order.index, present_damage_keys)) + 1
+        total_damage = sum_damage_entries(map(self.get_entry, present_damage_keys), self.entry_size)
 
         self.insert_entry(
             "spread",
