@@ -50,7 +50,7 @@ damage_keys = frozenset(("phyDmg", "expDmg", "eleDmg", "anyDmg"))
 
 
 class EntryConverter:
-    """Class responsible for merging a set of mappings and ."""
+    """Class responsible for merging a set of mappings and running conversions."""
 
     key_order: list[str]
     """The order in which final keys should appear."""
