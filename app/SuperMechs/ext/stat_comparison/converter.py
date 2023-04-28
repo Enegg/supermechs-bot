@@ -6,6 +6,8 @@ from SuperMechs.api import AnyStats, ValueRange
 if t.TYPE_CHECKING:
     from .stat_comparator import ComparisonContext
 
+__all__ = ("EntryConverter",)
+
 Entry = tuple[t.Any, ...]
 
 
