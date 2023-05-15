@@ -27,6 +27,7 @@ SPECIAL_SLOTS = ("tele", "charge", "hook")
 MODULE_SLOTS = ("mod1", "mod2", "mod3", "mod4", "mod5", "mod6", "mod7", "mod8")
 
 SlotType = InvItem | None
+"""Nullable inventory item."""
 
 
 def get_weight_emoji(vars: GameVars, weight: int) -> str:
@@ -141,7 +142,7 @@ class Mech:
     mod8:   SlotType = field(default=None, validator=_is_valid_type)
     # fmt: on
 
-    def __setitem__(self, slot: XOrTupleXY[str | Type, int], item: InvItem | None, /) -> None:
+    def __setitem__(self, slot: XOrTupleXY[str | Type, int], item: SlotType, /) -> None:
         if not isinstance(item, (InvItem, type(None))):
             raise TypeError(f"Expected Item object or None, got {type(item)}")
 
@@ -165,7 +166,7 @@ class Mech:
         self.try_invalidate_cache(item, self[slot])
         setattr(self, slot, item)
 
-    def __getitem__(self, slot: XOrTupleXY[str | Type, int]) -> InvItem | None:
+    def __getitem__(self, slot: XOrTupleXY[str | Type, int]) -> SlotType:
         return getattr(self, get_slot_name(slot))
 
     def __str__(self) -> str:
@@ -284,7 +285,7 @@ class Mech:
             for stat_name, value in bank.items()
         )
 
-    def try_invalidate_cache(self, new: InvItem | None, old: InvItem | None) -> None:
+    def try_invalidate_cache(self, new: SlotType, old: SlotType) -> None:
         """Deletes cached attributes if they expire."""
         # # Setting a displayable item will not change the image
         # # only if the old item was the same item
@@ -309,7 +310,7 @@ class Mech:
         specials: bool = ...,
         modules: bool = ...,
         slots: t.Literal[False] = False,
-    ) -> t.Iterator[InvItem | None]:
+    ) -> t.Iterator[SlotType]:
         ...
 
     @t.overload
@@ -321,7 +322,7 @@ class Mech:
         specials: bool = ...,
         modules: bool = ...,
         slots: t.Literal[True],
-    ) -> t.Iterator[tuple[InvItem | None, str]]:
+    ) -> t.Iterator[tuple[SlotType, str]]:
         ...
 
     def iter_items(
@@ -332,7 +333,7 @@ class Mech:
         specials: bool = False,
         modules: bool = False,
         slots: bool = False,
-    ) -> t.Iterator[InvItem | None | tuple[InvItem | None, str]]:
+    ) -> t.Iterator[XOrTupleXY[SlotType, str]]:
         """Iterator over mech's selected items.
 
         Parameters
