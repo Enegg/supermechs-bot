@@ -1,4 +1,4 @@
-"""Module providing extensions to the library provided UI kit."""
+"""Module extending the library provided UI kit."""
 
 from .action_row import *
 from .buttons import *
