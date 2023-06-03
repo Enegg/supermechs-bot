@@ -29,7 +29,7 @@ if t.TYPE_CHECKING:
     from typing_extensions import Unpack
 
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("bot")
 
 
 class BotParams(t.TypedDict, total=False):
