@@ -174,6 +174,7 @@ class MechView(InteractionCheck, PaginatorView):
     @positioned(2, 4)
     @button(label="Quit", custom_id="button:quit", style=ButtonStyle.red)
     async def quit_button(self, button: Button[None], inter: MessageInteraction) -> None:
+        del button
         await inter.response.defer(ephemeral=True)
         self.stop()
 
@@ -261,7 +262,7 @@ class MechView(InteractionCheck, PaginatorView):
 
     def switch_active_button(self, button: TrinaryButton[str], /) -> None:
         assert self.active is not None
-        self.active.toggle()
+        self.active.on = False
         button.on = True
         self.active = button
         self.update_dropdown(button)
