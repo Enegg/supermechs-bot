@@ -12,12 +12,7 @@ __all__ = ("AppContext",)
 class AppContext:
     client: SMClient
     inter: CommandInteraction
-    parent: AppContext | None = None
 
     @property
     def player(self) -> Player:
         return self.client.state.store_player(self.inter.author)
-
-    @property
-    def response(self):
-        return self.inter.response
