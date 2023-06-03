@@ -40,6 +40,7 @@ ROOT_LOGGER.setLevel(logging.INFO)
 ROOT_LOGGER.addHandler(stream)
 
 logging.getLogger("disnake").setLevel(logging.ERROR)
+logging.getLogger("disnake.client").setLevel(logging.CRITICAL)  # mute connection errors
 
 
 @contextlib.asynccontextmanager
