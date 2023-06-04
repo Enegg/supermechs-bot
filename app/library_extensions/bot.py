@@ -7,7 +7,6 @@ import typing as t
 from collections import Counter
 from datetime import datetime
 
-from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake.utils import MISSING
 
@@ -20,6 +19,7 @@ if t.TYPE_CHECKING:
     from disnake import (
         AllowedMentions,
         BaseActivity,
+        CommandInteraction,
         GatewayParams,
         Intents,
         LocalizationProtocol,

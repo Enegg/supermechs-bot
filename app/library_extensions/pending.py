@@ -10,7 +10,7 @@ from enum import Enum
 if t.TYPE_CHECKING:
     from disnake.app_commands import APIApplicationCommand
 
-__all__ = ("walk_modules", "command_mention", "InteractionEvent")
+__all__ = ("walk_modules", "command_mention", "InteractionEvent", "OPTION_LIMIT")
 
 
 def walk_modules(
@@ -18,7 +18,6 @@ def walk_modules(
     prefix: str = "",
     ignore: t.Iterable[str] | t.Callable[[str], bool] | None = None,
 ) -> t.Iterator[str]:
-
     if isinstance(ignore, t.Iterable):
         ignore_tup = tuple(ignore)
         ignore = lambda path: path.startswith(ignore_tup)  # noqa: E731
@@ -72,3 +71,7 @@ class InteractionEvent(str, Enum):
 def command_mention(command: "APIApplicationCommand") -> str:
     """Returns a string allowing to mention a slash command."""
     return f"</{command.name}:{command.id}>"
+
+
+OPTION_LIMIT = 25
+"""Limit related to select and autocomplete options."""

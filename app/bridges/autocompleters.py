@@ -2,7 +2,10 @@ import typing as t
 
 from disnake import CommandInteraction
 
-from SuperMechs.api import Element, Item, SMClient, Type, sanitize_name
+from library_extensions import OPTION_LIMIT
+from manager import item_pack_manager, player_manager
+
+from SuperMechs.api import Element, Item, Type, sanitize_name
 from SuperMechs.typedefs import Name
 from SuperMechs.utils import search_for
 
@@ -25,11 +28,9 @@ def _get_item_filters(inter: CommandInteraction) -> list[t.Callable[[Item], bool
 
 async def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteRetT:
     """Autocomplete for items with regard for type & element."""
-    client: SMClient = inter.bot._client  # type: ignore
 
-    OPTION_LIMIT = 25
+    pack = item_pack_manager.mapping["@Darkstare"]  # TODO: replace with default pack reference
 
-    pack = client.default_pack
     filters = _get_item_filters(inter)
     abbrevs = pack.name_abbrevs.get(input.lower(), set())
 
@@ -61,9 +62,8 @@ async def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
 
 async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteRetT:
     """Autocomplete for player builds."""
-    client: SMClient = inter.bot._client  # type: ignore
 
-    player = client.state.store_player(inter.author)
+    player = player_manager.lookup_or_create(inter.author)
     case_insensitive = input.lower()
 
     matching = [name for name in player.builds if name.lower().startswith(case_insensitive)]
