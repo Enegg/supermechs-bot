@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from glob import iglob
+from pathlib import Path
 
 import psutil
 
@@ -11,8 +11,8 @@ _sloc: int | None = None
 def _get_sloc(directory: str) -> int:
     sloc = 0
 
-    for path in iglob("**/*.py", root_dir=directory, recursive=True):
-        with open(path, encoding="utf8") as file:
+    for path in Path(directory).glob("**/*.py"):
+        with path.open(encoding="utf8") as file:
             for line in file:
                 if not line or line.startswith("#"):
                     continue
