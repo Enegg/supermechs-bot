@@ -2,9 +2,9 @@ import typing as t
 
 from typing_extensions import ParamSpec, TypeVar
 
-T = TypeVar("T", default=t.Any, infer_variance=True)
-T2 = TypeVar("T2", default=t.Any, infer_variance=True)
-KT = TypeVar("KT")
+T = TypeVar("T", infer_variance=True)
+T2 = TypeVar("T2", infer_variance=True)
+KT = TypeVar("KT", bound=t.Hashable)
 """Key-type of a mapping."""
 VT = TypeVar("VT")
 """Value-type of a mapping."""

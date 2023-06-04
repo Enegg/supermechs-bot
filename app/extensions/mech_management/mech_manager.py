@@ -3,7 +3,7 @@ import typing as t
 from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
-from library_extensions import INVISIBLE_CHARACTER, command_mention, embed_image, embed_to_footer
+from library_extensions import INVISIBLE_CHARACTER, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
     ActionRow,
@@ -24,9 +24,6 @@ from library_extensions.ui import (
 from SuperMechs.api import ArenaBuffs, Element, InvItem, ItemPack, Mech, Player, Type
 from SuperMechs.converters import slot_to_icon_data, slot_to_type
 from SuperMechs.rendering import PackRenderer
-
-if t.TYPE_CHECKING:
-    from disnake.app_commands import APIApplicationCommand
 
 
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
@@ -70,13 +67,14 @@ def get_sorted_options(
 class MechView(InteractionCheck, PaginatorView):
     """Class implementing View for a button-based mech building."""
 
+    buffs_command: t.ClassVar[str]
+
     def __init__(
         self,
         mech: Mech,
         pack: ItemPack,
         renderer: PackRenderer,
         player: Player,
-        buffs_command: "APIApplicationCommand",
         *,
         timeout: float = 180.0,
     ) -> None:
@@ -85,7 +83,6 @@ class MechView(InteractionCheck, PaginatorView):
         self.mech = mech
         self.player = player
         self.renderer = renderer
-        self.buffs_command = buffs_command
         self.user_id = player.id
         self.mech_config = get_mech_config(mech)
 
@@ -160,7 +157,7 @@ class MechView(InteractionCheck, PaginatorView):
         if self.player.arena_buffs.is_at_zero():
             return await inter.response.send_message(
                 "This won't show any effect because all your buffs are at level zero.\n"
-                f"You can change that using {command_mention(self.buffs_command)} command.",
+                f"You can change that using {self.buffs_command} command.",
                 ephemeral=True,
             )
 
@@ -177,6 +174,7 @@ class MechView(InteractionCheck, PaginatorView):
     @positioned(2, 4)
     @button(label="Quit", custom_id="button:quit", style=ButtonStyle.red)
     async def quit_button(self, button: Button[None], inter: MessageInteraction) -> None:
+        del button
         await inter.response.defer(ephemeral=True)
         self.stop()
 
@@ -264,7 +262,7 @@ class MechView(InteractionCheck, PaginatorView):
 
     def switch_active_button(self, button: TrinaryButton[str], /) -> None:
         assert self.active is not None
-        self.active.toggle()
+        self.active.on = False
         button.on = True
         self.active = button
         self.update_dropdown(button)

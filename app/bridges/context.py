@@ -1,23 +1,20 @@
-from __future__ import annotations
+import typing as t
 
 from attrs import define
-from disnake import CommandInteraction
 
-from SuperMechs.api import Player, SMClient
+if t.TYPE_CHECKING:
+    from disnake import CommandInteraction
+
+    from SuperMechs.api import Player, SMClient
 
 __all__ = ("AppContext",)
 
 
 @define
 class AppContext:
-    client: SMClient
-    inter: CommandInteraction
-    parent: AppContext | None = None
+    client: "SMClient"
+    inter: "CommandInteraction"
 
     @property
-    def player(self) -> Player:
+    def player(self) -> "Player":
         return self.client.state.store_player(self.inter.author)
-
-    @property
-    def response(self):
-        return self.inter.response

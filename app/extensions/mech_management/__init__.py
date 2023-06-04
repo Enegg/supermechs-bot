@@ -10,7 +10,7 @@ from disnake.utils import MISSING
 
 from bridges import mech_name_autocomplete
 from bridges.context import AppContext
-from library_extensions import embed_image, embed_to_footer
+from library_extensions import command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
 from shared.utils import wrap_bytes
 
@@ -23,6 +23,13 @@ if t.TYPE_CHECKING:
     from library_extensions.bot import ModularBot  # noqa: F401
 
 plugin = plugins.Plugin["ModularBot"](name="Mech-manager", logger=__name__)
+
+
+@plugin.load_hook(post=True)
+async def on_load() -> None:
+    buffs_command = plugin.bot.get_global_command_named("buffs")
+    assert buffs_command is not None
+    MechView.buffs_command = command_mention(buffs_command)
 
 
 @plugin.slash_command()
@@ -94,14 +101,11 @@ async def build(
         mech = player.get_or_create_build(sanitize_name(name))
 
     renderer = context.client.get_default_renderer()
-    buffs_command = plugin.bot.get_global_command_named("buffs")
-    assert buffs_command is not None
     view = MechView(
         mech=mech,
         pack=context.client.default_pack,
         renderer=renderer,
         player=player,
-        buffs_command=buffs_command,
         timeout=100,
     )
     file = MISSING
