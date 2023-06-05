@@ -1,25 +1,14 @@
 import statistics
 import typing as t
 
-from SuperMechs.api import STATS, AnyStats, Element, Stat, ValueRange
-from SuperMechs.core import Names
+from SuperMechs.api import AnyStats, ValueRange
+
+if t.TYPE_CHECKING:
+    from .stat_comparator import ComparisonContext
+
+__all__ = ("EntryConverter",)
 
 Entry = tuple[t.Any, ...]
-
-
-custom_stats: dict[str, Stat] = {
-    "spread": Stat("spread", Names("Damage spread"), "🎲", False),
-    "anyDmg": Stat("anyDmg", Names("Damage"), Element.COMBINED.emoji),
-    "totalDmg": Stat("totalDmg", Names("Damage potential"), "🎯"),
-}
-STAT_KEY_ORDER = tuple(STATS)
-
-
-class ComparisonContext(t.NamedTuple):
-    coerce_damage_types: bool = False
-    damage_average: bool = False
-    damage_spread: bool = False
-    damage_potential: bool = False
 
 
 def sum_damage_entries(
@@ -50,20 +39,24 @@ damage_keys = frozenset(("phyDmg", "expDmg", "eleDmg", "anyDmg"))
 
 
 class EntryConverter:
-    """Class responsible for merging a set of mappings and ."""
+    """Class responsible for merging a set of mappings and running conversions."""
 
-    size: int
-    """The number of side to side entries to compare."""
     key_order: list[str]
     """The order in which final keys should appear."""
     entries: dict[str, Entry]
     """Current set of entries."""
+    _entry_size: int
+
+    @property
+    def entry_size(self) -> int:
+        """The number of side to side entries to compare."""
+        return self._entry_size
 
     def __init__(self, *stat_mappings: AnyStats, key_order: t.Sequence[str]) -> None:
         if len(stat_mappings) < 2:
             raise ValueError("Need at least two mappings to compare")
 
-        self.size = len(stat_mappings)
+        self._entry_size = len(stat_mappings)
         self.key_order = sorted(
             set[str]().union(*map(AnyStats.keys, stat_mappings)), key=key_order.index
         )
@@ -75,41 +68,15 @@ class EntryConverter:
         return "\n".join(f"{key}: {value}" for key, value in self)
 
     def __repr__(self) -> str:
-        return f"<Comparator {self.key_order} {self.entries}>"
+        return f"<{type(self).__name__} {self.key_order} {self.entries}>"
 
     def __iter__(self) -> t.Iterator[tuple[str, Entry]]:
         for key in self.key_order:
             yield key, self.entries[key]
 
-    def coerce_damage_entries(self) -> None:
-        present_damage_keys = self.entries.keys() & damage_keys
-
-        if not present_damage_keys:
-            return
-
-        # don't add one since the entry will be gone at the time of insert
-        index = min(map(self.key_order.index, present_damage_keys))
-        entry = sum_damage_entries(map(self.remove_entry, present_damage_keys), self.size)
-        self.insert_entry("anyDmg", index, entry)
-
-    def insert_damage_spread_entry(self) -> None:
-        present_damage_keys = self.entries.keys() & damage_keys
-
-        if not present_damage_keys:
-            return
-
-        total_damage = sum_damage_entries(
-            map(self.entries.__getitem__, present_damage_keys), self.size
-        )
-
-        # insert after the last damage entry
-        index = max(map(self.key_order.index, present_damage_keys)) + 1
-
-        self.insert_entry(
-            "spread",
-            index,
-            tuple(None if value is None else statistics.pstdev(value) for value in total_damage),
-        )
+    def get_entry(self, key: str) -> Entry:
+        """Return the entry at given key."""
+        return self.entries[key]
 
     def insert_entry(self, key: str, index: int, entry: Entry) -> None:
         """Insert given key: entry pair at given index."""
@@ -126,6 +93,33 @@ class EntryConverter:
         """Remove and return an existing entry."""
         self.key_order.remove(key)
         return self.entries.pop(key)
+
+    def coerce_damage_entries(self) -> None:
+        present_damage_keys = self.entries.keys() & damage_keys
+
+        if not present_damage_keys:
+            return
+
+        # don't add one since the entry will be gone at the time of insert
+        index = min(map(self.key_order.index, present_damage_keys))
+        entry = sum_damage_entries(map(self.remove_entry, present_damage_keys), self.entry_size)
+        self.insert_entry("anyDmg", index, entry)
+
+    def insert_damage_spread_entry(self) -> None:
+        present_damage_keys = self.entries.keys() & damage_keys
+
+        if not present_damage_keys:
+            return
+
+        # insert after the last damage entry
+        index = max(map(self.key_order.index, present_damage_keys)) + 1
+        total_damage = sum_damage_entries(map(self.get_entry, present_damage_keys), self.entry_size)
+
+        self.insert_entry(
+            "spread",
+            index,
+            tuple(None if value is None else statistics.pstdev(value) for value in total_damage),
+        )
 
     def run_conversions(self, ctx: ComparisonContext) -> None:
         if ctx.coerce_damage_types:
