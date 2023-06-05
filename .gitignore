@@ -3,7 +3,6 @@ __pycache__
 *.py[cod]
 
 # machine specific files
-.vscode
 *.env
 venv
 .venv

@@ -1,0 +1,24 @@
+{
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.extraPaths": [
+        "./app"
+    ],
+    "files.exclude": {
+        "**/__pycache__": true,
+        ".*cache": true
+    },
+    "diffEditor.ignoreTrimWhitespace": false,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        },
+        "editor.rulers": [
+            100
+        ]
+    },
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [
+        "-l 100"
+    ],
+}
