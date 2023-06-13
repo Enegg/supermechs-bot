@@ -3,7 +3,7 @@ import typing as t
 from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
-from library_extensions import INVISIBLE_CHARACTER, embed_image, embed_to_footer
+from library_extensions import INVISIBLE_CHARACTER, OPTION_LIMIT, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
     ActionRow,
@@ -49,7 +49,7 @@ def get_sorted_options(
     """
     new_options = [EMPTY_OPTION]
 
-    if len(options) <= 24:
+    if len(options) <= OPTION_LIMIT - 1:
         return new_options + options
 
     if primary_element is not None:

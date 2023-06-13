@@ -52,7 +52,7 @@ async def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
 
     import heapq
 
-    # extend names up to 25
+    # extend names up to OPTION_LIMIT
     matching_item_names += heapq.nsmallest(
         OPTION_LIMIT - len(matching_item_names),
         filter_item_names(search_for(input, pack.iter_item_names())),

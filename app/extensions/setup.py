@@ -11,7 +11,7 @@ from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
 from config import TEST_GUILDS
-from library_extensions import Markdown
+from library_extensions import OPTION_LIMIT, Markdown
 from library_extensions.ui import wait_for_modal
 
 if t.TYPE_CHECKING:
@@ -139,7 +139,7 @@ async def raise_autocomplete(_: CommandInteraction, input: str) -> list[str]:
         return []
 
     input = input.lower()
-    return [exc for exc in commands.errors.__all__ if input in exc.lower()][:25]
+    return [exc for exc in commands.errors.__all__ if input in exc.lower()][:OPTION_LIMIT]
 
 
 @plugin.slash_command(name="eval")

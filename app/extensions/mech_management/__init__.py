@@ -10,7 +10,7 @@ from disnake.utils import MISSING
 
 from bridges import mech_name_autocomplete
 from bridges.context import AppContext
-from library_extensions import command_mention, embed_image, embed_to_footer
+from library_extensions import OPTION_LIMIT, command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
 from shared.utils import wrap_bytes
 
@@ -183,8 +183,8 @@ async def export(inter: CommandInteraction, context: AppContext) -> None:
     mech_select = Select(
         placeholder="Select mechs to export",
         custom_id="select:exported_mechs",
-        max_values=min(25, build_count),
-        options=list(player.builds)[:25],
+        max_values=min(OPTION_LIMIT, build_count),
+        options=list(player.builds)[:OPTION_LIMIT],
     )
     await inter.response.send_message(components=mech_select, ephemeral=True)
 
