@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import io
-import os
 import pathlib
 import typing as t
 
@@ -15,9 +14,11 @@ from typing_extensions import Self, override
 from shared import SESSION_CTX
 
 if t.TYPE_CHECKING:
+    from os import PathLike
+
     from PIL.Image import Image
 
-Pathish = os.PathLike[str] | str
+Pathish: t.TypeAlias = "PathLike[str] | str"
 """A literal file or path."""
 
 Urlish = yarl.URL | str
@@ -83,8 +84,7 @@ class Resource:
     @property
     def extension(self) -> str | None:
         """File extension, if there is one."""
-        _, ext = os.path.splitext(self.filename)
-        return ext or None
+        return pathlib.PurePath(self.filename).suffix or None
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(url={self.url!r}, filename={self.filename!r})"
@@ -125,7 +125,7 @@ class URL(Resource):
     @property
     @override
     def filename(self) -> str:
-        return os.path.basename(self.url.path)
+        return pathlib.PurePath(self.url.path).name
 
     @override
     async def get_size(self) -> int | None:
