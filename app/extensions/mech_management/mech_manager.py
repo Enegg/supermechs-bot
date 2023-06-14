@@ -203,7 +203,7 @@ class MechView(InteractionCheck, PaginatorView):
         assert self.active is not None
         (value,) = select.values
 
-        if select.check_option(value):
+        if select.update_page_if_own_option(value):
             return await inter.response.edit_message(view=self)
 
         item_name = None if value == EMPTY_OPTION.value else value
