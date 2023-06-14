@@ -12,6 +12,7 @@ from bridges import mech_name_autocomplete
 from bridges.context import AppContext
 from library_extensions import OPTION_LIMIT, command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
+from manager import player_manager
 from shared.utils import wrap_bytes
 
 from .mech_manager import MechView
@@ -92,7 +93,7 @@ async def build(
         The name of existing build or one to create.
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
-    player = context.player
+    player = player_manager.lookup_or_create(inter.author)
 
     if name is None:
         mech = player.get_active_or_create_build()
@@ -169,7 +170,7 @@ async def import_(inter: CommandInteraction, context: AppContext, file: Attachme
 async def export(inter: CommandInteraction, context: AppContext) -> None:
     """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
 
-    player = context.player
+    player = player_manager.lookup_or_create(inter.author)
     build_count = len(player.builds)
 
     if build_count == 0:
