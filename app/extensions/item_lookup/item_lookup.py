@@ -45,25 +45,23 @@ class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
         for name, value, inline in factory(item, False, False):
             embed.add_field(name, value, inline=inline)
 
+    async def update(self, inter: MessageInteraction, buffs: bool, avg: bool) -> None:
+        self.embed.clear_fields()
+        for name, value, inline in self.field_factory(self.item, buffs, avg):
+            self.embed.add_field(name, value, inline=inline)
+        await inter.response.edit_message(embed=self.embed, view=self)
+
     @positioned(0, 0)
     @button(cls=ToggleButton, label="Buffs", custom_id="button:buffs")
     async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
-        self.embed.clear_fields()
-        for name, value, inline in self.field_factory(self.item, button.on, self.avg_button.on):
-            self.embed.add_field(name, value, inline=inline)
-        await inter.response.defer()
-        await inter.edit_original_message(embed=self.embed, view=self)
+        await self.update(inter, button.on, self.avg_button.on)
 
     @positioned(0, 1)
     @button(cls=ToggleButton, label="Damage average", custom_id="button:dmg")
     async def avg_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
-        self.embed.clear_fields()
-        for name, value, inline in self.field_factory(self.item, self.buff_button.on, button.on):
-            self.embed.add_field(name, value, inline=inline)
-        await inter.response.defer()
-        await inter.edit_original_message(embed=self.embed, view=self)
+        await self.update(inter, self.buff_button.on, button.on)
 
     @positioned(0, 2)
     @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
@@ -99,7 +97,7 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
 
     @positioned(0, 1)
     @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
-    async def quit_button(self, button: Button[None], inter: MessageInteraction) -> None:
+    async def quit_button(self, _: Button[None], inter: MessageInteraction) -> None:
         await inter.response.defer()
         self.stop()
 
@@ -426,7 +424,7 @@ def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], li
 
                     field.append(string)
 
-            case _:
+            case _:  # pyright: ignore[reportUnnecessaryComparison]
                 raise ValueError("Invalid structure")
 
     return name_field, first_item, second_item
