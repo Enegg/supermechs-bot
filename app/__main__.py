@@ -56,7 +56,6 @@ async def create_aiohttp_session(client: HTTPClient, /) -> t.AsyncIterator[Clien
 async def main() -> None:
     client = SMClient()
     bot = ModularBot(
-        client=client,
         intents=Intents(guilds=True),
         activity=Game("SuperMechs"),
         test_guilds=TEST_GUILDS if __debug__ else None,
