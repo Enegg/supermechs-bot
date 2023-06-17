@@ -14,8 +14,8 @@ __all__ = ("Manager",)
 # P: arguments VT is created from
 
 
-def func_repr(func: t.Callable[..., t.Any]) -> str:
-    """Returns a signature of a function."""
+def callable_repr(func: t.Callable[..., t.Any]) -> str:
+    """Returns a signature of a callable."""
     signature = inspect.signature(func)
     return f"{func.__name__}{signature}"
 
@@ -39,10 +39,10 @@ class Manager(t.Generic[KT, VT, P]):
     key: callable creating keys to store objects under.
     """
 
-    factory: t.Callable[P, VT] = field(repr=func_repr)
+    factory: t.Callable[P, VT] = field(repr=callable_repr)
     """Creates an object from given value."""
 
-    key: t.Callable[P, KT] = field(repr=func_repr)
+    key: t.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
     _store: dict[KT, VT] = field(factory=dict, init=False, repr=large_container_repr)

@@ -1,6 +1,8 @@
 from disnake import CommandInteraction
 from disnake.ext import commands
 
+from manager import player_manager
+
 from .autocompleters import item_name_autocomplete
 from .context import AppContext
 
@@ -12,6 +14,9 @@ __all__ = ("register_injections",)
 
 def register_injections(client: SMClient) -> None:
     """Entry point for registering all injections for the commands module."""
+    # NOTE: this function exists purely so as not to have the injectors
+    # being registered as a *side effect* of importing this module (as otherwise
+    # somewhere in the main.py we'd need a blank import which isn't used anywhere)
 
     @commands.register_injection
     def item_injector(inter: CommandInteraction, name: Name) -> Item:
@@ -31,7 +36,7 @@ def register_injections(client: SMClient) -> None:
 
     @commands.register_injection
     def player_injector(inter: CommandInteraction) -> Player:
-        return client.state.store_player(inter.author)
+        return player_manager.lookup_or_create(inter.author)
 
     @commands.register_injection
     def context_injector(inter: CommandInteraction) -> AppContext:

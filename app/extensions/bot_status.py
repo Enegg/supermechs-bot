@@ -10,9 +10,10 @@ from disnake.utils import format_dt, oauth_url
 
 from bridges import AppContext
 from config import TEST_GUILDS
-from library_extensions import Markdown
+from library_extensions import Markdown as MD
 from shared.metrics import get_ram_utilization, get_sloc
 from shared.utils import wrap_bytes
+from manager import player_manager
 
 from supermechs.urls import PACK_V2
 
@@ -40,7 +41,7 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
     """Displays information about the bot."""
 
     bot = plugin.bot
-    client = context.client
+    default_pack = context.client.default_pack
     app_info = await bot.application_info()
 
     general_fields = [
@@ -52,10 +53,10 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
     ]
 
     supermechs_fields = [
-        f"Registered players: {len(client.state._players)}",
+        f"Registered players: {len(player_manager.mapping)}",
         f"Invoked commands: {bot.command_invocations.total()}",
-        f"Default item pack: {Markdown.hyperlink(client.default_pack.key, PACK_V2)}",
-        f"Total items: {len(client.default_pack.items)}",
+        f"Default item pack: {MD.hyperlink(default_pack.key, PACK_V2)}",
+        f"Total items: {len(default_pack.items)}",
     ]
 
     bits, exponent = wrap_bytes(get_ram_utilization())
@@ -69,7 +70,7 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
 
     if app_info.bot_public:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
-        general_fields.append(Markdown.hyperlink("**Invite link**", invite))
+        general_fields.append(MD.hyperlink("**Invite link**", invite))
 
     embed = (
         Embed(title="Bot info", color=inter.me.color)

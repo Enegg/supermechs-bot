@@ -10,7 +10,7 @@ from disnake.utils import MISSING
 
 from bridges import mech_name_autocomplete
 from bridges.context import AppContext
-from library_extensions import command_mention, embed_image, embed_to_footer
+from library_extensions import OPTION_LIMIT, command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
 from manager import player_manager, renderer_manager
 from shared.utils import wrap_bytes
@@ -151,20 +151,23 @@ async def import_(inter: CommandInteraction, context: AppContext, file: Attachme
     except (ValueError, TypeError) as err:
         raise commands.UserInputError(f"Parsing the file failed: {err}") from err
 
-    if not mechs:
-        message = "No mechs loaded."
-
-    else:
-        # TODO: warn about overwriting
-        context.player.builds.update((mech.name, mech) for mech in mechs)
-        message = "Loaded mechs: " + ", ".join(f"`{mech.name}`" for mech in mechs)
+    string_builder = io.StringIO()
 
     if failed:
-        message += "\nFailed to load:\n" + "\n".join(
-            f"{index}: {reason}" for index, reason in failed
-        )
+        string_builder.write("Failed to load:\n")
+        for index, reason in failed:
+            string_builder.write(f"{index}: {reason}\n")
 
-    await inter.response.send_message(message, ephemeral=True)
+    if mechs:
+        # TODO: warn about overwriting
+        context.player.builds.update((mech.name, mech) for mech in mechs)
+        string_builder.write("Loaded mechs: ")
+        string_builder.write(", ".join(f"`{mech.name}`" for mech in mechs))
+
+    else:
+        string_builder.write("No mechs loaded.")
+
+    await inter.response.send_message(string_builder.getvalue(), ephemeral=True)
 
 
 @mech.sub_command()
@@ -185,8 +188,8 @@ async def export(inter: CommandInteraction, context: AppContext) -> None:
     mech_select = Select(
         placeholder="Select mechs to export",
         custom_id="select:exported_mechs",
-        max_values=min(25, build_count),
-        options=list(player.builds)[:25],
+        max_values=min(OPTION_LIMIT, build_count),
+        options=list(player.builds)[:OPTION_LIMIT],
     )
     await inter.response.send_message(components=mech_select, ephemeral=True)
 
