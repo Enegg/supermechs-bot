@@ -3,9 +3,9 @@ import typing as t
 
 from .manager import Manager
 
-from SuperMechs.api import ItemPack, Player, extract_info
-from SuperMechs.rendering import PackRenderer
-from SuperMechs.typedefs import AnyItemPack
+from supermechs.api import ItemPack, Player, extract_info
+from supermechs.rendering import PackRenderer
+from supermechs.typedefs import AnyItemPack
 
 __all__ = ("player_manager", "item_pack_manager", "renderer_manager")
 

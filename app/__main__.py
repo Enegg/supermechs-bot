@@ -18,7 +18,7 @@ from library_extensions import setup_channel_logger
 from library_extensions.bot import ModularBot
 from shared import SESSION_CTX
 
-from SuperMechs.client import SMClient
+from supermechs.client import SMClient
 
 load_dotenv()
 

@@ -1,10 +1,12 @@
 import logging
 import typing as t
 
-from app.abstract.files import URL
 from app.shared import SESSION_CTX
-from app.SuperMechs.pack_interface import ItemPack
-from app.SuperMechs.urls import PACK_V2
+
+from files import URL
+
+from supermechs.item_pack import ItemPack
+from supermechs.urls import PACK_V2
 
 logging.basicConfig(level=logging.DEBUG)
 

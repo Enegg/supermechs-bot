@@ -5,7 +5,7 @@ from attrs import define
 if t.TYPE_CHECKING:
     from disnake import CommandInteraction
 
-    from SuperMechs.api import Player, SMClient
+    from supermechs.api import Player, SMClient
 
 __all__ = ("AppContext",)
 

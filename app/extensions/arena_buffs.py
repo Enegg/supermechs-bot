@@ -19,7 +19,7 @@ from library_extensions.ui import (
     select,
 )
 
-from SuperMechs.api import MAX_BUFFS, STATS, ArenaBuffs, Player
+from supermechs.api import MAX_BUFFS, STATS, ArenaBuffs, Player
 
 if t.TYPE_CHECKING:
     from library_extensions.bot import ModularBot  # noqa: F401

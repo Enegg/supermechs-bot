@@ -21,9 +21,9 @@ from library_extensions.ui import (
     select,
 )
 
-from SuperMechs.api import ArenaBuffs, Element, InvItem, ItemPack, Mech, Player, Type
-from SuperMechs.converters import slot_to_icon_data, slot_to_type
-from SuperMechs.rendering import PackRenderer
+from supermechs.api import ArenaBuffs, Element, InvItem, ItemPack, Mech, Player, Type
+from supermechs.converters import slot_to_icon_data, slot_to_type
+from supermechs.rendering import PackRenderer
 
 
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:

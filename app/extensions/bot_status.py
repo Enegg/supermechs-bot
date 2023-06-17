@@ -14,7 +14,7 @@ from library_extensions import Markdown
 from shared.metrics import get_ram_utilization, get_sloc
 from shared.utils import wrap_bytes
 
-from SuperMechs.urls import PACK_V2
+from supermechs.urls import PACK_V2
 
 if t.TYPE_CHECKING:
     from library_extensions.bot import ModularBot  # noqa: F401

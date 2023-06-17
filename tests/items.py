@@ -1,11 +1,10 @@
 import orjson
 
-from app.abstract.files import File
-# from app.SuperMechs.images import AttachedImage, Attachment
-from app.SuperMechs.inv_item import InvItem
-from app.SuperMechs.item import Item
-from app.SuperMechs.typedefs import ItemDictVer3
+from files import File
 
+# from supermechs.images import AttachedImage, Attachment
+from supermechs.api import InvItem, Item
+from supermechs.typedefs import ItemDictVer3
 
 with open("tests/example_item_v2.json") as file:
     data: ItemDictVer3 = orjson.loads(file.read())

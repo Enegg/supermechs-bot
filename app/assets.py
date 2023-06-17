@@ -4,7 +4,7 @@ import typing as t
 
 from disnake.utils import MISSING
 
-from SuperMechs.enums import Element, Tier, Type
+from supermechs.enums import Element, Tier, Type
 
 
 class TierData(t.NamedTuple):

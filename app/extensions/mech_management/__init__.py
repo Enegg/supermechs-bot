@@ -12,12 +12,13 @@ from bridges import mech_name_autocomplete
 from bridges.context import AppContext
 from library_extensions import command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
+from manager import player_manager, renderer_manager
 from shared.utils import wrap_bytes
 
 from .mech_manager import MechView
 
-from SuperMechs.api import STATS, Player, Type, sanitize_name
-from SuperMechs.ext.wu_compat import dump_mechs, load_mechs
+from supermechs.api import STATS, Player, Type, sanitize_name
+from supermechs.ext.workshop.wu_compat import dump_mechs, load_mechs
 
 if t.TYPE_CHECKING:
     from library_extensions.bot import ModularBot  # noqa: F401
@@ -27,6 +28,7 @@ plugin = plugins.Plugin["ModularBot"](name="Mech-manager", logger=__name__)
 
 @plugin.load_hook(post=True)
 async def on_load() -> None:
+    await plugin.bot.wait_until_ready()
     buffs_command = plugin.bot.get_global_command_named("buffs")
     assert buffs_command is not None
     MechView.buffs_command = command_mention(buffs_command)
@@ -92,7 +94,8 @@ async def build(
         The name of existing build or one to create.
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
-    player = context.player
+    player = player_manager.lookup_or_create(inter.author)
+    renderer = renderer_manager.mapping["@Darkstare"]
 
     if name is None:
         mech = player.get_active_or_create_build()
@@ -100,7 +103,6 @@ async def build(
     else:
         mech = player.get_or_create_build(sanitize_name(name))
 
-    renderer = context.client.get_default_renderer()
     view = MechView(
         mech=mech,
         pack=context.client.default_pack,
@@ -169,7 +171,7 @@ async def import_(inter: CommandInteraction, context: AppContext, file: Attachme
 async def export(inter: CommandInteraction, context: AppContext) -> None:
     """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
 
-    player = context.player
+    player = player_manager.lookup_or_create(inter.author)
     build_count = len(player.builds)
 
     if build_count == 0:

@@ -4,8 +4,8 @@ from disnake.ext import commands
 from .autocompleters import item_name_autocomplete
 from .context import AppContext
 
-from SuperMechs.api import Item, Player, SMClient
-from SuperMechs.typedefs import Name
+from supermechs.api import Item, Player, SMClient
+from supermechs.typedefs import Name
 
 __all__ = ("register_injections",)
 

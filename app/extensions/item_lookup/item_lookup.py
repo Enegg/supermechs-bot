@@ -19,8 +19,8 @@ from library_extensions.ui import (
 )
 from typeshed import dict_items_as, twotuple
 
-from SuperMechs.api import MAX_BUFFS, STATS, AnyStats, Item, Stat, ValueRange
-from SuperMechs.utils import mean_and_deviation
+from supermechs.api import MAX_BUFFS, STATS, AnyStats, Item, Stat, ValueRange
+from supermechs.utils import mean_and_deviation
 
 
 class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):

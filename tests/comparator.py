@@ -4,15 +4,14 @@ from pathlib import Path
 sys.path.append(str(Path.cwd()))
 sys.path.append(str(Path.cwd() / "app"))
 
-from app.SuperMechs.ext.stat_comparison import (
+from files import File
+
+from supermechs.api import Item
+from supermechs.ext.comparators.stat_comparator import (
     STAT_KEY_ORDER,
     Comparator,
     ComparisonContext,
 )
-
-from abstract.files import File
-
-from SuperMechs.api import Item
 
 
 async def main():

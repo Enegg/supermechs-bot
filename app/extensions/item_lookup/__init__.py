@@ -8,11 +8,12 @@ from disnake.ext import commands, plugins
 from bridges import AppContext, item_name_autocomplete
 from config import TEST_GUILDS
 from library_extensions import embed_image, sanitize_filename
+from manager import renderer_manager
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
-from SuperMechs.api import Element, Item, Type
-from SuperMechs.typedefs import LiteralElement, LiteralType, Name
+from supermechs.api import Element, Item, Type
+from supermechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
     from library_extensions.bot import ModularBot  # noqa: F401
@@ -22,8 +23,8 @@ if t.TYPE_CHECKING:
 
 else:
     # disnake cannot parse unions of literals
-    LiteralTypeOrAny = t.Literal[t.get_args(LiteralType) + ("ANY",)]
-    LiteralElementOrAny = t.Literal[t.get_args(LiteralElement) + ("ANY",)]
+    LiteralTypeOrAny = t.Literal[(*t.get_args(LiteralType), "ANY")]
+    LiteralElementOrAny = t.Literal[(*t.get_args(LiteralElement), "ANY")]
 
 
 plugin = plugins.Plugin["ModularBot"](name="Item-lookup", logger=__name__)
@@ -32,7 +33,6 @@ plugin = plugins.Plugin["ModularBot"](name="Item-lookup", logger=__name__)
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
-    context: AppContext,
     item: Item,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
@@ -49,7 +49,7 @@ async def item(
     compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
     del type, element  # used for autocomplete only
-    renderer = context.client.get_default_renderer()
+    renderer = renderer_manager.mapping["@Darkstare"]
     image = renderer.get_item_sprite(item, item.transform_range.max).image
     url, file = embed_image(image, sanitize_filename(item.name, ".png"))
 
