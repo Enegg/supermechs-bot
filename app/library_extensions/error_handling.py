@@ -1,9 +1,10 @@
 import io
 import logging
 import traceback
+import typing as t
 from functools import partial
 
-from disnake import Client, CommandInteraction, File, LocalizationProtocol
+from disnake import Client, Colour, CommandInteraction, Embed, File, LocalizationProtocol
 from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.ext.commands.common_bot_base import CommonBotBase
@@ -12,6 +13,21 @@ from disnake.utils import MISSING
 from .text_formatting import Markdown, localized_text
 
 __all__ = ("setup_channel_logger",)
+
+
+class SenderArguments(t.TypedDict, total=False):
+    content: str | None
+    embed: Embed
+    embeds: list[Embed]
+    file: File
+    files: list[File]
+    ephemeral: bool
+    suppress_embeds: bool
+
+
+def traceback_to_discord_file(traceback: str, /) -> File:
+    bio = io.BytesIO(traceback.encode())
+    return File(bio, "traceback.py", description="Traceback of a recent exception.")
 
 
 def exception_to_message(content: str, exception: BaseException) -> tuple[str, File]:
@@ -23,14 +39,27 @@ def exception_to_message(content: str, exception: BaseException) -> tuple[str, F
     traceback_text = "".join(traceback.format_exception(exception))
 
     if len(content) + len(traceback_text) + 10 > 2000:
-        bio = io.BytesIO(traceback_text.encode())
-        file = File(bio, "traceback.py")
+        file = traceback_to_discord_file(traceback_text)
 
     else:
         file = MISSING
         content = f"{content}\n{Markdown.codeblock(traceback_text, 'py')}"
 
     return content, file
+
+
+def format_exception_or_file(exception: BaseException, limit: int = 2000) -> str | File:
+    """Formats exception data and returns message content or file to send a message with.
+
+    Formatted traceback is wrapped in a codeblock and appended to content if the resulting string
+    stays under 2000 character limit, otherwise creates a File.
+    """
+    traceback_text = "".join(traceback.format_exception(exception))
+
+    if len(traceback_text) + 10 > limit:
+        return traceback_to_discord_file(traceback_text)
+
+    return Markdown.codeblock(traceback_text, "py")
 
 
 async def on_slash_command_error(
@@ -42,6 +71,7 @@ async def on_slash_command_error(
     error: commands.CommandError,
 ) -> None:
     file = MISSING
+    user_embed = MISSING
 
     if isinstance(error, commands.NotOwner):
         info = localized_text("This is a developer-only command.", "CMD_DEV", i18n, inter.locale)
@@ -65,27 +95,37 @@ async def on_slash_command_error(
         arguments = ", ".join(
             f"`{option}: {value}`" for option, value in inter.filled_options.items()
         )
-
-        text = (
-            f"{error}\n"
+        desc = (
             f"Place: `{inter.guild or inter.channel}`\n"
-            f"Command invocation: {inter.author.mention} ({inter.author.display_name}) "
-            f"`/{inter.application_command.qualified_name}` {arguments}"
+            f"User: {inter.author.mention} ({inter.author.display_name})\n"
+            f"Command: `/{inter.application_command.qualified_name}` {arguments}\n"
+            f"Exception: `{error}`"
         )
-        message_content, file = exception_to_message(text, error)
 
-        if __debug__:
-            info = message_content
+        embed = (
+            Embed(title="⚠️ Unhandled exception", description=desc, color=Colour.red())
+        )
+        file_or_content = format_exception_or_file(error)
+
+        if isinstance(file_or_content, str):
+            embed.add_field("Traceback", file_or_content, inline=False)
 
         else:
-            await channel.send(message_content, file=file)
-            logger.exception(text, exc_info=error)
+            file = file_or_content
+
+        if __debug__:
+            info = None
+            user_embed = embed
+
+        else:
+            await channel.send(embed=embed, file=file)
+            logger.exception(desc, exc_info=error)
 
             info = localized_text(
                 "Command executed with an error...", "CMD_ERROR", i18n, inter.locale
             )
 
-    await inter.send(info, file=file, ephemeral=True)
+    await inter.send(info, file=file, embed=user_embed, ephemeral=not __debug__)
 
 
 async def setup_channel_logger(client: Client, channel_id: int, logger: logging.Logger) -> None:
