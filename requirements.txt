@@ -1,7 +1,7 @@
 # General
 python-dotenv == 0.19.*
 typing-extensions >= 4.4.1
-attrs == 22.1.*  # 22.1.0 is first officially supported version for python 3.11
+attrs == 22.1.*  # >= 22.1.0 for python 3.11
 aiopath >= 0.6.0  # 3.10+
 aiohttp == 3.8.*
 
@@ -9,10 +9,10 @@ aiohttp == 3.8.*
 # git+https://github.com/Enegg/python-socketio
 git+https://github.com/Enegg/supermechs
 Pillow == 9.3.*
-orjson  # pin at >= 3.7.7 for python 3.11
+orjson  # >= 3.7.7 for python 3.11
 
 # Bot
-disnake == 2.6.*
+disnake == 2.9.*  # Range/String; >= 3.8 for python 3.11
 git+https://github.com/Chromosomologist/disnake-ext-plugins
 
 # Utility
