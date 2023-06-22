@@ -10,3 +10,9 @@ TELEPORTER = "https://i.imgur.com/Fnq035A.png"
 CHARGE = "https://i.imgur.com/UnDqJx8.png"
 HOOK = "https://i.imgur.com/8oAoPcJ.png"
 MODULE = "https://i.imgur.com/dQR8UgN.png"
+
+[gifs]
+frantics = [
+    "https://i.imgur.com/Bbbf4AH.mp4",
+    "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4"
+]
