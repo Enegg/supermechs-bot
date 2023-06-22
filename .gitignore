@@ -14,3 +14,6 @@ dev/
 
 # local data files
 tests/data/
+
+# Ignore dynaconf secret files
+.secrets.*
