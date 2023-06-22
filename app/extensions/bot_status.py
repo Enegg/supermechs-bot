@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import random
 import sys
 import typing as t
@@ -61,11 +62,18 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
 
     bits, exponent = wrap_bytes(get_ram_utilization())
 
+    try:
+        # coro is shielded as it will eventually cache the result
+        loc = await asyncio.wait_for(asyncio.shield(get_sloc(".")), 2.5)
+
+    except asyncio.TimeoutError:
+        loc = "???"
+
     perf_fields = [
         f"Started: {format_dt(bot.started_at, 'R')}",
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bits}{exponent}",
-        f"Lines of code: {await get_sloc()}",
+        f"Lines of code: {loc}",
     ]
 
     if app_info.bot_public:
