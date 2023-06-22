@@ -4,7 +4,15 @@ import traceback
 import typing as t
 from functools import partial
 
-from disnake import Client, Colour, CommandInteraction, Embed, File, LocalizationProtocol
+from disnake import (
+    Client,
+    Colour,
+    CommandInteraction,
+    Embed,
+    File,
+    InteractionTimedOut,
+    LocalizationProtocol,
+)
 from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.ext.commands.common_bot_base import CommonBotBase
@@ -125,7 +133,11 @@ async def on_slash_command_error(
                 "Command executed with an error...", "CMD_ERROR", i18n, inter.locale
             )
 
-    await inter.send(info, file=file, embed=user_embed, ephemeral=not __debug__)
+    try:
+        await inter.send(info, file=file, embed=user_embed, ephemeral=not __debug__)
+
+    except InteractionTimedOut:
+        pass
 
 
 async def setup_channel_logger(client: Client, channel_id: int, logger: logging.Logger) -> None:
