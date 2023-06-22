@@ -84,7 +84,7 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 async def build(
     inter: CommandInteraction,
     context: AppContext,
-    name: str | None = commands.Param(None, min_length=1, max_length=32),
+    name: commands.String[str, 1, 32] | None = None,
 ) -> None:
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
 
