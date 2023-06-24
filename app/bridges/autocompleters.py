@@ -5,7 +5,7 @@ from disnake import CommandInteraction
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
 
-from supermechs.api import Element, Item, Type, sanitize_name
+from supermechs.api import Element, ItemBase, Type, sanitize_name
 from supermechs.typedefs import Name
 from supermechs.utils import search_for
 
@@ -14,8 +14,8 @@ __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 AutocompleteRetT = list[str] | dict[str, str]
 
 
-def _get_item_filters(inter: CommandInteraction) -> list[t.Callable[[Item], bool]]:
-    filters: list[t.Callable[[Item], bool]] = []
+def _get_item_filters(inter: CommandInteraction) -> list[t.Callable[[ItemBase], bool]]:
+    filters: list[t.Callable[[ItemBase], bool]] = []
 
     if (type_name := inter.filled_options.get("type", "ANY")) != "ANY":
         filters.append(lambda item: item.type is Type[type_name])
