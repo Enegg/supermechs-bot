@@ -1,5 +1,6 @@
 import logging
-import typing as t
+
+from disnake.abc import User
 
 from .manager import Manager
 
@@ -12,17 +13,7 @@ __all__ = ("player_manager", "item_pack_manager", "renderer_manager")
 LOGGER = logging.getLogger(__name__)
 
 
-class UserLike(t.Protocol):
-    @property
-    def id(self) -> int:
-        ...
-
-    @property
-    def name(self) -> str:
-        ...
-
-
-def create_player(user: UserLike) -> Player:
+def create_player(user: User) -> Player:
     LOGGER.info(f"Player created: {user.id} ({user.name})")
     return Player(id=user.id, name=user.name)
 
