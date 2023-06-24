@@ -3,7 +3,7 @@ import typing as t
 from disnake import CommandInteraction
 
 from library_extensions import OPTION_LIMIT
-from manager import item_pack_manager, player_manager
+from managers import item_pack_manager, player_manager
 
 from supermechs.api import Element, Item, Type, sanitize_name
 from supermechs.typedefs import Name

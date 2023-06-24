@@ -9,12 +9,12 @@ from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
-from bridges import AppContext
+from bridges import AppContext  # noqa: TCH001
 from config import TEST_GUILDS
 from library_extensions import Markdown as MD
+from managers import player_manager
 from shared.metrics import get_ram_utilization, get_sloc
 from shared.utils import wrap_bytes
-from manager import player_manager
 
 from supermechs.urls import PACK_V2
 

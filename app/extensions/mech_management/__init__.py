@@ -12,7 +12,7 @@ from bridges import mech_name_autocomplete
 from bridges.context import AppContext
 from library_extensions import OPTION_LIMIT, command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
-from manager import player_manager, renderer_manager
+from managers import player_manager, renderer_manager
 from shared.utils import wrap_bytes
 
 from .mech_manager import MechView

@@ -1,7 +1,7 @@
 from disnake import CommandInteraction
 from disnake.ext import commands
 
-from manager import player_manager
+from managers import player_manager
 
 from .autocompleters import item_name_autocomplete
 from .context import AppContext
