@@ -13,13 +13,15 @@ __all__ = ("AsyncManager",)
 
 
 @define
-class AsyncManager(t.Generic[KT, VT, P]):
-    """Provides means to asynchronously create, retrieve and cache objects.
+class AsyncManager(t.Generic[P, VT, KT]):
+    """Provides means to asynchronously create, store and retrieve objects.
+
+    Note: concurrent calls with same arguments will run the factory only once.
 
     Parameters
     ----------
     factory: async callable creating objects from arguments P.
-    key: callable creating keys to store objects under.
+    key: callable computing keys to store objects under.
     """
     factory: t.Callable[P, Coro[VT]] = field(repr=callable_repr)
     """Creates an object from given value."""
@@ -56,9 +58,8 @@ class AsyncManager(t.Generic[KT, VT, P]):
     @asynccontextmanager
     async def _acquire_lock(self, key: KT, /) -> t.AsyncIterator[None]:
         lock = self._locks.get(key)
-        owner = lock is None
 
-        if owner:
+        if owner := lock is None:
             lock = self._locks[key] = anyio.Lock()
 
         try:

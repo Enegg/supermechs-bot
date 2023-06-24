@@ -9,12 +9,12 @@ from typeshed import KT, VT, P
 __all__ = ("Manager", "default_key")
 
 
-# VT: the actual value
-# KT: value VT is stored under
-# P: arguments VT is created from
+# P: parameter specification of callable creating objects VT
+# VT: type of stored values
+# KT: type of keys values are stored under
 
 
-def callable_repr(func: t.Callable[..., t.Any]) -> str:
+def callable_repr(func: t.Callable[..., t.Any], /) -> str:
     """Returns a signature of a callable."""
     signature = inspect.signature(func)
     return f"{func.__name__}{signature}"
@@ -45,13 +45,13 @@ def default_key(*args: t.Hashable, **kwargs: t.Hashable) -> t.Hashable:
 
 
 @define
-class Manager(t.Generic[KT, VT, P]):
-    """Provides means to create, retrieve and cache objects.
+class Manager(t.Generic[P, VT, KT]):
+    """Provides means to create, store and retrieve objects.
 
     Parameters
     ----------
     factory: callable creating objects from arguments P.
-    key: callable creating keys to store objects under.
+    key: callable computing keys to store objects under.
     """
     factory: t.Callable[P, VT] = field(repr=callable_repr)
     """Creates an object from given value."""
