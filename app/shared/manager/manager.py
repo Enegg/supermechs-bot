@@ -6,7 +6,7 @@ from attrs import define, field
 
 from typeshed import KT, VT, P
 
-__all__ = ("Manager",)
+__all__ = ("Manager", "default_key")
 
 
 # VT: the actual value
@@ -29,6 +29,21 @@ def large_container_repr(container: t.Sized, /, *, threshold: int = 20) -> str:
     return repr(container)
 
 
+def default_key(*args: t.Hashable, **kwargs: t.Hashable) -> t.Hashable:
+    """Computes a key from all args and kwargs by creating a single large tuple.
+    Requires all members to be hashable.
+    """
+    if not kwargs:
+        return args
+
+    args_list = list(args)
+
+    for key_val_tuple in kwargs.items():
+        args_list += key_val_tuple
+
+    return tuple(args_list)
+
+
 @define
 class Manager(t.Generic[KT, VT, P]):
     """Provides means to create, retrieve and cache objects.
@@ -38,14 +53,13 @@ class Manager(t.Generic[KT, VT, P]):
     factory: callable creating objects from arguments P.
     key: callable creating keys to store objects under.
     """
-
     factory: t.Callable[P, VT] = field(repr=callable_repr)
     """Creates an object from given value."""
 
     key: t.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: dict[KT, VT] = field(factory=dict, init=False, repr=large_container_repr)
+    _store: t.MutableMapping[KT, VT] = field(factory=dict, init=False, repr=large_container_repr)
 
     @property
     def mapping(self) -> t.Mapping[KT, VT]:
