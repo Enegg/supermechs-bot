@@ -1,7 +1,7 @@
 import typing as t
 
 from disnake import SelectOption
-from disnake.ui.select import Select, select
+from disnake.ui.select import StringSelect as Select, string_select as select
 from disnake.utils import MISSING
 
 S_CO = t.TypeVar("S_CO", bound=Select[None], covariant=True)
