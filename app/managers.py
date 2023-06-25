@@ -2,7 +2,7 @@ import logging
 
 from disnake.abc import User
 
-from .manager import Manager
+from shared.manager import Manager
 
 from supermechs.api import ItemPack, Player, extract_info
 from supermechs.rendering import PackRenderer
