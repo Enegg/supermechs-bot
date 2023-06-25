@@ -1,37 +1,50 @@
 from __future__ import annotations
 
-import asyncio
 import typing as t
-from functools import wraps
 from pathlib import Path
 
+import anyio
 import psutil
 
-from typeshed import KT, VT, Coro
+from typeshed import Coro, P, T
+
+from .manager import AsyncManager, default_key
 
 
-def cache_async_safe(func: t.Callable[[KT], Coro[VT]], /) -> t.Callable[[KT], Coro[VT]]:
-    """Cache decorator for async functions which prevents concurrent calls to func using same arguments."""
+def async_memoize(func: t.Callable[P, Coro[T]], /) -> t.Callable[P, Coro[T]]:
+    """Memoization decorator for async functions.
 
-    results = dict[KT, VT | asyncio.Future[VT]]()
+    It is safe to run the resulting coroutine function concurrently to self using same
+    arguments, in which case the decorated coro is ran only once.
+    """
+    key = t.cast(t.Callable[P, t.Hashable], default_key)
+    manager = AsyncManager(func, key)
+    return manager.lookup_or_create
 
-    @wraps(func)
-    async def wrapper(key: KT, /) -> VT:
-        value_or_future = results.get(key)
 
-        if value_or_future is not None:
-            if isinstance(value_or_future, asyncio.Future):
-                return await value_or_future
 
-            return value_or_future
+# async def _file_reader(path: anyio.Path, limiter: anyio.CapacityLimiter) -> int:
+#     sloc = 0
 
-        fut = results[key] = asyncio.Future[VT]()
-        result = await func(key)
-        fut.set_result(result)
-        results[key] = result
-        return result
+#     async with limiter, await path.open(encoding="utf8") as file:
+#         async for line in file:
+#             if not line or line.lstrip().startswith("#"):
+#                 continue
 
-    return wrapper
+#             sloc += 1
+
+#     return sloc
+
+
+# async def _get_sloc_a(directory: str) -> int:
+#     sloc = 0
+
+#     limiter = anyio.CapacityLimiter(10)
+
+#     async with anyio.create_task_group() as group:
+#         async for path in anyio.Path(directory).glob("**/*.py"):
+#             group.start_soon(_file_reader, path, limiter)
+
 
 
 def _get_sloc(directory: str) -> int:
@@ -48,10 +61,10 @@ def _get_sloc(directory: str) -> int:
     return sloc
 
 
-@cache_async_safe
+@async_memoize
 async def get_sloc(directory: str = ".") -> int:
-    """Get the source lines of code of python files within the directory."""
-    return await asyncio.to_thread(_get_sloc, directory)
+    """Get the number of source lines of code of python files within the directory."""
+    return await anyio.to_thread.run_sync(_get_sloc, directory)
 
 
 def get_ram_utilization(pid: int | None = None, /) -> int:
