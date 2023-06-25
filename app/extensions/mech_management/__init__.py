@@ -185,6 +185,7 @@ async def export(inter: CommandInteraction, context: AppContext) -> None:
         file = File(fp, "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
+    # TODO: >25 mechs
     mech_select = Select(
         placeholder="Select mechs to export",
         custom_id="select:exported_mechs",
