@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import logging
 import os
 import typing as t
 from functools import partial
 
+import anyio
 from aiohttp import ClientSession, ClientTimeout
 from disnake import AllowedMentions, Game, Intents
-from disnake.http import HTTPClient
 from dotenv import load_dotenv
 
 from bridges import register_injections
@@ -19,6 +18,10 @@ from library_extensions.bot import ModularBot
 from shared import SESSION_CTX
 
 from supermechs.client import SMClient
+
+if t.TYPE_CHECKING:
+    from disnake.http import HTTPClient
+
 
 load_dotenv()
 
@@ -73,13 +76,13 @@ async def main() -> None:
 
     async with create_aiohttp_session(bot.http) as session:
         SESSION_CTX.set(session)
-        await client.fetch_default_item_pack()
+        # await client.fetch_default_item_pack()
         await bot.connect()
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        anyio.run(main)
 
     except KeyboardInterrupt:
         # graceful shutdown it is not

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import asyncio
 import random
 import sys
 import typing as t
 
+import anyio
 from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
@@ -62,12 +62,10 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
 
     bits, exponent = wrap_bytes(get_ram_utilization())
 
-    try:
-        # coro is shielded as it will eventually cache the result
-        loc = await asyncio.wait_for(asyncio.shield(get_sloc(".")), 2.5)
+    loc = "???"
 
-    except asyncio.TimeoutError:
-        loc = "???"
+    async with anyio.move_on_after(2.5):
+        loc = await get_sloc(".")
 
     perf_fields = [
         f"Started: {format_dt(bot.started_at, 'R')}",
