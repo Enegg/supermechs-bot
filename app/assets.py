@@ -4,6 +4,7 @@ import typing as t
 
 from disnake.utils import MISSING
 
+from supermechs import constants
 from supermechs.enums import Element, Tier, Type
 
 
@@ -76,3 +77,21 @@ TYPE_ASSETS: t.Mapping[Type, Icon] = {
     Type.MODULE: Icon(IconData("https://i.imgur.com/dQR8UgN.png",    "<:mod:730115649866694686>")),
 }
 # fmt: on
+
+
+def get_weight_emoji(weight: int) -> str:
+    if weight < 0:
+        return "🗿"
+    if weight < constants.MAX_WEIGHT * 0.99:
+        return "⚙️"
+    if weight < constants.MAX_WEIGHT:
+        return "🆗"
+    if weight == constants.MAX_WEIGHT:
+        return "👌"
+    if weight <= constants.MAX_OVERWEIGHT:
+        return "❕"
+    return "⛔"
+
+
+def get_weight_usage(weight: int) -> str:
+    return " " + get_weight_emoji(weight)
