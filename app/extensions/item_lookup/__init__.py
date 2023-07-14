@@ -40,9 +40,7 @@ async def item(
     Parameters
     -----------
     type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
-
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
-
     compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
     del type, element  # used for autocomplete only
@@ -94,7 +92,6 @@ async def item_raw(
     Parameters
     ----------
     type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
-
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """
     del type, element  # used for autocomplete only
@@ -116,7 +113,6 @@ async def compare(inter: CommandInteraction, context: AppContext, item1: Name, i
     Parameters
     ----------
     item1: First item to compare. {{ COMPARE_FIRST }}
-
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
     pack = context.client.default_pack

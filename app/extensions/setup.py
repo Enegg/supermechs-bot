@@ -115,7 +115,6 @@ async def force_error(
     Parameters
     ----------
     exception: Name of the exception to raise.
-
     arguments: Optional arguments to pass to the exception.
     """
     err: type[commands.CommandError] | None = getattr(commands.errors, exception, None)
