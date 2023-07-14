@@ -8,11 +8,11 @@ from disnake.ext import commands, plugins
 from bridges import AppContext, item_name_autocomplete
 from config import TEST_GUILDS
 from library_extensions import embed_image, sanitize_filename
-from manager import renderer_manager
+from managers import renderer_manager
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
-from supermechs.api import Element, Item, Type
+from supermechs.api import Element, ItemBase, Type  # noqa: TCH002
 from supermechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
@@ -33,7 +33,7 @@ plugin = plugins.Plugin["ModularBot"](name="Item-lookup", logger=__name__)
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
-    item: Item,
+    item: ItemBase,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
@@ -88,7 +88,7 @@ async def item(
 @plugin.slash_command(guild_ids=TEST_GUILDS)
 async def item_raw(
     inter: CommandInteraction,
-    item: Item,
+    item: ItemBase,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
 ) -> None:
@@ -120,7 +120,7 @@ async def compare(inter: CommandInteraction, context: AppContext, item1: Name, i
         item_a = pack.get_item_by_name(item1)
         item_b = pack.get_item_by_name(item2)
 
-    except KeyError as err:
+    except LookupError as err:
         raise commands.UserInputError(str(err)) from err
 
     def str_type(type: Type) -> str:

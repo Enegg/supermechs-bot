@@ -17,8 +17,9 @@ from shared.utils import wrap_bytes
 
 from .mech_manager import MechView
 
-from supermechs.api import STATS, Player, Type, sanitize_name
+from supermechs.api import STATS, Player, Type
 from supermechs.ext.workshop.wu_compat import dump_mechs, load_mechs
+from supermechs.user_input import sanitize_string
 
 if t.TYPE_CHECKING:
     from library_extensions.bot import ModularBot  # noqa: F401
@@ -101,7 +102,7 @@ async def build(
         mech = player.get_active_or_create_build()
 
     else:
-        mech = player.get_or_create_build(sanitize_name(name))
+        mech = player.get_or_create_build(sanitize_string(name))
 
     view = MechView(
         mech=mech,
@@ -115,7 +116,7 @@ async def build(
     if mech.torso is not None:
         view.embed.color = mech.torso.element.color
 
-        image = renderer.get_mech_image(mech)
+        image = renderer.create_mech_image(mech)
         url, file = embed_image(image, view.mech_config + ".png")
         view.embed.set_image(url)
 
