@@ -104,6 +104,14 @@ async def item_raw(
     await inter.response.send_message(f"`{item!r:.1998}`", ephemeral=True)
 
 
+def str_type(type: Type) -> str:
+    return type.name.replace("_", " ").lower()
+
+
+def str_elem(element: Element) -> str:
+    return element.name.capitalize()
+
+
 @plugin.slash_command()
 async def compare(inter: CommandInteraction, context: AppContext, item1: Name, item2: Name) -> None:
     """Shows an interactive comparison of two items. {{ COMPARE }}
@@ -122,12 +130,6 @@ async def compare(inter: CommandInteraction, context: AppContext, item1: Name, i
 
     except LookupError as err:
         raise commands.UserInputError(str(err)) from err
-
-    def str_type(type: Type) -> str:
-        return type.name.replace("_", " ").lower()
-
-    def str_elem(element: Element) -> str:
-        return element.name.capitalize()
 
     if item_a.element is item_b.element:
         desc = str_elem(item_a.element)

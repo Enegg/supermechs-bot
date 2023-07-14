@@ -40,6 +40,15 @@ async def mech(inter: CommandInteraction) -> None:
     del inter
 
 
+template = f"""\
+• {Type.TORSO.emoji} {{TORSO}}
+• {Type.LEGS.emoji} {{LEGS}}
+• {Type.SIDE_WEAPON.right.emoji} {{WEAPONS}} weapon(s)
+• {Type.MODULE.emoji} {{MODULES}} module(s)
+• {STATS['weight'].emoji} {{WEIGHT}} weight\
+"""
+
+
 @mech.sub_command(name="list")
 async def browse(inter: CommandInteraction, player: Player) -> None:
     """Displays a list of your builds. {{ MECH_BROWSE }}"""
@@ -55,14 +64,6 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 
     def count_not_none(it: t.Iterable[t.Any | None]) -> int:
         return sum(1 for item in it if item is not None)
-
-    template = (
-        f"• {Type.TORSO.emoji} {{TORSO}}\n"
-        f"• {Type.LEGS.emoji} {{LEGS}}\n"
-        f"• {Type.SIDE_WEAPON.right.emoji} {{WEAPONS}} weapon(s)\n"
-        f"• {Type.MODULE.emoji} {{MODULES}} module(s)\n"
-        f"• {STATS['weight'].emoji} {{WEIGHT}} weight"
-    )
 
     for name, build in player.builds.items():
         value = template.format(
