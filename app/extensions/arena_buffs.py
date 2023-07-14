@@ -21,10 +21,7 @@ from library_extensions.ui import (
 
 from supermechs.api import MAX_BUFFS, STATS, ArenaBuffs, Player
 
-if t.TYPE_CHECKING:
-    from library_extensions.bot import ModularBot  # noqa: F401
-
-plugin = plugins.Plugin["ModularBot"](name="ArenaBuffs", logger=__name__)
+plugin = plugins.Plugin["commands.InteractionBot"](name="ArenaBuffs", logger=__name__)
 
 
 def custom_id_to_slot(custom_id: str) -> str:

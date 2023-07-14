@@ -16,8 +16,6 @@ from supermechs.api import Element, ItemBase, Type  # noqa: TCH002
 from supermechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
-    from library_extensions.bot import ModularBot  # noqa: F401
-
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
 
@@ -26,8 +24,7 @@ else:
     LiteralTypeOrAny = t.Literal[(*t.get_args(LiteralType), "ANY")]
     LiteralElementOrAny = t.Literal[(*t.get_args(LiteralElement), "ANY")]
 
-
-plugin = plugins.Plugin["ModularBot"](name="Item-lookup", logger=__name__)
+plugin = plugins.Plugin["commands.InteractionBot"](name="Item-lookup", logger=__name__)
 
 
 @plugin.slash_command()

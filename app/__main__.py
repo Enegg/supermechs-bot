@@ -9,12 +9,13 @@ from functools import partial
 import anyio
 from aiohttp import ClientSession, ClientTimeout
 from disnake import AllowedMentions, Game, Intents
+from disnake.ext.commands import InteractionBot
+from disnake.utils import utcnow
 from dotenv import load_dotenv
 
 from bridges import register_injections
 from config import HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import setup_channel_logger
-from library_extensions.bot import ModularBot
 from shared import SESSION_CTX
 
 from supermechs.client import SMClient
@@ -45,6 +46,8 @@ ROOT_LOGGER.addHandler(stream)
 logging.getLogger("disnake").setLevel(logging.ERROR)
 logging.getLogger("disnake.client").setLevel(logging.CRITICAL)  # mute connection errors
 
+START_TIME = utcnow()
+
 
 @contextlib.asynccontextmanager
 async def create_aiohttp_session(client: HTTPClient, /) -> t.AsyncIterator[ClientSession]:
@@ -58,7 +61,7 @@ async def create_aiohttp_session(client: HTTPClient, /) -> t.AsyncIterator[Clien
 
 async def main() -> None:
     client = SMClient()
-    bot = ModularBot(
+    bot = InteractionBot(
         intents=Intents(guilds=True),
         activity=Game("SuperMechs"),
         test_guilds=TEST_GUILDS if __debug__ else None,

@@ -9,6 +9,7 @@ from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
+from __main__ import START_TIME
 from bridges import AppContext  # noqa: TCH001
 from config import TEST_GUILDS
 from library_extensions import Markdown as MD, command_mention
@@ -19,11 +20,11 @@ from shared.utils import wrap_bytes
 from supermechs.urls import PACK_V2
 
 if t.TYPE_CHECKING:
-    from library_extensions.bot import ModularBot  # noqa: F401
+    from disnake.ext.commands import InteractionBot  # noqa: F401
 
 python_version = ".".join(map(str, sys.version_info[:3]))
 
-plugin = Plugin["ModularBot"](name="Bot-status", logger=__name__)
+plugin = Plugin["InteractionBot"](name="Bot-status", logger=__name__)
 
 
 @plugin.slash_command()
@@ -68,7 +69,7 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
         loc = await get_sloc(".")
 
     perf_fields = [
-        f"Started: {format_dt(bot.started_at, 'R')}",
+        f"Started: {format_dt(START_TIME, 'R')}",
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bits}{exponent}",
         f"Lines of code: {loc}",
@@ -100,7 +101,7 @@ async def activity(inter: CommandInteraction) -> None:
         or "No invocations since bot started"
     )
 
-    embed = Embed(title="Command activity", description=desc, timestamp=plugin.bot.started_at)
+    embed = Embed(title="Command activity", description=desc, timestamp=START_TIME)
     await inter.response.send_message(embed=embed)
 
 

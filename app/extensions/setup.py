@@ -14,10 +14,7 @@ from config import TEST_GUILDS
 from library_extensions import MSG_CHAR_LIMIT, OPTION_LIMIT, Markdown
 from library_extensions.ui import wait_for_modal
 
-if t.TYPE_CHECKING:
-    from library_extensions.bot import ModularBot  # noqa: F401
-
-plugin = plugins.Plugin["ModularBot"](
+plugin = plugins.Plugin["commands.InteractionBot"](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
 )
 last_extension: str | None = None

@@ -21,10 +21,7 @@ from supermechs.api import STATS, Player, Type
 from supermechs.ext.workshop.wu_compat import dump_mechs, load_mechs
 from supermechs.user_input import sanitize_string
 
-if t.TYPE_CHECKING:
-    from library_extensions.bot import ModularBot  # noqa: F401
-
-plugin = plugins.Plugin["ModularBot"](name="Mech-manager", logger=__name__)
+plugin = plugins.Plugin["commands.InteractionBot"](name="Mech-manager", logger=__name__)
 
 
 @plugin.load_hook(post=True)
