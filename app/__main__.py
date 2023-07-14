@@ -13,7 +13,7 @@ from disnake.ext.commands import InteractionBot
 from disnake.utils import utcnow
 from dotenv import load_dotenv
 
-from bridges import register_injections
+from bridges import register_injections, register_listeners
 from config import HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import setup_channel_logger
 from shared import SESSION_CTX
@@ -72,6 +72,7 @@ async def main() -> None:
         bot.get_global_command_named = partial(bot.get_guild_command_named, HOME_GUILD_ID)
 
     bot.i18n.load("locale/")
+    register_listeners(bot)
     register_injections(client)
     bot.load_extensions("extensions")
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
