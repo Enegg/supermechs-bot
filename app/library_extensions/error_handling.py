@@ -2,6 +2,7 @@ import io
 import logging
 import traceback
 import typing as t
+from contextlib import suppress
 from functools import partial
 
 from disnake import (
@@ -39,25 +40,7 @@ def traceback_to_discord_file(traceback: str, /) -> File:
     return File(bio, "traceback.py", description="Traceback of a recent exception.")
 
 
-def exception_to_message(content: str, exception: BaseException) -> tuple[str, File]:
-    """Formats exception data and returns message content & file to send a message with.
-
-    Formatted traceback is wrapped in a codeblock and appended to content if the resulting string
-    stays under 2000 character limit, otherwise creates a File and returns content unaffected.
-    """
-    traceback_text = "".join(traceback.format_exception(exception))
-
-    if len(content) + len(traceback_text) + 10 > 2000:
-        file = traceback_to_discord_file(traceback_text)
-
-    else:
-        file = MISSING
-        content = f"{content}\n{Markdown.codeblock(traceback_text, 'py')}"
-
-    return content, file
-
-
-def format_exception_or_file(exception: BaseException, limit: int = 2000) -> str | File:
+def exception_to_message(exception: BaseException, /) -> str | File:
     """Formats exception data and returns message content or file to send a message with.
 
     Formatted traceback is wrapped in a codeblock and appended to content if the resulting string
@@ -114,7 +97,7 @@ async def on_slash_command_error(
         embed = (
             Embed(title="⚠️ Unhandled exception", description=desc, color=Colour.red())
         )
-        file_or_content = format_exception_or_file(error)
+        file_or_content = exception_to_message(error)
 
         if isinstance(file_or_content, str):
             embed.add_field("Traceback", file_or_content, inline=False)
@@ -134,11 +117,8 @@ async def on_slash_command_error(
                 "Command executed with an error...", "CMD_ERROR", i18n, inter.locale
             )
 
-    try:
+    with suppress(InteractionTimedOut):
         await inter.send(info, file=file, embed=user_embed, ephemeral=not __debug__)
-
-    except InteractionTimedOut:
-        pass
 
 
 async def setup_channel_logger(client: Client, channel_id: int, logger: logging.Logger) -> None:
