@@ -40,11 +40,10 @@ async def _ext_helper(
         func(plugin)
 
     except commands.ExtensionError as error:
-        with io.StringIO() as sio:
-            sio.write("An error occured:\n```py\n")
-            traceback.print_exception(error, file=sio)
-            sio.write("```")
-            await inter.response.send_message(sio.getvalue(), ephemeral=True)
+        sio = io.StringIO("An error occured:\n```py\n")
+        traceback.print_exception(error, file=sio)
+        sio.write("```")
+        await inter.response.send_message(sio.getvalue(), ephemeral=True)
 
     else:
         last_extension = plugin
