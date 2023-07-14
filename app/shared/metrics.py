@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from collections import Counter
 from pathlib import Path
 
 import anyio
@@ -70,3 +71,15 @@ async def get_sloc(directory: str = ".") -> int:
 def get_ram_utilization(pid: int | None = None, /) -> int:
     """Returns the current process RAM utilization, in bytes."""
     return psutil.Process(pid).memory_info().rss
+
+
+class CommandData(t.NamedTuple):
+    id: int
+    name: str
+
+
+command_invocations = Counter[CommandData]()
+
+
+def add_invocation(id: int, name: str, /) -> None:
+    command_invocations[CommandData(id, name)] += 1

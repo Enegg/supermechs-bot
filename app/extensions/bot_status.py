@@ -11,9 +11,9 @@ from disnake.utils import format_dt, oauth_url
 
 from bridges import AppContext  # noqa: TCH001
 from config import TEST_GUILDS
-from library_extensions import Markdown as MD
+from library_extensions import Markdown as MD, command_mention
 from managers import player_manager
-from shared.metrics import get_ram_utilization, get_sloc
+from shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from shared.utils import wrap_bytes
 
 from supermechs.urls import PACK_V2
@@ -55,7 +55,7 @@ async def info(inter: CommandInteraction, context: AppContext) -> None:
 
     supermechs_fields = [
         f"Registered players: {len(player_manager.mapping)}",
-        f"Invoked commands: {bot.command_invocations.total()}",
+        f"Invoked commands: {command_invocations.total()}",
         f"Default item pack: {MD.hyperlink(default_pack.key, PACK_V2)}",
         f"Total items: {len(default_pack.items)}",
     ]
@@ -94,8 +94,8 @@ async def activity(inter: CommandInteraction) -> None:
     """Displays command invocation activity."""
     desc = (
         "\n".join(
-            f"{command_mention}: {invocations}"
-            for command_mention, invocations in plugin.bot.command_invocations.items()
+            f"{command_mention(command)}: {invocations}"
+            for command, invocations in command_invocations.items()
         )
         or "No invocations since bot started"
     )
