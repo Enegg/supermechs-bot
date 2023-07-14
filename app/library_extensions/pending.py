@@ -6,7 +6,7 @@ import importlib
 import pkgutil
 import typing as t
 
-__all__ = ("walk_modules", "command_mention", "OPTION_LIMIT")
+__all__ = ("walk_modules", "command_mention", "OPTION_LIMIT", "MSG_CHAR_LIMIT")
 
 
 def walk_modules(
@@ -62,3 +62,6 @@ def command_mention(command: Commandish, /) -> str:
 
 OPTION_LIMIT = 25
 """Limit related to select and autocomplete options."""
+
+MSG_CHAR_LIMIT = 2000
+"""Message content character limit."""

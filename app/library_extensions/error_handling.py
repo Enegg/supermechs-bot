@@ -18,6 +18,7 @@ from disnake.ext import commands
 from disnake.ext.commands.common_bot_base import CommonBotBase
 from disnake.utils import MISSING
 
+from .pending import MSG_CHAR_LIMIT
 from .text_formatting import Markdown, localized_text
 
 __all__ = ("setup_channel_logger",)
@@ -60,11 +61,11 @@ def format_exception_or_file(exception: BaseException, limit: int = 2000) -> str
     """Formats exception data and returns message content or file to send a message with.
 
     Formatted traceback is wrapped in a codeblock and appended to content if the resulting string
-    stays under 2000 character limit, otherwise creates a File.
+    stays under character limit, otherwise creates a File.
     """
     traceback_text = "".join(traceback.format_exception(exception))
 
-    if len(traceback_text) + 10 > limit:
+    if len(traceback_text) + 10 > MSG_CHAR_LIMIT:
         return traceback_to_discord_file(traceback_text)
 
     return Markdown.codeblock(traceback_text, "py")

@@ -11,7 +11,7 @@ from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
 from config import TEST_GUILDS
-from library_extensions import OPTION_LIMIT, Markdown
+from library_extensions import MSG_CHAR_LIMIT, OPTION_LIMIT, Markdown
 from library_extensions.ui import wait_for_modal
 
 if t.TYPE_CHECKING:
@@ -190,7 +190,7 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
             text = "No output."
 
     # newline and 6 backticks
-    if len(text) + 7 <= 2000:
+    if len(text) + 7 <= MSG_CHAR_LIMIT:
         await response_inter.send(f"```\n{text}```", ephemeral=True)
 
     else:
