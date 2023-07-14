@@ -1,9 +1,7 @@
 import typing as t
 
-from disnake import Client, MessageInteraction, ModalInteraction
+from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
-
-from library_extensions import InteractionEvent
 
 __all__ = ("wait_for_component", "wait_for_modal", "HasCustomID")
 
@@ -25,7 +23,7 @@ async def wait_for_component(
     def check(inter: MessageInteraction) -> bool:
         return inter.data.custom_id == component_or_id
 
-    return await client.wait_for(InteractionEvent.message_interaction, check=check, timeout=timeout)
+    return await client.wait_for(Event.message_interaction, check=check, timeout=timeout)
 
 
 async def wait_for_modal(
@@ -39,4 +37,4 @@ async def wait_for_modal(
     def check(inter: ModalInteraction) -> bool:
         return inter.data.custom_id == modal_or_id
 
-    return await client.wait_for(InteractionEvent.modal_submit, check=check, timeout=timeout)
+    return await client.wait_for(Event.modal_submit, check=check, timeout=timeout)
