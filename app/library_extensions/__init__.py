@@ -4,5 +4,6 @@ and/or interacting with discord.
 """
 from .embed_helpers import *
 from .error_handling import *
+from .extension_manager import *
 from .pending import *
 from .text_formatting import *

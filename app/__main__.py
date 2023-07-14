@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 from bridges import register_injections, register_listeners
 from config import HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
-from library_extensions import setup_channel_logger
+from library_extensions import load_extensions, setup_channel_logger
 from shared import SESSION_CTX
 
 from supermechs.client import SMClient
@@ -74,7 +74,7 @@ async def main() -> None:
     bot.i18n.load("locale/")
     register_listeners(bot)
     register_injections(client)
-    bot.load_extensions("extensions")
+    load_extensions(bot.load_extension, "extensions")
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
     await setup_channel_logger(bot, LOGS_CHANNEL, ROOT_LOGGER)
 
