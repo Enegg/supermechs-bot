@@ -24,7 +24,7 @@ last_extension: str | None = None
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
 async def plugin_(inter: CommandInteraction) -> None:
-    pass
+    del inter
 
 
 async def _ext_helper(
@@ -167,23 +167,23 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         code = response_inter.text_values[text_input.custom_id]
 
     code = Markdown.strip_codeblock(code)
+    local_stdout = io.StringIO()
 
-    with io.StringIO() as local_stdout:
-        with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
-            tasks = set[t.Awaitable[t.Any]]()
-            try:
-                exec(code, globals() | {"bot": plugin.bot, "inter": response_inter, "coros": tasks})
-                if tasks:
-                    await asyncio.gather(*tasks)
+    with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
+        tasks = set[t.Awaitable[t.Any]]()
+        try:
+            exec(code, globals() | {"bot": plugin.bot, "inter": response_inter, "coros": tasks})
+            if tasks:
+                await asyncio.gather(*tasks)
 
-            except Exception as exc:
-                traceback.print_exception(exc, file=local_stdout)
+        except Exception as exc:
+            traceback.print_exception(exc, file=local_stdout)
 
-        if len(text := local_stdout.getvalue()) == 0:
-            # response happened during exec
-            if response_inter.response.is_done():
-                return
-            text = "No output."
+    if len(text := local_stdout.getvalue()) == 0:
+        # response happened during exec
+        if response_inter.response.is_done():
+            return
+        text = "No output."
 
     # newline and 6 backticks
     if len(text) + 7 <= MSG_CHAR_LIMIT:
