@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import asyncio
 import io
 import traceback
@@ -168,13 +169,20 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
     code = Markdown.strip_codeblock(code)
     local_stdout = io.StringIO()
 
-    with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
-        tasks = set[t.Awaitable[t.Any]]()
-        try:
-            exec(code, globals() | {"bot": plugin.bot, "inter": response_inter, "coros": tasks})
-            if tasks:
-                await asyncio.gather(*tasks)
+    compiled_code = compile(
+        code,
+        filename="<eval command>",
+        mode="exec",
+        flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
+    )
 
+    with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
+        try:
+            exec(
+                compiled_code,
+                {},  # passing globals() would allow for uncontrolled mutation of them
+                {"bot": plugin.bot, "inter": response_inter}
+            )
         except Exception as exc:
             traceback.print_exception(exc, file=local_stdout)
 
