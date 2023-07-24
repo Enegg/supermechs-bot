@@ -5,8 +5,9 @@ from disnake import CommandInteraction
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
 
-from supermechs.api import Element, ItemBase, Type, sanitize_name
+from supermechs.api import Element, ItemBase, Type
 from supermechs.typedefs import Name
+from supermechs.user_input import sanitize_string
 from supermechs.utils import search_for
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
@@ -71,7 +72,7 @@ async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
     if matching:
         return matching
 
-    input = sanitize_name(input)
+    input = sanitize_string(input)
 
     if input:
         return {f'Enter to create mech "{input}"...': input}
