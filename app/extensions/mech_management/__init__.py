@@ -159,7 +159,8 @@ async def import_(inter: CommandInteraction, context: AppContext, file: Attachme
 
     if mechs:
         # TODO: warn about overwriting
-        context.player.builds.update((mech.name, mech) for mech in mechs)
+        player = player_manager.lookup_or_create(inter.author)
+        player.builds.update((mech.name, mech) for mech in mechs)
         string_builder.write("Loaded mechs: ")
         string_builder.write(", ".join(f"`{mech.name}`" for mech in mechs))
 
