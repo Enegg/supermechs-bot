@@ -15,14 +15,16 @@ __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 AutocompleteRetT = t.Sequence[str | Localized[str]] | t.Mapping[str, str | Localized[str]]
 
 
-def _get_item_filters(inter: CommandInteraction) -> list[t.Callable[[ItemBase], bool]]:
+def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[ItemBase], bool]]:
     filters: list[t.Callable[[ItemBase], bool]] = []
 
-    if (type_name := inter.filled_options.get("type", "ANY")) != "ANY":
-        filters.append(lambda item: item.type is Type[type_name])
+    if (type_name := options.get("type", "ANY")) != "ANY":
+        target_type = Type[type_name]
+        filters.append(lambda item: item.type is target_type)
 
-    if (element_name := inter.filled_options.get("element", "ANY")) != "ANY":
-        filters.append(lambda item: item.element is Element[element_name])
+    if (element_name := options.get("element", "ANY")) != "ANY":
+        target_element = Element[element_name]
+        filters.append(lambda item: item.element is target_element)
 
     return filters
 
@@ -32,13 +34,16 @@ async def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
 
     pack = item_pack_manager.mapping["@Darkstare"]  # TODO: replace with default pack reference
 
-    filters = _get_item_filters(inter)
+    filters = _get_item_filters(inter.filled_options)
     abbrevs = pack.name_abbrevs.get(input.lower(), set())
 
     def filter_item_names(names: t.Iterable[Name]) -> t.Iterator[Name]:
         items = map(pack.get_item_by_name, names)
-        filtered_items = (item for item in items if all(func(item) for func in filters))
-        return (item.name for item in filtered_items)
+
+        if filters:
+            items = (item for item in items if all(func(item) for func in filters))
+
+        return (item.name for item in items)
 
     # place matching abbreviations at the top
     matching_item_names = sorted(filter_item_names(abbrevs))
