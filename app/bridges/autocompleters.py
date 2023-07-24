@@ -1,6 +1,6 @@
 import typing as t
 
-from disnake import CommandInteraction
+from disnake import CommandInteraction, Localized
 
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
@@ -12,7 +12,7 @@ from supermechs.utils import search_for
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
-AutocompleteRetT = list[str] | dict[str, str]
+AutocompleteRetT = t.Sequence[str | Localized[str]] | t.Mapping[str, str | Localized[str]]
 
 
 def _get_item_filters(inter: CommandInteraction) -> list[t.Callable[[ItemBase], bool]]:
