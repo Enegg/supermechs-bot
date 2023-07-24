@@ -1,7 +1,5 @@
 import typing as t
 
-from disnake import CommandInteraction, Localized
-
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
 
@@ -10,9 +8,12 @@ from supermechs.typedefs import Name
 from supermechs.user_input import sanitize_string
 from supermechs.utils import search_for
 
+if t.TYPE_CHECKING:
+    from disnake import CommandInteraction, Localized
+
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
-AutocompleteRetT = t.Sequence[str | Localized[str]] | t.Mapping[str, str | Localized[str]]
+AutocompleteRetT = t.Sequence["str | Localized[str]"] | t.Mapping[str, "str | Localized[str]"]
 
 
 def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[ItemBase], bool]]:
@@ -29,7 +30,7 @@ def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[Ite
     return filters
 
 
-async def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteRetT:
+async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteRetT:
     """Autocomplete for items with regard for type & element."""
 
     pack = item_pack_manager.mapping["@Darkstare"]  # TODO: replace with default pack reference
@@ -66,7 +67,7 @@ async def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
     return matching_item_names
 
 
-async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteRetT:
+async def mech_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteRetT:
     """Autocomplete for player builds."""
 
     player = player_manager.lookup_or_create(inter.author)
