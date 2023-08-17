@@ -6,6 +6,7 @@ from itertools import zip_longest
 
 from disnake import ButtonStyle, Embed, MessageInteraction
 
+from assets import STAT_ASSETS, range_to_str
 from library_extensions import INVISIBLE_CHARACTER
 from library_extensions.ui import (
     ActionRow,
@@ -19,16 +20,17 @@ from library_extensions.ui import (
 )
 from typeshed import dict_items_as, twotuple
 
-from supermechs.api import MAX_BUFFS, STATS, AnyStats, Item, Stat, ValueRange
-from supermechs.utils import mean_and_deviation
+from supermechs.api import MAX_BUFFS, STATS, AnyStatsMapping, ItemData, Stat, ValueRange
+from supermechs.item_stats import max_stats
+from supermechs.utils import has_any_of_keys, mean_and_deviation
 
 
 class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
     def __init__(
         self,
         embed: Embed,
-        item: Item,
-        factory: t.Callable[[Item, bool, bool], t.Iterable[tuple[str, str, bool]]],
+        item: ItemData,
+        factory: t.Callable[[ItemData, bool, bool], t.Iterable[tuple[str, str, bool]]],
         *,
         user_id: int,
         timeout: float = 180,
@@ -39,7 +41,7 @@ class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
         self.item = item
         self.field_factory = factory
 
-        if not item.stats.has_any_of_stats("phyDmg", "eleDmg", "expDmg"):
+        if not has_any_of_keys(item.start_stage.base_stats, "phyDmg", "eleDmg", "expDmg"):
             self.remove_item(self.avg_button, 0)
 
         for name, value, inline in factory(item, False, False):
@@ -74,8 +76,8 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
     def __init__(
         self,
         embed: Embed,
-        item_a: Item,
-        item_b: Item,
+        item_a: ItemData,
+        item_b: ItemData,
         *,
         user_id: int,
         timeout: float = 180,
@@ -102,7 +104,7 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
         self.stop()
 
     def update(self) -> None:
-        items_stats = (self.item_a.max_stats, self.item_b.max_stats)
+        items_stats = (max_stats(self.item_a.start_stage), max_stats(self.item_b.start_stage))
 
         if self.buffs_button.on:
             items_stats = map(MAX_BUFFS.buff_stats, items_stats)
@@ -117,7 +119,8 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
             require_jump = True
 
         if require_jump:
-            name_field.append(f"{STATS['jump'].emoji} **Jumping required**")
+            emoji = STAT_ASSETS['jump']
+            name_field.append(f"{emoji} **Jumping required**")
 
         if self.embed._fields:
             modify_field_at = self.embed.set_field_at
@@ -131,7 +134,7 @@ class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]])
 
 
 def buffed_stats(
-    stats: AnyStats, buffs_enabled: bool
+    stats: AnyStatsMapping, buffs_enabled: bool
 ) -> t.Iterator[tuple[str, twotuple[tuple[int, ...]]]]:
     if buffs_enabled:
         apply_buff = MAX_BUFFS.buff_with_difference
@@ -195,7 +198,7 @@ formatters: dict[str, tuple[FormatterT | None, FormatterT | None, PrecFormatterT
 
 
 def shared_iter(
-    stats: AnyStats, buffs_enabled: bool, avg: bool, prec: int = 1
+    stats: AnyStatsMapping, buffs_enabled: bool, avg: bool, prec: int = 1
 ) -> t.Iterator[tuple[str, str, str]]:
     for stat, (values, diffs) in buffed_stats(stats, buffs_enabled):
         val_fmt, diff_fmt, avg_fmt = formatters.get(stat, (None, None, None))
@@ -215,15 +218,17 @@ def shared_iter(
         yield stat, str_value, change
 
 
-def default_fields(item: Item, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
+def default_fields(
+    item: ItemData, buffs_enabled: bool, avg: bool
+) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
-    yield ("Transform range: ", item.transform_range.as_tier_str(), False)
+    yield ("Transform range: ", range_to_str(item.transform_range), False)
 
     spaced = False
     item_stats = ""  # the main string
     cost_stats = {"backfire", "heaCost", "eneCost"}
 
-    for stat, str_value, change in shared_iter(item.max_stats, buffs_enabled, avg):
+    for stat, str_value, change in shared_iter(max_stats(item.start_stage), buffs_enabled, avg):
         if not spaced and stat in cost_stats:
             item_stats += "\n"
             spaced = True
@@ -231,34 +236,36 @@ def default_fields(item: Item, buffs_enabled: bool, avg: bool) -> t.Iterator[tup
         if change:
             change = f" **{change}**"
 
+
         name = STATS[stat].name
 
         if stat == "uses":
             name = "Use" if str_value == "1" else "Uses"
 
-        item_stats += f"{STATS[stat].emoji} **{str_value}** {name}{change}\n"
+        item_stats += f"{STAT_ASSETS[stat]} **{str_value}** {name}{change}\n"
 
     if item.tags.require_jump:
-        item_stats += f"{STATS['jump'].emoji} **Jumping required**"
+        emoji = STAT_ASSETS['jump']
+        item_stats += f"{emoji} **Jumping required**"
 
     yield ("Stats:", item_stats, False)
 
 
-def compact_fields(item: Item, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
+def compact_fields(item: ItemData, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with reduced in size item info."""
     lines: list[str] = []
 
-    for stat, str_value, _ in shared_iter(item.max_stats, buffs_enabled, avg, 0):
-        lines.append(f"{STATS[stat].emoji} **{str_value}**")
+    for stat, str_value, _ in shared_iter(max_stats(item.start_stage), buffs_enabled, avg, 0):
+        lines.append(f"{STAT_ASSETS[stat]} **{str_value}**")
 
     if item.tags.require_jump:
-        lines.append(f"{STATS['jump'].emoji}❗")
+        lines.append(f"{STAT_ASSETS['jump']}❗")
 
     line_count = len(lines)
     div = wrap_nicely(line_count, 4)
 
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
-    transform_range = item.transform_range.as_tier_str()
+    transform_range = range_to_str(item.transform_range)
 
     for name, field in zip_longest((transform_range,), field_text, fillvalue=INVISIBLE_CHARACTER):
         yield (name, field, True)
@@ -312,7 +319,7 @@ value_and_diff = tuple[int | float | None, float]
 
 
 def comparator(
-    stats_a: AnyStats, stats_b: AnyStats
+    stats_a: AnyStatsMapping, stats_b: AnyStatsMapping
 ) -> t.Iterator[
     tuple[
         Stat,
@@ -370,13 +377,13 @@ def comparator(
             yield stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
-def stats_to_fields(stats_a: AnyStats, stats_b: AnyStats) -> tuple[list[str], list[str], list[str]]:
+def stats_to_fields(stats_a: AnyStatsMapping, stats_b: AnyStatsMapping) -> tuple[list[str], list[str], list[str]]:
     name_field: list[str] = []
     first_item: list[str] = []
     second_item: list[str] = []
 
     for stat, long_boy in comparator(stats_a, stats_b):
-        name_field.append(f"{stat.emoji} {stat.name}")
+        name_field.append(f"{STAT_ASSETS[stat.key]} {stat.name}")
 
         match stat.key, long_boy:
             case "range", ((a1, a2), (b1, b2)):

@@ -5,14 +5,16 @@ import typing as t
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 
-from bridges import AppContext, item_name_autocomplete
+from assets import ELEMENT_ASSETS, SIDED_TYPE_ASSETS, TYPE_ASSETS
+from bridges import item_name_autocomplete
 from config import TEST_GUILDS
 from library_extensions import embed_image, sanitize_filename
-from managers import renderer_manager
+from managers import item_pack_manager, renderer_manager
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
-from supermechs.api import Element, ItemBase, Type  # noqa: TCH002
+from supermechs.enums import Element, Type
+from supermechs.models.item_data import ItemData  # noqa: TCH002
 from supermechs.typedefs import LiteralElement, LiteralType, Name
 
 if t.TYPE_CHECKING:
@@ -30,7 +32,7 @@ plugin = plugins.Plugin["commands.InteractionBot"](name="Item-lookup", logger=__
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
-    item: ItemBase,
+    item: ItemData,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
@@ -44,15 +46,22 @@ async def item(
     compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
     del type, element  # used for autocomplete only
-    renderer = renderer_manager.mapping["@Darkstare"]
-    image = renderer.get_item_sprite(item, item.transform_range.max).image
+    renderer = renderer_manager.mapping["@Darkstare"]  # TODO
+    image = renderer.get_item_sprite(item, item.transform_range[-1]).image
     url, file = embed_image(image, sanitize_filename(item.name, ".png"))
+    embed_color = ELEMENT_ASSETS[item.element].color
+
+    if item.type is Type.SIDE_WEAPON or item.type is Type.TOP_WEAPON:
+        icon_url = SIDED_TYPE_ASSETS[item.type].right.image_url
+
+    else:
+        icon_url = TYPE_ASSETS[item.type].image_url
 
     if compact:
         # fmt: off
         embed = (
-            Embed(color=item.element.color)
-            .set_author(name=item.name, icon_url=item.type.image_url)
+            Embed(color=embed_color)
+            .set_author(name=item.name, icon_url=icon_url)
             .set_thumbnail(url)
         )
         # fmt: on
@@ -65,9 +74,9 @@ async def item(
                 title=item.name,
                 description=f"{item.element.name.capitalize()} "
                 f"{item.type.name.replace('_', ' ').lower()}",
-                color=item.element.color,
+                color=embed_color,
             )
-            .set_thumbnail(item.type.image_url)
+            .set_thumbnail(icon_url)
             .set_image(url)
         )
         # fmt: on
@@ -83,7 +92,7 @@ async def item(
 @plugin.slash_command(guild_ids=TEST_GUILDS)
 async def item_raw(
     inter: CommandInteraction,
-    item: ItemBase,
+    item: ItemData,
     type: LiteralTypeOrAny = "ANY",
     element: LiteralElementOrAny = "ANY",
 ) -> None:
@@ -107,7 +116,7 @@ def str_elem(element: Element) -> str:
 
 
 @plugin.slash_command()
-async def compare(inter: CommandInteraction, context: AppContext, item1: Name, item2: Name) -> None:
+async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     """Shows an interactive comparison of two items. {{ COMPARE }}
 
     Parameters
@@ -115,7 +124,7 @@ async def compare(inter: CommandInteraction, context: AppContext, item1: Name, i
     item1: First item to compare. {{ COMPARE_FIRST }}
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    pack = context.client.default_pack
+    pack = item_pack_manager.mapping["@Darkstare"]  # TODO
 
     try:
         item_a = pack.get_item_by_name(item1)
@@ -126,7 +135,7 @@ async def compare(inter: CommandInteraction, context: AppContext, item1: Name, i
 
     if item_a.element is item_b.element:
         desc = str_elem(item_a.element)
-        color = item_a.element.color
+        color = ELEMENT_ASSETS[item_a.element].color
 
         if item_a.type is item_b.type:
             desc += " "
