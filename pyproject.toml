@@ -1,5 +1,5 @@
 [tool.ruff]
-select = ["E", "F", "TCH", "PTH", "RUF", "ASYNC"]
+select = ["E", "F", "G", "Q", "SIM", "TCH", "PTH", "RUF", "ASYNC"]
 
 src = ["app"]
 line-length = 100
