@@ -3,18 +3,13 @@ import typing as t
 from attrs import define
 
 if t.TYPE_CHECKING:
-    from disnake import CommandInteraction
-
-    from supermechs.api import Player, SMClient
+    from supermechs.api import ItemPack
+    from supermechs.rendering import PackRenderer
 
 __all__ = ("AppContext",)
 
 
 @define
 class AppContext:
-    client: "SMClient"
-    inter: "CommandInteraction"
-
-    @property
-    def player(self) -> "Player":
-        return self.client.state.store_player(self.inter.author)
+    default_pack: "ItemPack"
+    default_renderer: "PackRenderer"
