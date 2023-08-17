@@ -1,0 +1,97 @@
+[stats]
+[stats.weight]
+in_game = "Weight"
+[stats.health]
+default = "HP"
+in_game = "Hit Points"
+[stats.eneCap]
+default = "Energy capacity"
+in_game = "Energy"
+[stats.eneReg]
+in_game = "Regeneration"
+short = "Regen"
+[stats.heaCap]
+default = "Heat capacity"
+in_game = "Heat"
+[stats.heaCol]
+in_game = "Cooling"
+[stats.bulletCap]
+default = "Bullet capacity"
+in_game = "Bullet cap"
+[stats.rocketsCap]
+default = "Rocket capacity"
+in_game = "Rocket cap"
+[stats.phyRes]
+default = "Physical resistance"
+in_game = "Pys resist"
+[stats.expRes]
+default = "Explosive resistance"
+in_game = "Exp resist"
+[stats.eleRes]
+default = "Electric resistance"
+in_game = "Ele resist"
+[stats.phyDmg]
+default = "Physical damage"
+in_game = "Pys dmg"
+[stats.phyResDmg]
+default = "Resistance drain"
+in_game = "Resist drain"
+[stats.expDmg]
+default = "Explosive damage"
+in_game = "Exp dmg"
+[stats.heaDmg]
+default = "Heat damage"
+in_game = "Heat dmg"
+[stats.heaCapDmg]
+default = "Max heat damage"
+in_game = "Max heat dmg"
+[stats.heaColDmg]
+default = "Cooling damage"
+in_game = "Cooling dmg"
+[stats.expResDmg]
+default = "Resistance drain"
+in_game = "Resist drain"
+[stats.eleDmg]
+default = "Electric damage"
+in_game = "Ele dmg"
+[stats.eneDmg]
+default = "Energy damage"
+in_game = "Energy dmg"
+[stats.eneCapDmg]
+default = "Max energy damage"
+in_game = "Max energy dmg"
+[stats.eneRegDmg]
+default = "Regeneration damage"
+in_game = "Regen dmg"
+[stats.eleResDmg]
+default = "Resistance drain"
+in_game = "Resist drain"
+[stats.range]
+default = "Range"
+[stats.push]
+default = "Knockback"
+in_game = "Push"
+[stats.pull]
+in_game = "Pull"
+[stats.recoil]
+in_game = "Recoil"
+[stats.retreat]
+in_game = "Retreat"
+[stats.advance]
+in_game = "Advance"
+[stats.walk]
+in_game = "Walking"
+[stats.jump]
+in_game = "Jumping"
+[stats.uses]
+in_game = "Uses"
+[stats.backfire]
+in_game = "Backfire"
+[stats.heaCost]
+in_game = "Heat cost"
+[stats.eneCost]
+in_game = "Energy cost"
+[stats.bulletsCost]
+in_game = "Bullets cost"
+[stats.rocketsCost]
+in_game = "Rockets cost"

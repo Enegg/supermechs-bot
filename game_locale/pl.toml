@@ -1,0 +1,95 @@
+[stats]
+[stats.weight]
+in_game = "Waga"
+[stats.health]
+default = "Punkty wytrzymałości"
+in_game = "Punkty życia"
+[stats.eneCap]
+default = "Pojemność energii"
+in_game = "Energia"
+[stats.eneReg]
+in_game = "Regeneracja"
+[stats.heaCap]
+default = "Pojemność cieplna"
+in_game = "Ciepło"
+[stats.heaCol]
+in_game = "Chłodzenie"
+[stats.bulletCap]
+default = "Pojemność pocisków"
+in_game = "???"
+[stats.rocketsCap]
+default = "Pojemność rakiet"
+in_game = "???"
+[stats.phyRes]
+in_game = "Odporność na obrażenia fizyczne"
+short = "Odporność fizyczna"
+[stats.expRes]
+in_game = "Odporność na obrażenia wybuchowe"
+short = "Odporność eksplozyjna"
+[stats.eleRes]
+in_game = "Odporność na obrażenia elektryczne"
+short = "Odporność elektryczna"
+[stats.phyDmg]
+in_game = "Obrażenia fizyczne"
+[stats.phyResDmg]
+in_game = "Zmniejszanie wytrzymałości"
+short = "Redukcja odporności"
+[stats.expDmg]
+in_game = "Obrażenia wybuchowe"
+[stats.heaDmg]
+in_game = "Obrażenia cieplne"
+[stats.heaCapDmg]
+default = "Redukcja pojemności cieplnej"
+in_game = "Max. obrażenia cieplne"
+[stats.heaColDmg]
+in_game = "Obrażenia chłodzenia"
+[stats.expResDmg]
+in_game = "Zmniejszanie wytrzymałości"
+short = "Redukcja odporności"
+[stats.eleDmg]
+in_game = "Obrażenia elektryczne"
+[stats.eneDmg]
+in_game = "Obrażenia energetyczne"
+[stats.eneCapDmg]
+default = "Redukcja pojemności energii"
+in_game = "Max. obrażenia energetyczne"
+[stats.eneRegDmg]
+in_game = "Obrażenia regeneracji"
+[stats.eleResDmg]
+in_game = "Zmniejszanie wytrzymałości"
+short = "Redukcja odporności"
+[stats.range]
+in_game = "Zasięg"
+[stats.push]
+default = "Pchnięcie"
+in_game = "Odrzut"
+[stats.pull]
+in_game = "Przyciąganie"
+[stats.recoil]
+in_game = "Odrzut"
+[stats.retreat]
+in_game = "Odwrót"
+[stats.advance]
+default = "Natarcie"
+in_game = "Do przodu"
+[stats.walk]
+in_game = "Zasięg poruszania"
+[stats.jump]
+in_game = "Zasięg skoku"
+[stats.uses]
+in_game = "Liczba użyć"
+short = "Użycia"
+[stats.backfire]
+default = "Rykoszet"
+in_game = "Strzał"
+[stats.heaCost]
+in_game = "Wydzielanie ciepła"
+short = "Emisja ciepła"
+[stats.eneCost]
+in_game = "Pobór energii"
+[stats.bulletsCost]
+default = "Zużycie pocisków"
+in_game = "???"
+[stats.rocketsCost]
+default = "Zużycie rakiet"
+in_game = "???"
