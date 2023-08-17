@@ -12,9 +12,11 @@ from disnake.ui.view import View
 from typing_extensions import Self, TypeVar
 
 from shared.utils import ReprMixin
-from typeshed import Factory
 
 from .action_row import ActionRow, ActionRowT, PaginatedRow
+
+if t.TYPE_CHECKING:
+    from typeshed import Factory
 
 __all__ = (
     "InteractionCheck",
@@ -38,7 +40,6 @@ class InteractionCheck:
     Note: remember to place this class before the view class, otherwise the view
     will overwrite the method.
     """
-
     user_id: int
     response = "Only the command invoker can interact with that."
 
