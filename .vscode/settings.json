@@ -1,23 +1,19 @@
 {
-    "python.analysis.extraPaths": [
-        "./app"
-    ],
+    "diffEditor.ignoreTrimWhitespace": false,
     "files.exclude": {
         "**/__pycache__": true,
         ".*cache": true
     },
-    "diffEditor.ignoreTrimWhitespace": false,
+    "python.analysis.extraPaths": [
+        "./app"
+    ],
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.codeActionsOnSave": {
             "source.organizeImports": true
         },
+        "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.rulers": [
             100
         ]
-    },
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": [
-        "-l 100"
-    ],
+    }
 }
