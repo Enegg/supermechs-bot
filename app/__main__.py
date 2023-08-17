@@ -18,8 +18,6 @@ from config import HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
 from shared import SESSION_CTX
 
-from supermechs.client import SMClient
-
 if t.TYPE_CHECKING:
     from disnake.http import HTTPClient
 

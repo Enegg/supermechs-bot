@@ -6,7 +6,7 @@ from managers import player_manager
 from .autocompleters import item_name_autocomplete
 from .context import AppContext
 
-from supermechs.api import ItemBase, Player, SMClient
+from supermechs.api import ItemData, Player, SMClient
 from supermechs.typedefs import Name
 
 __all__ = ("register_injections",)
@@ -19,7 +19,7 @@ def register_injections(client: SMClient) -> None:
     # somewhere in the main.py we'd need a blank import which isn't used anywhere)
 
     @commands.register_injection
-    def item_injector(inter: CommandInteraction, name: Name) -> ItemBase:
+    def item_injector(inter: CommandInteraction, name: Name) -> ItemData:
         """Injection taking Item name and returning the Item.
 
         Parameters

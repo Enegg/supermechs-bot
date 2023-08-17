@@ -5,6 +5,7 @@ import typing as t
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands, plugins
 
+from assets import STAT_ASSETS
 from library_extensions import INVISIBLE_CHARACTER
 from library_extensions.ui import (
     EMPTY_OPTION,
@@ -19,7 +20,7 @@ from library_extensions.ui import (
     select,
 )
 
-from supermechs.api import MAX_BUFFS, STATS, ArenaBuffs, Player
+from supermechs.api import MAX_BUFFS, ArenaBuffs, Player
 
 plugin = plugins.Plugin["commands.InteractionBot"](name="ArenaBuffs", logger=__name__)
 
@@ -48,7 +49,7 @@ class ArenaBuffsView(InteractionCheck, PaginatorView):
                         item=buffs[id] == MAX_BUFFS[id] or None,
                         label=str(buffs.modifier_of(id)).rjust(4, INVISIBLE_CHARACTER),
                         custom_id=f"slotbutton:{id}",
-                        emoji=STATS[id].emoji,
+                        emoji=STAT_ASSETS[id],
                     ),
                     self.buff_buttons,
                 )

@@ -3,7 +3,7 @@ import typing as t
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
 
-from supermechs.api import Element, ItemBase, Type
+from supermechs.api import Element, ItemData, Type
 from supermechs.typedefs import Name
 from supermechs.user_input import sanitize_string
 from supermechs.utils import search_for
@@ -16,8 +16,8 @@ __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 AutocompleteRetT = t.Sequence["str | Localized[str]"] | t.Mapping[str, "str | Localized[str]"]
 
 
-def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[ItemBase], bool]]:
-    filters: list[t.Callable[[ItemBase], bool]] = []
+def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[ItemData], bool]]:
+    filters: list[t.Callable[[ItemData], bool]] = []
 
     if (type_name := options.get("type", "ANY")) != "ANY":
         target_type = Type[type_name]
