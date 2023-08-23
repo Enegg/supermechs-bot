@@ -10,12 +10,12 @@ from library_extensions import INVISIBLE_CHARACTER
 from library_extensions.ui import (
     EMPTY_OPTION,
     Button,
-    InteractionCheck,
     PaginatorView,
     Select,
     TrinaryButton,
     add_callback,
     button,
+    invoker_bound,
     positioned,
     select,
 )
@@ -29,7 +29,8 @@ def custom_id_to_slot(custom_id: str) -> str:
     return custom_id.rsplit(":", 1)[-1]
 
 
-class ArenaBuffsView(InteractionCheck, PaginatorView):
+@invoker_bound
+class ArenaBuffsView(PaginatorView):
     def __init__(self, buffs: ArenaBuffs, *, user_id: int, timeout: float = 180) -> None:
         super().__init__(timeout=timeout, columns=3)
         self.user_id = user_id

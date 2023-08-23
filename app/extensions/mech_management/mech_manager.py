@@ -9,7 +9,6 @@ from library_extensions.ui import (
     EMPTY_OPTION,
     ActionRow,
     Button,
-    InteractionCheck,
     MessageUIComponent,
     PaginatedSelect,
     PaginatorView,
@@ -18,6 +17,7 @@ from library_extensions.ui import (
     TrinaryButton,
     add_callback,
     button,
+    invoker_bound,
     positioned,
     select,
 )
@@ -116,10 +116,12 @@ def get_sorted_options(
     return new_options
 
 
-class MechView(InteractionCheck, PaginatorView):
+@invoker_bound
+class MechView(PaginatorView):
     """View for button-based mech building."""
 
     buffs_command: t.ClassVar[str]
+    user_id: int
 
     def __init__(
         self,
@@ -341,16 +343,12 @@ class MechView(InteractionCheck, PaginatorView):
             self.embed.color = ELEMENT_ASSETS[Element.UNKNOWN].color
 
 
-class BrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
-    """View"""
-
-    pass
-
-
-class DetailedBrowseView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
+@invoker_bound
+class DetailedBrowseView(SaneView[ActionRow[MessageUIComponent]]):
     def __init__(self, player: Player, *, timeout: float = 180.0) -> None:
         super().__init__(timeout=timeout)
         self.player = player
+        self.user_id = player.id
         self.page = 0
         self.embed = embed_mech(next(iter(player.builds.values())), player.arena_buffs)
 

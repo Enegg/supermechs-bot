@@ -19,42 +19,55 @@ if t.TYPE_CHECKING:
     from typeshed import Factory
 
 __all__ = (
-    "InteractionCheck",
     "View",
     "SaneView",
     "PaginatorView",
-    "V",
+    "invoker_bound",
     "positioned",
     "add_callback",
 )
 
-V = TypeVar("V", bound=View | None, default=None, infer_variance=True)
-I = TypeVar("I", bound=Item[None], default=Item[None], infer_variance=True)  # noqa: E741
-M = TypeVar("M", bound=MessageInteraction, default=MessageInteraction, infer_variance=True)
-# how do I exit this
-ItemCallbackType = t.Callable[[V, I, M], t.Coroutine[t.Any, t.Any, t.Any]]
+ItemT = TypeVar("ItemT", bound=Item[None], default=Item[None], infer_variance=True)
+MsgInterT = TypeVar(
+    "MsgInterT", bound=MessageInteraction, default=MessageInteraction, infer_variance=True
+)
+ItemCallbackType = t.Callable[[t.Any, ItemT, MsgInterT], t.Coroutine[t.Any, t.Any, t.Any]]
 
 
-class InteractionCheck:
-    """Mixin to add an interaction_check which locks interactions to user_id.
-    Note: remember to place this class before the view class, otherwise the view
-    will overwrite the method.
+class ViewP(t.Protocol):
+    @property
+    def user_id(self) -> int:
+        ...
+
+    async def interaction_check(self, interaction: MessageInteraction, /) -> bool:
+        ...
+
+
+ViewT = t.TypeVar("ViewT", bound=ViewP)
+
+
+def invoker_bound(view: type[ViewT], /) -> type[ViewT]:
+    """Mark a view invoker-bound.
+
+    Components of such views can only be interacted with the invoker.
     """
-    user_id: int
     response = "Only the command invoker can interact with that."
 
-    async def interaction_check(self, interaction: MessageInteraction) -> bool:
-        if interaction.author.id != self.user_id:
-            await interaction.send(self.response, ephemeral=True)
-            return False
+    async def interaction_check(self: ViewT, interaction: MessageInteraction, /) -> bool:
+        if interaction.author.id == self.user_id:
+            return True
 
-        return True
+        await interaction.send(response, ephemeral=True)
+        return False
+
+    view.interaction_check = interaction_check
+    return view
 
 
 def positioned(row: int, column: int):
     """Denotes the position of an Item in the 5x5 grid."""
 
-    def decorator(func: ItemCallbackType[t.Any, I] | DecoratedItem[I]) -> DecoratedItem[I]:
+    def decorator(func: ItemCallbackType[ItemT] | DecoratedItem[ItemT]) -> DecoratedItem[ItemT]:
         func.__discord_ui_position__ = (row, column)  # type: ignore
         return func  # type: ignore
 
@@ -76,11 +89,11 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
     __repr_attributes__ = ("timeout", "rows")
     rows: tuple[ActionRowT, ActionRowT, ActionRowT, ActionRowT, ActionRowT]
 
-    __view_children_items__: t.ClassVar[list[ItemCallbackType[Self, MessageUIComponent]]] = []
+    __view_children_items__: t.ClassVar[list[ItemCallbackType[MessageUIComponent]]] = []
 
     def __init_subclass__(cls, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init_subclass__(*args, **kwargs)
-        children: list[ItemCallbackType[Self, MessageUIComponent]] = [
+        children: list[ItemCallbackType[MessageUIComponent]] = [
             member
             for base in reversed(cls.__mro__)
             for member in base.__dict__.values()
@@ -241,7 +254,7 @@ class PaginatorView(SaneView[PaginatedRow[MessageUIComponent]]):
 
 
 def add_callback(
-    item: I, callback: t.Callable[[I, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
-) -> I:
+    item: ItemT, callback: t.Callable[[ItemT, MessageInteraction], t.Coroutine[t.Any, t.Any, t.Any]]
+) -> ItemT:
     item.callback = partial(callback, item)
     return item

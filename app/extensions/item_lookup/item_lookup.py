@@ -11,11 +11,11 @@ from library_extensions import INVISIBLE_CHARACTER
 from library_extensions.ui import (
     ActionRow,
     Button,
-    InteractionCheck,
     MessageUIComponent,
     SaneView,
     ToggleButton,
     button,
+    invoker_bound,
     positioned,
 )
 from typeshed import dict_items_as, twotuple
@@ -25,7 +25,8 @@ from supermechs.item_stats import max_stats
 from supermechs.utils import has_any_of_keys, mean_and_deviation
 
 
-class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
+@invoker_bound
+class ItemView(SaneView[ActionRow[MessageUIComponent]]):
     def __init__(
         self,
         embed: Embed,
@@ -72,7 +73,8 @@ class ItemView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
         await inter.response.defer()
 
 
-class ItemCompareView(InteractionCheck, SaneView[ActionRow[MessageUIComponent]]):
+@invoker_bound
+class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
     def __init__(
         self,
         embed: Embed,
