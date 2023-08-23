@@ -121,7 +121,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
             require_jump = True
 
         if require_jump:
-            emoji = STAT_ASSETS['jump']
+            emoji = STAT_ASSETS["jump"]
             name_field.append(f"{emoji} **Jumping required**")
 
         if self.embed._fields:
@@ -209,11 +209,7 @@ def shared_iter(
         diff_fmt = diff_fmt or diffs_formatter
         avg_fmt = avg_fmt or avg_value_formatter
 
-        if avg and len(values) > 1:
-            str_value = avg_fmt(values, prec)
-
-        else:
-            str_value = val_fmt(values)
+        str_value = avg_fmt(values, prec) if avg and len(values) > 1 else val_fmt(values)
 
         change = diff_fmt(diffs)
 
@@ -238,7 +234,6 @@ def default_fields(
         if change:
             change = f" **{change}**"
 
-
         name = STATS[stat].name
 
         if stat == "uses":
@@ -247,13 +242,15 @@ def default_fields(
         item_stats += f"{STAT_ASSETS[stat]} **{str_value}** {name}{change}\n"
 
     if item.tags.require_jump:
-        emoji = STAT_ASSETS['jump']
+        emoji = STAT_ASSETS["jump"]
         item_stats += f"{emoji} **Jumping required**"
 
     yield ("Stats:", item_stats, False)
 
 
-def compact_fields(item: ItemData, buffs_enabled: bool, avg: bool) -> t.Iterator[tuple[str, str, bool]]:
+def compact_fields(
+    item: ItemData, buffs_enabled: bool, avg: bool
+) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with reduced in size item info."""
     lines: list[str] = []
 
@@ -379,7 +376,9 @@ def comparator(
             yield stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
-def stats_to_fields(stats_a: AnyStatsMapping, stats_b: AnyStatsMapping) -> tuple[list[str], list[str], list[str]]:
+def stats_to_fields(
+    stats_a: AnyStatsMapping, stats_b: AnyStatsMapping
+) -> tuple[list[str], list[str], list[str]]:
     name_field: list[str] = []
     first_item: list[str] = []
     second_item: list[str] = []

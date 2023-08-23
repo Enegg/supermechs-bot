@@ -30,7 +30,7 @@ from supermechs.rendering import PackRenderer
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
         title=f'Mech build "{mech.name}"',
-        color=ELEMENT_ASSETS[mech.dominant_element or Element.UNKNOWN].color
+        color=ELEMENT_ASSETS[mech.dominant_element or Element.UNKNOWN].color,
     ).add_field("Stats:", format_stats(mech, included_buffs))
     return embed
 
@@ -88,7 +88,6 @@ def slot_to_emoji(slot: str, /) -> str:
         return (asset.left if int(slot[-1]) % 2 else asset.right).emoji
 
     return TYPE_ASSETS[type].emoji
-
 
 
 def get_sorted_options(
@@ -154,7 +153,7 @@ class MechView(PaginatorView):
                 add_callback(
                     TrinaryButton(
                         custom_id=f"{self.id}:{slot}",
-                        item=None if (item := mech[slot]) is None else item.name,  # FIXME
+                        item=None if (item := mech[slot]) is None else item.name,  # TODO
                         emoji=slot_to_emoji(slot),
                     ),
                     self.slot_button_cb,
