@@ -36,7 +36,7 @@ class ToggleButton(Button[None]):
     def __init__(
         self,
         *,
-        custom_id: str,
+        custom_id: str | None = None,
         style: ButtonStyle | None = None,
         style_off: ButtonStyle = ButtonStyle.gray,
         style_on: ButtonStyle = ButtonStyle.green,
@@ -84,7 +84,7 @@ class TrinaryButton(ToggleButton, t.Generic[T]):
     def __init__(
         self,
         *,
-        custom_id: str,
+        custom_id: str | None = None,
         item: T | None = None,
         style: ButtonStyle | None = None,
         style_off: ButtonStyle = ButtonStyle.gray,

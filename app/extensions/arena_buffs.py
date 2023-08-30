@@ -4,20 +4,17 @@ import typing as t
 
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands, plugins
+from disnake.ui import Button, StringSelect, button, string_select
 
 from assets import STAT_ASSETS
 from library_extensions import INVISIBLE_CHARACTER
 from library_extensions.ui import (
     EMPTY_OPTION,
-    Button,
     PaginatorView,
-    Select,
     TrinaryButton,
     add_callback,
-    button,
     invoker_bound,
     positioned,
-    select,
 )
 
 from supermechs.api import MAX_BUFFS, ArenaBuffs, Player
@@ -66,13 +63,14 @@ class ArenaBuffsView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(3, 0)
-    @button(label="Quit", custom_id="button:quit", style=ButtonStyle.red)
-    async def quit_button(self, _: Button[None], inter: MessageInteraction) -> None:
+    @button(label="Quit", style=ButtonStyle.red)
+    async def quit_button(self, button: Button[None], inter: MessageInteraction) -> None:
+        del button
         self.set_state_stopped()
         await inter.response.edit_message(view=self)
 
     @positioned(3, 1)
-    @button(label="🡸", custom_id="button:prev", style=ButtonStyle.blurple, disabled=True)
+    @button(label="🡸", style=ButtonStyle.blurple, disabled=True)
     async def prev_button(self, button: Button[None], inter: MessageInteraction) -> None:
         self.page -= 1
         self.next_button.disabled = False
@@ -83,7 +81,7 @@ class ArenaBuffsView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(3, 2)
-    @button(label="🡺", custom_id="button:next", style=ButtonStyle.blurple)
+    @button(label="🡺", style=ButtonStyle.blurple)
     async def next_button(self, button: Button[None], inter: MessageInteraction) -> None:
         self.page += 1
         self.prev_button.disabled = False
@@ -108,8 +106,8 @@ class ArenaBuffsView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(4, 0)
-    @select(custom_id="select:menu", options=[EMPTY_OPTION], disabled=True)
-    async def select_menu(self, select: Select[None], inter: MessageInteraction) -> None:
+    @string_select(options=[EMPTY_OPTION], disabled=True)
+    async def select_menu(self, select: StringSelect[None], inter: MessageInteraction) -> None:
         level = int(select.values[0])
 
         assert self.active is not None

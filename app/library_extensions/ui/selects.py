@@ -21,7 +21,7 @@ class PaginatedSelect(Select[None]):
         *,
         up: SelectOption,
         down: SelectOption,
-        custom_id: str,
+        custom_id: str = MISSING,
         all_options: list[SelectOption] = MISSING,
         placeholder: str | None = None,
         disabled: bool = False,

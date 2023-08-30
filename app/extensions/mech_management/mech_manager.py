@@ -195,7 +195,7 @@ class MechView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(0, 4)
-    @button(emoji=TYPE_ASSETS[Type.MODULE].emoji, custom_id="button:modules")
+    @button(emoji=TYPE_ASSETS[Type.MODULE].emoji)
     async def modules_button(self, button: Button[None], inter: MessageInteraction) -> None:
         """Button swapping mech editor with modules and vice versa."""
         self.page ^= 1  # toggle between 0 and 1
@@ -205,7 +205,7 @@ class MechView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(1, 4)
-    @button(cls=ToggleButton, label="Buffs", custom_id="button:buffs")
+    @button(cls=ToggleButton, label="Buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
         if self.player.arena_buffs.is_at_zero():
@@ -248,7 +248,6 @@ class MechView(PaginatorView):
             description="Click to show more items",
         ),
         placeholder="Choose slot",
-        custom_id="select:item",
         all_options=[EMPTY_OPTION],
         disabled=True,
     )

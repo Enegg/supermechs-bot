@@ -55,19 +55,19 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @positioned(0, 0)
-    @button(cls=ToggleButton, label="Buffs", custom_id="button:buffs")
+    @button(cls=ToggleButton, label="Buffs")
     async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         await self.update(inter, button.on, self.avg_button.on)
 
     @positioned(0, 1)
-    @button(cls=ToggleButton, label="Damage average", custom_id="button:dmg")
+    @button(cls=ToggleButton, label="Damage average")
     async def avg_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         await self.update(inter, self.buff_button.on, button.on)
 
     @positioned(0, 2)
-    @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
+    @button(label="Quit", style=ButtonStyle.red)
     async def quit_button(self, _: Button[None], inter: MessageInteraction) -> None:
         self.stop()
         await inter.response.defer()
