@@ -49,7 +49,7 @@ ViewT = t.TypeVar("ViewT", bound=ViewP)
 def invoker_bound(view: type[ViewT], /) -> type[ViewT]:
     """Mark a view invoker-bound.
 
-    Components of such views can only be interacted with the invoker.
+    Components of such views can only be interacted with by the invoker.
     """
     response = "Only the command invoker can interact with that."
 

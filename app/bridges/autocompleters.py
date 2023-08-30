@@ -2,10 +2,10 @@ import typing as t
 
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
+from user_input import sanitize_string
 
 from supermechs.api import Element, ItemData, Type
 from supermechs.typedefs import Name
-from supermechs.user_input import sanitize_string
 from supermechs.utils import search_for
 
 if t.TYPE_CHECKING:

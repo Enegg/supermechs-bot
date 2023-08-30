@@ -1,18 +1,17 @@
 from disnake import CommandInteraction
 from disnake.ext import commands
 
-from managers import player_manager
+from managers import item_pack_manager, player_manager
 
 from .autocompleters import item_name_autocomplete
-from .context import AppContext
 
-from supermechs.api import ItemData, Player, SMClient
+from supermechs.api import ItemData, Player
 from supermechs.typedefs import Name
 
 __all__ = ("register_injections",)
 
 
-def register_injections(client: SMClient) -> None:
+def register_injections() -> None:
     """Entry point for registering all injections for the commands module."""
     # NOTE: this function exists purely so as not to have the injectors
     # being registered as a *side effect* of importing this module (as otherwise
@@ -28,8 +27,9 @@ def register_injections(client: SMClient) -> None:
         """
         # TODO: make this pack-aware
         del inter
+        default_pack = item_pack_manager.mapping["@Darkstare"]  # TODO
         try:
-            return client.default_pack.get_item_by_name(name)
+            return default_pack.get_item_by_name(name)
 
         except KeyError as err:
             raise commands.UserInputError("Item not found.") from err
@@ -38,9 +38,5 @@ def register_injections(client: SMClient) -> None:
     def player_injector(inter: CommandInteraction) -> Player:
         return player_manager.lookup_or_create(inter.author)
 
-    @commands.register_injection
-    def context_injector(inter: CommandInteraction) -> AppContext:
-        return AppContext(client, inter)
-
     item_injector.autocomplete("name")(item_name_autocomplete)
-    del player_injector, context_injector
+    del player_injector

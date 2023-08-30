@@ -10,10 +10,9 @@ from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
 from __main__ import START_TIME
-from bridges import AppContext  # noqa: TCH001
 from config import TEST_GUILDS
 from library_extensions import Markdown as MD, command_mention
-from managers import player_manager
+from managers import item_pack_manager, player_manager
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from shared.utils import wrap_bytes
 
@@ -39,11 +38,11 @@ async def frantic(inter: CommandInteraction) -> None:
 
 
 @plugin.slash_command()
-async def info(inter: CommandInteraction, context: AppContext) -> None:
+async def info(inter: CommandInteraction) -> None:
     """Displays information about the bot."""
 
     bot = plugin.bot
-    default_pack = context.client.default_pack
+    default_pack = item_pack_manager.mapping["@Darkstare"]  # TODO
     app_info = await bot.application_info()
 
     general_fields = [

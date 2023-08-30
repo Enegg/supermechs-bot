@@ -58,7 +58,6 @@ async def create_aiohttp_session(client: HTTPClient, /) -> t.AsyncIterator[Clien
 
 
 async def main() -> None:
-    client = SMClient()
     bot = InteractionBot(
         intents=Intents(guilds=True),
         activity=Game("SuperMechs"),
@@ -71,7 +70,7 @@ async def main() -> None:
 
     bot.i18n.load("locale/")
     register_listeners(bot)
-    register_injections(client)
+    register_injections()
     load_extensions(bot.load_extension, "extensions")
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
     await setup_channel_logger(bot, LOGS_CHANNEL, ROOT_LOGGER)

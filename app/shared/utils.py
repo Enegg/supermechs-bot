@@ -14,10 +14,9 @@ def wrap_bytes(
     if value == 0:
         return 0, unit
 
-    exp = (value.bit_length() - 1) // 10
+    prefixes = ("", "K", "M", "G", "T")
+    exp = min((value.bit_length() - 1) // 10, len(prefixes) - 1)
     value >>= 10 * exp
-    prefixes = ("", "K", "M", "G", "T", "?")
-    exp = min(exp, len(prefixes) - 1)
     return value, prefixes[exp] + unit
 
 

@@ -93,10 +93,7 @@ async def on_slash_command_error(
             f"Command: `/{inter.application_command.qualified_name}` {arguments}\n"
             f"Exception: `{error}`"
         )
-
-        embed = (
-            Embed(title="⚠️ Unhandled exception", description=desc, color=Colour.red())
-        )
+        embed = Embed(title="⚠️ Unhandled exception", description=desc, color=Colour.red())
         file_or_content = exception_to_message(error)
 
         if isinstance(file_or_content, str):
