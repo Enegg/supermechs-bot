@@ -13,12 +13,12 @@ from supermechs.models.item_data import TransformRange
 
 class ColorEmojiAsset(t.NamedTuple):
     color: int
-    emoji: str
+    emoji: tex.LiteralString
 
 
 class TypeAsset(t.NamedTuple):
     image_url: str
-    emoji: str
+    emoji: tex.LiteralString
 
 
 class Sided(tex.NamedTuple, t.Generic[T]):
