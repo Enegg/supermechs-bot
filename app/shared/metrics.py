@@ -6,7 +6,7 @@ from collections import Counter
 import anyio
 import psutil
 
-from typeshed import Coro, P, T
+from typeshed import P, T
 
 from .manager import AsyncManager, default_key
 
@@ -14,7 +14,7 @@ if t.TYPE_CHECKING:
     import os
 
 
-def async_memoize(func: t.Callable[P, Coro[T]], /) -> t.Callable[P, Coro[T]]:
+def async_memoize(func: t.Callable[P, t.Awaitable[T]], /) -> t.Callable[P, t.Awaitable[T]]:
     """Memoization decorator for async functions.
 
     It is safe to run the resulting coroutine function concurrently to self using same
