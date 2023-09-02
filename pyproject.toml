@@ -11,6 +11,8 @@ target-version = "py310"
 
 [tool.ruff.isort]
 combine-as-imports = true
+split-on-trailing-comma = false
+extra-standard-library = ["typing_extensions"]
 forced-separate = ["supermechs"]
 
 [tool.ruff.flake8-type-checking]
