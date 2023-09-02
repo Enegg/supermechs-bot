@@ -16,6 +16,7 @@ from managers import item_pack_manager, player_manager
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from shared.utils import wrap_bytes
 
+import supermechs
 from supermechs.urls import PACK_V2
 
 if t.TYPE_CHECKING:
@@ -62,10 +63,11 @@ async def info(inter: CommandInteraction) -> None:
 
     bits, exponent = wrap_bytes(get_ram_utilization())
 
-    loc = "???"
+    loc = "calculating..."
 
     async with anyio.move_on_after(2.5):
         loc = await get_sloc(".")
+        loc += await get_sloc(next(iter(supermechs.__path__)))
 
     perf_fields = [
         f"Started: {format_dt(START_TIME, 'R')}",
