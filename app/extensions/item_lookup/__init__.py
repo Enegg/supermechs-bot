@@ -14,8 +14,9 @@ from managers import item_pack_manager, renderer_manager
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
 from supermechs.enums import Element, Type
-from supermechs.models.item_data import ItemData  # noqa: TCH002
-from supermechs.typedefs import LiteralElement, LiteralType, Name
+from supermechs.ext.deserializers.typedefs.game_types import LiteralElement, LiteralType
+from supermechs.models.item import ItemData  # noqa: TCH002
+from supermechs.typedefs import Name
 
 if t.TYPE_CHECKING:
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]

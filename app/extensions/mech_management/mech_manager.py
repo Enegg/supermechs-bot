@@ -4,25 +4,34 @@ from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
 from assets import ELEMENT_ASSETS, SIDED_TYPE_ASSETS, TYPE_ASSETS, get_weight_emoji
-from library_extensions import INVISIBLE_CHARACTER, OPTION_LIMIT, embed_image, embed_to_footer
+from library_extensions import OPTION_LIMIT, SPACE, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
-    ActionRow,
     Button,
-    MessageUIComponent,
     PaginatedSelect,
     PaginatorView,
-    SaneView,
     ToggleButton,
     TrinaryButton,
     add_callback,
     button,
     invoker_bound,
+    metadata_of,
     positioned,
     select,
 )
 
-from supermechs.api import STATS, ArenaBuffs, Element, InvItem, Item, ItemPack, Mech, Player, Type
+from supermechs.api import (
+    STATS,
+    ArenaBuffs,
+    Element,
+    InvItem,
+    Item,
+    ItemPack,
+    Mech,
+    Player,
+    SlotSelectorType,
+    Type,
+)
 from supermechs.converters import slot_to_type
 from supermechs.rendering import PackRenderer
 
@@ -39,7 +48,7 @@ def get_mech_config(mech: Mech) -> str:
     """Returns a str of item IDs that are visible on image."""
     return "_".join(
         "0" if inv_item is None else str(inv_item.item.data.id)
-        for inv_item in mech.iter_items(body=True, weapons=True)
+        for inv_item in mech.iter_items("body", "weapons")
     )
 
 
@@ -71,7 +80,7 @@ def format_stats(
         return ""
 
     return "\n".join(
-        "{stat.emoji} **{value}** {stat.name}{extra}".format(
+        "{stat.emoji} **{value}** {stat.name}{extra}".format(  # TODO: no .name
             value=value,
             stat=STATS[stat_name],
             extra=extra.get(stat_name, default_extra)(mech, value),
@@ -88,6 +97,15 @@ def slot_to_emoji(slot: str, /) -> str:
         return (asset.left if int(slot[-1]) % 2 else asset.right).emoji
 
     return TYPE_ASSETS[type].emoji
+
+
+def slot_to_selector(slot: str, /) -> SlotSelectorType:
+    type = slot_to_type(slot)
+
+    if slot[-1].isdigit():
+        return type, int(slot[-1])
+
+    return type
 
 
 def get_sorted_options(
@@ -153,7 +171,7 @@ class MechView(PaginatorView):
                 add_callback(
                     TrinaryButton(
                         custom_id=f"{self.id}:{slot}",
-                        item=None if (item := mech[slot]) is None else item.name,  # TODO
+                        item=None if (inv_item := mech[slot_to_selector(slot)]) is None else inv_item.item.data.name,
                         emoji=slot_to_emoji(slot),
                     ),
                     self.slot_button_cb,
@@ -162,7 +180,7 @@ class MechView(PaginatorView):
             )
 
         self.rows[2].extend_page_items(
-            Button(label=INVISIBLE_CHARACTER, custom_id=f"{self.id}:no_op{i}", disabled=True, row=2)
+            Button(label=SPACE, custom_id=f"{self.id}:no_op{i}", disabled=True, row=2)
             for i in range(4)
         )
 
@@ -262,7 +280,7 @@ class MechView(PaginatorView):
         item_name = None if value == EMPTY_OPTION.value else value
 
         item_data = None if item_name is None else self.pack.get_item_by_name(item_name)
-        slot = self.active.custom_id.split(":")[-1]
+        slot, = metadata_of(self.active)
 
         # sanity check if the item is actually valid
         if item_data is not None and item_data.type is not slot_to_type(slot):
@@ -276,7 +294,7 @@ class MechView(PaginatorView):
         else:
             item = None
 
-        self.mech[slot] = item
+        self.mech[slot_to_selector(slot)] = item
 
         self.update_embed_color()
         self.set_state_idle()
@@ -326,7 +344,7 @@ class MechView(PaginatorView):
         self.update_dropdown(button)
 
     def update_dropdown(self, button: TrinaryButton[str], /) -> None:
-        options = self.item_groups[slot_to_type(button.custom_id.split(":")[-1])]
+        options = self.item_groups[slot_to_type(metadata_of(button)[0])]
         self.item_select.all_options = get_sorted_options(options, self.mech.dominant_element)
         self.item_select.placeholder = "empty" if button.item is None else button.item
 
@@ -340,35 +358,3 @@ class MechView(PaginatorView):
         else:
             self.embed.color = ELEMENT_ASSETS[Element.UNKNOWN].color
 
-
-@invoker_bound
-class DetailedBrowseView(SaneView[ActionRow[MessageUIComponent]]):
-    def __init__(self, player: Player, *, timeout: float = 180.0) -> None:
-        super().__init__(timeout=timeout)
-        self.player = player
-        self.user_id = player.id
-        self.page = 0
-        self.embed = embed_mech(next(iter(player.builds.values())), player.arena_buffs)
-
-    @positioned(0, 0)
-    @button(label="🡸", custom_id="button:prev", disabled=True)
-    async def prev_button(self, button: Button[None], inter: MessageInteraction) -> None:
-        self.page -= 1
-        self.next_button.disabled = False
-
-        if self.page == 0:
-            button.disabled = True
-
-        await inter.response.edit_message(view=self)
-
-    @positioned(0, 1)
-    @button(label="🡺", custom_id="button:next")
-    async def next_button(self, button: Button[None], inter: MessageInteraction) -> None:
-        self.page += 1
-        self.prev_button.disabled = False
-
-        # condition for max page
-        if False:
-            button.disabled = True
-
-        await inter.response.edit_message(view=self)

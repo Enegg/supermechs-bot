@@ -8,18 +8,18 @@ from disnake import Attachment, CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
+from assets import ELEMENT_ASSETS, SIDED_TYPE_ASSETS, STAT_ASSETS, TYPE_ASSETS
 from bridges import mech_name_autocomplete
-from bridges.context import AppContext
 from library_extensions import OPTION_LIMIT, command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
-from managers import player_manager, renderer_manager
+from managers import item_pack_manager, player_manager, renderer_manager
 from shared.utils import wrap_bytes
+from user_input import sanitize_string
 
 from .mech_manager import MechView
 
-from supermechs.api import STATS, Player, Type
-from supermechs.ext.workshop.wu_compat import dump_mechs, load_mechs
-from supermechs.user_input import sanitize_string
+from supermechs.api import Player, Type
+from supermechs.ext.workshop import dump_mechs, load_mechs
 
 plugin = plugins.Plugin["commands.InteractionBot"](name="Mech-manager", logger=__name__)
 
@@ -37,12 +37,12 @@ async def mech(inter: CommandInteraction) -> None:
     del inter
 
 
-template = f"""\
-• {Type.TORSO.emoji} {{TORSO}}
-• {Type.LEGS.emoji} {{LEGS}}
-• {Type.SIDE_WEAPON.right.emoji} {{WEAPONS}} weapon(s)
-• {Type.MODULE.emoji} {{MODULES}} module(s)
-• {STATS['weight'].emoji} {{WEIGHT}} weight\
+MECH_SUMMARY_TEMPLATE = f"""\
+• {TYPE_ASSETS[Type.TORSO].emoji} {{TORSO}}
+• {TYPE_ASSETS[Type.LEGS].emoji} {{LEGS}}
+• {SIDED_TYPE_ASSETS[Type.SIDE_WEAPON].right.emoji} {{WEAPONS}} weapon(s)
+• {TYPE_ASSETS[Type.MODULE].emoji} {{MODULES}} module(s)
+• {STAT_ASSETS['weight']} {{WEIGHT}} weight\
 """
 
 
@@ -63,11 +63,11 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
         return sum(1 for item in it if item is not None)
 
     for name, build in player.builds.items():
-        value = template.format(
-            TORSO="no torso" if build.torso is None else build.torso.name,
-            LEGS="no legs" if build.legs is None else build.legs.name,
-            WEAPONS=count_not_none(build.iter_items(weapons=True)),
-            MODULES=count_not_none(build.iter_items(modules=True)),
+        value = MECH_SUMMARY_TEMPLATE.format(
+            TORSO="no torso" if build.torso is None else build.torso.item.data.name,
+            LEGS="no legs" if build.legs is None else build.legs.item.data.name,
+            WEAPONS=count_not_none(build.iter_items("weapons")),
+            MODULES=count_not_none(build.iter_items(Type.MODULE)),
             WEIGHT=build.weight,
         )
         fields.append((name, value))
@@ -82,7 +82,6 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 @commands.max_concurrency(1, commands.BucketType.user)
 async def build(
     inter: CommandInteraction,
-    context: AppContext,
     name: commands.String[str, 1, 32] | None = None,
 ) -> None:
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
@@ -94,7 +93,8 @@ async def build(
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
     player = player_manager.lookup_or_create(inter.author)
-    renderer = renderer_manager.mapping["@Darkstare"]
+    renderer = renderer_manager.mapping["@Darkstare"]  # TODO
+    default_pack = item_pack_manager.mapping["@Darkstare"]
 
     if name is None:
         mech = player.get_active_or_create_build()
@@ -104,7 +104,7 @@ async def build(
 
     view = MechView(
         mech=mech,
-        pack=context.client.default_pack,
+        pack=default_pack,
         renderer=renderer,
         player=player,
         timeout=100,
@@ -112,7 +112,7 @@ async def build(
     file = MISSING
 
     if mech.torso is not None:
-        view.embed.color = mech.torso.element.color
+        view.embed.color = ELEMENT_ASSETS[mech.torso.item.data.element].color
 
         image = renderer.create_mech_image(mech)
         url, file = embed_image(image, view.mech_config + ".png")
@@ -127,7 +127,7 @@ async def build(
 
 
 @mech.sub_command(name="import")
-async def import_(inter: CommandInteraction, context: AppContext, file: Attachment) -> None:
+async def import_(inter: CommandInteraction, file: Attachment) -> None:
     """Import mech(s) from a .JSON file. {{ MECH_IMPORT }}
 
     Parameters
@@ -143,9 +143,11 @@ async def import_(inter: CommandInteraction, context: AppContext, file: Attachme
     # we could assert that content type is application/json, but we may just as well
     # rely on the loader to fail
 
+    default_pack = item_pack_manager.mapping["@Darkstare"]
     # TODO: make load_mechs ask for item packs
+    data = await file.read()
     try:
-        mechs, failed = load_mechs(await file.read(), context.client.default_pack)
+        mechs, failed = load_mechs(data, default_pack)
 
     except (ValueError, TypeError) as err:
         raise commands.UserInputError(f"Parsing the file failed: {err}") from err
@@ -171,24 +173,24 @@ async def import_(inter: CommandInteraction, context: AppContext, file: Attachme
 
 
 @mech.sub_command()
-async def export(inter: CommandInteraction, context: AppContext) -> None:
+async def export(inter: CommandInteraction) -> None:
     """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
 
     player = player_manager.lookup_or_create(inter.author)
     build_count = len(player.builds)
+    default_pack = item_pack_manager.mapping["@Darkstare"]
 
     if build_count == 0:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
     if build_count == 1:
-        fp = io.BytesIO(dump_mechs(player.builds.values(), context.client.default_pack.key))
+        fp = io.BytesIO(dump_mechs(player.builds.values(), default_pack.key))
         file = File(fp, "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
     # TODO: >25 mechs
     mech_select = Select(
         placeholder="Select mechs to export",
-        custom_id="select:exported_mechs",
         max_values=min(OPTION_LIMIT, build_count),
         options=list(player.builds)[:OPTION_LIMIT],
     )
@@ -205,7 +207,7 @@ async def export(inter: CommandInteraction, context: AppContext) -> None:
     selected = frozenset(values)
 
     mechs = (mech for name, mech in player.builds.items() if name in selected)
-    fp = io.BytesIO(dump_mechs(mechs, context.client.default_pack.key))
+    fp = io.BytesIO(dump_mechs(mechs, default_pack.key))
     file = File(fp, "mechs.json")
     await new_inter.response.edit_message(file=file, components=None)
 

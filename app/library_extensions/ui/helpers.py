@@ -1,15 +1,25 @@
+import os
 import typing as t
 
 from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
 
-__all__ = ("wait_for_component", "wait_for_modal", "HasCustomID")
+__all__ = ("wait_for_component", "wait_for_modal", "HasCustomID", "random_str", "metadata_of")
+
+
+def random_str() -> str:
+    """Generates a random string."""
+    return os.urandom(16).hex()
 
 
 class HasCustomID(t.Protocol):
     @property
     def custom_id(self) -> str:
         ...
+
+
+def metadata_of(item: HasCustomID, /, sep: str = ":") -> t.Sequence[str]:
+    return item.custom_id.split(sep, 1)[1:]
 
 
 async def wait_for_component(

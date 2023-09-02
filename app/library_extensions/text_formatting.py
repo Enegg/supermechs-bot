@@ -1,13 +1,14 @@
 import string
 import typing as t
-
-from disnake import Locale, LocalizationProtocol
 from typing_extensions import LiteralString
 
-__all__ = ("INVISIBLE_CHARACTER", "Markdown", "monospace", "localized_text", "sanitize_filename")
+from disnake import Locale, LocalizationProtocol
+
+__all__ = ("SPACE", "Markdown", "monospace", "localized_text", "sanitize_filename")
 
 
-INVISIBLE_CHARACTER: t.Final = "\u2800"
+SPACE: t.Final = "\u2800"
+"""Invisible character discord does not truncate."""
 
 
 class Markdown:

@@ -7,7 +7,7 @@ from itertools import zip_longest
 from disnake import ButtonStyle, Embed, MessageInteraction
 
 from assets import STAT_ASSETS, range_to_str
-from library_extensions import INVISIBLE_CHARACTER
+from library_extensions import SPACE
 from library_extensions.ui import (
     ActionRow,
     Button,
@@ -20,9 +20,11 @@ from library_extensions.ui import (
 )
 from typeshed import dict_items_as, twotuple
 
-from supermechs.api import MAX_BUFFS, STATS, AnyStatsMapping, ItemData, Stat, ValueRange
+from supermechs.api import STATS, AnyStatsMapping, ArenaBuffs, ItemData, Stat, ValueRange
 from supermechs.item_stats import max_stats
 from supermechs.utils import has_any_of_keys, mean_and_deviation
+
+MAX_BUFFS = ArenaBuffs.maxed()
 
 
 @invoker_bound
@@ -93,14 +95,14 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         self.update()
 
     @positioned(0, 0)
-    @button(cls=ToggleButton, label="Arena buffs", custom_id="button:buffs")
+    @button(cls=ToggleButton, label="Arena buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.update()
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @positioned(0, 1)
-    @button(label="Quit", style=ButtonStyle.red, custom_id="button:quit")
+    @button(label="Quit", style=ButtonStyle.red)
     async def quit_button(self, _: Button[None], inter: MessageInteraction) -> None:
         await inter.response.defer()
         self.stop()
@@ -157,11 +159,12 @@ def buffed_stats(
                 value, diff = apply_buff(stat, value)
                 yield stat, ((value,), (diff,))
 
-            case [int() as x, y] if x == y:
-                value, diff = apply_buff(stat, x)
+            case ValueRange() if value.is_single:
+                value, diff = apply_buff(stat, value[0])
                 yield stat, ((value,), (diff,))
 
-            case [x, y]:
+            case ValueRange():
+                x, y = value
                 vx, dx = apply_buff(stat, x)
                 vy, dy = apply_buff(stat, y)
                 yield stat, ((vx, vy), (dx, dy))
@@ -266,7 +269,7 @@ def compact_fields(
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
     transform_range = range_to_str(item.transform_range)
 
-    for name, field in zip_longest((transform_range,), field_text, fillvalue=INVISIBLE_CHARACTER):
+    for name, field in zip_longest((transform_range,), field_text, fillvalue=SPACE):
         yield (name, field, True)
 
 

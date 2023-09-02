@@ -8,7 +8,7 @@ from typeshed import T
 
 from supermechs import constants
 from supermechs.enums import Element, Tier, Type
-from supermechs.models.item_data import TransformRange
+from supermechs.models.item import TransformRange
 
 
 class ColorEmojiAsset(t.NamedTuple):

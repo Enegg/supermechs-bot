@@ -1,29 +1,27 @@
-from __future__ import annotations
-
-import typing as t
-
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands, plugins
 from disnake.ui import Button, StringSelect, button, string_select
 
 from assets import STAT_ASSETS
-from library_extensions import INVISIBLE_CHARACTER
+from library_extensions import SPACE
 from library_extensions.ui import (
     EMPTY_OPTION,
     PaginatorView,
     TrinaryButton,
     add_callback,
     invoker_bound,
+    metadata_of,
     positioned,
 )
 
-from supermechs.api import MAX_BUFFS, ArenaBuffs, Player
+from supermechs.api import Player
+from supermechs.arena_buffs import ArenaBuffs, iter_modifiers_of, max_level_of
 
 plugin = plugins.Plugin["commands.InteractionBot"](name="ArenaBuffs", logger=__name__)
 
 
-def custom_id_to_slot(custom_id: str) -> str:
-    return custom_id.rsplit(":", 1)[-1]
+def make_label(buffs: ArenaBuffs, stat_key: str, /) -> str:
+    return str(buffs.modifier_of(stat_key)).rjust(4, SPACE)
 
 
 @invoker_bound
@@ -33,6 +31,7 @@ class ArenaBuffsView(PaginatorView):
         self.user_id = user_id
         self.buffs = buffs
         self.active: TrinaryButton[bool] | None = None
+        self.all_slot_buttons: list[TrinaryButton[bool]] = []
 
         for i, row in enumerate(
             (
@@ -41,21 +40,21 @@ class ArenaBuffsView(PaginatorView):
                 ("eneDmg", "heaDmg", "eleDmg", "eleRes"),
             )
         ):
-            self.rows[i].extend_page_items(
-                add_callback(
-                    TrinaryButton(
-                        item=buffs[id] == MAX_BUFFS[id] or None,
-                        label=str(buffs.modifier_of(id)).rjust(4, INVISIBLE_CHARACTER),
-                        custom_id=f"slotbutton:{id}",
-                        emoji=STAT_ASSETS[id],
-                    ),
-                    self.buff_buttons,
+            for stat_key in row:
+                btn = TrinaryButton(
+                    item=buffs[stat_key] == max_level_of(stat_key) or None,
+                    label=make_label(buffs, stat_key),
+                    custom_id=f"{self.id}:{stat_key}",
+                    emoji=STAT_ASSETS[stat_key],
                 )
-                for id in row
-            )
+                add_callback(btn, self.buff_buttons)
+                self.all_slot_buttons.append(btn)
+                self.rows[i].extend_page_items(btn)
 
         self.page = 0
-        self.max_button.disabled = self.buffs.levels == MAX_BUFFS.levels
+        self.max_button.disabled = all(
+            level == max_level_of(key) for key, level in self.buffs.levels.items()
+        )
 
     async def buff_buttons(self, button: TrinaryButton[bool], inter: MessageInteraction) -> None:
         button.toggle()
@@ -92,14 +91,11 @@ class ArenaBuffsView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(3, 3)
-    @button(label="Max", custom_id="button:max", style=ButtonStyle.green)
+    @button(label="Max", style=ButtonStyle.green)
     async def max_button(self, button: Button[None], inter: MessageInteraction) -> None:
-        for row in self.rows:
-            for item in t.cast(list[TrinaryButton[bool]], row.page_items):
-                if item.custom_id.startswith("slotbutton"):
-                    slot = custom_id_to_slot(item.custom_id)
-                    self.modify_buff(item, MAX_BUFFS.levels[slot])
-                    item.on = False
+        for btn in self.all_slot_buttons:
+            self.modify_buff(btn)
+            btn.on = False
 
         button.disabled = True
         self.set_state_idle()
@@ -117,18 +113,23 @@ class ArenaBuffsView(PaginatorView):
 
         await inter.response.edit_message(view=self)
 
-    def modify_buff(self, button: TrinaryButton[bool], level: int) -> None:
-        slot = custom_id_to_slot(button.custom_id)
-        self.buffs.levels[slot] = level
+    def modify_buff(self, button: TrinaryButton[bool], level: int = -1) -> None:
+        stat_key, = metadata_of(button)
+        max_level = max_level_of(stat_key)
 
-        if level == MAX_BUFFS.levels[slot]:
+        if level == -1:
+            level = max_level
+
+        self.buffs.levels[stat_key] = level
+
+        if level == max_level:
             button.item = True
 
         else:
             self.max_button.disabled = False
             button.item = None
 
-        button.label = str(self.buffs.modifier_of(slot)).rjust(4, INVISIBLE_CHARACTER)
+        button.label = make_label(self.buffs, stat_key)
 
     def set_state_idle(self) -> None:
         if self.active is not None:
@@ -154,10 +155,10 @@ class ArenaBuffsView(PaginatorView):
         self.active = button
 
         select.placeholder = button.label
-        stat_name = button.custom_id.rsplit(":", 1)[-1]
+        stat_key, = metadata_of(button)
         select.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
-            for level, buff in enumerate(self.buffs.iter_modifiers_of(stat_name))
+            for level, buff in enumerate(iter_modifiers_of(stat_key))
         ]
 
     def set_state_stopped(self) -> None:
