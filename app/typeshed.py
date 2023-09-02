@@ -10,15 +10,11 @@ VT = TypeVar("VT")
 """Value-type of a mapping."""
 P = ParamSpec("P")
 """Parameter specification of a callable."""
-SupportsHash = TypeVar("SupportsHash", bound=t.Hashable)
-"""Type supporting hashing."""
 
 twotuple = tuple[T, T]
 """Tuple of two elements of same type."""
 XOrTupleXY = T | tuple[T, T2]
 """Type or tuple of two types."""
-Coro = t.Coroutine[t.Any, t.Any, T]
-"""Shorthand for a coroutine."""
 Factory = t.Callable[[], T]
 """0-argument callable returning an object of given type."""
 LiteralURL: t.TypeAlias = str
