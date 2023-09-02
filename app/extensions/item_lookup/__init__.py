@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import typing as t
 
 from disnake import CommandInteraction, Embed
@@ -134,23 +135,29 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     except LookupError as err:
         raise commands.UserInputError(str(err)) from err
 
+
     if item_a.element is item_b.element:
-        desc = str_elem(item_a.element)
+        desc_builder = io.StringIO(str_elem(item_a.element))
         color = ELEMENT_ASSETS[item_a.element].color
 
         if item_a.type is item_b.type:
-            desc += " "
-            desc += str_type(item_a.type)
+            desc_builder.write(" ")
+            type_ = str_type(item_a.type)
+            desc_builder.write(type_)
 
-            if not desc.endswith("s"):  # legs do end with s
-                desc += "s"
+            if not type_.endswith("s"):  # legs do end with s
+                desc_builder.write("s")
 
         else:
-            desc += f" {str_type(item_a.type)} / {str_type(item_b.type)}"
+            desc_builder.write(f" {str_type(item_a.type)} / {str_type(item_b.type)}")
+
+        desc = desc_builder.getvalue()
 
     else:
-        desc = f"{str_elem(item_a.element)} {str_type(item_a.type)}"
-        desc += f" | {str_elem(item_b.element)} {str_type(item_b.type)}"
+        desc = (
+            f"{str_elem(item_a.element)} {str_type(item_a.type)}"
+            f" | {str_elem(item_b.element)} {str_type(item_b.type)}"
+        )
         color = inter.author.color
 
     embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
