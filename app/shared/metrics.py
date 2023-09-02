@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 from collections import Counter
-from pathlib import Path
 
 import anyio
 import psutil
@@ -10,6 +9,9 @@ import psutil
 from typeshed import Coro, P, T
 
 from .manager import AsyncManager, default_key
+
+if t.TYPE_CHECKING:
+    import os
 
 
 def async_memoize(func: t.Callable[P, Coro[T]], /) -> t.Callable[P, Coro[T]]:
@@ -23,49 +25,32 @@ def async_memoize(func: t.Callable[P, Coro[T]], /) -> t.Callable[P, Coro[T]]:
     return manager.lookup_or_create
 
 
-
-# async def _file_reader(path: anyio.Path, limiter: anyio.CapacityLimiter) -> int:
-#     sloc = 0
-
-#     async with limiter, await path.open(encoding="utf8") as file:
-#         async for line in file:
-#             if not line or line.lstrip().startswith("#"):
-#                 continue
-
-#             sloc += 1
-
-#     return sloc
-
-
-# async def _get_sloc_a(directory: str) -> int:
-#     sloc = 0
-
-#     limiter = anyio.CapacityLimiter(10)
-
-#     async with anyio.create_task_group() as group:
-#         async for path in anyio.Path(directory).glob("**/*.py"):
-#             group.start_soon(_file_reader, path, limiter)
-
-
-
-def _get_sloc(directory: str) -> int:
+def _file_sloc(path: os.PathLike[str], /) -> int:
     sloc = 0
 
-    for path in Path(directory).glob("**/*.py"):
-        with path.open(encoding="utf8") as file:
-            for line in file:
-                if not line or line.lstrip().startswith("#"):
-                    continue
+    with open(path, encoding="utf8") as file:  # noqa: PTH123
+        for line in file:
+            if not line or line.lstrip().startswith("#"):
+                continue
 
-                sloc += 1
+            sloc += 1
 
     return sloc
 
 
 @async_memoize
-async def get_sloc(directory: str = ".") -> int:
+async def get_sloc(directory: str = ".", /) -> int:
     """Get the number of source lines of code of python files within the directory."""
-    return await anyio.to_thread.run_sync(_get_sloc, directory)
+    results: list[int] = []
+
+    def runner(path: os.PathLike[str], /) -> None:
+        results.append(_file_sloc(path))
+
+    async with anyio.create_task_group() as tg:
+        async for path in anyio.Path(directory).glob("**/*.py"):
+            tg.start_soon(anyio.to_thread.run_sync, runner, path)
+
+    return sum(results)
 
 
 def get_ram_utilization(pid: int | None = None, /) -> int:
