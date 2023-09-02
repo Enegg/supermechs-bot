@@ -6,6 +6,8 @@ from attrs import define, field
 
 from typeshed import KT, VT, P
 
+from supermechs.utils import large_mapping_repr
+
 __all__ = ("Manager", "default_key")
 
 
@@ -18,15 +20,6 @@ def callable_repr(func: t.Callable[..., t.Any], /) -> str:
     """Returns a signature of a callable."""
     signature = inspect.signature(func)
     return f"{func.__name__}{signature}"
-
-
-def large_container_repr(container: t.Sized, /, *, threshold: int = 20) -> str:
-    """Repr returning the number of elements for large collections."""
-
-    if len(container) > threshold:
-        return f"<{type(container).__name__} of {len(container)} elements>"
-
-    return repr(container)
 
 
 def default_key(*args: t.Hashable, **kwargs: t.Hashable) -> t.Hashable:
@@ -59,7 +52,7 @@ class Manager(t.Generic[P, VT, KT]):
     key: t.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: t.MutableMapping[KT, VT] = field(factory=dict, init=False, repr=large_container_repr)
+    _store: t.MutableMapping[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
 
     @property
     def mapping(self) -> t.Mapping[KT, VT]:

@@ -5,9 +5,11 @@ from types import MappingProxyType
 import anyio
 from attrs import define, field
 
-from typeshed import KT, VT, Coro, P
+from typeshed import KT, VT, P
 
-from .manager import callable_repr, large_container_repr
+from .manager import callable_repr
+
+from supermechs.utils import large_mapping_repr
 
 __all__ = ("AsyncManager",)
 
@@ -23,14 +25,14 @@ class AsyncManager(t.Generic[P, VT, KT]):
     factory: async callable creating objects from arguments P.
     key: callable computing keys to store objects under.
     """
-    factory: t.Callable[P, Coro[VT]] = field(repr=callable_repr)
+    factory: t.Callable[P, t.Awaitable[VT]] = field(repr=callable_repr)
     """Creates an object from given value."""
 
     key: t.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: t.MutableMapping[KT, VT] = field(factory=dict, init=False, repr=large_container_repr)
-    _locks: t.MutableMapping[KT, anyio.Lock] = field(factory=dict, init=False, repr=large_container_repr)
+    _store: t.MutableMapping[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
+    _locks: t.MutableMapping[KT, anyio.Lock] = field(factory=dict, init=False, repr=large_mapping_repr)
 
     @property
     def mapping(self) -> t.Mapping[KT, VT]:
@@ -44,8 +46,10 @@ class AsyncManager(t.Generic[P, VT, KT]):
         """Retrieve stored or create an object from given value."""
         key = self.key(*args, **kwargs)
 
-        # we use a lock so any concurrent calls with arguments that compute the same key
-        # result in running the factory only once
+        # acquire a lock *before* accessing the value; if key not present
+        # this ensures subsequent access will have the value available once
+        # the lock is released
+        # XXX: what if we don't acquire on first access?
         async with self._acquire_lock(key):
             try:
                 return self._store[key]
@@ -62,6 +66,7 @@ class AsyncManager(t.Generic[P, VT, KT]):
         if owner := lock is None:
             lock = self._locks[key] = anyio.Lock()
 
+        # is this try...finally needed here?
         try:
             async with lock:
                 yield
