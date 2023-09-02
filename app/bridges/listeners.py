@@ -4,6 +4,7 @@ import typing as t
 from disnake import Client, CommandInteraction
 from disnake.ext.commands.common_bot_base import CommonBotBase
 
+from config import DATE_FORMAT
 from shared.metrics import add_invocation
 
 ROOT_LOGGER = logging.getLogger()
@@ -17,7 +18,7 @@ async def on_ready(client: Client, /) -> None:
         assert limit is not None
         ROOT_LOGGER.info(
             f"Session #{limit.total - limit.remaining}/{limit.total}"
-            f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
+            f" (expires {limit.reset_time:{DATE_FORMAT}})"
         )
 
 

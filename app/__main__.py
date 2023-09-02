@@ -14,32 +14,30 @@ from disnake.utils import utcnow
 from dotenv import load_dotenv
 
 from bridges import register_injections, register_listeners
-from config import HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
+from config import DATE_FORMAT, HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
 from shared import SESSION_CTX
 
 if t.TYPE_CHECKING:
     from disnake.http import HTTPClient
 
-
 load_dotenv()
 
-logging.Formatter.default_time_format = "%d.%m.%Y %H:%M:%S"
+logging.Formatter.default_time_format = DATE_FORMAT
 logging.captureWarnings(True)
 stream = logging.StreamHandler()
 stream.setLevel(logging.INFO)
 
 if __debug__:
-    format = "{asctime} [{levelname}] {name} - {message}"
+    log_format = "{asctime} [{levelname}] {name} - {message}"
 
 else:
     # don't append timestamp as heroku does that already
-    format = "[{levelname}] {name} - {message}"
+    log_format = "[{levelname}] {name} - {message}"
 
-stream.setFormatter(logging.Formatter(format, style="{"))
-ROOT_LOGGER = logging.getLogger()
-ROOT_LOGGER.setLevel(logging.INFO)
-ROOT_LOGGER.addHandler(stream)
+stream.setFormatter(logging.Formatter(log_format, style="{"))
+logging.root.setLevel(logging.INFO)
+logging.root.addHandler(stream)
 
 logging.getLogger("disnake").setLevel(logging.ERROR)
 logging.getLogger("disnake.client").setLevel(logging.CRITICAL)  # mute connection errors
@@ -73,7 +71,7 @@ async def main() -> None:
     register_injections()
     load_extensions(bot.load_extension, "extensions")
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
-    await setup_channel_logger(bot, LOGS_CHANNEL, ROOT_LOGGER)
+    await setup_channel_logger(bot, LOGS_CHANNEL, logging.root)
 
     async with create_aiohttp_session(bot.http) as session:
         SESSION_CTX.set(session)
