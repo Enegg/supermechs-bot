@@ -4,7 +4,7 @@ import typing as t
 from disnake.abc import User
 
 from shared import SESSION_CTX
-from shared.manager import AsyncManager, Manager
+from shared.manager import Manager
 
 from supermechs.api import ItemPack, PackRenderer, Player
 from supermechs.ext.deserializers.graphic import to_pack_renderer
@@ -51,8 +51,8 @@ async def _image_fetcher(url: str, /) -> "Image.Image":
         return Image.open(fp)
 
 
-async def _create_pack_renderer(data: AnyItemPack, /) -> PackRenderer:
-    return await to_pack_renderer(data, _image_fetcher)
+def _create_pack_renderer(data: AnyItemPack, /) -> PackRenderer:
+    return to_pack_renderer(data, _image_fetcher)
 
 
-renderer_manager = AsyncManager(_create_pack_renderer, extract_key)
+renderer_manager = Manager(_create_pack_renderer, extract_key)
