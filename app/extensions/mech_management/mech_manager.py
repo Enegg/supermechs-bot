@@ -3,7 +3,7 @@ import typing as t
 from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
-from assets import ELEMENT_ASSETS, SIDED_TYPE_ASSETS, TYPE_ASSETS, get_weight_emoji
+from assets import ELEMENT, SIDED_TYPE, TYPE, get_weight_emoji
 from library_extensions import OPTION_LIMIT, SPACE, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
@@ -38,7 +38,7 @@ from supermechs.rendering import PackRenderer
 def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
         title=f'Mech build "{mech.name}"',
-        color=ELEMENT_ASSETS[mech.dominant_element or Element.UNKNOWN].color,
+        color=ELEMENT[mech.dominant_element or Element.UNKNOWN].color,
     ).add_field("Stats:", format_stats(mech, included_buffs))
     return embed
 
@@ -92,10 +92,10 @@ def slot_to_emoji(slot: str, /) -> str:
     type = slot_to_type(slot)
 
     if type is Type.SIDE_WEAPON or type is Type.TOP_WEAPON:
-        asset = SIDED_TYPE_ASSETS[type]
+        asset = SIDED_TYPE[type]
         return (asset.left if int(slot[-1]) % 2 else asset.right).emoji
 
-    return TYPE_ASSETS[type].emoji
+    return TYPE[type].emoji
 
 
 def slot_to_selector(slot: str, /) -> SlotSelectorType:
@@ -119,11 +119,11 @@ def get_sorted_options(
     if len(options) + 1 <= OPTION_LIMIT:
         return new_options + options
 
-    element_emojis = [element.emoji for element in ELEMENT_ASSETS.values()]
+    element_emojis = [element.emoji for element in ELEMENT.values()]
 
     if primary_element is not None and primary_element is not Element.PHYSICAL:
         # physical is the first one anyway
-        primary_emoji = ELEMENT_ASSETS[primary_element].emoji
+        primary_emoji = ELEMENT[primary_element].emoji
         element_emojis.remove(primary_emoji)
         element_emojis.insert(0, primary_emoji)
 
@@ -190,10 +190,10 @@ class MechView(PaginatorView):
 
         for item in pack.items.values():
             self.item_groups[item.type].append(
-                SelectOption(label=item.name, emoji=ELEMENT_ASSETS[item.element].emoji)
+                SelectOption(label=item.name, emoji=ELEMENT[item.element].emoji)
             )
 
-        ref = {ELEMENT_ASSETS[element].emoji: index for index, element in enumerate(Element)}
+        ref = {ELEMENT[element].emoji: index for index, element in enumerate(Element)}
 
         for item_list in self.item_groups.values():
             item_list.sort(key=lambda option: (ref[str(option.emoji)], option.label))
@@ -212,11 +212,11 @@ class MechView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(0, 4)
-    @button(emoji=TYPE_ASSETS[Type.MODULE].emoji)
+    @button(emoji=TYPE[Type.MODULE].emoji)
     async def modules_button(self, button: Button[None], inter: MessageInteraction) -> None:
         """Button swapping mech editor with modules and vice versa."""
         self.page ^= 1  # toggle between 0 and 1
-        button.emoji = TYPE_ASSETS[Type.TORSO if self.page == 1 else Type.MODULE].emoji
+        button.emoji = TYPE[Type.TORSO if self.page == 1 else Type.MODULE].emoji
 
         await inter.response.edit_message(view=self)
 
@@ -349,11 +349,11 @@ class MechView(PaginatorView):
 
     def update_embed_color(self) -> None:
         if (dominant := self.mech.dominant_element) is not None:
-            self.embed.color = ELEMENT_ASSETS[dominant].color
+            self.embed.color = ELEMENT[dominant].color
 
         elif self.mech.torso is not None:
-            self.embed.color = ELEMENT_ASSETS[self.mech.torso.data.element].color
+            self.embed.color = ELEMENT[self.mech.torso.data.element].color
 
         else:
-            self.embed.color = ELEMENT_ASSETS[Element.UNKNOWN].color
+            self.embed.color = ELEMENT[Element.UNKNOWN].color
 
