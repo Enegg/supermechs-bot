@@ -1,1 +1,0 @@
-worker: python -O app/__main__.py --log-file
