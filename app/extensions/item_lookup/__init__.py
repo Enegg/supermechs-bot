@@ -49,8 +49,9 @@ async def item(
     """
     del type, element  # used for autocomplete only
     renderer = renderer_manager.mapping["@Darkstare"]  # TODO
-    image = renderer.get_item_sprite(item, item.transform_range[-1]).image
-    url, file = embed_image(image, sanitize_filename(item.name, ".png"))
+    sprite = renderer.get_item_sprite(item, item.transform_range[-1])
+    await sprite.load()
+    url, file = embed_image(sprite.image, sanitize_filename(item.name, ".png"))
     embed_color = ELEMENT_ASSETS[item.element].color
 
     if item.type is Type.SIDE_WEAPON or item.type is Type.TOP_WEAPON:

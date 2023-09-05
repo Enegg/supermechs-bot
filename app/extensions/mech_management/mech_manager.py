@@ -24,7 +24,6 @@ from supermechs.api import (
     STATS,
     ArenaBuffs,
     Element,
-    InvItem,
     Item,
     ItemPack,
     Mech,
@@ -47,8 +46,8 @@ def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
 def get_mech_config(mech: Mech) -> str:
     """Returns a str of item IDs that are visible on image."""
     return "_".join(
-        "0" if inv_item is None else str(inv_item.item.data.id)
-        for inv_item in mech.iter_items("body", "weapons")
+        "0" if item is None else str(item.data.id)
+        for item in mech.iter_items("body", "weapons")
     )
 
 
@@ -171,7 +170,7 @@ class MechView(PaginatorView):
                 add_callback(
                     TrinaryButton(
                         custom_id=f"{self.id}:{slot}",
-                        item=None if (inv_item := mech[slot_to_selector(slot)]) is None else inv_item.item.data.name,
+                        item=None if (item := mech[slot_to_selector(slot)]) is None else item.data.name,
                         emoji=slot_to_emoji(slot),
                     ),
                     self.slot_button_cb,
@@ -217,7 +216,6 @@ class MechView(PaginatorView):
     async def modules_button(self, button: Button[None], inter: MessageInteraction) -> None:
         """Button swapping mech editor with modules and vice versa."""
         self.page ^= 1  # toggle between 0 and 1
-        TYPE_ASSETS[Type.TORSO].emoji
         button.emoji = TYPE_ASSETS[Type.TORSO if self.page == 1 else Type.MODULE].emoji
 
         await inter.response.edit_message(view=self)
@@ -289,7 +287,8 @@ class MechView(PaginatorView):
         self.active.item = select.placeholder = item_name
 
         if item_data is not None:
-            item = InvItem.from_item(Item.from_data(item_data, maxed=True))
+            item = Item.from_data(item_data, maxed=True)
+            await self.renderer.get_item_sprite(item).load()
 
         else:
             item = None
@@ -353,7 +352,7 @@ class MechView(PaginatorView):
             self.embed.color = ELEMENT_ASSETS[dominant].color
 
         elif self.mech.torso is not None:
-            self.embed.color = ELEMENT_ASSETS[self.mech.torso.item.data.element].color
+            self.embed.color = ELEMENT_ASSETS[self.mech.torso.data.element].color
 
         else:
             self.embed.color = ELEMENT_ASSETS[Element.UNKNOWN].color

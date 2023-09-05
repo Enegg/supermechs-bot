@@ -64,8 +64,8 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 
     for name, build in player.builds.items():
         value = MECH_SUMMARY_TEMPLATE.format(
-            TORSO="no torso" if build.torso is None else build.torso.item.data.name,
-            LEGS="no legs" if build.legs is None else build.legs.item.data.name,
+            TORSO="no torso" if build.torso is None else build.torso.data.name,
+            LEGS="no legs" if build.legs is None else build.legs.data.name,
             WEAPONS=count_not_none(build.iter_items("weapons")),
             MODULES=count_not_none(build.iter_items(Type.MODULE)),
             WEIGHT=build.weight,
@@ -112,8 +112,9 @@ async def build(
     file = MISSING
 
     if mech.torso is not None:
-        view.embed.color = ELEMENT_ASSETS[mech.torso.item.data.element].color
+        view.embed.color = ELEMENT_ASSETS[mech.torso.data.element].color
 
+        await renderer.load_mech_images(mech)
         image = renderer.create_mech_image(mech)
         url, file = embed_image(image, view.mech_config + ".png")
         view.embed.set_image(url)
