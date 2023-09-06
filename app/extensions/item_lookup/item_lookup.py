@@ -22,7 +22,7 @@ from typeshed import dict_items_as, twotuple
 
 from supermechs.api import STATS, AnyStatsMapping, ArenaBuffs, ItemData, Stat, ValueRange
 from supermechs.item_stats import max_stats
-from supermechs.utils import has_any_of_keys, mean_and_deviation
+from supermechs.utils import has_any_of, mean_and_deviation
 
 MAX_BUFFS = ArenaBuffs.maxed()
 
@@ -44,7 +44,7 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self.item = item
         self.field_factory = factory
 
-        if not has_any_of_keys(item.start_stage.base_stats, "phyDmg", "eleDmg", "expDmg"):
+        if not has_any_of(item.start_stage.base_stats, "phyDmg", "eleDmg", "expDmg"):
             self.remove_item(self.avg_button, 0)
 
         for name, value, inline in factory(item, False, False):
