@@ -6,4 +6,4 @@ from .embed_helpers import *
 from .error_handling import *
 from .extension_manager import *
 from .pending import *
-from .text_formatting import *
+from .text_utils import *
