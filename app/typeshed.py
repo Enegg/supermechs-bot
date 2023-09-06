@@ -1,7 +1,8 @@
-import typing_extensions as t
+import typing as t
+import typing_extensions as tex
 
-T = t.TypeVar("T", infer_variance=True)
-T2 = t.TypeVar("T2", infer_variance=True)
+T = tex.TypeVar("T", infer_variance=True)
+T2 = tex.TypeVar("T2", infer_variance=True)
 KT = t.TypeVar("KT", bound=t.Hashable)
 """Key-type of a mapping."""
 VT = t.TypeVar("VT")

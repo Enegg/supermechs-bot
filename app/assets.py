@@ -1,6 +1,7 @@
 """Various assets existing on discord side."""
 
-import typing_extensions as t
+import typing as t
+import typing_extensions as tex
 from typing import TYPE_CHECKING
 
 from typeshed import T
@@ -14,15 +15,15 @@ if TYPE_CHECKING:
 
 class ColorEmojiAsset(t.NamedTuple):
     color: int
-    emoji: t.LiteralString
+    emoji: tex.LiteralString
 
 
 class TypeAsset(t.NamedTuple):
     image_url: str
-    emoji: t.LiteralString
+    emoji: tex.LiteralString
 
 
-class Sided(t.NamedTuple, t.Generic[T]):
+class Sided(tex.NamedTuple, t.Generic[T]):
     right: T
     left: T
 
