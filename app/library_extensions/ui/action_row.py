@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import typing as t
+from typing_extensions import Self, TypeVar
 
 from disnake.ui.action_row import ActionRow, MessageUIComponent, StrictUIComponentT, UIComponentT
 from disnake.ui.item import WrappedComponent
-from typing_extensions import Self, TypeVar
 
 from shared.utils import ReprMixin
 
@@ -49,7 +49,7 @@ class PaginatedRow(ReprMixin, ActionRow[UIComponentT]):
     ) -> None:
         ...
 
-    def __init__(self, *components: UIComponentT | None, columns: int = 5) -> None:
+    def __init__(self, *components: UIComponentT | None, columns: int = 5) -> None:  # pyright: ignore
         if not 1 <= columns <= 5:
             raise ValueError("Columns must be between 1 and 5")
 
@@ -58,7 +58,7 @@ class PaginatedRow(ReprMixin, ActionRow[UIComponentT]):
         if not 0 <= size <= 5:
             raise ValueError("Too many components to add.")
 
-        super().__init__()
+        super().__init__()  # pyright: ignore
         self.page_items: list[UIComponentT] = []
         self.persistent: list[UIComponentT | None] = list(components)
 
