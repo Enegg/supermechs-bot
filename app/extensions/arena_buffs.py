@@ -2,7 +2,7 @@ from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectO
 from disnake.ext import commands, plugins
 from disnake.ui import Button, StringSelect, button, string_select
 
-from assets import STAT_ASSETS
+from assets import STAT
 from library_extensions import SPACE
 from library_extensions.ui import (
     EMPTY_OPTION,
@@ -45,7 +45,7 @@ class ArenaBuffsView(PaginatorView):
                     item=buffs[stat_key] == max_level_of(stat_key) or None,
                     label=make_label(buffs, stat_key),
                     custom_id=f"{self.id}:{stat_key}",
-                    emoji=STAT_ASSETS[stat_key],
+                    emoji=STAT[stat_key],
                 )
                 add_callback(btn, self.buff_buttons)
                 self.all_slot_buttons.append(btn)

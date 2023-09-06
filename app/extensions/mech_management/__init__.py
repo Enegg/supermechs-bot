@@ -8,7 +8,7 @@ from disnake import Attachment, CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from assets import ELEMENT_ASSETS, SIDED_TYPE_ASSETS, STAT_ASSETS, TYPE_ASSETS
+from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
 from bridges import mech_name_autocomplete
 from library_extensions import OPTION_LIMIT, command_mention, embed_image, embed_to_footer
 from library_extensions.ui import Select, wait_for_component
@@ -38,11 +38,11 @@ async def mech(inter: CommandInteraction) -> None:
 
 
 MECH_SUMMARY_TEMPLATE = f"""\
-• {TYPE_ASSETS[Type.TORSO].emoji} {{TORSO}}
-• {TYPE_ASSETS[Type.LEGS].emoji} {{LEGS}}
-• {SIDED_TYPE_ASSETS[Type.SIDE_WEAPON].right.emoji} {{WEAPONS}} weapon(s)
-• {TYPE_ASSETS[Type.MODULE].emoji} {{MODULES}} module(s)
-• {STAT_ASSETS['weight']} {{WEIGHT}} weight\
+• {TYPE[Type.TORSO].emoji} {{TORSO}}
+• {TYPE[Type.LEGS].emoji} {{LEGS}}
+• {SIDED_TYPE[Type.SIDE_WEAPON].right.emoji} {{WEAPONS}} weapon(s)
+• {TYPE[Type.MODULE].emoji} {{MODULES}} module(s)
+• {STAT['weight']} {{WEIGHT}} weight\
 """
 
 
@@ -112,7 +112,7 @@ async def build(
     file = MISSING
 
     if mech.torso is not None:
-        view.embed.color = ELEMENT_ASSETS[mech.torso.data.element].color
+        view.embed.color = ELEMENT[mech.torso.data.element].color
 
         await renderer.load_mech_images(mech)
         image = renderer.create_mech_image(mech)

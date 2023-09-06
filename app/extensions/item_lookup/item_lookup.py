@@ -6,7 +6,7 @@ from itertools import zip_longest
 
 from disnake import ButtonStyle, Embed, MessageInteraction
 
-from assets import STAT_ASSETS, range_to_str
+from assets import STAT, range_to_str
 from library_extensions import SPACE
 from library_extensions.ui import (
     ActionRow,
@@ -123,7 +123,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
             require_jump = True
 
         if require_jump:
-            emoji = STAT_ASSETS["jump"]
+            emoji = STAT["jump"]
             name_field.append(f"{emoji} **Jumping required**")
 
         if self.embed._fields:
@@ -242,10 +242,10 @@ def default_fields(
         if stat == "uses":
             name = "Use" if str_value == "1" else "Uses"
 
-        item_stats += f"{STAT_ASSETS[stat]} **{str_value}** {name}{change}\n"
+        item_stats += f"{STAT[stat]} **{str_value}** {name}{change}\n"
 
     if item.tags.require_jump:
-        emoji = STAT_ASSETS["jump"]
+        emoji = STAT["jump"]
         item_stats += f"{emoji} **Jumping required**"
 
     yield ("Stats:", item_stats, False)
@@ -258,10 +258,10 @@ def compact_fields(
     lines: list[str] = []
 
     for stat, str_value, _ in shared_iter(max_stats(item.start_stage), buffs_enabled, avg, 0):
-        lines.append(f"{STAT_ASSETS[stat]} **{str_value}**")
+        lines.append(f"{STAT[stat]} **{str_value}**")
 
     if item.tags.require_jump:
-        lines.append(f"{STAT_ASSETS['jump']}❗")
+        lines.append(f"{STAT['jump']}❗")
 
     line_count = len(lines)
     div = wrap_nicely(line_count, 4)
@@ -387,7 +387,7 @@ def stats_to_fields(
     second_item: list[str] = []
 
     for stat, long_boy in comparator(stats_a, stats_b):
-        name_field.append(f"{STAT_ASSETS[stat.key]} {stat.name}")
+        name_field.append(f"{STAT[stat.key]} {stat.name}")
 
         match stat.key, long_boy:
             case "range", ((a1, a2), (b1, b2)):

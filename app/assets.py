@@ -1,33 +1,34 @@
 """Various assets existing on discord side."""
 
-import typing as t
-
-import typing_extensions as tex
+import typing_extensions as t
+from typing import TYPE_CHECKING
 
 from typeshed import T
 
 from supermechs import constants
 from supermechs.enums import Element, Tier, Type
-from supermechs.models.item import TransformRange
+
+if TYPE_CHECKING:
+    from supermechs.models.item import TransformRange
 
 
 class ColorEmojiAsset(t.NamedTuple):
     color: int
-    emoji: tex.LiteralString
+    emoji: t.LiteralString
 
 
 class TypeAsset(t.NamedTuple):
     image_url: str
-    emoji: tex.LiteralString
+    emoji: t.LiteralString
 
 
-class Sided(tex.NamedTuple, t.Generic[T]):
+class Sided(t.NamedTuple, t.Generic[T]):
     right: T
     left: T
 
 
 # fmt: off
-TIER_ASSETS: t.Mapping[Tier, ColorEmojiAsset] = {
+TIER: t.Mapping[Tier, ColorEmojiAsset] = {
     Tier.COMMON:    ColorEmojiAsset(0xB1B1B1, "⚪"),
     Tier.RARE:      ColorEmojiAsset(0x55ACEE, "🔵"),
     Tier.EPIC:      ColorEmojiAsset(0xCC41CC, "🟣"),
@@ -36,14 +37,14 @@ TIER_ASSETS: t.Mapping[Tier, ColorEmojiAsset] = {
     Tier.DIVINE:    ColorEmojiAsset(0xFFFFFF, "⚪"),
     Tier.PERK:      ColorEmojiAsset(0xFFFF33, "🟡"),
 }
-ELEMENT_ASSETS: t.Mapping[Element, ColorEmojiAsset] = {
+ELEMENT: t.Mapping[Element, ColorEmojiAsset] = {
     Element.PHYSICAL:  ColorEmojiAsset(0xFFB800, "<:phydmg:725871208830074929>"),
     Element.EXPLOSIVE: ColorEmojiAsset(0xB71010, "<:expdmg:725871223338172448>"),
     Element.ELECTRIC:  ColorEmojiAsset(0x106ED8, "<:eledmg:725871233614479443>"),
     Element.COMBINED:  ColorEmojiAsset(0x211D1D, "<:combined:1026853188940349490>"),
     Element.UNKNOWN:   ColorEmojiAsset(0x000000, "❔"),
 }
-TYPE_ASSETS: t.Mapping[Type, TypeAsset] = {
+TYPE: t.Mapping[Type, TypeAsset] = {
     Type.TORSO:    TypeAsset("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>"),
     Type.LEGS:     TypeAsset("https://i.imgur.com/6NBLOhU.png",   "<:legs:730115699397361827>"),
     Type.DRONE:    TypeAsset("https://i.imgur.com/oqQmXTF.png",  "<:drone:730115574763618394>"),
@@ -52,7 +53,7 @@ TYPE_ASSETS: t.Mapping[Type, TypeAsset] = {
     Type.HOOK:     TypeAsset("https://i.imgur.com/8oAoPcJ.png",   "<:hook:730115622347735071>"),
     Type.MODULE:   TypeAsset("https://i.imgur.com/dQR8UgN.png",    "<:mod:730115649866694686>"),
 }
-SIDED_TYPE_ASSETS: t.Mapping[t.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided[TypeAsset]] = {
+SIDED_TYPE: t.Mapping[t.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided[TypeAsset]] = {
     Type.SIDE_WEAPON: Sided(
         TypeAsset("https://i.imgur.com/CBbvOnQ.png", "<:sider:730115747799629940>"),
         TypeAsset("https://i.imgur.com/UuyYCrw.png", "<:sidel:730115729365663884>")
@@ -63,11 +64,7 @@ SIDED_TYPE_ASSETS: t.Mapping[t.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided
     ),
 }
 # fmt: on
-STAT_ASSETS: t.Mapping[str, str] = {}
-
-
-def load_stat_assets() -> None:
-    pass
+STAT: t.Mapping[str, str] = {}
 
 
 def get_weight_emoji(weight: int, /) -> str:
@@ -84,7 +81,7 @@ def get_weight_emoji(weight: int, /) -> str:
     return "⛔"
 
 
-def range_to_str(range: TransformRange, /, at_tier: Tier | None = None) -> str:
+def range_to_str(range: "TransformRange", /, at_tier: Tier | None = None) -> str:
     if at_tier is None:
         at_tier = range[-1]
 

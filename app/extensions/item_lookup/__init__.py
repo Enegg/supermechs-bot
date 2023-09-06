@@ -6,7 +6,7 @@ import typing as t
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 
-from assets import ELEMENT_ASSETS, SIDED_TYPE_ASSETS, TYPE_ASSETS
+from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from config import TEST_GUILDS
 from library_extensions import embed_image, sanitize_filename
@@ -52,13 +52,13 @@ async def item(
     sprite = renderer.get_item_sprite(item, item.transform_range[-1])
     await sprite.load()
     url, file = embed_image(sprite.image, sanitize_filename(item.name, ".png"))
-    embed_color = ELEMENT_ASSETS[item.element].color
+    embed_color = ELEMENT[item.element].color
 
     if item.type is Type.SIDE_WEAPON or item.type is Type.TOP_WEAPON:
-        icon_url = SIDED_TYPE_ASSETS[item.type].right.image_url
+        icon_url = SIDED_TYPE[item.type].right.image_url
 
     else:
-        icon_url = TYPE_ASSETS[item.type].image_url
+        icon_url = TYPE[item.type].image_url
 
     if compact:
         # fmt: off
@@ -139,7 +139,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 
     if item_a.element is item_b.element:
         desc_builder = io.StringIO(str_elem(item_a.element))
-        color = ELEMENT_ASSETS[item_a.element].color
+        color = ELEMENT[item_a.element].color
 
         if item_a.type is item_b.type:
             desc_builder.write(" ")
