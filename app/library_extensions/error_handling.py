@@ -20,7 +20,7 @@ from disnake.ext.commands.common_bot_base import CommonBotBase
 from disnake.utils import MISSING
 
 from .pending import MSG_CHAR_LIMIT
-from .text_formatting import Markdown, localized_text
+from .text_utils import SPACE, Markdown, localized_text
 
 __all__ = ("setup_channel_logger",)
 
