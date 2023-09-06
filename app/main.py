@@ -18,6 +18,8 @@ from config import DATE_FORMAT, HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
 from shared import SESSION_CTX
 
+from supermechs import init as sm_init
+
 if t.TYPE_CHECKING:
     from disnake.http import HTTPClient
 
@@ -69,6 +71,7 @@ async def main() -> None:
     bot.i18n.load("locale/")
     register_listeners(bot)
     register_injections()
+    await sm_init()
     load_extensions(bot.load_extension, "extensions")
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
     await setup_channel_logger(bot, LOGS_CHANNEL, logging.root)

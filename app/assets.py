@@ -65,7 +65,7 @@ SIDED_TYPE: t.Mapping[t.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided[TypeAs
     ),
 }
 # fmt: on
-STAT: t.Mapping[str, str] = {}
+STAT: t.Mapping[str, str] = {"weight": "<:weight:725870760484143174>"}  # TODO
 
 
 def get_weight_emoji(weight: int, /) -> str:
