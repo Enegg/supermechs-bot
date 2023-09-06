@@ -10,6 +10,7 @@ from disnake import (
     Colour,
     CommandInteraction,
     Embed,
+    Event,
     File,
     InteractionTimedOut,
     LocalizationProtocol,
@@ -19,7 +20,7 @@ from disnake.ext import commands
 from disnake.ext.commands.common_bot_base import CommonBotBase
 from disnake.utils import MISSING
 
-from .pending import MSG_CHAR_LIMIT
+from .pending import EmbedLimits
 from .text_utils import SPACE, Markdown, localized_text
 
 __all__ = ("setup_channel_logger",)
@@ -40,7 +41,7 @@ def traceback_to_discord_file(traceback: str, /) -> File:
     return File(bio, "traceback.py", description="Traceback of a recent exception.")
 
 
-def exception_to_message(exception: BaseException, /) -> str | File:
+def exception_to_message(exception: BaseException, /, limit: int) -> str | File:
     """Formats exception data and returns message content or file to send a message with.
 
     Formatted traceback is wrapped in a codeblock and appended to content if the resulting string
@@ -48,13 +49,13 @@ def exception_to_message(exception: BaseException, /) -> str | File:
     """
     traceback_text = "".join(traceback.format_exception(exception))
 
-    if len(traceback_text) + 10 > MSG_CHAR_LIMIT:
+    if len(traceback_text) + 10 > limit:
         return traceback_to_discord_file(traceback_text)
 
     return Markdown.codeblock(traceback_text, "py")
 
 
-async def on_slash_command_error(
+async def error_handler(
     channel: Messageable,
     i18n: LocalizationProtocol,
     logger: logging.Logger,
@@ -87,28 +88,32 @@ async def on_slash_command_error(
         arguments = ", ".join(
             f"`{option}: {value}`" for option, value in inter.filled_options.items()
         )
-        desc = (
+        exception = error.original if isinstance(error, commands.CommandInvokeError) else error
+        metadata = (
             f"Place: `{inter.guild or inter.channel}`\n"
-            f"User: {inter.author.mention} ({inter.author.display_name})\n"
+            f"User: {inter.author.mention} (`{inter.author.display_name}`)\n"
             f"Command: `/{inter.application_command.qualified_name}` {arguments}\n"
-            f"Exception: `{error}`"
+            f"Exception: `{exception}`"
         )
-        embed = Embed(title="⚠️ Unhandled exception", description=desc, color=Colour.red())
-        file_or_content = exception_to_message(error)
+        embed = Embed(title="⚠️ Unhandled exception", color=Colour(0xFF0000))
+        file_or_text = exception_to_message(exception, limit=EmbedLimits.description)
 
-        if isinstance(file_or_content, str):
-            embed.add_field("Traceback", file_or_content, inline=False)
+        if isinstance(file_or_text, str):
+            embed.description = file_or_text
+            embed.add_field(SPACE, metadata, inline=False)
 
         else:
-            file = file_or_content
+            embed.description = metadata
+            file = file_or_text
 
         if __debug__:
             info = None
             user_embed = embed
+            logger.warning("Exception occured")
 
         else:
             await channel.send(embed=embed, file=file)
-            logger.exception(desc, exc_info=error)
+            logger.exception(metadata, exc_info=exception)
 
             info = localized_text(
                 "Command executed with an error...", "CMD_ERROR", i18n, inter.locale
@@ -127,5 +132,5 @@ async def setup_channel_logger(client: Client, channel_id: int, logger: logging.
         raise TypeError("Channel is not Messageable")
 
     client.add_listener(
-        partial(on_slash_command_error, channel, client.i18n, logger), "on_slash_command_error"
+        partial(error_handler, channel, client.i18n, logger), Event.slash_command_error
     )

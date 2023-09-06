@@ -5,6 +5,7 @@ Things that have pending PRs and/or will eventually be found in future library r
 import importlib
 import pkgutil
 import typing as t
+from enum import Enum
 
 __all__ = ("walk_modules", "command_mention", "OPTION_LIMIT", "MSG_CHAR_LIMIT")
 
@@ -65,3 +66,12 @@ OPTION_LIMIT = 25
 
 MSG_CHAR_LIMIT = 2000
 """Message content character limit."""
+
+
+class EmbedLimits(int, Enum):
+    title = 256
+    description = 4096
+    field_name = 256
+    field_value = 1024
+    footer_text = 2048
+    author_name = 256
