@@ -4,7 +4,7 @@ from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
 from disnake.ui import Button, button, string_select
 from disnake.utils import MISSING
 
-from assets import ELEMENT, SIDED_TYPE, TYPE, get_weight_emoji
+from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
 from library_extensions import OPTION_LIMIT, SPACE, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
@@ -18,18 +18,7 @@ from library_extensions.ui import (
     positioned,
 )
 
-from supermechs.api import (
-    STATS,
-    ArenaBuffs,
-    Element,
-    Item,
-    ItemPack,
-    Mech,
-    Player,
-    SlotSelectorType,
-    Type,
-)
-from supermechs.converters import slot_to_type
+from supermechs.api import ArenaBuffs, Element, Item, ItemPack, Mech, Player, SlotSelectorType, Type
 from supermechs.rendering import PackRenderer
 
 
@@ -77,13 +66,30 @@ def format_stats(
         return ""
 
     return "\n".join(
-        "{stat.emoji} **{value}** {stat.name}{extra}".format(  # TODO: no .name
+        "{stat_emoji} **{value}** lorem ipsum{extra}".format(  # TODO: no .name
             value=value,
-            stat=STATS[stat_name],
+            stat_emoji=STAT[stat_name],
             extra=extra.get(stat_name, default_extra)(mech, value),
         )
         for stat_name, value in bank.items()
     )
+
+
+def slot_to_type(slot: str, /) -> Type:
+    """Convert slot literal to corresponding type enum."""
+    if slot.startswith("side"):
+        return Type.SIDE_WEAPON
+
+    if slot.startswith("top"):
+        return Type.TOP_WEAPON
+
+    if slot.startswith("mod"):
+        return Type.MODULE
+
+    if slot == "tele":
+        return Type.TELEPORTER
+
+    return Type[slot.upper()]
 
 
 def slot_to_emoji(slot: str, /) -> str:
@@ -100,7 +106,7 @@ def slot_to_selector(slot: str, /) -> SlotSelectorType:
     type = slot_to_type(slot)
 
     if slot[-1].isdigit():
-        return type, int(slot[-1])
+        return type, int(slot[-1]) - 1
 
     return type
 
