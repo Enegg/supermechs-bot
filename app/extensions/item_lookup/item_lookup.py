@@ -20,8 +20,9 @@ from library_extensions.ui import (
 from typeshed import dict_items_as, twotuple
 
 from supermechs.api import STATS, AnyStatsMapping, ArenaBuffs, ItemData, Stat, ValueRange
+from supermechs.ext.comparators.helpers import mean_and_deviation
 from supermechs.item_stats import max_stats
-from supermechs.utils import has_any_of, mean_and_deviation
+from supermechs.utils import has_any_of
 
 MAX_BUFFS = ArenaBuffs.maxed()
 
