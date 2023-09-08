@@ -3,8 +3,10 @@ import typing as t
 
 from disnake.abc import User
 
+from events import PACK_LOADED
 from shared import SESSION_CTX
 from shared.manager import Manager
+from shared.utils import async_memoize
 
 from supermechs.api import ItemPack, PackRenderer, Player
 from supermechs.ext.deserializers.graphic import to_pack_renderer
@@ -19,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _create_player(user: User, /) -> Player:
-    LOGGER.info(f"Player created: {user.id} ({user.name})")
+    LOGGER.info("Player created: %d (%s)", user.id, user.name)
     return Player(id=user.id, name=user.name)
 
 
@@ -28,7 +30,7 @@ player_manager = Manager(_create_player, lambda user: user.id)
 
 def _create_item_pack(data: AnyItemPack, /, *, custom: bool = False) -> ItemPack:
     pack = to_item_pack(data, custom=custom)
-    LOGGER.info(f"Item pack created: {pack.key} ({pack.name})")
+    LOGGER.info("Item pack created: %s (%s)", pack.key, pack.name)
     return pack
 
 
@@ -40,6 +42,7 @@ def _pack_key_getter(data: AnyItemPack, /, **kwargs: t.Any) -> str:
 item_pack_manager = Manager(_create_item_pack, _pack_key_getter)
 
 
+@async_memoize
 async def _image_fetcher(url: str, /) -> "Image.Image":
     from io import BytesIO
 
@@ -52,7 +55,19 @@ async def _image_fetcher(url: str, /) -> "Image.Image":
 
 
 def _create_pack_renderer(data: AnyItemPack, /) -> PackRenderer:
-    return to_pack_renderer(data, _image_fetcher)
+    renderer = to_pack_renderer(data, _image_fetcher)
+    LOGGER.info("Renderer created: %s", renderer.pack_key)
+    return renderer
 
 
 renderer_manager = Manager(_create_pack_renderer, extract_key)
+
+
+async def load_default_pack(url: str, /) -> None:
+    async with SESSION_CTX.get().get(url) as response:
+        response.raise_for_status()
+        data: AnyItemPack = await response.json(encoding="utf8", content_type=None)
+
+    item_pack_manager.lookup_or_create(data)
+    renderer_manager.lookup_or_create(data)
+    PACK_LOADED.set()

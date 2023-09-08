@@ -32,7 +32,7 @@ def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[Ite
 async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteRetT:
     """Autocomplete for items with regard for type & element."""
 
-    pack = item_pack_manager.mapping["@Darkstare"]  # TODO: replace with default pack reference
+    pack = item_pack_manager["@Darkstare"]  # TODO: replace with default pack reference
 
     filters = _get_item_filters(inter.filled_options)
     # abbrevs = set()
@@ -71,7 +71,7 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
 async def mech_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteRetT:
     """Autocomplete for player builds."""
 
-    player = player_manager.lookup_or_create(inter.author)
+    player = player_manager(inter.author)
     lowercase = input.lower()
 
     return [name for name in player.builds if name.lower().startswith(lowercase)]

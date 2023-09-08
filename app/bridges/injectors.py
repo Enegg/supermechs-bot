@@ -27,7 +27,7 @@ def register_injections() -> None:
         """
         # TODO: make this pack-aware
         del inter
-        default_pack = item_pack_manager.mapping["@Darkstare"]  # TODO
+        default_pack = item_pack_manager["@Darkstare"]  # TODO
         try:
             return default_pack.get_item_by_name(name)
 
@@ -36,7 +36,7 @@ def register_injections() -> None:
 
     @commands.register_injection
     def player_injector(inter: CommandInteraction) -> Player:
-        return player_manager.lookup_or_create(inter.author)
+        return player_manager(inter.author)
 
     item_injector.autocomplete("name")(item_name_autocomplete)
     del player_injector
