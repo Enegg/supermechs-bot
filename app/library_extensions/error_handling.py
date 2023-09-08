@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 import traceback
 import typing as t
 from contextlib import suppress
@@ -54,6 +55,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Se
     params: SenderKeywords = {"embed": embed}
 
     traceback_text = "".join(traceback.format_exception(exc))
+    traceback_text = traceback_text.replace(os.getcwd(), ".")  # noqa: PTH109
 
     if len(traceback_text) + 10 > EmbedLimits.description:
         params["file"] = traceback_to_discord_file(traceback_text)
