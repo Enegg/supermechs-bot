@@ -5,7 +5,7 @@ from disnake.ui import Button, button, string_select
 from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
-from library_extensions import OPTION_LIMIT, SPACE, embed_image, embed_to_footer
+from library_extensions import OPTION_LIMIT, SPACE, debug_footer, embed_image
 from library_extensions.ui import (
     EMPTY_OPTION,
     PaginatedSelect,
@@ -323,7 +323,7 @@ class MechView(PaginatorView):
         self.embed.set_image(url)
 
         if __debug__:
-            embed_to_footer(self.embed)
+            debug_footer(self.embed)
 
         await inter.response.edit_message(embed=self.embed, file=file, view=self, attachments=[])
 

@@ -8,7 +8,7 @@ from disnake import ButtonStyle, Embed, MessageInteraction
 from disnake.ui import Button, button
 
 from assets import STAT, range_to_str
-from library_extensions import SPACE
+from library_extensions import SPACE, debug_footer
 from library_extensions.ui import (
     ActionRow,
     MessageUIComponent,
@@ -54,6 +54,9 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self.embed.clear_fields()
         for name, value, inline in self.field_factory(self.item, buffs, avg):
             self.embed.add_field(name, value, inline=inline)
+
+        if __debug__:
+            debug_footer(self.embed)
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @positioned(0, 0)
@@ -135,6 +138,9 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         modify_field_at(0, "Stat", "\n".join(name_field))
         modify_field_at(1, try_shorten(self.item_a.name), "\n".join(first_field))
         modify_field_at(2, try_shorten(self.item_b.name), "\n".join(second_field))
+
+        if __debug__:
+            debug_footer(self.embed)
 
 
 def buffed_stats(

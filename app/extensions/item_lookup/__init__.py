@@ -10,7 +10,13 @@ from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from config import TEST_GUILDS
 from events import PACK_LOADED
-from library_extensions import MAX_RESPONSE_TIME, embed_image, sanitize_filename
+from library_extensions import (
+    MAX_RESPONSE_TIME,
+    debug_footer,
+    embed_image,
+    sanitize_filename,
+    sikrit_footer,
+)
 from managers import item_pack_manager, renderer_manager
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
@@ -98,6 +104,13 @@ async def item(
         field_factory = default_fields
 
     view = ItemView(embed, item, field_factory, user_id=inter.author.id)
+
+    if __debug__:
+        debug_footer(embed)
+
+    else:
+        sikrit_footer(embed)
+
     await inter.response.send_message(embed=embed, file=file, view=view, ephemeral=True)
 
     await view.wait()
@@ -177,6 +190,9 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
         color = inter.author.color
 
     embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
+
+    if not __debug__:
+        sikrit_footer(embed)
 
     view = ItemCompareView(embed, item_a, item_b, user_id=inter.author.id)
     await inter.response.send_message(embed=embed, view=view, ephemeral=True)

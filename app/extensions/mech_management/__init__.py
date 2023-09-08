@@ -14,8 +14,9 @@ from library_extensions import (
     MAX_RESPONSE_TIME,
     OPTION_LIMIT,
     command_mention,
+    debug_footer,
     embed_image,
-    embed_to_footer,
+    sikrit_footer,
 )
 from library_extensions.ui import Select, wait_for_component
 from managers import item_pack_manager, player_manager, renderer_manager
@@ -79,6 +80,9 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
     for title, value in fields:
         embed.add_field(title, value)
 
+    if __debug__:
+        debug_footer(embed)
+
     await inter.send(embed=embed, ephemeral=True)
 
 
@@ -127,7 +131,10 @@ async def build(
         view.embed.set_image(url)
 
     if __debug__:
-        embed_to_footer(view.embed)
+        debug_footer(view.embed)
+
+    else:
+        sikrit_footer(view.embed)
 
     await inter.response.send_message(embed=view.embed, file=file, view=view, ephemeral=True)
     await view.wait()
