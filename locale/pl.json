@@ -2,6 +2,7 @@
     "CMD_DEV": "To komenda wyłącznie deweloperska.",
     "CMD_RUNNING": "Twoje poprzednie wywołanie tej komendy nie zakończyło się.",
     "CMD_ERROR": "Podczas wywołania wystąpił błąd...",
+    "CMD_TIMEOUT": "Komenda przekroczyła limit czasu.",
 
     "ARENA_BUFFS_NAME": "buffy",
     "ARENA_BUFFS_DESCRIPTION": "Interaktywne menu do modyfikacji arena buffów.",
