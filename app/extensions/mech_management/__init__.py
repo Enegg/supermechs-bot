@@ -34,6 +34,7 @@ plugin = plugins.Plugin["commands.InteractionBot"](name="Mech-manager", logger=_
 @plugin.load_hook(post=True)
 async def on_load() -> None:
     await plugin.bot.wait_until_ready()
+    # TODO: this waits until the command is fetched from discord
     buffs_command = plugin.bot.get_global_command_named("buffs")
     assert buffs_command is not None
     MechView.buffs_command = command_mention(buffs_command)
@@ -66,15 +67,12 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 
     fields: list[tuple[str, str]] = []
 
-    def count_not_none(it: t.Iterable[t.Any | None]) -> int:
-        return sum(1 for item in it if item is not None)
-
     for name, build in player.builds.items():
         value = MECH_SUMMARY_TEMPLATE.format(
             TORSO="no torso" if build.torso is None else build.torso.data.name,
             LEGS="no legs" if build.legs is None else build.legs.data.name,
-            WEAPONS=count_not_none(build.iter_items("weapons")),
-            MODULES=count_not_none(build.iter_items(Type.MODULE)),
+            WEAPONS=sum(1 for _ in filter(None, build.iter_items("weapons"))),
+            MODULES=sum(1 for _ in filter(None, build.modules)),
             WEIGHT=build.weight,
         )
         fields.append((name, value))
