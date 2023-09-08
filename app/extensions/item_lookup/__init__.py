@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import io
 import typing as t
 
@@ -19,10 +17,10 @@ from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fiel
 
 from supermechs.enums import Element, Type
 from supermechs.ext.deserializers.typedefs import LiteralElement, LiteralType
-from supermechs.models.item import ItemData  # noqa: TCH002
+from supermechs.models.item import ItemData
+from supermechs.typedefs import Name
 
 if t.TYPE_CHECKING:
-    from supermechs.typedefs import Name
 
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
