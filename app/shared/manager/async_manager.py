@@ -1,4 +1,5 @@
 import typing as t
+from collections.abc import Mapping
 from contextlib import asynccontextmanager
 from types import MappingProxyType
 
@@ -15,7 +16,7 @@ __all__ = ("AsyncManager",)
 
 
 @define
-class AsyncManager(t.Generic[P, VT, KT]):
+class AsyncManager(t.Generic[P, VT, KT], Mapping[KT, VT]):
     """Provides means to asynchronously create, store and retrieve objects.
 
     Note: concurrent calls with same arguments will run the factory only once.
@@ -39,8 +40,14 @@ class AsyncManager(t.Generic[P, VT, KT]):
         """Read-only proxy of the underlying mapping."""
         return MappingProxyType(self._store)
 
-    def __contains__(self, key: KT, /) -> bool:
-        return key in self._store
+    def __getitem__(self, key: KT, /) -> VT:
+        return self._store[key]
+
+    def __len__(self) -> int:
+        return len(self._store)
+
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+        return await self.lookup_or_create(*args, **kwargs)
 
     async def lookup_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve stored or create an object from given value."""

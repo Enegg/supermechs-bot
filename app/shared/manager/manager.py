@@ -1,5 +1,6 @@
 import inspect
 import typing as t
+from collections.abc import Mapping
 from types import MappingProxyType
 
 from attrs import define, field
@@ -38,7 +39,7 @@ def default_key(*args: t.Hashable, **kwargs: t.Hashable) -> t.Hashable:
 
 
 @define
-class Manager(t.Generic[P, VT, KT]):
+class Manager(t.Generic[P, VT, KT], Mapping[KT, VT]):
     """Provides means to create, store and retrieve objects.
 
     Parameters
@@ -59,8 +60,14 @@ class Manager(t.Generic[P, VT, KT]):
         """Read-only proxy of the underlying mapping."""
         return MappingProxyType(self._store)
 
-    def __contains__(self, key: KT, /) -> bool:
-        return key in self._store
+    def __getitem__(self, key: KT, /) -> VT:
+        return self._store[key]
+
+    def __len__(self) -> int:
+        return len(self._store)
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+        return self.lookup_or_create(*args, **kwargs)
 
     def lookup_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve stored or create an object from given value."""
