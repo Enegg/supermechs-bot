@@ -18,7 +18,6 @@ from disnake import (
 from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.ext.commands.common_bot_base import CommonBotBase
-from disnake.utils import MISSING
 
 from .pending import EmbedLimits
 from .text_utils import SPACE, Markdown, localized_text
@@ -26,14 +25,14 @@ from .text_utils import SPACE, Markdown, localized_text
 __all__ = ("setup_channel_logger",)
 
 
-class SenderArguments(t.TypedDict, total=False):
-    content: str | None
+class SenderKeywords(t.TypedDict, total=False):
+    content: str
     embed: Embed
-    embeds: list[Embed]
     file: File
-    files: list[File]
-    ephemeral: bool
     suppress_embeds: bool
+
+
+I18nGetter = t.Callable[[str, str], str]
 
 
 def traceback_to_discord_file(traceback: str, /) -> File:
@@ -41,18 +40,63 @@ def traceback_to_discord_file(traceback: str, /) -> File:
     return File(bio, "traceback.py", description="Traceback of a recent exception.")
 
 
-def exception_to_message(exception: BaseException, /, limit: int) -> str | File:
-    """Formats exception data and returns message content or file to send a message with.
+def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> SenderKeywords:
+    arguments = ", ".join(
+        f"`{option}: {value}`" for option, value in inter.filled_options.items()
+    )
+    metadata = (
+        f"Place: `{inter.guild or inter.channel}`\n"
+        f"User: {inter.author.mention} (`{inter.author.display_name}`)\n"
+        f"Command: `/{inter.application_command.qualified_name}` {arguments}\n"
+        f"Exception: `{type(exc).__name__}: {exc}`"
+    )
+    embed = Embed(title="⚠️ Unhandled exception", color=Colour(0xFF0000))
+    params: SenderKeywords = {"embed": embed}
 
-    Formatted traceback is wrapped in a codeblock and appended to content if the resulting string
-    stays under character limit, otherwise creates a File.
-    """
-    traceback_text = "".join(traceback.format_exception(exception))
+    traceback_text = "".join(traceback.format_exception(exc))
 
-    if len(traceback_text) + 10 > limit:
-        return traceback_to_discord_file(traceback_text)
+    if len(traceback_text) + 10 > EmbedLimits.description:
+        params["file"] = traceback_to_discord_file(traceback_text)
+        embed.description = metadata
 
-    return Markdown.codeblock(traceback_text, "py")
+    else:
+        embed.description = Markdown.codeblock(traceback_text, "py")
+        embed.add_field(SPACE, metadata, inline=False)
+
+    return params
+
+
+def handle_informational_exception(
+    exc: commands.CommandError,
+    localize: I18nGetter
+) -> str | None:
+    if isinstance(exc, commands.NotOwner):
+        info = localize("This is a developer-only command.", "CMD_DEV")
+
+    elif isinstance(exc, (commands.UserInputError, commands.CheckFailure)):
+        info = str(exc)  # TODO: this isn't localized
+
+    elif isinstance(exc, commands.MaxConcurrencyReached):
+        if exc.number == 1 and exc.per is commands.BucketType.user:
+            info = localize(
+                "Your previous invocation of this command has not finished executing.",
+                "CMD_RUNNING",
+            )
+
+        else:
+            info = str(exc)
+
+    else:
+        return None
+
+    return info
+
+
+def handle_timeout(exc: commands.CommandError, localize: I18nGetter) -> str | None:
+    if isinstance(exc, commands.CommandInvokeError) and isinstance(exc.original, TimeoutError):
+        return localize("Command execution timed out.", "CMD_TIMEOUT")
+
+    return None
 
 
 async def error_handler(
@@ -63,64 +107,35 @@ async def error_handler(
     inter: CommandInteraction,
     error: commands.CommandError,
 ) -> None:
-    file = MISSING
-    user_embed = MISSING
+    localize: I18nGetter = partial(localized_text, i18n=i18n, locale=inter.locale)
 
-    if isinstance(error, commands.NotOwner):
-        info = localized_text("This is a developer-only command.", "CMD_DEV", i18n, inter.locale)
+    if content := handle_informational_exception(error, localize):
+        with suppress(InteractionTimedOut):
+            await inter.send(content, ephemeral=True)
+        return
 
-    elif isinstance(error, (commands.UserInputError, commands.CheckFailure)):
-        info = str(error)  # TODO: this isn't localized
+    if content := handle_timeout(error, localize):
+        with suppress(InteractionTimedOut):
+            await inter.send(content, ephemeral=True)
+        logger.warning("Command %s timed out", inter.application_command.qualified_name)
+        return
 
-    elif isinstance(error, commands.MaxConcurrencyReached):
-        if error.number == 1 and error.per is commands.BucketType.user:
-            info = localized_text(
-                "Your previous invocation of this command has not finished executing.",
-                "CMD_RUNNING",
-                i18n,
-                inter.locale,
-            )
+    exc = error.original if isinstance(error, commands.CommandInvokeError) else error
+    params = exception_to_message(exc, inter)
 
-        else:
-            info = str(error)
+    if __debug__:
+        logger.warning("Exception occured in %s", inter.application_command.qualified_name)
+        user_params = params
 
     else:
-        arguments = ", ".join(
-            f"`{option}: {value}`" for option, value in inter.filled_options.items()
-        )
-        exception = error.original if isinstance(error, commands.CommandInvokeError) else error
-        metadata = (
-            f"Place: `{inter.guild or inter.channel}`\n"
-            f"User: {inter.author.mention} (`{inter.author.display_name}`)\n"
-            f"Command: `/{inter.application_command.qualified_name}` {arguments}\n"
-            f"Exception: `{exception}`"
-        )
-        embed = Embed(title="⚠️ Unhandled exception", color=Colour(0xFF0000))
-        file_or_text = exception_to_message(exception, limit=EmbedLimits.description)
-
-        if isinstance(file_or_text, str):
-            embed.description = file_or_text
-            embed.add_field(SPACE, metadata, inline=False)
-
-        else:
-            embed.description = metadata
-            file = file_or_text
-
-        if __debug__:
-            info = None
-            user_embed = embed
-            logger.warning("Exception occured")
-
-        else:
-            await channel.send(embed=embed, file=file)
-            logger.exception(metadata, exc_info=exception)
-
-            info = localized_text(
-                "Command executed with an error...", "CMD_ERROR", i18n, inter.locale
-            )
+        logger.exception("Unhandled exception:", exc_info=exc)
+        await channel.send(**params)
+        user_params: SenderKeywords = {
+            "content": localize("Command executed with an error...", "CMD_ERROR")
+        }
 
     with suppress(InteractionTimedOut):
-        await inter.send(info, file=file, embed=user_embed, ephemeral=not __debug__)
+        await inter.send(**user_params, ephemeral=not __debug__)
 
 
 async def setup_channel_logger(client: Client, channel_id: int, logger: logging.Logger) -> None:
