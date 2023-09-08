@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from disnake import ButtonStyle
-from disnake.ui.button import Button, button
+from disnake.ui.button import Button
 
 from typeshed import T
 
@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
 
 B_CO = t.TypeVar("B_CO", bound=Button[None], covariant=True)
 
-__all__ = ("button", "Button", "ToggleButton", "TrinaryButton", "B_CO")
+__all__ = ("ToggleButton", "TrinaryButton", "B_CO")
 
 
 class LinkButton(Button[None]):

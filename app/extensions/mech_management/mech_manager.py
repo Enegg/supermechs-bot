@@ -1,23 +1,21 @@
 import typing as t
 
 from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
+from disnake.ui import Button, button, string_select
 from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, TYPE, get_weight_emoji
 from library_extensions import OPTION_LIMIT, SPACE, embed_image, embed_to_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
-    Button,
     PaginatedSelect,
     PaginatorView,
     ToggleButton,
     TrinaryButton,
     add_callback,
-    button,
     invoker_bound,
     metadata_of,
     positioned,
-    select,
 )
 
 from supermechs.api import (
@@ -221,7 +219,7 @@ class MechView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     @positioned(1, 4)
-    @button(cls=ToggleButton, label="Buffs")
+    @button(ToggleButton, label="Buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
         if self.player.arena_buffs.is_at_zero():
@@ -249,8 +247,8 @@ class MechView(PaginatorView):
         self.stop()
 
     @positioned(3, 0)
-    @select(
-        cls=PaginatedSelect,
+    @string_select(
+        PaginatedSelect,
         up=SelectOption(
             label="Previous items",
             value="option:up",

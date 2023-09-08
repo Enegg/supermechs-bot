@@ -5,16 +5,15 @@ import typing as t
 from itertools import zip_longest
 
 from disnake import ButtonStyle, Embed, MessageInteraction
+from disnake.ui import Button, button
 
 from assets import STAT, range_to_str
 from library_extensions import SPACE
 from library_extensions.ui import (
     ActionRow,
-    Button,
     MessageUIComponent,
     SaneView,
     ToggleButton,
-    button,
     invoker_bound,
     positioned,
 )
@@ -57,13 +56,13 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @positioned(0, 0)
-    @button(cls=ToggleButton, label="Buffs")
+    @button(ToggleButton, label="Buffs")
     async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         await self.update(inter, button.on, self.avg_button.on)
 
     @positioned(0, 1)
-    @button(cls=ToggleButton, label="Damage average")
+    @button(ToggleButton, label="Damage average")
     async def avg_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         await self.update(inter, self.buff_button.on, button.on)
@@ -95,7 +94,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         self.update()
 
     @positioned(0, 0)
-    @button(cls=ToggleButton, label="Arena buffs")
+    @button(ToggleButton, label="Arena buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         button.toggle()
         self.update()

@@ -1,18 +1,18 @@
 import typing as t
 
 from disnake import SelectOption
-from disnake.ui.select import StringSelect as Select, string_select as select
+from disnake.ui.select import StringSelect
 from disnake.utils import MISSING
 
-S_CO = t.TypeVar("S_CO", bound=Select[None], covariant=True)
+S_CO = t.TypeVar("S_CO", bound=StringSelect[None], covariant=True)
 
 OPTION_LIMIT = 25
 EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
 
-__all__ = ("select", "Select", "PaginatedSelect", "S_CO", "EMPTY_OPTION")
+__all__ = ("PaginatedSelect", "S_CO", "EMPTY_OPTION")
 
 
-class PaginatedSelect(Select[None]):
+class PaginatedSelect(StringSelect[None]):
     """Select which paginates options into chunks of 23-25 and registers two
     `SelectOption`s to move between chunks."""
 
