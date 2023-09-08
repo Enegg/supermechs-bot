@@ -7,7 +7,7 @@ from typeshed import P, T
 
 from .manager import AsyncManager, default_key
 
-__all__ = ("wrap_bytes", "is_pascal", "ReprMixin")
+__all__ = ("wrap_bytes", "ReprMixin", "async_memoize")
 
 
 def wrap_bytes(
@@ -32,20 +32,6 @@ class ReprMixin:
     def __repr__(self) -> str:
         attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
         return f"<{type(self).__name__} {attrs} at 0x{id(self):016X}>"
-
-
-def is_pascal(string: str) -> bool:
-    """Returns True if the string is pascal-cased string, False otherwise.
-
-    A string is pascal-cased if it is a single word that starts with a capitalized letter.
-        >>> is_pascal("fooBar")
-        False
-        >>> is_pascal("FooBar")
-        True
-        >>> is_pascal("Foo Bar")
-        False
-    """
-    return string[:1].isupper() and " " not in string
 
 
 def async_memoize(func: t.Callable[P, t.Awaitable[T]], /) -> t.Callable[P, t.Awaitable[T]]:
