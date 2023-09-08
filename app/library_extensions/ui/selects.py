@@ -4,12 +4,10 @@ from disnake import SelectOption
 from disnake.ui.select import StringSelect
 from disnake.utils import MISSING
 
-S_CO = t.TypeVar("S_CO", bound=StringSelect[None], covariant=True)
-
 OPTION_LIMIT = 25
 EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
 
-__all__ = ("PaginatedSelect", "S_CO", "EMPTY_OPTION")
+__all__ = ("PaginatedSelect", "EMPTY_OPTION")
 
 
 class PaginatedSelect(StringSelect[None]):
@@ -22,12 +20,12 @@ class PaginatedSelect(StringSelect[None]):
         up: SelectOption,
         down: SelectOption,
         custom_id: str = MISSING,
-        all_options: list[SelectOption] = MISSING,
+        all_options: t.Iterable[SelectOption] = (),
         placeholder: str | None = None,
         disabled: bool = False,
     ) -> None:
         super().__init__(custom_id=custom_id, placeholder=placeholder, disabled=disabled)
-        self._all_options = all_options or []
+        self._all_options = list(all_options) or []
         self.up = up
         self.down = down
         self._page = 0
@@ -38,13 +36,19 @@ class PaginatedSelect(StringSelect[None]):
         """The current page number."""
         return self._page
 
+    @page.setter
+    def page(self, page: int, /) -> None:
+        if not 0 <= page < self.total_pages:
+            raise IndexError("Page out of bounds")
+        self._page = page
+        self._update_page()
+
     @property
     def total_pages(self) -> int:
-        """The total number of <= 25 option pages this select has."""
+        """The total number of pages this select has."""
         base = len(self._all_options)
 
         if base <= OPTION_LIMIT:
-            # fits in the option limit so we need not to add the switch page options
             return 1
 
         if base <= (OPTION_LIMIT - 1) * 2:
@@ -53,33 +57,29 @@ class PaginatedSelect(StringSelect[None]):
 
         full, last = divmod(base - (OPTION_LIMIT - 1) * 2, OPTION_LIMIT - 2)
         # full is the number of pages that have both next & prev page buttons;
-        # non-zero last means there's a last page with fewer than 24 options
+        # non-zero last means one extra page with fewer options than limit
         return 2 + full + int(last > 0)
 
     @property
-    def all_options(self) -> list[SelectOption]:
+    def all_options(self) -> t.Sequence[SelectOption]:
         """All underlying `SelectOption`s."""
         return self._all_options
 
     @all_options.setter
-    def all_options(self, new: list[SelectOption]) -> None:
-        self._all_options = new
+    def all_options(self, new: t.Iterable[SelectOption], /) -> None:
+        self._all_options = list(new)
         self._page = 0
         self._update_page()
 
-    def page_up(self) -> None:
-        self._page -= 1
-        self._update_page()
-
-    def page_down(self) -> None:
-        self._page += 1
-        self._update_page()
+    def is_own_option(self, option_id: str, /) -> t.Literal[-1, 0, 1]:
+        return 1 if option_id == self.up.value else -1 if option_id == self.down.value else 0
 
     def _update_page(self) -> None:
         page = self.page
         total = self.total_pages
 
         if total <= 1:
+            # fits in the option limit so we need not to add the switch page options
             options = self._all_options
 
         elif page == 0:
@@ -100,15 +100,3 @@ class PaginatedSelect(StringSelect[None]):
             options.append(self.down)
 
         self._underlying.options = options
-
-    def update_page_if_own_option(self, option_id: str, /) -> bool:
-        """Update the page if the passed option's ID belongs to up/down option of the select."""
-        if option_id == self.up.value:
-            self.page_up()
-            return True
-
-        elif option_id == self.down.value:
-            self.page_down()
-            return True
-
-        return False

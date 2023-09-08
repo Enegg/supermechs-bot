@@ -274,9 +274,11 @@ class MechView(PaginatorView):
     async def item_select(self, select: PaginatedSelect, inter: MessageInteraction) -> None:
         """Dropdown menu with all the items."""
         assert self.active is not None
-        (value,) = select.values
+        assert inter.values is not None
+        value = inter.values[0]
 
-        if select.update_page_if_own_option(value):
+        if page := select.is_own_option(value):
+            select.page += page
             return await inter.response.edit_message(view=self)
 
         item_name = None if value == EMPTY_OPTION.value else value
