@@ -38,7 +38,7 @@ def get_mech_config(mech: Mech) -> str:
     )
 
 
-def get_weight_usage(mech: Mech, weight: int) -> str:
+def get_weight_usage(weight: int) -> str:
     return " " + get_weight_emoji(weight)
 
 
@@ -47,7 +47,7 @@ def format_stats(
     included_buffs: ArenaBuffs | None = None,
     /,
     *,
-    extra: t.Mapping[str, t.Callable[[Mech, int], t.Any]] = {"weight": get_weight_usage},
+    extra: t.Mapping[str, t.Callable[[int], t.Any]] = {"weight": get_weight_usage},
 ) -> str:
     """Returns a string of lines formatted with mech stats.
 
@@ -62,14 +62,14 @@ def format_stats(
     else:
         bank = included_buffs.buff_stats(mech.stat_summary, buff_health=True)
 
-    def default_extra(mech: Mech, value: int) -> t.Any:
+    def default_extra(value: int) -> t.Any:
         return ""
 
     return "\n".join(
-        "{stat_emoji} **{value}** lorem ipsum{extra}".format(  # TODO: no .name
+        "{stat_emoji} **{value}** lorem ipsum{extra}".format( # TODO: stat names
             value=value,
             stat_emoji=STAT[stat_name],
-            extra=extra.get(stat_name, default_extra)(mech, value),
+            extra=extra.get(stat_name, default_extra)(value),
         )
         for stat_name, value in bank.items()
     )
@@ -189,7 +189,6 @@ class MechView(PaginatorView):
 
         # property updates the rows
         self.page = 0
-
         self.item_groups: dict[Type, list[SelectOption]] = {type: [] for type in Type}
 
         for item in pack.items.values():
