@@ -6,22 +6,24 @@ import typing as t
 import anyio
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
+from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from config import TEST_GUILDS
 from events import PACK_LOADED
-from library_extensions import embed_image, sanitize_filename, MAX_RESPONSE_TIME
+from library_extensions import MAX_RESPONSE_TIME, embed_image, sanitize_filename
 from managers import item_pack_manager, renderer_manager
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
 from supermechs.enums import Element, Type
-from supermechs.ext.deserializers.typedefs.game_types import LiteralElement, LiteralType
+from supermechs.ext.deserializers.typedefs import LiteralElement, LiteralType
 from supermechs.models.item import ItemData  # noqa: TCH002
-from supermechs.typedefs import Name
 
 if t.TYPE_CHECKING:
+    from supermechs.typedefs import Name
+
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
 
@@ -56,8 +58,14 @@ async def item(
 
     renderer = renderer_manager["@Darkstare"]  # TODO
     sprite = renderer.get_item_sprite(item, item.transform_range[-1])
-    await sprite.load()
-    url, file = embed_image(sprite.image, sanitize_filename(item.name, ".png"))
+
+    if sprite.metadata.source == "url" and sprite.metadata.method == "single":
+        url, file = sprite.metadata.value, MISSING
+
+    else:
+        await sprite.load()
+        url, file = embed_image(sprite.image, sanitize_filename(item.name, ".png"))
+
     embed_color = ELEMENT[item.element].color
 
     if item.type is Type.SIDE_WEAPON or item.type is Type.TOP_WEAPON:
