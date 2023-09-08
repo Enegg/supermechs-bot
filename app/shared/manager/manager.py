@@ -82,3 +82,8 @@ class Manager(t.Generic[P, VT, KT], Mapping[KT, VT]):
             obj = self.factory(*args, **kwargs)
             self._store[key] = obj
             return obj
+
+    def create(self, *args: P.args, **kwargs: P.kwargs) -> None:
+        """Create and store an object from given value."""
+        key = self.key(*args, **kwargs)
+        self._store[key] = self.factory(*args, **kwargs)

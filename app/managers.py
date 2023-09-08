@@ -7,9 +7,9 @@ from shared import SESSION_CTX
 from shared.manager import Manager
 from shared.utils import async_memoize
 
-from supermechs.api import ItemPack, PackRenderer, Player
-from supermechs.ext.deserializers.graphic import to_pack_renderer
-from supermechs.ext.deserializers.models import AnyItemPack, extract_key, to_item_pack
+from supermechs.api import ItemPack, Metadata, PackRenderer, Player
+from supermechs.ext.deserializers import extract_key, to_item_pack, to_pack_renderer
+from supermechs.ext.deserializers.typedefs import AnyItemPack
 
 if t.TYPE_CHECKING:
     from PIL import Image
@@ -42,12 +42,14 @@ item_pack_manager = Manager(_create_item_pack, _pack_key_getter)
 
 
 @async_memoize
-async def _image_fetcher(url: str, /) -> "Image.Image":
+async def _image_fetcher(metadata: Metadata, /) -> "Image.Image":
     from io import BytesIO
 
     from PIL import Image
 
-    async with SESSION_CTX.get().get(url) as response:
+    assert metadata.source == "url"
+
+    async with SESSION_CTX.get().get(metadata.value) as response:
         response.raise_for_status()
         fp = BytesIO(await response.content.read())
         return Image.open(fp)
@@ -69,7 +71,7 @@ async def load_default_pack(url: str, /) -> None:
         response.raise_for_status()
         data: AnyItemPack = await response.json(encoding="utf8", content_type=None)
 
-    item_pack_manager.lookup_or_create(data)
-    renderer_manager.lookup_or_create(data)
+    item_pack_manager.create(data)
+    renderer_manager.create(data)
 
     PACK_LOADED.set()
