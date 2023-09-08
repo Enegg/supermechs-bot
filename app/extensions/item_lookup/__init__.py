@@ -3,13 +3,15 @@ from __future__ import annotations
 import io
 import typing as t
 
+import anyio
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 
 from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from config import TEST_GUILDS
-from library_extensions import embed_image, sanitize_filename
+from events import PACK_LOADED
+from library_extensions import embed_image, sanitize_filename, MAX_RESPONSE_TIME
 from managers import item_pack_manager, renderer_manager
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
@@ -48,7 +50,11 @@ async def item(
     compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
     """
     del type, element  # used for autocomplete only
-    renderer = renderer_manager.mapping["@Darkstare"]  # TODO
+
+    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+        await PACK_LOADED.wait()
+
+    renderer = renderer_manager["@Darkstare"]  # TODO
     sprite = renderer.get_item_sprite(item, item.transform_range[-1])
     await sprite.load()
     url, file = embed_image(sprite.image, sanitize_filename(item.name, ".png"))
@@ -127,7 +133,10 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     item1: First item to compare. {{ COMPARE_FIRST }}
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    pack = item_pack_manager.mapping["@Darkstare"]  # TODO
+    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+        await PACK_LOADED.wait()
+
+    pack = item_pack_manager["@Darkstare"]  # TODO
 
     try:
         item_a = pack.get_item_by_name(item1)

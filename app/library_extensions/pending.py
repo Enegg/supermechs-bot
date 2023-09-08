@@ -7,7 +7,7 @@ import pkgutil
 import typing as t
 from enum import Enum
 
-__all__ = ("walk_modules", "command_mention", "OPTION_LIMIT", "MSG_CHAR_LIMIT")
+__all__ = ("walk_modules", "command_mention", "OPTION_LIMIT", "MSG_CHAR_LIMIT", "MAX_RESPONSE_TIME")
 
 
 def walk_modules(
@@ -75,3 +75,7 @@ class EmbedLimits(int, Enum):
     field_value = 1024
     footer_text = 2048
     author_name = 256
+
+
+MAX_RESPONSE_TIME = 3
+"""Maximum amount of time in second bot can take to respond to an interaction."""

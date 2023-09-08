@@ -2,15 +2,22 @@ from __future__ import annotations
 
 import asyncio
 import io
-import typing as t
 
+import anyio
 from disnake import Attachment, CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
 from bridges import mech_name_autocomplete
-from library_extensions import OPTION_LIMIT, command_mention, embed_image, embed_to_footer
+from events import PACK_LOADED
+from library_extensions import (
+    MAX_RESPONSE_TIME,
+    OPTION_LIMIT,
+    command_mention,
+    embed_image,
+    embed_to_footer,
+)
 from library_extensions.ui import Select, wait_for_component
 from managers import item_pack_manager, player_manager, renderer_manager
 from shared.utils import wrap_bytes
@@ -92,9 +99,12 @@ async def build(
         The name of existing build or one to create.
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
-    player = player_manager.lookup_or_create(inter.author)
-    renderer = renderer_manager.mapping["@Darkstare"]  # TODO
-    default_pack = item_pack_manager.mapping["@Darkstare"]
+    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+        await PACK_LOADED.wait()
+
+    player = player_manager(inter.author)
+    renderer = renderer_manager["@Darkstare"]  # TODO
+    default_pack = item_pack_manager["@Darkstare"]
 
     if name is None:
         mech = player.get_active_or_create_build()
@@ -143,8 +153,10 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
         raise commands.UserInputError(f"The maximum accepted file size is {size}{unit}.")
     # we could assert that content type is application/json, but we may just as well
     # rely on the loader to fail
+    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+        await PACK_LOADED.wait()
 
-    default_pack = item_pack_manager.mapping["@Darkstare"]
+    default_pack = item_pack_manager["@Darkstare"]
     # TODO: make load_mechs ask for item packs
     data = await file.read()
     try:
@@ -162,7 +174,7 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
 
     if mechs:
         # TODO: warn about overwriting
-        player = player_manager.lookup_or_create(inter.author)
+        player = player_manager(inter.author)
         player.builds.update((mech.name, mech) for mech in mechs)
         string_builder.write("Loaded mechs: ")
         string_builder.write(", ".join(f"`{mech.name}`" for mech in mechs))
@@ -177,12 +189,16 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
 async def export(inter: CommandInteraction) -> None:
     """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
 
-    player = player_manager.lookup_or_create(inter.author)
+    player = player_manager(inter.author)
     build_count = len(player.builds)
-    default_pack = item_pack_manager.mapping["@Darkstare"]
 
     if build_count == 0:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
+
+    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+        await PACK_LOADED.wait()
+
+    default_pack = item_pack_manager["@Darkstare"]
 
     if build_count == 1:
         fp = io.BytesIO(dump_mechs(player.builds.values(), default_pack.key))
