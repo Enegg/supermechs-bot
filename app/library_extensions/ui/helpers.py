@@ -1,3 +1,4 @@
+import asyncio
 import os
 import typing as t
 
@@ -33,7 +34,11 @@ async def wait_for_component(
     def check(inter: MessageInteraction) -> bool:
         return inter.data.custom_id == component_or_id
 
-    return await client.wait_for(Event.message_interaction, check=check, timeout=timeout)
+    try:
+        return await client.wait_for(Event.message_interaction, check=check, timeout=timeout)
+
+    except asyncio.TimeoutError:
+        raise TimeoutError from None
 
 
 async def wait_for_modal(
@@ -47,4 +52,8 @@ async def wait_for_modal(
     def check(inter: ModalInteraction) -> bool:
         return inter.data.custom_id == modal_or_id
 
-    return await client.wait_for(Event.modal_submit, check=check, timeout=timeout)
+    try:
+        return await client.wait_for(Event.modal_submit, check=check, timeout=timeout)
+
+    except asyncio.TimeoutError:
+        raise TimeoutError from None

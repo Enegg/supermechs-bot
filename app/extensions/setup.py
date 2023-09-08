@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ast
-import asyncio
 import io
 import traceback
 import typing as t
@@ -161,7 +160,7 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         try:
             response_inter = await wait_for_modal(plugin.bot, "eval:modal")
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return await inter.send("Modal timed out.", ephemeral=True)
 
         code = response_inter.text_values[text_input.custom_id]

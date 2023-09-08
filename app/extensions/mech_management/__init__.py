@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import io
 
 import anyio
@@ -214,7 +213,7 @@ async def export(inter: CommandInteraction) -> None:
     try:
         new_inter = await wait_for_component(plugin.bot, mech_select, timeout=600)
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return await inter.delete_original_response()
 
     values = new_inter.values
