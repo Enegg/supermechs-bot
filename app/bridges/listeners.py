@@ -24,8 +24,7 @@ async def on_ready(client: Client, /) -> None:
 
 
 async def on_application_command(interaction: CommandInteraction, /) -> None:
-    data = interaction.data
-    add_invocation(data.id, data.name)
+    add_invocation(interaction.data.id, interaction.application_command.qualified_name)
 
 
 def register_listeners(bot: CommonBotBase[t.Any], /) -> None:
