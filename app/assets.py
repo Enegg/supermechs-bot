@@ -86,6 +86,7 @@ def range_to_str(range: "TransformRange", /, at_tier: Tier | None = None) -> str
     if at_tier is None:
         at_tier = range[-1]
 
-    str_range = [str(tier) for tier in range]
-    str_range[range.index(at_tier)] = f"({at_tier})"
+    index = at_tier.order - range[0].order
+    str_range = [TIER[tier].emoji for tier in range]
+    str_range[index] = f"({str_range[index]})"
     return "".join(str_range)
