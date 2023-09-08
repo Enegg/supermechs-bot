@@ -46,6 +46,9 @@ class AsyncManager(t.Generic[P, VT, KT], Mapping[KT, VT]):
     def __len__(self) -> int:
         return len(self._store)
 
+    def __iter__(self) -> t.Iterator[KT]:
+        return iter(self._store)
+
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return await self.lookup_or_create(*args, **kwargs)
 
