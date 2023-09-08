@@ -6,23 +6,10 @@ from collections import Counter
 import anyio
 import psutil
 
-from typeshed import P, T
-
-from .manager import AsyncManager, default_key
+from .utils import async_memoize
 
 if t.TYPE_CHECKING:
     import os
-
-
-def async_memoize(func: t.Callable[P, t.Awaitable[T]], /) -> t.Callable[P, t.Awaitable[T]]:
-    """Memoization decorator for async functions.
-
-    It is safe to run the resulting coroutine function concurrently to self using same
-    arguments, in which case the decorated coro is ran only once.
-    """
-    key = t.cast(t.Callable[P, t.Hashable], default_key)
-    manager = AsyncManager(func, key)
-    return manager.lookup_or_create
 
 
 def _file_sloc(path: os.PathLike[str], /) -> int:

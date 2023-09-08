@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import typing as t
-
 from typing_extensions import LiteralString
+
+from typeshed import P, T
+
+from .manager import AsyncManager, default_key
 
 __all__ = ("wrap_bytes", "is_pascal", "ReprMixin")
 
@@ -43,3 +46,14 @@ def is_pascal(string: str) -> bool:
         False
     """
     return string[:1].isupper() and " " not in string
+
+
+def async_memoize(func: t.Callable[P, t.Awaitable[T]], /) -> t.Callable[P, t.Awaitable[T]]:
+    """Memoization decorator for async functions.
+
+    It is safe to run the resulting coroutine function concurrently to self using same
+    arguments, in which case the decorated coro is ran only once.
+    """
+    key = t.cast(t.Callable[P, t.Hashable], default_key)
+    manager = AsyncManager(func, key)
+    return manager.lookup_or_create
