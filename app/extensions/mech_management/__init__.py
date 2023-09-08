@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import io
+import typing as t
 
 import anyio
 from disnake import Attachment, CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
+from disnake.ui import StringSelect
 from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
@@ -18,7 +20,7 @@ from library_extensions import (
     embed_image,
     sikrit_footer,
 )
-from library_extensions.ui import Select, wait_for_component
+from library_extensions.ui import wait_for_component
 from managers import item_pack_manager, player_manager, renderer_manager
 from shared.utils import wrap_bytes
 from user_input import sanitize_string
@@ -96,8 +98,7 @@ async def build(
 
     Parameters
     ----------
-    name:
-        The name of existing build or one to create.
+    name: The name of existing build or one to create.\
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
     async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
@@ -190,8 +191,14 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
 
 
 @mech.sub_command()
-async def export(inter: CommandInteraction) -> None:
-    """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}"""
+async def export(inter: CommandInteraction, format: t.Literal["json", "toml"] = "json") -> None:
+    """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}
+
+    Parameters
+    ----------
+    format: The file format to output data in.\
+        Formats other than .json are not supported by WU. {{ MECH_EXPORT_FORMAT }}
+    """
 
     player = player_manager(inter.author)
     build_count = len(player.builds)
@@ -210,7 +217,7 @@ async def export(inter: CommandInteraction) -> None:
         return await inter.response.send_message(file=file, ephemeral=True)
 
     # TODO: >25 mechs
-    mech_select = Select(
+    mech_select = StringSelect(
         placeholder="Select mechs to export",
         max_values=min(OPTION_LIMIT, build_count),
         options=list(player.builds)[:OPTION_LIMIT],
