@@ -166,8 +166,8 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 
 
     if item_a.element is item_b.element:
-        desc_builder = io.StringIO(str_elem(item_a.element))
-        color = ELEMENT[item_a.element].color
+        desc_builder = io.StringIO()
+        desc_builder.write(str_elem(item_a.element))
 
         if item_a.type is item_b.type:
             desc_builder.write(" ")
@@ -181,6 +181,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
             desc_builder.write(f" {str_type(item_a.type)} / {str_type(item_b.type)}")
 
         desc = desc_builder.getvalue()
+        color = ELEMENT[item_a.element].color
 
     else:
         desc = (
