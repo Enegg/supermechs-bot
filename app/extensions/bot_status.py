@@ -5,11 +5,11 @@ import sys
 import typing as t
 
 import anyio
+from __main__ import START_TIME
 from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
-from __main__ import START_TIME
 from config import TEST_GUILDS
 from events import PACK_LOADED
 from library_extensions import MAX_RESPONSE_TIME, Markdown as MD, command_mention
@@ -44,47 +44,48 @@ async def info(inter: CommandInteraction) -> None:
     """Displays information about the bot."""
 
     bot = plugin.bot
-    default_pack = item_pack_manager.mapping["@Darkstare"]  # TODO
     app_info = await bot.application_info()
+    app_info.team
 
     general_fields = [
-        f"Python version: {python_version}",
-        f"disnake version: {disnake_version}",
-        f"Created: {format_dt(bot.user.created_at, 'R')}",
         f"Developer: {app_info.owner.mention}",
+        f"Created: {format_dt(bot.user.created_at, 'R')}",
         f"Servers: {len(bot.guilds)}",
     ]
-
-    supermechs_fields = [
-        f"Registered players: {len(player_manager.mapping)}",
-        f"Invoked commands: {command_invocations.total()}",
-        f"Default item pack: {MD.hyperlink(default_pack.key, PACK_V2)}",
-        f"Total items: {len(default_pack.items)}",
-    ]
-
-    bits, exponent = wrap_bytes(get_ram_utilization())
-
-    loc = "calculating..."
-
-    async with anyio.move_on_after(2.5):
-        loc = await get_sloc(".")
-        loc += await get_sloc(next(iter(supermechs.__path__)))
-
-    perf_fields = [
-        f"Started: {format_dt(START_TIME, 'R')}",
-        f"Latency: {round(bot.latency * 1000)}ms",
-        f"RAM usage: {bits}{exponent}",
-        f"Lines of code: {loc}",
-    ]
-
     if app_info.bot_public:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
         general_fields.append(MD.hyperlink("**Invite link**", invite))
 
+    backend_fields = [
+        f"Python version: {python_version}",
+        f"disnake version: {disnake_version}",
+    ]
+    supermechs_fields = [
+        f"Registered players: {len(player_manager)}",
+        f"Invoked commands: {command_invocations.total()}",
+    ]
+    bits, exponent = wrap_bytes(get_ram_utilization())
+    perf_fields = [
+        f"Started: {format_dt(START_TIME, 'R')}",
+        f"Latency: {round(bot.latency * 1000)}ms",
+        f"RAM usage: {bits}{exponent}",
+    ]
+    async with anyio.move_on_after(MAX_RESPONSE_TIME - 0.5):
+        loc = await get_sloc("app")
+        loc += await get_sloc(next(iter(supermechs.__path__)))
+        backend_fields.append(f"Lines of code: {loc}")
+
+    if PACK_LOADED.is_set():
+        default_pack = item_pack_manager["@Darkstare"]  # TODO
+        supermechs_fields += [
+            f"Default item pack: {MD.hyperlink(default_pack.key, PACK_V2)}",
+            f"Total items: {len(default_pack.items)}",
+        ]
     embed = (
         Embed(title="Bot info", color=inter.me.color)
         .set_thumbnail(inter.me.display_avatar.url)
         .add_field("General", "\n".join(general_fields), inline=False)
+        .add_field("Backend", "\n".join(backend_fields), inline=False)
         .add_field("SuperMechs", "\n".join(supermechs_fields), inline=False)
         .add_field("Performance", "\n".join(perf_fields), inline=False)
     )
