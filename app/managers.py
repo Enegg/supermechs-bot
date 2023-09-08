@@ -3,7 +3,6 @@ import typing as t
 
 from disnake.abc import User
 
-from events import PACK_LOADED
 from shared import SESSION_CTX
 from shared.manager import Manager
 from shared.utils import async_memoize
@@ -64,10 +63,13 @@ renderer_manager = Manager(_create_pack_renderer, extract_key)
 
 
 async def load_default_pack(url: str, /) -> None:
+    from events import PACK_LOADED
+
     async with SESSION_CTX.get().get(url) as response:
         response.raise_for_status()
         data: AnyItemPack = await response.json(encoding="utf8", content_type=None)
 
     item_pack_manager.lookup_or_create(data)
     renderer_manager.lookup_or_create(data)
+
     PACK_LOADED.set()
