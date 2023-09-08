@@ -47,5 +47,7 @@
     "MECH_IMPORT_FILE_DESCRIPTION": "Plik .JSON w formacie wspierającym WU.",
 
     "MECH_EXPORT_NAME": "eksportuj",
-    "MECH_EXPORT_DESCRIPTION": "Eksportuj swoje mechy do pliku .JSON wspieranego przez WU."
+    "MECH_EXPORT_DESCRIPTION": "Eksportuj swoje mechy do pliku .JSON wspieranego przez WU.",
+    "MECH_EXPORT_FORMAT_NAME": "format",
+    "MECH_EXPORT_FORMAT_DESCRIPTION": "Format pliku, w jaki zostanie załączony. Formaty inne niż .json nie są wspieranie przez WU."
 }
