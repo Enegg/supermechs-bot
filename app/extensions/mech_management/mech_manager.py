@@ -5,6 +5,7 @@ from disnake.ui import Button, button, string_select
 from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
+from i18n import LocaleEntry
 from library_extensions import OPTION_LIMIT, SPACE, debug_footer, embed_image
 from library_extensions.ui import (
     EMPTY_OPTION,
@@ -22,11 +23,11 @@ from supermechs.api import ArenaBuffs, Element, Item, ItemPack, Mech, Player, Sl
 from supermechs.rendering import PackRenderer
 
 
-def embed_mech(mech: Mech, included_buffs: ArenaBuffs | None = None) -> Embed:
+def embed_mech(mech: Mech, i18n: LocaleEntry, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
         title=f'Mech build "{mech.name}"',
         color=ELEMENT[mech.dominant_element or Element.UNKNOWN].color,
-    ).add_field("Stats:", format_stats(mech, included_buffs))
+    ).add_field("Stats:", format_stats(mech, i18n, included_buffs))
     return embed
 
 
@@ -44,6 +45,7 @@ def get_weight_usage(weight: int) -> str:
 
 def format_stats(
     mech: Mech,
+    i18n: LocaleEntry,
     included_buffs: ArenaBuffs | None = None,
     /,
     *,
@@ -66,12 +68,13 @@ def format_stats(
         return ""
 
     return "\n".join(
-        "{stat_emoji} **{value}** lorem ipsum{extra}".format( # TODO: stat names
+        "{stat_emoji} **{value}** {stat_name}{extra}".format( # TODO: stat names
             value=value,
-            stat_emoji=STAT[stat_name],
-            extra=extra.get(stat_name, default_extra)(value),
+            stat_name=i18n[stat_key],
+            stat_emoji=STAT[stat_key],
+            extra=extra.get(stat_key, default_extra)(value),
         )
-        for stat_name, value in bank.items()
+        for stat_key, value in bank.items()
     )
 
 
@@ -149,19 +152,21 @@ class MechView(PaginatorView):
         pack: ItemPack,
         renderer: PackRenderer,
         player: Player,
+        i18n: LocaleEntry,
         *,
         timeout: float = 180.0,
     ) -> None:
         super().__init__(timeout=timeout, columns=5)
         self.pack = pack
         self.mech = mech
+        self.i18n = i18n
         self.player = player
         self.renderer = renderer
         self.user_id = player.id
         self.mech_config = get_mech_config(mech)
 
         self.active: TrinaryButton[str] | None = None
-        self.embed = embed_mech(mech)
+        self.embed = embed_mech(mech, i18n)
 
         for pos, row in enumerate(
             (
@@ -239,7 +244,7 @@ class MechView(PaginatorView):
         self.embed.set_field_at(
             0,
             name=self.embed.fields[0].name,
-            value=format_stats(self.mech, self.player.arena_buffs if button.on else None),
+            value=format_stats(self.mech, self.i18n, self.player.arena_buffs if button.on else None)
         )
 
         await inter.response.edit_message(embed=self.embed, view=self)
@@ -306,7 +311,11 @@ class MechView(PaginatorView):
         self.embed.set_field_at(
             0,
             name="Stats:",
-            value=format_stats(self.mech, self.player.arena_buffs if self.buffs_button.on else None)
+            value=format_stats(
+                self.mech,
+                self.i18n,
+                self.player.arena_buffs if self.buffs_button.on else None
+            )
         )
         new_config = get_mech_config(self.mech)
 

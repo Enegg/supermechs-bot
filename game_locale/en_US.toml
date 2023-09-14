@@ -67,7 +67,7 @@ in_game = "Regen dmg"
 default = "Resistance drain"
 in_game = "Resist drain"
 [stats.range]
-default = "Range"
+in_game = "Range"
 [stats.push]
 default = "Knockback"
 in_game = "Push"

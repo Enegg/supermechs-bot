@@ -13,6 +13,7 @@ from disnake.ext.commands import InteractionBot
 from disnake.utils import utcnow
 from dotenv import load_dotenv
 
+import i18n
 from bridges import register_injections, register_listeners
 from config import DATE_FORMAT, HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
@@ -71,6 +72,7 @@ async def main() -> None:
         bot.get_global_command_named = partial(bot.get_guild_command_named, HOME_GUILD_ID)
 
     bot.i18n.load("locale/")
+    i18n.load("game_locale/")
     register_listeners(bot)
     register_injections()
     await sm_init()

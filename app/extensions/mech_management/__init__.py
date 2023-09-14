@@ -9,6 +9,7 @@ from disnake.ext import commands, plugins
 from disnake.ui import StringSelect
 from disnake.utils import MISSING
 
+import i18n
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
 from bridges import mech_name_autocomplete
 from events import PACK_LOADED
@@ -119,6 +120,7 @@ async def build(
         pack=default_pack,
         renderer=renderer,
         player=player,
+        i18n=i18n.get(inter.locale),
         timeout=100,
     )
     file = MISSING

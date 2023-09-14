@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-import re
+import io
 import typing as t
 from itertools import zip_longest
 
@@ -8,6 +6,7 @@ from disnake import ButtonStyle, Embed, MessageInteraction
 from disnake.ui import Button, button
 
 from assets import STAT, range_to_str
+from i18n import LocaleEntry
 from library_extensions import SPACE, debug_footer
 from library_extensions.ui import (
     ActionRow,
@@ -18,6 +17,8 @@ from library_extensions.ui import (
     positioned,
 )
 from typeshed import dict_items_as, twotuple
+
+from .helpers import truncate_float, try_shorten, wrap_nicely
 
 from supermechs.api import STATS, AnyStatsMapping, ArenaBuffs, ItemData, Stat, ValueRange
 from supermechs.ext.comparators.helpers import mean_and_deviation
@@ -33,7 +34,8 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self,
         embed: Embed,
         item: ItemData,
-        factory: t.Callable[[ItemData, bool, bool], t.Iterable[tuple[str, str, bool]]],
+        factory: t.Callable[[ItemData, bool, bool, LocaleEntry], t.Iterable[tuple[str, str, bool]]],
+        i18n: LocaleEntry,
         *,
         user_id: int,
         timeout: float = 180,
@@ -43,16 +45,17 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self.embed = embed
         self.item = item
         self.field_factory = factory
+        self.i18n = i18n
 
         if not has_any_of(item.start_stage.base_stats, "phyDmg", "eleDmg", "expDmg"):
             self.remove_item(self.avg_button, 0)
 
-        for name, value, inline in factory(item, False, False):
+        for name, value, inline in factory(item, False, False, i18n):
             embed.add_field(name, value, inline=inline)
 
     async def update(self, inter: MessageInteraction, buffs: bool, avg: bool) -> None:
         self.embed.clear_fields()
-        for name, value, inline in self.field_factory(self.item, buffs, avg):
+        for name, value, inline in self.field_factory(self.item, buffs, avg, self.i18n):
             self.embed.add_field(name, value, inline=inline)
 
         if __debug__:
@@ -85,6 +88,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         embed: Embed,
         item_a: ItemData,
         item_b: ItemData,
+        i18n: LocaleEntry,
         *,
         user_id: int,
         timeout: float = 180,
@@ -94,6 +98,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         self.embed = embed
         self.item_a = item_a
         self.item_b = item_b
+        self.i18n = i18n
 
         self.update()
 
@@ -135,7 +140,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         else:
             modify_field_at = self.embed.insert_field_at
 
-        modify_field_at(0, "Stat", "\n".join(name_field))
+        modify_field_at(0, "Stat", "\n".join(name_field).format_map(self.i18n))
         modify_field_at(1, try_shorten(self.item_a.name), "\n".join(first_field))
         modify_field_at(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
@@ -165,25 +170,17 @@ def buffed_stats(
                 value, diff = apply_buff(stat, value)
                 yield stat, ((value,), (diff,))
 
-            case ValueRange() if value.is_single:
-                value, diff = apply_buff(stat, value[0])
+            case ValueRange(x, y) if x == y:
+                value, diff = apply_buff(stat, x)
                 yield stat, ((value,), (diff,))
 
-            case ValueRange():
-                x, y = value
+            case ValueRange(x, y):
                 vx, dx = apply_buff(stat, x)
                 vy, dy = apply_buff(stat, y)
                 yield stat, ((vx, vy), (dx, dy))
 
             case _:  # pyright: ignore[reportUnnecessaryComparison]
                 raise TypeError(f"Unexpected value: {value}")
-
-
-def truncate_float(num: float, digits: int) -> tuple[float, int]:
-    num = round(num, digits)
-    if num.is_integer():
-        return num, 0
-    return num, digits
 
 
 def value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
@@ -226,45 +223,40 @@ def shared_iter(
 
 
 def default_fields(
-    item: ItemData, buffs_enabled: bool, avg: bool
+    item: ItemData, buffs_enabled: bool, avg: bool, i18n: LocaleEntry
 ) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
     yield ("Transform range: ", range_to_str(item.transform_range), False)
 
     spaced = False
-    item_stats = ""  # the main string
+    string_builder = io.StringIO()
     cost_stats = {"backfire", "heaCost", "eneCost"}
 
-    for stat, str_value, change in shared_iter(max_stats(item.start_stage), buffs_enabled, avg):
-        if not spaced and stat in cost_stats:
-            item_stats += "\n"
+    for stat_key, str_value, change in shared_iter(max_stats(item.start_stage), buffs_enabled, avg):
+        if not spaced and stat_key in cost_stats:
+            string_builder.write("\n")
             spaced = True
 
         if change:
             change = f" **{change}**"
 
-        name = STATS[stat].name
-
-        if stat == "uses":
-            name = "Use" if str_value == "1" else "Uses"
-
-        item_stats += f"{STAT[stat]} **{str_value}** {name}{change}\n"
+        string_builder.write(f"{STAT[stat_key]} **{str_value}** {i18n[stat_key]}{change}\n")
 
     if item.tags.require_jump:
         emoji = STAT["jump"]
-        item_stats += f"{emoji} **Jumping required**"
+        string_builder.write(f"{emoji} **Jumping required**")
 
-    yield ("Stats:", item_stats, False)
+    yield ("Stats:", string_builder.getvalue(), False)
 
 
 def compact_fields(
-    item: ItemData, buffs_enabled: bool, avg: bool
+    item: ItemData, buffs_enabled: bool, avg: bool, *_
 ) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with reduced in size item info."""
     lines: list[str] = []
 
-    for stat, str_value, _ in shared_iter(max_stats(item.start_stage), buffs_enabled, avg, 0):
-        lines.append(f"{STAT[stat]} **{str_value}**")
+    for stat_key, str_value, _ in shared_iter(max_stats(item.start_stage), buffs_enabled, avg, 0):
+        lines.append(f"{STAT[stat_key]} **{str_value}**")
 
     if item.tags.require_jump:
         lines.append(f"{STAT['jump']}❗")
@@ -277,19 +269,6 @@ def compact_fields(
 
     for name, field in zip_longest((transform_range,), field_text, fillvalue=SPACE):
         yield (name, field, True)
-
-
-def wrap_nicely(size: int, max: int) -> int:
-    """Returns the size for a slice of a sequence of given size,
-    distributed evenly according to max.
-    """
-    if size < max:
-        return max
-    for n in range(max, 2, -1):
-        rem = size % n
-        if rem == 0 or rem >= n - 1:
-            return n
-    return max
 
 
 @t.overload
@@ -307,20 +286,6 @@ def cmp_num(x: float, y: float, lower_is_better: bool = False) -> twotuple[twotu
         return ((x, 0), (y, 0))
 
     return ((x, x - y), (y, 0)) if lower_is_better ^ (x > y) else ((x, 0), (y, y - x))
-
-
-@t.overload
-def compare_numbers(x: int, y: int, lower_is_better: bool = False) -> twotuple[int]:
-    ...
-
-
-@t.overload
-def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
-    ...
-
-
-def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
-    return (x - y, 0) if lower_is_better ^ (x > y) else (0, y - x)
 
 
 value_and_diff = tuple[int | float | None, float]
@@ -393,7 +358,7 @@ def stats_to_fields(
     second_item: list[str] = []
 
     for stat, long_boy in comparator(stats_a, stats_b):
-        name_field.append(f"{STAT[stat.key]} {stat.name}")
+        name_field.append(f"{STAT[stat.key]} {{{stat.key}}}")
 
         match stat.key, long_boy:
             case "range", ((a1, a2), (b1, b2)):
@@ -445,25 +410,3 @@ def stats_to_fields(
                 raise ValueError("Invalid structure")
 
     return name_field, first_item, second_item
-
-
-def try_shorten(name: str) -> str:
-    if len(name) < 16:
-        return name
-
-    return "".join(s for s in name if s.isupper())
-
-
-_pattern = re.compile(r"\.(\d+)")
-
-
-def fmt_float(value: float, spec: str) -> str:
-    """Formats a float to at most n digits after decimal point."""
-
-    if (match := _pattern.search(spec)) is not None:
-        value, prec = truncate_float(value, int(match[1]))
-        start, end = match.span()
-
-        return format(value, f"{spec[:start]}.{prec}{spec[end:]}")
-
-    return format(value, spec)
