@@ -10,6 +10,7 @@ from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
+from assets import FRANTIC_GIFS
 from config import DEFAULT_PACK, TEST_GUILDS
 from events import PACK_LOADED
 from library_extensions import MAX_RESPONSE_TIME, Markdown as MD, command_mention
@@ -31,11 +32,7 @@ plugin = Plugin["InteractionBot"](name="Bot-status", logger=__name__)
 @plugin.slash_command()
 async def frantic(inter: CommandInteraction) -> None:
     """Humiliate frantic users."""
-    frantics = [
-        "https://i.imgur.com/Bbbf4AH.mp4",
-        "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
-    ]
-    choice = random.choice(frantics)
+    choice = random.choice(FRANTIC_GIFS)
     await inter.response.send_message(choice)
 
 
