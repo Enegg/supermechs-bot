@@ -18,7 +18,7 @@ from bridges import register_injections, register_listeners
 from config import DATE_FORMAT, DEFAULT_PACK, HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
 from managers import load_default_pack
-from shared import SESSION_CTX
+from shared import IO_CLIENT
 
 from supermechs import init as sm_init
 
@@ -80,7 +80,7 @@ async def main() -> None:
     await setup_channel_logger(bot, LOGS_CHANNEL, logging.root)
 
     async with create_aiohttp_session(bot.http) as session:
-        SESSION_CTX.set(session)
+        IO_CLIENT.set(session)
         await load_default_pack(DEFAULT_PACK)
         await bot.connect()
 

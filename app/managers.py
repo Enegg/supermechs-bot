@@ -3,7 +3,7 @@ import typing as t
 
 from disnake.abc import User
 
-from shared import SESSION_CTX
+from shared import IO_CLIENT
 from shared.manager import Manager
 from shared.utils import async_memoize
 
@@ -49,7 +49,7 @@ async def _image_fetcher(metadata: Metadata, /) -> "Image.Image":
 
     assert metadata.source == "url"
 
-    async with SESSION_CTX.get().get(metadata.value) as response:
+    async with IO_CLIENT.get().get(metadata.value) as response:
         response.raise_for_status()
         fp = BytesIO(await response.content.read())
         return Image.open(fp)
@@ -67,11 +67,10 @@ renderer_manager = Manager(_create_pack_renderer, extract_key)
 async def load_default_pack(url: str, /) -> None:
     from events import PACK_LOADED
 
-    async with SESSION_CTX.get().get(url) as response:
+    async with IO_CLIENT.get().get(url) as response:
         response.raise_for_status()
         data: AnyItemPack = await response.json(encoding="utf8", content_type=None)
 
     item_pack_manager.create(data)
     renderer_manager.create(data)
-
     PACK_LOADED.set()
