@@ -50,7 +50,7 @@ class CommandData(t.NamedTuple):
     name: str
 
 
-command_invocations = Counter[CommandData]()
+command_invocations: t.Final = Counter[CommandData]()
 
 
 def add_invocation(id: int, name: str, /) -> None:
