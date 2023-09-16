@@ -15,13 +15,12 @@ from dotenv import load_dotenv
 
 import i18n
 from bridges import register_injections, register_listeners
-from config import DATE_FORMAT, HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
+from config import DATE_FORMAT, DEFAULT_PACK, HOME_GUILD_ID, LOGS_CHANNEL, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
 from managers import load_default_pack
 from shared import SESSION_CTX
 
 from supermechs import init as sm_init
-from supermechs.urls import PACK_V1
 
 if t.TYPE_CHECKING:
     from disnake.http import HTTPClient
@@ -82,7 +81,7 @@ async def main() -> None:
 
     async with create_aiohttp_session(bot.http) as session:
         SESSION_CTX.set(session)
-        await load_default_pack(PACK_V1)
+        await load_default_pack(DEFAULT_PACK)
         await bot.connect()
 
 

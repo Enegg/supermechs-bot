@@ -10,7 +10,7 @@ from disnake import CommandInteraction, Embed, __version__ as disnake_version
 from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url
 
-from config import TEST_GUILDS
+from config import DEFAULT_PACK, TEST_GUILDS
 from events import PACK_LOADED
 from library_extensions import MAX_RESPONSE_TIME, Markdown as MD, command_mention
 from managers import item_pack_manager, player_manager
@@ -78,7 +78,7 @@ async def info(inter: CommandInteraction) -> None:
     if PACK_LOADED.is_set():
         default_pack = item_pack_manager["@Darkstare"]  # TODO
         supermechs_fields += [
-            f"Default item pack: {MD.hyperlink(default_pack.key, PACK_V2)}",
+            f"Default item pack: {MD.hyperlink(default_pack.key, DEFAULT_PACK)}",
             f"Total items: {len(default_pack.items)}",
         ]
     embed = (
