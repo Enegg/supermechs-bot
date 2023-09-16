@@ -12,7 +12,7 @@ Pillow == 9.3.*
 orjson  # >= 3.7.7 for python 3.11
 
 # Bot
-disnake == 2.9.*  # Range/String; >= 3.8 for python 3.11
+disnake == 2.9.*  # Range/String; >= 2.8 for python 3.11
 git+https://github.com/Chromosomologist/disnake-ext-plugins
 
 # Utility
