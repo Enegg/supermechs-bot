@@ -18,10 +18,10 @@ def debug_footer(embed: Embed) -> None:
 
     parts: list[str] = ["Debug:", f"Size: {len(embed)}"]
 
-    if url := embed.image.url:
+    if (url := embed.image.url) and url.startswith("attachment://"):
         parts.append(f"Image: {url}")
 
-    if url := embed.thumbnail.url:
+    if (url := embed.thumbnail.url) and url.startswith("attachment://"):
         parts.append(f"Thumb: {url}")
 
     embed.set_footer(text="\n".join(parts))
