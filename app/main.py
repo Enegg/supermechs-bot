@@ -31,15 +31,7 @@ logging.Formatter.default_time_format = DATE_FORMAT
 logging.captureWarnings(True)
 stream = logging.StreamHandler()
 stream.setLevel(logging.INFO)
-
-if __debug__:
-    log_format = "{asctime} [{levelname}] {name} - {message}"
-
-else:
-    # don't append timestamp as heroku does that already
-    log_format = "[{levelname}] {name} - {message}"
-
-stream.setFormatter(logging.Formatter(log_format, style="{"))
+stream.setFormatter(logging.Formatter("{asctime} [{levelname}] {name} - {message}", style="{"))
 logging.root.setLevel(logging.INFO)
 logging.root.addHandler(stream)
 
