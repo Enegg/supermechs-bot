@@ -19,7 +19,7 @@ class ColorEmojiAsset(t.NamedTuple):
 
 
 class TypeAsset(t.NamedTuple):
-    image_url: str
+    image_url: tex.LiteralString
     emoji: tex.LiteralString
 
 
@@ -105,12 +105,12 @@ STAT: t.Mapping[str, str] = {
     "anyDmg":      "<:combined:1026853188940349490>",
 }
 # fmt: on
-FRANTIC_GIFS: t.Sequence[str] = (
+FRANTIC_GIFS: t.Sequence[tex.LiteralString] = (
     "https://i.imgur.com/Bbbf4AH.mp4",
     "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4"
 )
 
-def get_weight_emoji(weight: int, /) -> str:
+def get_weight_emoji(weight: int, /) -> tex.LiteralString:
     if weight < 0:
         return "🗿"
     if weight < constants.MAX_WEIGHT * 0.99:
