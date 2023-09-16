@@ -4,10 +4,11 @@ from disnake import SelectOption
 from disnake.ui.select import StringSelect
 from disnake.utils import MISSING
 
-OPTION_LIMIT = 25
-EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
+from library_extensions import OPTION_LIMIT
 
-__all__ = ("PaginatedSelect", "EMPTY_OPTION")
+__all__ = ("EMPTY_OPTION", "PaginatedSelect")
+
+EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
 
 
 class PaginatedSelect(StringSelect[None]):
