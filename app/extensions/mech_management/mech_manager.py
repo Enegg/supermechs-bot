@@ -328,7 +328,7 @@ class MechView(PaginatorView):
 
         if self.mech.torso is not None:
             image = self.renderer.create_mech_image(self.mech)
-            url, file = embed_image(image, new_config + ".png")
+            url, file = embed_image(image, new_config)
 
         self.embed.set_image(url)
 

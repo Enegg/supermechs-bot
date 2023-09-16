@@ -1,9 +1,11 @@
+import io
+import pathlib
 import random
 import typing as t
 
 from disnake import Embed, File
 
-from files import Bytes
+from library_extensions import sanitize_filename
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
@@ -25,10 +27,22 @@ def debug_footer(embed: Embed) -> None:
     embed.set_footer(text="\n".join(parts))
 
 
-def embed_image(image: "Image", filename: str) -> tuple[str, File]:
+def embed_image(image: "Image", filename: str, format: str = "png") -> tuple[str, File]:
     """Creates a File and returns it with an attachment url."""
-    resource = Bytes.from_image(image, filename)
-    return str(resource.url), File(resource.fp, filename)
+
+    filename = sanitize_filename(filename)
+    filename = str(pathlib.PurePath(filename).with_suffix(f".{format}"))
+    fp = io.BytesIO()
+    try:
+        image.save(fp, format=format)
+
+    except KeyError:
+        # PIL does not cleanly handle invalid formats and instead it just causes
+        # a vague mapping lookup error when not found
+        raise ValueError(f"Invalid file format: {format!r}") from None
+
+    fp.seek(0)
+    return f"attachment://{filename}", File(fp, filename)
 
 
 footers = [

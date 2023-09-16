@@ -69,7 +69,7 @@ async def item(
 
     else:
         await sprite.load()
-        url, file = embed_image(sprite.image, sanitize_filename(item.name, ".png"))
+        url, file = embed_image(sprite.image, item.name)
 
     embed_color = ELEMENT[item.element].color
 

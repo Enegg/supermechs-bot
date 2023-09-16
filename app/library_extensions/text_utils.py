@@ -1,3 +1,4 @@
+import re
 import string
 import typing as t
 from typing_extensions import LiteralString
@@ -54,11 +55,9 @@ def localized_text(content: str, key: str, i18n: LocalizationProtocol, locale: L
     return locs.get(str(locale), content)
 
 
-def sanitize_filename(filename: str, extension: str) -> str:
-    """Converts spaces to underscores, and adds extension if one isn't there."""
-    filename = filename.replace(" ", "_")
+_antipattern = re.compile(r"[^\w.-]")
 
-    if not filename.endswith(extension):
-        filename += extension
 
-    return filename.lower()
+def sanitize_filename(filename: str, /) -> str:
+    """Ensure filename conforms to discord attachment restrictions."""
+    return _antipattern.sub("_", filename).lower()
