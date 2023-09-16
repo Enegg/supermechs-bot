@@ -11,13 +11,7 @@ from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from config import TEST_GUILDS
 from events import PACK_LOADED
-from library_extensions import (
-    MAX_RESPONSE_TIME,
-    debug_footer,
-    embed_image,
-    sanitize_filename,
-    sikrit_footer,
-)
+from library_extensions import RESPONSE_TIME_LIMIT, debug_footer, embed_image, sikrit_footer
 from managers import item_pack_manager, renderer_manager
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
@@ -58,7 +52,7 @@ async def item(
     """
     del type, element  # used for autocomplete only
 
-    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
         await PACK_LOADED.wait()
 
     renderer = renderer_manager["@Darkstare"]  # TODO
@@ -153,7 +147,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     item1: First item to compare. {{ COMPARE_FIRST }}
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
         await PACK_LOADED.wait()
 
     pack = item_pack_manager["@Darkstare"]  # TODO

@@ -13,7 +13,7 @@ from disnake.utils import format_dt, oauth_url
 from assets import FRANTIC_GIFS
 from config import DEFAULT_PACK, TEST_GUILDS
 from events import PACK_LOADED
-from library_extensions import MAX_RESPONSE_TIME, Markdown as MD, command_mention
+from library_extensions import RESPONSE_TIME_LIMIT, Markdown as MD, command_mention
 from managers import item_pack_manager, player_manager
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from shared.utils import wrap_bytes
@@ -67,7 +67,7 @@ async def info(inter: CommandInteraction) -> None:
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bits}{exponent}",
     ]
-    async with anyio.move_on_after(MAX_RESPONSE_TIME - 0.5):
+    async with anyio.move_on_after(RESPONSE_TIME_LIMIT - 0.5):
         loc = await get_sloc("app")
         loc += await get_sloc(next(iter(supermechs.__path__)))
         backend_fields.append(f"Lines of code: {loc}")

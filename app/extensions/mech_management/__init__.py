@@ -14,8 +14,8 @@ from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
 from bridges import mech_name_autocomplete
 from events import PACK_LOADED
 from library_extensions import (
-    MAX_RESPONSE_TIME,
     OPTION_LIMIT,
+    RESPONSE_TIME_LIMIT,
     command_mention,
     debug_footer,
     embed_image,
@@ -102,7 +102,7 @@ async def build(
     name: The name of existing build or one to create.\
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
-    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
         await PACK_LOADED.wait()
 
     player = player_manager(inter.author)
@@ -160,7 +160,7 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
         raise commands.UserInputError(f"The maximum accepted file size is {size}{unit}.")
     # we could assert that content type is application/json, but we may just as well
     # rely on the loader to fail
-    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
         await PACK_LOADED.wait()
 
     default_pack = item_pack_manager["@Darkstare"]
@@ -208,7 +208,7 @@ async def export(inter: CommandInteraction, format: t.Literal["json", "toml"] = 
     if build_count == 0:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
-    async with anyio.fail_after(MAX_RESPONSE_TIME - 0.5):
+    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
         await PACK_LOADED.wait()
 
     default_pack = item_pack_manager["@Darkstare"]
