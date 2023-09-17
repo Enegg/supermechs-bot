@@ -10,7 +10,6 @@ import anyio
 from aiohttp import ClientSession, ClientTimeout
 from disnake import AllowedMentions, Game, Intents
 from disnake.ext.commands import InteractionBot
-from disnake.utils import utcnow
 from dotenv import load_dotenv
 
 import i18n
@@ -37,8 +36,6 @@ logging.root.addHandler(stream)
 
 logging.getLogger("disnake").setLevel(logging.ERROR)
 logging.getLogger("disnake.client").setLevel(logging.CRITICAL)  # mute connection errors
-
-START_TIME = utcnow()
 
 
 @contextlib.asynccontextmanager
