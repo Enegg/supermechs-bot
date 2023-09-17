@@ -5,7 +5,7 @@ import typing as t
 
 from disnake import Embed, File
 
-from library_extensions import sanitize_filename
+from .text_utils import sanitize_filename
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
