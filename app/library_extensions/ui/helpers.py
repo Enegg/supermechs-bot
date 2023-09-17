@@ -5,7 +5,7 @@ import typing as t
 from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
 
-__all__ = ("wait_for_component", "wait_for_modal", "HasCustomID", "random_str", "metadata_of")
+__all__ = ("HasCustomID", "metadata_of", "random_str", "wait_for_component", "wait_for_modal")
 
 
 def random_str() -> str:
