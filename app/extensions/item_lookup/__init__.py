@@ -1,7 +1,6 @@
 import io
 import typing as t
 
-import anyio
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
@@ -10,9 +9,8 @@ import i18n
 from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from config import TEST_GUILDS
-from events import PACK_LOADED
-from library_extensions import RESPONSE_TIME_LIMIT, debug_footer, embed_image, sikrit_footer
-from managers import item_pack_manager, renderer_manager
+from library_extensions import debug_footer, embed_image, sikrit_footer
+from managers import get_default_pack
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
@@ -52,10 +50,7 @@ async def item(
     """
     del type, element  # used for autocomplete only
 
-    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
-        await PACK_LOADED.wait()
-
-    renderer = renderer_manager["@Darkstare"]  # TODO
+    _, renderer = await get_default_pack()
     sprite = renderer.get_item_sprite(item, item.transform_range[-1])
 
     if sprite.metadata.source == "url" and sprite.metadata.method == "single":
@@ -147,10 +142,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     item1: First item to compare. {{ COMPARE_FIRST }}
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
-        await PACK_LOADED.wait()
-
-    pack = item_pack_manager["@Darkstare"]  # TODO
+    pack, _ = await get_default_pack()
 
     try:
         item_a = pack.get_item_by_name(item1)

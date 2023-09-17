@@ -1,8 +1,10 @@
 import logging
 import typing as t
 
+import anyio
 from disnake.abc import User
 
+from library_extensions import RESPONSE_TIME_LIMIT
 from shared import IO_CLIENT
 from shared.manager import Manager
 from shared.utils import async_memoize
@@ -14,7 +16,7 @@ from supermechs.ext.deserializers.typedefs import AnyItemPack
 if t.TYPE_CHECKING:
     from PIL import Image
 
-__all__ = ("player_manager", "item_pack_manager", "renderer_manager")
+__all__ = ("get_default_pack", "player_manager", "item_pack_manager", "renderer_manager")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,3 +76,12 @@ async def load_default_pack(url: str, /) -> None:
     item_pack_manager.create(data)
     renderer_manager.create(data)
     PACK_LOADED.set()
+
+
+async def get_default_pack() -> tuple[ItemPack, PackRenderer]:
+    from events import PACK_LOADED
+
+    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
+        await PACK_LOADED.wait()
+
+    return item_pack_manager["@Darkstare"], renderer_manager["@Darkstare"]

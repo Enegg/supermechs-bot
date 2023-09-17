@@ -3,7 +3,6 @@ from __future__ import annotations
 import io
 import typing as t
 
-import anyio
 from disnake import Attachment, CommandInteraction, Embed, File
 from disnake.ext import commands, plugins
 from disnake.ui import StringSelect
@@ -12,17 +11,15 @@ from disnake.utils import MISSING
 import i18n
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
 from bridges import mech_name_autocomplete
-from events import PACK_LOADED
 from library_extensions import (
     OPTION_LIMIT,
-    RESPONSE_TIME_LIMIT,
     command_mention,
     debug_footer,
     embed_image,
     sikrit_footer,
 )
 from library_extensions.ui import wait_for_component
-from managers import item_pack_manager, player_manager, renderer_manager
+from managers import get_default_pack
 from shared.utils import wrap_bytes
 from user_input import sanitize_string
 
@@ -93,6 +90,7 @@ async def browse(inter: CommandInteraction, player: Player) -> None:
 @commands.max_concurrency(1, commands.BucketType.user)
 async def build(
     inter: CommandInteraction,
+    player: Player,
     name: commands.String[str, 1, 32] | None = None,
 ) -> None:
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
@@ -102,12 +100,7 @@ async def build(
     name: The name of existing build or one to create.\
         If not passed, defaults to "Unnamed Mech". {{ MECH_BUILD_NAME }}
     """
-    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
-        await PACK_LOADED.wait()
-
-    player = player_manager(inter.author)
-    renderer = renderer_manager["@Darkstare"]  # TODO
-    default_pack = item_pack_manager["@Darkstare"]
+    default_pack, renderer = await get_default_pack()
 
     if name is None:
         mech = player.get_active_or_create_build()
@@ -145,7 +138,7 @@ async def build(
 
 
 @mech.sub_command(name="import")
-async def import_(inter: CommandInteraction, file: Attachment) -> None:
+async def import_(inter: CommandInteraction, player: Player, file: Attachment) -> None:
     """Import mech(s) from a .JSON file. {{ MECH_IMPORT }}
 
     Parameters
@@ -160,10 +153,8 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
         raise commands.UserInputError(f"The maximum accepted file size is {size}{unit}.")
     # we could assert that content type is application/json, but we may just as well
     # rely on the loader to fail
-    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
-        await PACK_LOADED.wait()
 
-    default_pack = item_pack_manager["@Darkstare"]
+    default_pack, _ = await get_default_pack()
     # TODO: make load_mechs ask for item packs
     data = await file.read()
     try:
@@ -181,7 +172,6 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
 
     if mechs:
         # TODO: warn about overwriting
-        player = player_manager(inter.author)
         player.builds.update((mech.name, mech) for mech in mechs)
         string_builder.write("Loaded mechs: ")
         string_builder.write(", ".join(f"`{mech.name}`" for mech in mechs))
@@ -193,7 +183,9 @@ async def import_(inter: CommandInteraction, file: Attachment) -> None:
 
 
 @mech.sub_command()
-async def export(inter: CommandInteraction, format: t.Literal["json", "toml"] = "json") -> None:
+async def export(
+    inter: CommandInteraction, player: Player, format: t.Literal["json", "toml"] = "json"
+) -> None:
     """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}
 
     Parameters
@@ -201,17 +193,12 @@ async def export(inter: CommandInteraction, format: t.Literal["json", "toml"] = 
     format: The file format to output data in.\
         Formats other than .json are not supported by WU. {{ MECH_EXPORT_FORMAT }}
     """
-
-    player = player_manager(inter.author)
     build_count = len(player.builds)
 
     if build_count == 0:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
-    async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
-        await PACK_LOADED.wait()
-
-    default_pack = item_pack_manager["@Darkstare"]
+    default_pack, _ = await get_default_pack()
 
     if build_count == 1:
         fp = io.BytesIO(dump_mechs(player.builds.values(), default_pack.key))
