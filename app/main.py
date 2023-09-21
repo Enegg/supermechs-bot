@@ -42,7 +42,7 @@ START_TIME = utcnow()
 
 
 @contextlib.asynccontextmanager
-async def create_aiohttp_session(client: HTTPClient, /) -> t.AsyncIterator[ClientSession]:
+async def create_client_session(client: HTTPClient, /) -> t.AsyncIterator[ClientSession]:
     """Context manager establishing a client session, reusing client's connector & proxy."""
     async with ClientSession(
         connector=client.connector, timeout=ClientTimeout(total=30)
@@ -71,7 +71,7 @@ async def main() -> None:
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
     await setup_channel_logger(bot, LOGS_CHANNEL, logging.root)
 
-    async with create_aiohttp_session(bot.http) as session:
+    async with create_client_session(bot.http) as session:
         IO_CLIENT.set(session)
         await load_default_pack(DEFAULT_PACK_URL)
         await bot.connect()
