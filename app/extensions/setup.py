@@ -14,7 +14,9 @@ from config import TEST_GUILDS
 from library_extensions import MSG_CHAR_LIMIT, OPTION_LIMIT, Markdown
 from library_extensions.ui import wait_for_modal
 
-plugin = plugins.Plugin["commands.InteractionBot"](
+exception_names: t.Final = commands.errors.__all__
+
+plugin: t.Final = plugins.Plugin["commands.InteractionBot"](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
 )
 last_extension: str | None = None
@@ -107,25 +109,21 @@ async def shutdown(inter: CommandInteraction) -> None:
 async def force_error(
     inter: CommandInteraction,
     exception: str,
-    arguments: str | None = None,
-) -> None:
-    """Explicitly raises provided exception.
+    message: str = "Exception raised via /raise",
+) -> t.NoReturn:
+    """Explicitly raises chosen exception.
 
     Parameters
     ----------
     exception: Name of the exception to raise.
-    arguments: Optional arguments to pass to the exception.
+    message: Optional message to pass to the exception.
     """
-    err: type[commands.CommandError] | None = getattr(commands.errors, exception, None)
+    if exception not in exception_names:
+        raise commands.UserInputError("Unknown exception.")
 
-    if err is None or not issubclass(err, commands.CommandError):
-        raise commands.UserInputError("Exception specified has not been found.")
-
-    try:
-        raise err(arguments)
-
-    finally:
-        await inter.send("Success", ephemeral=True)
+    exc: type[commands.CommandError] = getattr(commands.errors, exception)
+    await inter.response.defer()
+    raise exc(message)
 
 
 @force_error.autocomplete("exception")
@@ -134,7 +132,9 @@ async def raise_autocomplete(_: CommandInteraction, input: str) -> list[str]:
         return []
 
     input = input.lower()
-    return [exc for exc in commands.errors.__all__ if input in exc.lower()][:OPTION_LIMIT]
+    matching = [exc for exc in exception_names if input in exc.lower()]
+    del matching[OPTION_LIMIT:]
+    return matching
 
 
 @plugin.slash_command(name="eval")
