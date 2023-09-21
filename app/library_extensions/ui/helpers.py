@@ -5,7 +5,7 @@ import typing as t
 from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
 
-__all__ = ("wait_for_component", "wait_for_modal", "HasCustomID", "random_str", "metadata_of")
+__all__ = ("HasCustomID", "metadata_of", "random_str", "wait_for_component", "wait_for_modal")
 
 
 def random_str() -> str:
@@ -19,8 +19,8 @@ class HasCustomID(t.Protocol):
         ...
 
 
-def metadata_of(item: HasCustomID, /, sep: str = ":") -> t.Sequence[str]:
-    return item.custom_id.split(sep, 1)[1:]
+def metadata_of(component: HasCustomID, /, sep: str = ":") -> t.Sequence[str]:
+    return component.custom_id.split(sep, 1)[1:]
 
 
 async def wait_for_component(
@@ -31,7 +31,7 @@ async def wait_for_component(
     if not isinstance(component_or_id, str):
         component_or_id = component_or_id.custom_id
 
-    def check(inter: MessageInteraction) -> bool:
+    def check(inter: MessageInteraction, /) -> bool:
         return inter.data.custom_id == component_or_id
 
     try:
@@ -46,10 +46,10 @@ async def wait_for_modal(
 ) -> ModalInteraction:
     """Wrapper for a simple modal listener."""
 
-    if isinstance(modal_or_id, Modal):
+    if not isinstance(modal_or_id, str):
         modal_or_id = modal_or_id.custom_id
 
-    def check(inter: ModalInteraction) -> bool:
+    def check(inter: ModalInteraction, /) -> bool:
         return inter.data.custom_id == modal_or_id
 
     try:
