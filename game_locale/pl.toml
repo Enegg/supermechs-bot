@@ -93,3 +93,8 @@ in_game = "???"
 [stats.rocketsCost]
 default = "Zużycie rakiet"
 in_game = "???"
+
+[stats.spread]
+default = "Rozrzut"
+[stats.anyDmg]
+default = "Obrażenia"

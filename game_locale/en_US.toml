@@ -95,3 +95,10 @@ in_game = "Energy cost"
 in_game = "Bullets cost"
 [stats.rocketsCost]
 in_game = "Rockets cost"
+
+# custom stats
+[stats.spread]
+default = "Damage spread"
+[stats.anyDmg]
+default = "Damage"
+
