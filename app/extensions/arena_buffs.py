@@ -1,3 +1,5 @@
+import typing as t
+
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands, plugins
 from disnake.ui import Button, StringSelect, button, string_select
@@ -7,7 +9,7 @@ from library_extensions import SPACE
 from library_extensions.ui import (
     EMPTY_OPTION,
     PaginatorView,
-    TrinaryButton,
+    ToggleButton,
     add_callback,
     invoker_bound,
     metadata_of,
@@ -17,7 +19,7 @@ from library_extensions.ui import (
 from supermechs.api import Player
 from supermechs.arena_buffs import ArenaBuffs, iter_modifiers_of, max_level_of
 
-plugin = plugins.Plugin["commands.InteractionBot"](name="ArenaBuffs", logger=__name__)
+plugin: t.Final = plugins.Plugin["commands.InteractionBot"](name="ArenaBuffs", logger=__name__)
 
 
 def make_label(buffs: ArenaBuffs, stat_key: str, /) -> str:
@@ -30,8 +32,8 @@ class ArenaBuffsView(PaginatorView):
         super().__init__(timeout=timeout, columns=3)
         self.user_id = user_id
         self.buffs = buffs
-        self.active: TrinaryButton[bool] | None = None
-        self.all_slot_buttons: list[TrinaryButton[bool]] = []
+        self.active: ToggleButton | None = None
+        self.all_slot_buttons: list[ToggleButton] = []
 
         for i, row in enumerate(
             (
@@ -41,24 +43,42 @@ class ArenaBuffsView(PaginatorView):
             )
         ):
             for stat_key in row:
-                btn = TrinaryButton(
-                    item=buffs[stat_key] == max_level_of(stat_key) or None,
+                btn = ToggleButton(
+                    style_off=ButtonStyle.green if buffs[stat_key] == max_level_of(stat_key) else ButtonStyle.gray,
+                    style_on=ButtonStyle.blurple,
                     label=make_label(buffs, stat_key),
                     custom_id=f"{self.id}:{stat_key}",
                     emoji=STAT[stat_key],
                 )
-                add_callback(btn, self.buff_buttons)
+                add_callback(btn, self.buff_button)
                 self.all_slot_buttons.append(btn)
                 self.rows[i].extend_page_items(btn)
 
         self.page = 0
         self.max_button.disabled = all(
-            level == max_level_of(key) for key, level in self.buffs.levels.items()
+            btn.style_off is ButtonStyle.green for btn in self.all_slot_buttons
         )
 
-    async def buff_buttons(self, button: TrinaryButton[bool], inter: MessageInteraction) -> None:
-        button.toggle()
-        self.change_style(button)
+    async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
+        if self.active is button:
+            self.set_state_idle()
+            return
+
+        button.on = True
+
+        if self.active is None:
+            self.select.disabled = False
+
+        else:
+            self.active.on = False
+
+        self.active = button
+        self.select.placeholder = button.label
+        stat_key, = metadata_of(button)
+        self.select.options = [
+            SelectOption(label=f"{level}: {buff}", value=str(level))
+            for level, buff in enumerate(iter_modifiers_of(stat_key))
+        ]
         await inter.response.edit_message(view=self)
 
     @positioned(3, 0)
@@ -85,7 +105,7 @@ class ArenaBuffsView(PaginatorView):
         self.page += 1
         self.prev_button.disabled = False
 
-        if (self.page + 1) * self.columns >= 5:
+        if self.page == 1:
             button.disabled = True
 
         await inter.response.edit_message(view=self)
@@ -103,17 +123,16 @@ class ArenaBuffsView(PaginatorView):
 
     @positioned(4, 0)
     @string_select(options=[EMPTY_OPTION], disabled=True)
-    async def select_menu(self, select: StringSelect[None], inter: MessageInteraction) -> None:
+    async def select(self, select: StringSelect[None], inter: MessageInteraction) -> None:
         level = int(select.values[0])
 
         assert self.active is not None
         self.modify_buff(self.active, level)
-        self.active.toggle()
-        self.change_style(self.active)
+        self.set_state_idle()
 
         await inter.response.edit_message(view=self)
 
-    def modify_buff(self, button: TrinaryButton[bool], level: int = -1) -> None:
+    def modify_buff(self, button: ToggleButton, level: int = -1) -> None:
         stat_key, = metadata_of(button)
         max_level = max_level_of(stat_key)
 
@@ -123,43 +142,21 @@ class ArenaBuffsView(PaginatorView):
         self.buffs.levels[stat_key] = level
 
         if level == max_level:
-            button.item = True
+            button.style_off = ButtonStyle.green
 
         else:
             self.max_button.disabled = False
-            button.item = None
+            button.style_off = ButtonStyle.gray
 
         button.label = make_label(self.buffs, stat_key)
 
     def set_state_idle(self) -> None:
         if self.active is not None:
             self.active.on = False
+            self.active = None
 
-        select = self.select_menu
-        select.placeholder = None
-        select.disabled = True
-        self.active = None
-
-    def change_style(self, button: TrinaryButton[bool]) -> None:
-        select = self.select_menu
-        if self.active is button:
-            self.set_state_idle()
-            return
-
-        if self.active is None:
-            select.disabled = False
-
-        else:
-            self.active.toggle()
-
-        self.active = button
-
-        select.placeholder = button.label
-        stat_key, = metadata_of(button)
-        select.options = [
-            SelectOption(label=f"{level}: {buff}", value=str(level))
-            for level, buff in enumerate(iter_modifiers_of(stat_key))
-        ]
+        self.select.placeholder = None
+        self.select.disabled = True
 
     def set_state_stopped(self) -> None:
         self.stop()

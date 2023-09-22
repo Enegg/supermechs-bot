@@ -81,11 +81,13 @@ class ToggleButton(Button[None]):
 class TrinaryButton(ToggleButton, t.Generic[T]):
     """A tri-state button."""
 
+    NOTSET: t.Any = object()
+
     def __init__(
         self,
         *,
         custom_id: str | None = None,
-        item: T | None = None,
+        item: T = NOTSET,
         style: ButtonStyle | None = None,
         style_off: ButtonStyle = ButtonStyle.gray,
         style_on: ButtonStyle = ButtonStyle.blurple,
@@ -114,7 +116,7 @@ class TrinaryButton(ToggleButton, t.Generic[T]):
         if self.style is not self.style_on:
             self.style = self.style_on
 
-        elif self.item is not None:
+        elif self.item is not self.NOTSET:
             self.style = self.style_item
 
         else:

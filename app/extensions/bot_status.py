@@ -10,7 +10,7 @@ from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url, utcnow
 
 from assets import FRANTIC_GIFS
-from config import DEFAULT_PACK, TEST_GUILDS
+from config import DEFAULT_PACK_URL, TEST_GUILDS
 from events import PACK_LOADED
 from library_extensions import RESPONSE_TIME_LIMIT, Markdown as MD, command_mention
 from managers import item_pack_manager, player_manager
@@ -22,11 +22,11 @@ import supermechs
 if t.TYPE_CHECKING:
     from disnake.ext.commands import InteractionBot  # noqa: F401
 
-python_version = ".".join(map(str, sys.version_info[:3]))
-
-plugin = Plugin["InteractionBot"](name="Bot-status", logger=__name__)
-
 START_TIME = utcnow()
+python_version: t.Final = ".".join(map(str, sys.version_info[:3]))
+disnake_url: t.Final = "https://github.com/DisnakeDev/disnake"
+
+plugin: t.Final = Plugin["InteractionBot"](name="Bot-status", logger=__name__)
 
 
 @plugin.slash_command()
@@ -42,7 +42,6 @@ async def info(inter: CommandInteraction) -> None:
 
     bot = plugin.bot
     app_info = await bot.application_info()
-    app_info.team
 
     general_fields = [
         f"Developer: {app_info.owner.mention}",
@@ -55,7 +54,7 @@ async def info(inter: CommandInteraction) -> None:
 
     backend_fields = [
         f"Python version: {python_version}",
-        f"disnake version: {disnake_version}",
+        f"Discord library: {MD.hyperlink('disnake', disnake_url)} {disnake_version}",
     ]
     supermechs_fields = [
         f"Registered players: {len(player_manager)}",
@@ -68,14 +67,14 @@ async def info(inter: CommandInteraction) -> None:
         f"RAM usage: {bits}{exponent}",
     ]
     async with anyio.move_on_after(RESPONSE_TIME_LIMIT - 0.5):
-        loc = await get_sloc("app")
-        loc += await get_sloc(next(iter(supermechs.__path__)))
-        backend_fields.append(f"Lines of code: {loc}")
+        app_loc = await get_sloc("app")
+        sm_loc = await get_sloc(next(iter(supermechs.__path__)))
+        backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
     if PACK_LOADED.is_set():
         default_pack = item_pack_manager["@Darkstare"]  # TODO
         supermechs_fields += [
-            f"Default item pack: {MD.hyperlink(default_pack.key, DEFAULT_PACK)}",
+            f"Default item pack: {MD.hyperlink(default_pack.key, DEFAULT_PACK_URL)}",
             f"Total items: {len(default_pack.items)}",
         ]
     embed = (
