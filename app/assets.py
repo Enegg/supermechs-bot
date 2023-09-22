@@ -107,6 +107,7 @@ STAT: t.Mapping[str, tex.LiteralString] = {
     "eneCost":       "<:eneusage:725871660237979759>",
     "bulletsCost": "🥕",
     "rocketsCost": "🚀",
+    "spread":      "🎲",
     "anyDmg":       "<:combined:1026853188940349490>",
 }
 # fmt: on
