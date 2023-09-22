@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import ast
+import inspect
 import io
 import traceback
 import typing as t
 from contextlib import redirect_stderr, redirect_stdout
 
+import anyio
 from disnake import CommandInteraction, File, TextInputStyle
 from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
 from config import TEST_GUILDS
-from library_extensions import MSG_CHAR_LIMIT, OPTION_LIMIT, Markdown
-from library_extensions.ui import wait_for_modal
+from library_extensions import MSG_CHAR_LIMIT, OPTION_LIMIT, RESPONSE_TIME_LIMIT, Markdown
+from library_extensions.ui import random_str, wait_for_modal
 
 plugin = plugins.Plugin["commands.InteractionBot"](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
@@ -150,15 +152,16 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
     response_inter = inter
 
     if code is None:
+        custom_id = random_str()
         text_input = TextInput(
-            label="Code to evaluate", custom_id="eval:input", style=TextInputStyle.paragraph
+            label="Code to evaluate", custom_id=custom_id, style=TextInputStyle.paragraph
         )
         await inter.response.send_modal(
-            title="Prompt", custom_id="eval:modal", components=text_input
+            title="Prompt", custom_id=custom_id, components=text_input
         )
 
         try:
-            response_inter = await wait_for_modal(plugin.bot, "eval:modal")
+            response_inter = await wait_for_modal(plugin.bot, custom_id)
 
         except TimeoutError:
             return await inter.send("Modal timed out.", ephemeral=True)
@@ -176,12 +179,19 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
     )
 
     with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
+        # TODO: run in thread
         try:
-            exec(
+            obj = eval(
                 compiled_code,
-                {},  # passing globals() would allow for uncontrolled mutation of them
                 {"bot": plugin.bot, "inter": response_inter}
             )
+            if inspect.isawaitable(obj):
+                with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
+                    await obj
+
+        except TimeoutError:
+            local_stdout.write("Command execution timed out")
+
         except Exception as exc:
             traceback.print_exception(exc, file=local_stdout)
 
