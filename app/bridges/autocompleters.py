@@ -90,4 +90,9 @@ async def mech_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     player = player_manager(inter.author)
     lowercase = input.lower()
 
-    return [name for name in player.builds if name.lower().startswith(lowercase)]
+    matching = [name for name in player.builds if name.lower().startswith(lowercase)]
+
+    if not matching and input:
+        return [input]
+
+    return matching
