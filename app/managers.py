@@ -31,7 +31,7 @@ player_manager = Manager(_create_player, lambda user: user.id)
 
 def _create_item_pack(data: AnyItemPack, /, *, custom: bool = False) -> ItemPack:
     pack = to_item_pack(data, custom=custom)
-    LOGGER.info("Item pack created: %s (%s)", pack.key, pack.name)
+    LOGGER.info("Item pack created: %s (%s) (%d items)", pack.key, pack.name, len(pack.items))
     return pack
 
 
