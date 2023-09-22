@@ -52,16 +52,10 @@ def _load_file(path: Path, /) -> None:
     _LOGGER.info("Loading locale for %s", locale)
     data: _I18nFile = toml_decoder(path.read_text("utf-8"))
 
-    try:
-        loc[locale] = {
-            key: StatName(entry["in_game"], entry.get("default"), entry.get("short"))
-            for key, entry in data["stats"].items()
-        }
-    except KeyError as err:
-        if locale is Locale.en_US:
-            raise RuntimeError("Locale key not found for en_US") from err
-
-        _LOGGER.warning("Localization file for %s is missing a required key", locale, exc_info=err)
+    loc[locale] = {
+        key: StatName(entry.get("in_game", "???"), entry.get("default"), entry.get("short"))
+        for key, entry in data["stats"].items()
+    }
 
 
 def load(directory: str | os.PathLike[str], /) -> None:
