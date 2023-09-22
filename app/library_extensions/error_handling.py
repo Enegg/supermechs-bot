@@ -136,8 +136,12 @@ async def error_handler(
             "content": localize("Command executed with an error...", "CMD_ERROR")
         }
 
-    with suppress(InteractionTimedOut):
+    try:
         await inter.send(**user_params, ephemeral=not __debug__)
+
+    except InteractionTimedOut:
+        if __debug__:
+            await channel.send(**user_params)
 
 
 async def setup_channel_logger(client: Client, channel_id: int, logger: logging.Logger) -> None:
