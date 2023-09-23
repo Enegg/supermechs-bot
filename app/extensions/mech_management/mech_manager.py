@@ -6,7 +6,7 @@ from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
 from i18n import LocaleEntry
-from library_extensions import OPTION_LIMIT, SPACE, debug_footer, embed_image
+from library_extensions import OPTION_LIMIT, SPACE, ColorType, debug_footer, embed_image
 from library_extensions.ui import (
     EMPTY_OPTION,
     PaginatedSelect,
@@ -137,6 +137,16 @@ def get_sorted_options(
     new_options += sorted(options, key=lambda o: (element_emojis.index(str(o.emoji)), o.label))
 
     return new_options
+
+
+def color_from_mech(mech: Mech, /) -> ColorType:
+    if (dominant := mech.dominant_element) is not None:
+        return ELEMENT[dominant].color
+
+    if mech.torso is not None:
+        return ELEMENT[mech.torso.data.element].color
+
+    return ELEMENT[Element.UNKNOWN].color
 
 
 @invoker_bound
@@ -304,8 +314,7 @@ class MechView(PaginatorView):
             item = None
 
         self.mech[slot_to_selector(slot)] = item
-
-        self.update_embed_color()
+        self.embed.color = color_from_mech(self.mech)
         self.set_state_idle()
 
         self.embed.set_field_at(
@@ -360,14 +369,3 @@ class MechView(PaginatorView):
         options = self.item_groups[slot_to_type(metadata_of(button)[0])]
         self.item_select.all_options = get_sorted_options(options, self.mech.dominant_element)
         self.item_select.placeholder = "empty" if button.item is None else button.item
-
-    def update_embed_color(self) -> None:
-        if (dominant := self.mech.dominant_element) is not None:
-            self.embed.color = ELEMENT[dominant].color
-
-        elif self.mech.torso is not None:
-            self.embed.color = ELEMENT[self.mech.torso.data.element].color
-
-        else:
-            self.embed.color = ELEMENT[Element.UNKNOWN].color
-

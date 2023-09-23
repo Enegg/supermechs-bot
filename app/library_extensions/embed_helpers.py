@@ -3,14 +3,16 @@ import pathlib
 import random
 import typing as t
 
-from disnake import Embed, File
+from disnake import Colour, Embed, File
 
 from .text_utils import sanitize_filename
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
 
-__all__ = ("embed_image", "debug_footer", "sikrit_footer")
+__all__ = ("ColorType", "debug_footer", "embed_image", "sikrit_footer")
+
+ColorType = Colour | int
 
 
 def debug_footer(embed: Embed) -> None:
