@@ -28,13 +28,12 @@ from .mech_manager import MechView
 from supermechs.api import Player, Type
 from supermechs.ext.workshop import dump_mechs, load_mechs
 
-plugin = plugins.Plugin["commands.InteractionBot"](name="Mech-manager", logger=__name__)
+plugin = plugins.Plugin[commands.InteractionBot](name="Mech-manager", logger=__name__)
 
 
 @plugin.load_hook(post=True)
 async def on_load() -> None:
     await plugin.bot.wait_until_ready()
-    # TODO: this waits until the command is fetched from discord
     buffs_command = plugin.bot.get_global_command_named("buffs")
     assert buffs_command is not None
     MechView.buffs_command = command_mention(buffs_command)
