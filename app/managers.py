@@ -45,16 +45,20 @@ item_pack_manager = Manager(_create_item_pack, _pack_key_getter)
 
 @async_memoize
 async def _image_fetcher(metadata: Metadata, /) -> "Image.Image":
-    from io import BytesIO
-
-    from PIL import Image
-
     assert metadata.source == "url"
+
+    LOGGER.debug("Requesting %s", metadata.value)
+
+    from PIL import ImageFile
 
     async with IO_CLIENT.get().get(metadata.value) as response:
         response.raise_for_status()
-        fp = BytesIO(await response.content.read())
-        return Image.open(fp)
+        parser = ImageFile.Parser()
+
+        async for chunk, _ in response.content.iter_chunks():
+            parser.feed(chunk)
+
+        return parser.close()
 
 
 def _create_pack_renderer(data: AnyItemPack, /) -> PackRenderer:
