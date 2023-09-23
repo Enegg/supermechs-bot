@@ -19,15 +19,18 @@ from library_extensions.ui import (
     positioned,
 )
 
-from supermechs.api import ArenaBuffs, Element, Item, ItemPack, Mech, Player, SlotSelectorType, Type
+from supermechs.api import ArenaBuffs, Element, Item, ItemPack, Mech, Player, Type
 from supermechs.rendering import PackRenderer
+
+
+Slot = Mech.Slot
 
 
 def embed_mech(mech: Mech, i18n: LocaleEntry, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
         title=f'Mech build "{mech.name}"',
         color=ELEMENT[mech.dominant_element or Element.UNKNOWN].color,
-    ).add_field("Stats:", format_stats(mech, i18n, included_buffs))
+    ).add_field("Summary:", format_stats(mech, i18n, included_buffs))
     return embed
 
 
@@ -78,40 +81,12 @@ def format_stats(
     )
 
 
-def slot_to_type(slot: str, /) -> Type:
-    """Convert slot literal to corresponding type enum."""
-    if slot.startswith("side"):
-        return Type.SIDE_WEAPON
+def slot_to_emoji(slot: Mech.Slot, /) -> str:
+    if slot.type is Type.SIDE_WEAPON or slot.type is Type.TOP_WEAPON:
+        asset = SIDED_TYPE[slot.type]
+        return (asset.left if int(slot.name[-1]) % 2 else asset.right).emoji
 
-    if slot.startswith("top"):
-        return Type.TOP_WEAPON
-
-    if slot.startswith("mod"):
-        return Type.MODULE
-
-    if slot == "tele":
-        return Type.TELEPORTER
-
-    return Type[slot.upper()]
-
-
-def slot_to_emoji(slot: str, /) -> str:
-    type = slot_to_type(slot)
-
-    if type is Type.SIDE_WEAPON or type is Type.TOP_WEAPON:
-        asset = SIDED_TYPE[type]
-        return (asset.left if int(slot[-1]) % 2 else asset.right).emoji
-
-    return TYPE[type].emoji
-
-
-def slot_to_selector(slot: str, /) -> SlotSelectorType:
-    type = slot_to_type(slot)
-
-    if slot[-1].isdigit():
-        return type, int(slot[-1]) - 1
-
-    return type
+    return TYPE[slot.type].emoji
 
 
 def get_sorted_options(
@@ -153,6 +128,12 @@ def color_from_mech(mech: Mech, /) -> ColorType:
 class MechView(PaginatorView):
     """View for button-based mech building."""
 
+    row_layouts = (
+        (Slot.TOP_WEAPON_1, Slot.DRONE, Slot.TOP_WEAPON_2, Slot.CHARGE, Slot.MODULE_1, Slot.MODULE_2, Slot.MODULE_3, Slot.MODULE_4),
+        (Slot.SIDE_WEAPON_3, Slot.TORSO, Slot.SIDE_WEAPON_4, Slot.TELEPORTER, Slot.MODULE_5, Slot.MODULE_6, Slot.MODULE_7, Slot.MODULE_8),
+        (Slot.SIDE_WEAPON_1, Slot.LEGS, Slot.SIDE_WEAPON_2, Slot.HOOK),
+    )
+
     buffs_command: t.ClassVar[str]
     user_id: int
 
@@ -178,18 +159,12 @@ class MechView(PaginatorView):
         self.active: TrinaryButton[str] | None = None
         self.embed = embed_mech(mech, i18n)
 
-        for pos, row in enumerate(
-            (
-                ("top1", "drone", "top2", "charge", "mod1", "mod2", "mod3", "mod4"),
-                ("side3", "torso", "side4", "tele", "mod5", "mod6", "mod7", "mod8"),
-                ("side1", "legs", "side2", "hook"),
-            )
-        ):
+        for pos, row in enumerate(self.row_layouts):
             self.rows[pos].extend_page_items(
                 add_callback(
                     TrinaryButton(
-                        custom_id=f"{self.id}:{slot}",
-                        item=None if (item := mech[slot_to_selector(slot)]) is None else item.data.name,
+                        custom_id=f"{self.id}:{slot.name}",
+                        item=TrinaryButton.NOTSET if (item := mech[slot]) is None else item.data.name,
                         emoji=slot_to_emoji(slot),
                     ),
                     self.slot_button_cb,
@@ -225,7 +200,7 @@ class MechView(PaginatorView):
             self.switch_active_button(button)
 
         else:
-            self.set_state_pressed(button)
+            self.set_state_active(button)
 
         await inter.response.edit_message(view=self)
 
@@ -251,12 +226,9 @@ class MechView(PaginatorView):
 
         button.toggle()
         assert self.embed._fields is not None
-        self.embed.set_field_at(
-            0,
-            name=self.embed.fields[0].name,
-            value=format_stats(self.mech, self.i18n, self.player.arena_buffs if button.on else None)
+        self.embed._fields[0]["value"] = format_stats(
+            self.mech, self.i18n, self.player.arena_buffs if button.on else None
         )
-
         await inter.response.edit_message(embed=self.embed, view=self)
 
     @positioned(2, 4)
@@ -285,7 +257,7 @@ class MechView(PaginatorView):
         all_options=[EMPTY_OPTION],
         disabled=True,
     )
-    async def item_select(self, select: PaginatedSelect, inter: MessageInteraction) -> None:
+    async def select(self, select: PaginatedSelect, inter: MessageInteraction) -> None:
         """Dropdown menu with all the items."""
         assert self.active is not None
         assert inter.values is not None
@@ -296,15 +268,15 @@ class MechView(PaginatorView):
             return await inter.response.edit_message(view=self)
 
         item_name = None if value == EMPTY_OPTION.value else value
-
         item_data = None if item_name is None else self.pack.get_item_by_name(item_name)
-        slot, = metadata_of(self.active)
+        slot = Mech.Slot.of_name(metadata_of(self.active)[0])
 
         # sanity check if the item is actually valid
-        if item_data is not None and item_data.type is not slot_to_type(slot):
+        if item_data is not None and item_data.type is not slot.type:
             raise RuntimeWarning(f"{item_data.type} is not valid for slot {slot}")
 
-        self.active.item = select.placeholder = item_name
+        select.placeholder = item_name
+        self.active.item = item_name or TrinaryButton.NOTSET
 
         if item_data is not None:
             item = Item.from_data(item_data, maxed=True)
@@ -313,7 +285,7 @@ class MechView(PaginatorView):
         else:
             item = None
 
-        self.mech[slot_to_selector(slot)] = item
+        self.mech[slot] = item
         self.embed.color = color_from_mech(self.mech)
         self.set_state_idle()
 
@@ -332,8 +304,7 @@ class MechView(PaginatorView):
             return await inter.response.edit_message(embed=self.embed, view=self)
 
         self.mech_config = new_config
-        file = MISSING
-        url = None
+        url, file = None, MISSING
 
         if self.mech.torso is not None:
             image = self.renderer.create_mech_image(self.mech)
@@ -350,12 +321,12 @@ class MechView(PaginatorView):
         if self.active is not None:
             self.active.on = False
             self.active = None
-        self.item_select.disabled = True
+        self.select.disabled = True
 
-    def set_state_pressed(self, button: TrinaryButton[str], /) -> None:
+    def set_state_active(self, button: TrinaryButton[str], /) -> None:
         button.on = True
         self.active = button
-        self.item_select.disabled = False
+        self.select.disabled = False
         self.update_dropdown(button)
 
     def switch_active_button(self, button: TrinaryButton[str], /) -> None:
@@ -366,6 +337,6 @@ class MechView(PaginatorView):
         self.update_dropdown(button)
 
     def update_dropdown(self, button: TrinaryButton[str], /) -> None:
-        options = self.item_groups[slot_to_type(metadata_of(button)[0])]
-        self.item_select.all_options = get_sorted_options(options, self.mech.dominant_element)
-        self.item_select.placeholder = "empty" if button.item is None else button.item
+        options = self.item_groups[Mech.Slot.of_name(metadata_of(button)[0]).type]
+        self.select.all_options = get_sorted_options(options, self.mech.dominant_element)
+        self.select.placeholder = EMPTY_OPTION.label if button.item is TrinaryButton.NOTSET else button.item
