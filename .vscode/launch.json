@@ -12,7 +12,7 @@
             "name": "Python: Main",
             "type": "python",
             "request": "launch",
-            "module": "app.__main__",
+            "module": "app.main",
             "justMyCode": true
         }
     ]
