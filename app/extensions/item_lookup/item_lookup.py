@@ -20,12 +20,10 @@ from typeshed import dict_items_as, twotuple
 
 from .helpers import truncate_float, try_shorten, wrap_nicely
 
-from supermechs.api import STATS, AnyStatsMapping, ArenaBuffs, ItemData, Stat, ValueRange
+from supermechs.api import MAX_BUFFS, STATS, AnyStatsMapping, ItemData, Stat, ValueRange
 from supermechs.ext.comparators.helpers import mean_and_deviation
 from supermechs.item_stats import max_stats
 from supermechs.utils import has_any_of
-
-MAX_BUFFS = ArenaBuffs.maxed()
 
 
 @invoker_bound
@@ -198,28 +196,21 @@ def avg_value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
     )
 
 
-FormatterT = t.Callable[[tuple[int, ...]], str]
-PrecFormatterT = t.Callable[[tuple[int, ...], int], str]
-formatters: dict[str, tuple[FormatterT | None, FormatterT | None, PrecFormatterT | None]] = {
-    "range": (None, lambda _: "", value_formatter),
-}
-
-
 def shared_iter(
     stats: AnyStatsMapping, buffs_enabled: bool, avg: bool, prec: int = 1
 ) -> t.Iterator[tuple[str, str, str]]:
-    for stat, (values, diffs) in buffed_stats(stats, buffs_enabled):
-        val_fmt, diff_fmt, avg_fmt = formatters.get(stat, (None, None, None))
+    for stat_key, (values, diffs) in buffed_stats(stats, buffs_enabled):
+        if stat_key == "range":
+            avg_fmt = value_formatter
+            change = ""
 
-        val_fmt = val_fmt or value_formatter
-        diff_fmt = diff_fmt or diffs_formatter
-        avg_fmt = avg_fmt or avg_value_formatter
+        else:
+            avg_fmt = avg_value_formatter
+            change = diffs_formatter(diffs)
 
-        str_value = avg_fmt(values, prec) if avg and len(values) > 1 else val_fmt(values)
+        str_value = avg_fmt(values, prec) if avg and len(values) > 1 else value_formatter(values)
 
-        change = diff_fmt(diffs)
-
-        yield stat, str_value, change
+        yield stat_key, str_value, change
 
 
 def default_fields(
@@ -302,13 +293,11 @@ def comparator(
         | tuple[value_and_diff, value_and_diff, value_and_diff, value_and_diff],
     ]
 ]:
-    special_cases = {"range"}
+    for stat_key, stat in STATS.items():
+        stat_a: int | ValueRange | None = stats_a.get(stat_key)
+        stat_b: int | ValueRange | None = stats_b.get(stat_key)
 
-    for stat_name, stat in STATS.items():
-        stat_a: int | ValueRange | None = stats_a.get(stat_name)
-        stat_b: int | ValueRange | None = stats_b.get(stat_name)
-
-        if stat_name in special_cases and stat_a is not None and stat_b is not None:
+        if stat_key == "range" and stat_a is not None and stat_b is not None:
             yield stat, (
                 stat_a if isinstance(stat_a, ValueRange) else (None, 0),
                 stat_b if isinstance(stat_b, ValueRange) else (None, 0),
