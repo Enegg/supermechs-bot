@@ -39,9 +39,9 @@ class StatName(t.NamedTuple):
         return self.default
 
 
-LocaleEntry = dict[str, StatName]
+StatNames = dict[str, StatName]
 
-loc = dict[Locale, LocaleEntry]()
+loc = dict[Locale, StatNames]()
 
 
 def _load_file(path: Path, /) -> None:
@@ -81,20 +81,25 @@ def load(directory: str | os.PathLike[str], /) -> None:
         raise RuntimeError("en_US locale was not loaded")
 
 
-@t.overload
-def get(locale: Locale, /) -> LocaleEntry:
-    ...
+def get_entries(locale: Locale, /, fallback: bool = True) -> StatNames:
+    try:
+        return loc[locale]
 
-@t.overload
-def get(locale: Locale, /, key: str) -> StatName:
-    ...
+    except KeyError:
+        if not fallback:
+            raise
 
-def get(locale: Locale, /, key: str | None = None) -> LocaleEntry | StatName:
-    data = loc.get(locale)
-    if data is None:
-        data = loc[Locale.en_US]
+    return loc[Locale.en_US]
 
-    if key is None:
-        return data
 
-    return data.get(key) or loc[Locale.en_US][key]
+def get(locale: Locale, /, key: str, fallback: bool = True) -> StatName:
+    entry = get_entries(locale, fallback=fallback)
+
+    try:
+        return entry[key]
+
+    except KeyError:
+        if not fallback:
+            raise
+
+    return loc[Locale.en_US].get(key) or StatName("???", None, None)

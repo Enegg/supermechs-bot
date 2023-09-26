@@ -1,11 +1,11 @@
 import typing as t
 
-from disnake import ButtonStyle, Embed, MessageInteraction, SelectOption
+from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption
 from disnake.ui import Button, button, string_select
 from disnake.utils import MISSING
 
+import i18n
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
-from i18n import LocaleEntry
 from library_extensions import OPTION_LIMIT, SPACE, ColorType, debug_footer, embed_image
 from library_extensions.ui import (
     EMPTY_OPTION,
@@ -22,15 +22,14 @@ from library_extensions.ui import (
 from supermechs.api import ArenaBuffs, Element, Item, ItemPack, Mech, Player, Type
 from supermechs.rendering import PackRenderer
 
-
 Slot = Mech.Slot
 
 
-def embed_mech(mech: Mech, i18n: LocaleEntry, included_buffs: ArenaBuffs | None = None) -> Embed:
+def embed_mech(mech: Mech, locale: Locale, included_buffs: ArenaBuffs | None = None) -> Embed:
     embed = Embed(
         title=f'Mech build "{mech.name}"',
         color=ELEMENT[mech.dominant_element or Element.UNKNOWN].color,
-    ).add_field("Summary:", format_stats(mech, i18n, included_buffs))
+    ).add_field("Summary:", format_stats(mech, locale, included_buffs))
     return embed
 
 
@@ -48,7 +47,7 @@ def get_weight_usage(weight: int) -> str:
 
 def format_stats(
     mech: Mech,
-    i18n: LocaleEntry,
+    locale: Locale,
     included_buffs: ArenaBuffs | None = None,
     /,
     *,
@@ -73,7 +72,7 @@ def format_stats(
     return "\n".join(
         "{stat_emoji} **{value}** {stat_name}{extra}".format( # TODO: stat names
             value=value,
-            stat_name=i18n[stat_key],
+            stat_name=i18n.get(locale, stat_key),
             stat_emoji=STAT[stat_key],
             extra=extra.get(stat_key, default_extra)(value),
         )
@@ -143,21 +142,21 @@ class MechView(PaginatorView):
         pack: ItemPack,
         renderer: PackRenderer,
         player: Player,
-        i18n: LocaleEntry,
+        locale: Locale,
         *,
         timeout: float = 180.0,
     ) -> None:
         super().__init__(timeout=timeout, columns=5)
-        self.pack = pack
         self.mech = mech
-        self.i18n = i18n
-        self.player = player
+        self.locale = locale
+        self.arena_buffs = player.arena_buffs
         self.renderer = renderer
         self.user_id = player.id
+        self.get_item = pack.get_item_by_name
         self.mech_config = get_mech_config(mech)
 
         self.active: TrinaryButton[str] | None = None
-        self.embed = embed_mech(mech, i18n)
+        self.embed = embed_mech(mech, locale)
 
         for pos, row in enumerate(self.row_layouts):
             self.rows[pos].extend_page_items(
@@ -217,7 +216,7 @@ class MechView(PaginatorView):
     @button(ToggleButton, label="Buffs")
     async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Button toggling arena buffs being applied to mech's stats."""
-        if self.player.arena_buffs.is_at_zero():
+        if self.arena_buffs.is_at_zero():
             return await inter.response.send_message(
                 "This won't show any effect because all your buffs are at level zero.\n"
                 f"You can change that using {self.buffs_command} command.",
@@ -227,7 +226,7 @@ class MechView(PaginatorView):
         button.toggle()
         assert self.embed._fields is not None
         self.embed._fields[0]["value"] = format_stats(
-            self.mech, self.i18n, self.player.arena_buffs if button.on else None
+            self.mech, self.locale, self.arena_buffs if button.on else None
         )
         await inter.response.edit_message(embed=self.embed, view=self)
 
@@ -268,7 +267,7 @@ class MechView(PaginatorView):
             return await inter.response.edit_message(view=self)
 
         item_name = None if value == EMPTY_OPTION.value else value
-        item_data = None if item_name is None else self.pack.get_item_by_name(item_name)
+        item_data = None if item_name is None else self.get_item(item_name)
         slot = Mech.Slot.of_name(metadata_of(self.active)[0])
 
         # sanity check if the item is actually valid
@@ -294,8 +293,8 @@ class MechView(PaginatorView):
             name="Stats:",
             value=format_stats(
                 self.mech,
-                self.i18n,
-                self.player.arena_buffs if self.buffs_button.on else None
+                self.locale,
+                self.arena_buffs if self.buffs_button.on else None
             )
         )
         new_config = get_mech_config(self.mech)
