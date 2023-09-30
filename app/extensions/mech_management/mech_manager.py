@@ -129,8 +129,14 @@ class MechView(PaginatorView):
     """View for button-based mech building."""
 
     row_layouts = (
-        (Slot.TOP_WEAPON_1, Slot.DRONE, Slot.TOP_WEAPON_2, Slot.CHARGE, Slot.MODULE_1, Slot.MODULE_2, Slot.MODULE_3, Slot.MODULE_4),
-        (Slot.SIDE_WEAPON_3, Slot.TORSO, Slot.SIDE_WEAPON_4, Slot.TELEPORTER, Slot.MODULE_5, Slot.MODULE_6, Slot.MODULE_7, Slot.MODULE_8),
+        (
+            Slot.TOP_WEAPON_1, Slot.DRONE, Slot.TOP_WEAPON_2, Slot.CHARGE,
+            Slot.MODULE_1, Slot.MODULE_2, Slot.MODULE_3, Slot.MODULE_4
+        ),
+        (
+            Slot.SIDE_WEAPON_3, Slot.TORSO, Slot.SIDE_WEAPON_4, Slot.TELEPORTER,
+            Slot.MODULE_5, Slot.MODULE_6, Slot.MODULE_7, Slot.MODULE_8
+        ),
         (Slot.SIDE_WEAPON_1, Slot.LEGS, Slot.SIDE_WEAPON_2, Slot.HOOK),
     )
 
