@@ -2,11 +2,11 @@ import io
 import typing as t
 from itertools import zip_longest
 
-from disnake import ButtonStyle, Embed, MessageInteraction
+from disnake import ButtonStyle, Embed, Locale, MessageInteraction
 from disnake.ui import Button, button
 
+import i18n
 from assets import STAT, range_to_str
-from i18n import LocaleEntry
 from library_extensions import SPACE, debug_footer
 from library_extensions.ui import (
     ActionRow,
@@ -20,12 +20,10 @@ from typeshed import dict_items_as, twotuple
 
 from .helpers import truncate_float, try_shorten, wrap_nicely
 
-from supermechs.api import STATS, AnyStatsMapping, ArenaBuffs, ItemData, Stat, ValueRange
+from supermechs.api import MAX_BUFFS, STATS, AnyStatsMapping, ItemData, Stat, ValueRange
 from supermechs.ext.comparators.helpers import mean_and_deviation
 from supermechs.item_stats import max_stats
 from supermechs.utils import has_any_of
-
-MAX_BUFFS = ArenaBuffs.maxed()
 
 
 @invoker_bound
@@ -34,8 +32,8 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self,
         embed: Embed,
         item: ItemData,
-        factory: t.Callable[[ItemData, bool, bool, LocaleEntry], t.Iterable[tuple[str, str, bool]]],
-        i18n: LocaleEntry,
+        factory: t.Callable[[ItemData, bool, bool, Locale], t.Iterable[tuple[str, str, bool]]],
+        locale: Locale,
         *,
         user_id: int,
         timeout: float = 180,
@@ -45,17 +43,17 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self.embed = embed
         self.item = item
         self.field_factory = factory
-        self.i18n = i18n
+        self.locale = locale
 
         if not has_any_of(item.start_stage.base_stats, "phyDmg", "eleDmg", "expDmg"):
             self.remove_item(self.avg_button, 0)
 
-        for name, value, inline in factory(item, False, False, i18n):
+        for name, value, inline in factory(item, False, False, locale):
             embed.add_field(name, value, inline=inline)
 
     async def update(self, inter: MessageInteraction, buffs: bool, avg: bool) -> None:
         self.embed.clear_fields()
-        for name, value, inline in self.field_factory(self.item, buffs, avg, self.i18n):
+        for name, value, inline in self.field_factory(self.item, buffs, avg, self.locale):
             self.embed.add_field(name, value, inline=inline)
 
         if __debug__:
@@ -88,7 +86,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         embed: Embed,
         item_a: ItemData,
         item_b: ItemData,
-        i18n: LocaleEntry,
+        locale: Locale,
         *,
         user_id: int,
         timeout: float = 180,
@@ -98,7 +96,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         self.embed = embed
         self.item_a = item_a
         self.item_b = item_b
-        self.i18n = i18n
+        self.locale = locale
 
         self.update()
 
@@ -140,7 +138,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         else:
             modify_field_at = self.embed.insert_field_at
 
-        modify_field_at(0, "Stat", "\n".join(name_field).format_map(self.i18n))
+        modify_field_at(0, "Stat", "\n".join(name_field).format_map(i18n.get_entries(self.locale)))
         modify_field_at(1, try_shorten(self.item_a.name), "\n".join(first_field))
         modify_field_at(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
@@ -198,32 +196,25 @@ def avg_value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
     )
 
 
-FormatterT = t.Callable[[tuple[int, ...]], str]
-PrecFormatterT = t.Callable[[tuple[int, ...], int], str]
-formatters: dict[str, tuple[FormatterT | None, FormatterT | None, PrecFormatterT | None]] = {
-    "range": (None, lambda _: "", value_formatter),
-}
-
-
 def shared_iter(
     stats: AnyStatsMapping, buffs_enabled: bool, avg: bool, prec: int = 1
 ) -> t.Iterator[tuple[str, str, str]]:
-    for stat, (values, diffs) in buffed_stats(stats, buffs_enabled):
-        val_fmt, diff_fmt, avg_fmt = formatters.get(stat, (None, None, None))
+    for stat_key, (values, diffs) in buffed_stats(stats, buffs_enabled):
+        if stat_key == "range":
+            avg_fmt = value_formatter
+            change = ""
 
-        val_fmt = val_fmt or value_formatter
-        diff_fmt = diff_fmt or diffs_formatter
-        avg_fmt = avg_fmt or avg_value_formatter
+        else:
+            avg_fmt = avg_value_formatter
+            change = diffs_formatter(diffs)
 
-        str_value = avg_fmt(values, prec) if avg and len(values) > 1 else val_fmt(values)
+        str_value = avg_fmt(values, prec) if avg and len(values) > 1 else value_formatter(values)
 
-        change = diff_fmt(diffs)
-
-        yield stat, str_value, change
+        yield stat_key, str_value, change
 
 
 def default_fields(
-    item: ItemData, buffs_enabled: bool, avg: bool, i18n: LocaleEntry
+    item: ItemData, buffs_enabled: bool, avg: bool, locale: Locale
 ) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
     yield ("Transform range: ", range_to_str(item.transform_range), False)
@@ -240,7 +231,9 @@ def default_fields(
         if change:
             change = f" **{change}**"
 
-        string_builder.write(f"{STAT[stat_key]} **{str_value}** {i18n[stat_key]}{change}\n")
+        string_builder.write(
+            f"{STAT[stat_key]} **{str_value}** {i18n.get(locale, stat_key)}{change}\n"
+        )
 
     if item.tags.require_jump:
         emoji = STAT["jump"]
@@ -300,13 +293,11 @@ def comparator(
         | tuple[value_and_diff, value_and_diff, value_and_diff, value_and_diff],
     ]
 ]:
-    special_cases = {"range"}
+    for stat_key, stat in STATS.items():
+        stat_a: int | ValueRange | None = stats_a.get(stat_key)
+        stat_b: int | ValueRange | None = stats_b.get(stat_key)
 
-    for stat_name, stat in STATS.items():
-        stat_a: int | ValueRange | None = stats_a.get(stat_name)
-        stat_b: int | ValueRange | None = stats_b.get(stat_name)
-
-        if stat_name in special_cases and stat_a is not None and stat_b is not None:
+        if stat_key == "range" and stat_a is not None and stat_b is not None:
             yield stat, (
                 stat_a if isinstance(stat_a, ValueRange) else (None, 0),
                 stat_b if isinstance(stat_b, ValueRange) else (None, 0),

@@ -5,7 +5,6 @@ from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-import i18n
 from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from config import TEST_GUILDS
@@ -93,7 +92,7 @@ async def item(
         # fmt: on
         field_factory = default_fields
 
-    view = ItemView(embed, item, field_factory, i18n.get(inter.locale), user_id=inter.author.id)
+    view = ItemView(embed, item, field_factory, inter.locale, user_id=inter.author.id)
 
     if __debug__:
         debug_footer(embed)
@@ -182,7 +181,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
     if not __debug__:
         sikrit_footer(embed)
 
-    view = ItemCompareView(embed, item_a, item_b, i18n.get(inter.locale), user_id=inter.author.id)
+    view = ItemCompareView(embed, item_a, item_b, inter.locale, user_id=inter.author.id)
     await inter.response.send_message(embed=embed, view=view, ephemeral=True)
 
     await view.wait()

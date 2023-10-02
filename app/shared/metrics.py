@@ -17,7 +17,7 @@ def _file_sloc(path: os.PathLike[str], /) -> int:
 
     with open(path, encoding="utf8") as file:  # noqa: PTH123
         for line in file:
-            if not line or line.lstrip().startswith("#"):
+            if not line or line.lstrip().startswith(("#", '"""')):
                 continue
 
             sloc += 1
