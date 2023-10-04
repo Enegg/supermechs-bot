@@ -47,19 +47,19 @@ class PaginatedSelect(StringSelect[None]):
     @property
     def total_pages(self) -> int:
         """The total number of pages this select has."""
-        base = len(self._all_options)
+        total_option_count = len(self._all_options)
 
-        if base <= OPTION_LIMIT:
+        if total_option_count <= OPTION_LIMIT:
             return 1
 
-        if base <= (OPTION_LIMIT - 1) * 2:
-            # fits on two pages so we only add one switch option on each
+        if total_option_count <= (OPTION_LIMIT - 1) * 2:
+            # fits on two pages so we only add one of up/down option on each
             return 2
 
-        full, last = divmod(base - (OPTION_LIMIT - 1) * 2, OPTION_LIMIT - 2)
-        # full is the number of pages that have both next & prev page buttons;
-        # non-zero last means one extra page with fewer options than limit
-        return 2 + full + int(last > 0)
+        pages_with_both_options, last_page_option_count = divmod(
+            total_option_count - (OPTION_LIMIT - 1) * 2, OPTION_LIMIT - 2
+        )
+        return 2 + pages_with_both_options + (1 if last_page_option_count > 0 else 0)
 
     @property
     def all_options(self) -> t.Sequence[SelectOption]:
