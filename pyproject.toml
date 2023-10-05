@@ -1,3 +1,27 @@
+[project]
+name = "supermechs-bot"
+authors = [
+    {name = "Eneg"}
+]
+requires-python = ">= 3.10"
+dependencies = [
+    "aiohttp == 3.8.*",
+    "attrs == 22.1.*", # >= 22.1.0 for python 3.11
+    "disnake == 2.9.*", # Range/String; >= 2.8 for python 3.11
+    "git+https://github.com/Chromosomologist/disnake-ext-plugins",
+    "psutil == *",
+    "python-dotenv == 0.19.*",
+    "rtoml == *",
+    "typing-extensions >= 4.4.1",
+    # SM
+    "git+https://github.com/Enegg/supermechs",
+    "orjson == *",  # >= 3.7.7 for python 3.11
+]
+[project.optional-dependencies]
+dev = [
+    "ruff >= 0.0.291",
+]
+
 [tool.ruff]
 select = ["E", "F", "G", "Q", "SIM", "TCH", "PTH", "RUF", "ASYNC"]
 
