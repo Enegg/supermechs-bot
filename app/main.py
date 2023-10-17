@@ -6,6 +6,7 @@ import os
 import typing as t
 from functools import partial
 
+import disnake.voice_client
 from aiohttp import ClientSession, ClientTimeout
 from disnake import AllowedMentions, Game, Intents
 from disnake.ext.commands import InteractionBot
@@ -33,6 +34,7 @@ stream.setFormatter(logging.Formatter("{asctime} [{levelname}] {name} - {message
 logging.root.setLevel(logging.INFO)
 logging.root.addHandler(stream)
 
+disnake.voice_client.VoiceClient.warn_nacl = False
 logging.getLogger("disnake").setLevel(logging.ERROR)
 logging.getLogger("disnake.client").setLevel(logging.CRITICAL)  # mute connection errors
 
