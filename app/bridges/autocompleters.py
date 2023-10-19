@@ -4,7 +4,7 @@ from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
 
 from supermechs.api import ItemData
-from supermechs.models.item import Element, Type
+from supermechs.item import Element, Type
 from supermechs.typeshed import Name
 from supermechs.utils import acronym_of, search_for
 

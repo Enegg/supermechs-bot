@@ -14,8 +14,8 @@ from managers import get_default_pack
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
 from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
+from supermechs.item import Element, ItemData, Type
 from supermechs.item_stats import get_final_stage
-from supermechs.models.item import Element, ItemData, Type
 from supermechs.typeshed import Name
 
 if t.TYPE_CHECKING:

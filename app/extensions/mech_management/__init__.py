@@ -26,7 +26,7 @@ from .mech_manager import MechView
 
 from supermechs.api import Stat
 from supermechs.ext.workshop import dump_mechs, load_mechs
-from supermechs.models.item import Type
+from supermechs.item import Type
 
 plugin = plugins.Plugin[commands.InteractionBot](name="Mech-manager", logger=__name__)
 

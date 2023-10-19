@@ -3,7 +3,7 @@ import typing as t
 from attrs import define, field
 
 from supermechs.arena_buffs import ArenaBuffs
-from supermechs.models.mech import Mech
+from supermechs.mech import Mech
 
 __all__ = ("Player",)
 

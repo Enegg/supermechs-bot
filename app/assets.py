@@ -5,9 +5,9 @@ import typing_extensions as tex
 
 from typeshed import T
 
-import supermechs.models.mech as mech
+import supermechs.mech as mech
+from supermechs.item import Element, ItemData, Tier, Type
 from supermechs.item_stats import Stat, get_final_stage
-from supermechs.models.item import Element, ItemData, Tier, Type
 
 __all__ = (
     "ELEMENT",
