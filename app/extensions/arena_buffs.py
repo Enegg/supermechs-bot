@@ -5,6 +5,7 @@ from disnake.ext import commands, plugins
 from disnake.ui import Button, StringSelect, button, string_select
 
 from assets import STAT
+from bridges import Player
 from library_extensions import SPACE
 from library_extensions.ui import (
     EMPTY_OPTION,
@@ -16,7 +17,6 @@ from library_extensions.ui import (
     positioned,
 )
 
-from supermechs.api import Player
 from supermechs.arena_buffs import ArenaBuffs, iter_modifiers_of, max_level_of
 from supermechs.item_stats import Stat
 

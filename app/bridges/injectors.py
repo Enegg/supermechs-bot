@@ -4,8 +4,9 @@ from disnake.ext import commands
 from managers import item_pack_manager, player_manager
 
 from .autocompleters import item_name_autocomplete
+from .player import Player
 
-from supermechs.api import ItemData, Player
+from supermechs.api import ItemData
 from supermechs.typeshed import Name
 
 __all__ = ("register_injections",)

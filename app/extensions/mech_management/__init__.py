@@ -9,7 +9,7 @@ from disnake.ui import StringSelect
 from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
-from bridges import mech_name_autocomplete
+from bridges import Player, mech_name_autocomplete
 from library_extensions import (
     OPTION_LIMIT,
     command_mention,
@@ -24,7 +24,7 @@ from user_input import sanitize_string
 
 from .mech_manager import MechView
 
-from supermechs.api import Player, Stat
+from supermechs.api import Stat
 from supermechs.ext.workshop import dump_mechs, load_mechs
 from supermechs.models.item import Type
 
