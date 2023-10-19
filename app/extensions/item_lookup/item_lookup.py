@@ -6,7 +6,7 @@ from disnake import ButtonStyle, Embed, Locale, MessageInteraction
 from disnake.ui import Button, button
 
 import i18n
-from assets import STAT, range_to_str
+from assets import STAT, item_transform_range
 from library_extensions import SPACE, debug_footer
 from library_extensions.ui import (
     ActionRow,
@@ -20,9 +20,9 @@ from typeshed import dict_items_as, twotuple
 
 from .helpers import truncate_float, try_shorten, wrap_nicely
 
-from supermechs.api import MAX_BUFFS, STATS, AnyStatsMapping, ItemData, Stat, ValueRange
+from supermechs.api import MAX_BUFFS, STATS, ItemData, ValueRange
 from supermechs.ext.comparators.helpers import mean_and_deviation
-from supermechs.item_stats import max_stats
+from supermechs.item_stats import Stat, StatsMapping, max_stats
 from supermechs.utils import has_any_of
 
 
@@ -45,7 +45,12 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self.field_factory = factory
         self.locale = locale
 
-        if not has_any_of(item.start_stage.base_stats, "phyDmg", "eleDmg", "expDmg"):
+        if not has_any_of(
+            item.start_stage.base_stats,
+            Stat.physical_damage,
+            Stat.electric_damage,
+            Stat.explosive_damage,
+        ):
             self.remove_item(self.avg_button, 0)
 
         for name, value, inline in factory(item, False, False, locale):
@@ -129,7 +134,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
             require_jump = True
 
         if require_jump:
-            emoji = STAT["jump"]
+            emoji = STAT[Stat.jump]
             name_field.append(f"{emoji} **Jumping required**")
 
         if self.embed._fields:
@@ -138,7 +143,8 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         else:
             modify_field_at = self.embed.insert_field_at
 
-        modify_field_at(0, "Stat", "\n".join(name_field).format_map(i18n.get_entries(self.locale)))
+        entries = {stat.name: x for stat, x in i18n.get_entries(self.locale).items()}
+        modify_field_at(0, "Stat", "\n".join(name_field).format_map(entries))
         modify_field_at(1, try_shorten(self.item_a.name), "\n".join(first_field))
         modify_field_at(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
@@ -147,18 +153,18 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
 
 
 def buffed_stats(
-    stats: AnyStatsMapping, buffs_enabled: bool
-) -> t.Iterator[tuple[str, twotuple[tuple[int, ...]]]]:
+    stats: StatsMapping, buffs_enabled: bool
+) -> t.Iterator[tuple[Stat, twotuple[tuple[int, ...]]]]:
     if buffs_enabled:
         apply_buff = MAX_BUFFS.buff_with_difference
 
     else:
 
-        def apply_buff(_: str, value: int, /) -> twotuple[int]:
+        def apply_buff(_: Stat, value: int, /) -> twotuple[int]:
             return (value, 0)
 
     for stat, value in dict_items_as(int | ValueRange, stats):
-        if stat == "health":
+        if stat is Stat.hit_points:
             assert isinstance(value, int)
             yield stat, ((value,), (0,))
             continue
@@ -197,10 +203,10 @@ def avg_value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
 
 
 def shared_iter(
-    stats: AnyStatsMapping, buffs_enabled: bool, avg: bool, prec: int = 1
-) -> t.Iterator[tuple[str, str, str]]:
+    stats: StatsMapping, buffs_enabled: bool, avg: bool, prec: int = 1
+) -> t.Iterator[tuple[Stat, str, str]]:
     for stat_key, (values, diffs) in buffed_stats(stats, buffs_enabled):
-        if stat_key == "range":
+        if stat_key == Stat.range:
             avg_fmt = value_formatter
             change = ""
 
@@ -217,11 +223,11 @@ def default_fields(
     item: ItemData, buffs_enabled: bool, avg: bool, locale: Locale
 ) -> t.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
-    yield ("Transform range: ", range_to_str(item.transform_range), False)
+    yield ("Transform range: ", item_transform_range(item), False)
 
     spaced = False
     string_builder = io.StringIO()
-    cost_stats = {"backfire", "heaCost", "eneCost"}
+    cost_stats = (Stat.backfire, Stat.heat_generation, Stat.energy_cost)
 
     for stat_key, str_value, change in shared_iter(max_stats(item.start_stage), buffs_enabled, avg):
         if not spaced and stat_key in cost_stats:
@@ -236,8 +242,7 @@ def default_fields(
         )
 
     if item.tags.require_jump:
-        emoji = STAT["jump"]
-        string_builder.write(f"{emoji} **Jumping required**")
+        string_builder.write(f"{STAT[Stat.jump]} **Jumping required**")
 
     yield ("Stats:", string_builder.getvalue(), False)
 
@@ -252,13 +257,13 @@ def compact_fields(
         lines.append(f"{STAT[stat_key]} **{str_value}**")
 
     if item.tags.require_jump:
-        lines.append(f"{STAT['jump']}❗")
+        lines.append(f"{STAT[Stat.jump]}❗")
 
     line_count = len(lines)
     div = wrap_nicely(line_count, 4)
 
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
-    transform_range = range_to_str(item.transform_range)
+    transform_range = item_transform_range(item)
 
     for name, field in zip_longest((transform_range,), field_text, fillvalue=SPACE):
         yield (name, field, True)
@@ -285,7 +290,7 @@ value_and_diff = tuple[int | float | None, float]
 
 
 def comparator(
-    stats_a: AnyStatsMapping, stats_b: AnyStatsMapping
+    stats_a: StatsMapping, stats_b: StatsMapping
 ) -> t.Iterator[
     tuple[
         Stat,
@@ -293,14 +298,17 @@ def comparator(
         | tuple[value_and_diff, value_and_diff, value_and_diff, value_and_diff],
     ]
 ]:
-    for stat_key, stat in STATS.items():
+    for stat_key, stat_data in STATS.items():
         stat_a: int | ValueRange | None = stats_a.get(stat_key)
         stat_b: int | ValueRange | None = stats_b.get(stat_key)
 
-        if stat_key == "range" and stat_a is not None and stat_b is not None:
-            yield stat, (
-                stat_a if isinstance(stat_a, ValueRange) else (None, 0),
-                stat_b if isinstance(stat_b, ValueRange) else (None, 0),
+        if stat_key is Stat.range and stat_a is not None and stat_b is not None:
+            yield (
+                stat_key,
+                (
+                    stat_a if isinstance(stat_a, ValueRange) else (None, 0),
+                    stat_b if isinstance(stat_b, ValueRange) else (None, 0),
+                ),
             )
             continue
 
@@ -309,7 +317,7 @@ def comparator(
                 continue
 
             case (int() as a, int() as b):
-                yield stat, cmp_num(a, b, not stat.beneficial)
+                yield stat_key, cmp_num(a, b, not stat_data.beneficial)
                 continue
 
             case ([int() as a1, int() as a2], [int() as b1, int() as b2]):
@@ -318,41 +326,41 @@ def comparator(
                 x_inacc /= x_avg
                 y_inacc /= y_avg
 
-                yield stat, cmp_num(x_avg, y_avg, False) + cmp_num(x_inacc, y_inacc, True)
+                yield stat_key, cmp_num(x_avg, y_avg, False) + cmp_num(x_inacc, y_inacc, True)
                 continue
 
             case _:
                 pass
 
         if isinstance(stat_a, int):
-            yield stat, ((stat_a, 0), (None, 0))
+            yield stat_key, ((stat_a, 0), (None, 0))
 
         elif isinstance(stat_b, int):
-            yield stat, ((None, 0), (stat_b, 0))
+            yield stat_key, ((None, 0), (stat_b, 0))
 
         elif stat_a is not None:
             avg, inacc = mean_and_deviation(*stat_a)
             inacc /= avg
-            yield stat, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
+            yield stat_key, ((avg, 0), (None, 0), (inacc, 0), (None, 0))
 
         elif stat_b is not None:
             avg, inacc = mean_and_deviation(*stat_b)
             inacc /= avg
-            yield stat, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
+            yield stat_key, ((None, 0), (avg, 0), (None, 0), (inacc, 0))
 
 
 def stats_to_fields(
-    stats_a: AnyStatsMapping, stats_b: AnyStatsMapping
+    stats_a: StatsMapping, stats_b: StatsMapping
 ) -> tuple[list[str], list[str], list[str]]:
     name_field: list[str] = []
     first_item: list[str] = []
     second_item: list[str] = []
 
     for stat, long_boy in comparator(stats_a, stats_b):
-        name_field.append(f"{STAT[stat.key]} {{{stat.key}}}")
+        name_field.append(f"{STAT[stat]} {{{stat.name}}}")
 
-        match stat.key, long_boy:
-            case "range", ((a1, a2), (b1, b2)):
+        match (stat, long_boy):
+            case Stat.range, ((a1, a2), (b1, b2)):
                 first_item.append(f"**{a1}-{a2}**" if a1 is not None else "")
                 second_item.append(f"**{b1}-{b2}**" if b1 is not None else "")
 

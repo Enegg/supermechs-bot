@@ -18,11 +18,12 @@ from library_extensions.ui import (
 
 from supermechs.api import Player
 from supermechs.arena_buffs import ArenaBuffs, iter_modifiers_of, max_level_of
+from supermechs.item_stats import Stat
 
 plugin: t.Final = plugins.Plugin["commands.InteractionBot"](name="ArenaBuffs", logger=__name__)
 
 
-def make_label(buffs: ArenaBuffs, stat_key: str, /) -> str:
+def make_label(buffs: ArenaBuffs, stat_key: Stat, /) -> str:
     return str(buffs.modifier_of(stat_key)).rjust(4, SPACE)
 
 
@@ -37,17 +38,36 @@ class ArenaBuffsView(PaginatorView):
 
         for i, row in enumerate(
             (
-                ("eneCap", "heaCap", "phyDmg", "phyRes", "health"),
-                ("eneReg", "heaCol", "expDmg", "expRes", "backfire"),
-                ("eneDmg", "heaDmg", "eleDmg", "eleRes"),
+                (
+                    Stat.energy_capacity,
+                    Stat.heat_capacity,
+                    Stat.physical_damage,
+                    Stat.physical_resistance,
+                    Stat.hit_points,
+                ),
+                (
+                    Stat.regeneration,
+                    Stat.cooling,
+                    Stat.explosive_damage,
+                    Stat.explosive_resistance,
+                    Stat.backfire,
+                ),
+                (
+                    Stat.energy_damage,
+                    Stat.heat_damage,
+                    Stat.electric_damage,
+                    Stat.electric_resistance,
+                ),
             )
         ):
             for stat_key in row:
                 btn = ToggleButton(
-                    style_off=ButtonStyle.green if buffs[stat_key] == max_level_of(stat_key) else ButtonStyle.gray,
+                    style_off=ButtonStyle.green
+                    if buffs[stat_key] == max_level_of(stat_key)
+                    else ButtonStyle.gray,
                     style_on=ButtonStyle.blurple,
                     label=make_label(buffs, stat_key),
-                    custom_id=f"{self.id}:{stat_key}",
+                    custom_id=f"{self.id}:{stat_key.name}",
                     emoji=STAT[stat_key],
                 )
                 add_callback(btn, self.buff_button)
@@ -74,7 +94,7 @@ class ArenaBuffsView(PaginatorView):
 
         self.active = button
         self.select.placeholder = button.label
-        stat_key, = metadata_of(button)
+        stat_key = Stat.of_name(metadata_of(button)[0])
         self.select.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
             for level, buff in enumerate(iter_modifiers_of(stat_key))
@@ -133,7 +153,7 @@ class ArenaBuffsView(PaginatorView):
         await inter.response.edit_message(view=self)
 
     def modify_buff(self, button: ToggleButton, level: int = -1) -> None:
-        stat_key, = metadata_of(button)
+        stat_key = Stat.of_name(metadata_of(button)[0])
         max_level = max_level_of(stat_key)
 
         if level == -1:

@@ -13,13 +13,12 @@ from managers import get_default_pack
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
-from supermechs.enums import Element, Type
-from supermechs.ext.deserializers.typedefs import LiteralElement, LiteralType
-from supermechs.models.item import ItemData
-from supermechs.typedefs import Name
+from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
+from supermechs.item_stats import get_final_stage
+from supermechs.models.item import Element, ItemData, Type
+from supermechs.typeshed import Name
 
 if t.TYPE_CHECKING:
-
     LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
     LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
 
@@ -50,7 +49,7 @@ async def item(
     del type, element  # used for autocomplete only
 
     _, renderer = await get_default_pack()
-    sprite = renderer.get_item_sprite(item, item.transform_range[-1])
+    sprite = renderer.get_item_sprite(item, get_final_stage(item.start_stage).tier)
 
     if sprite.metadata.source == "url" and sprite.metadata.method == "single":
         url, file = sprite.metadata.value, MISSING
@@ -149,7 +148,6 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 
     except LookupError as err:
         raise commands.UserInputError(str(err)) from err
-
 
     if item_a.element is item_b.element:
         desc_builder = io.StringIO()

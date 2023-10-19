@@ -24,8 +24,9 @@ from user_input import sanitize_string
 
 from .mech_manager import MechView
 
-from supermechs.api import Player, Type
+from supermechs.api import Player, Stat
 from supermechs.ext.workshop import dump_mechs, load_mechs
+from supermechs.models.item import Type
 
 plugin = plugins.Plugin[commands.InteractionBot](name="Mech-manager", logger=__name__)
 
@@ -48,7 +49,7 @@ MECH_SUMMARY_TEMPLATE = f"""\
 • {TYPE[Type.LEGS].emoji} {{LEGS}}
 • {SIDED_TYPE[Type.SIDE_WEAPON].right.emoji} {{WEAPONS}} weapon(s)
 • {TYPE[Type.MODULE].emoji} {{MODULES}} module(s)
-• {STAT['weight']} {{WEIGHT}} weight\
+• {STAT[Stat.weight]} {{WEIGHT}} weight\
 """
 
 

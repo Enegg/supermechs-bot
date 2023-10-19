@@ -19,10 +19,9 @@ from library_extensions.ui import (
     positioned,
 )
 
-from supermechs.api import ArenaBuffs, Element, Item, ItemPack, Mech, Player, Type
+from supermechs.api import ArenaBuffs, Item, ItemPack, Mech, Player, Stat
+from supermechs.models.item import Element, Type
 from supermechs.rendering import PackRenderer
-
-Slot = Mech.Slot
 
 
 def embed_mech(mech: Mech, locale: Locale, included_buffs: ArenaBuffs | None = None) -> Embed:
@@ -33,26 +32,18 @@ def embed_mech(mech: Mech, locale: Locale, included_buffs: ArenaBuffs | None = N
     return embed
 
 
-def get_mech_config(mech: Mech) -> str:
+def get_mech_config(mech: Mech, /) -> str:
     """Returns a str of item IDs that are visible on image."""
     return "_".join(
-        "0" if item is None else str(item.data.id)
-        for item in mech.iter_items("body", "weapons")
+        "0" if item is None else str(item.data.id) for item in mech.iter_items("body", "weapons")
     )
 
 
-def get_weight_usage(weight: int) -> str:
+def get_weight_usage(weight: int, /) -> str:
     return " " + get_weight_emoji(weight)
 
 
-def format_stats(
-    mech: Mech,
-    locale: Locale,
-    included_buffs: ArenaBuffs | None = None,
-    /,
-    *,
-    extra: t.Mapping[str, t.Callable[[int], t.Any]] = {"weight": get_weight_usage},
-) -> str:
+def format_stats(mech: Mech, locale: Locale, included_buffs: ArenaBuffs | None = None, /) -> str:
     """Returns a string of lines formatted with mech stats.
 
     Parameters
@@ -66,15 +57,12 @@ def format_stats(
     else:
         bank = included_buffs.buff_stats(mech.stat_summary, buff_health=True)
 
-    def default_extra(value: int) -> t.Any:
-        return ""
-
     return "\n".join(
-        "{stat_emoji} **{value}** {stat_name}{extra}".format( # TODO: stat names
+        "{stat_emoji} **{value}** {stat_name}{extra}".format(  # TODO: stat names
             value=value,
-            stat_name=i18n.get(locale, stat_key),
+            stat_name=i18n.get(locale, stat_key).default,
             stat_emoji=STAT[stat_key],
-            extra=extra.get(stat_key, default_extra)(value),
+            extra=get_weight_usage(value) if stat_key is Stat.weight else "",
         )
         for stat_key, value in bank.items()
     )
@@ -93,7 +81,7 @@ def get_sorted_options(
 ) -> list[SelectOption]:
     """Returns a list of `SelectOption`s sorted by element.
 
-    Note: this deliberately does not respect the option limit.
+    Note: this ignores the option limit.
     """
     new_options = [EMPTY_OPTION]
 
@@ -127,17 +115,19 @@ def color_from_mech(mech: Mech, /) -> ColorType:
 class MechView(PaginatorView):
     """View for button-based mech building."""
 
-    row_layouts = (
+    # fmt: off
+    LAYOUT = (
         (
-            Slot.TOP_WEAPON_1, Slot.DRONE, Slot.TOP_WEAPON_2, Slot.CHARGE,
-            Slot.MODULE_1, Slot.MODULE_2, Slot.MODULE_3, Slot.MODULE_4
+            Mech.Slot.TOP_WEAPON_1, Mech.Slot.DRONE, Mech.Slot.TOP_WEAPON_2, Mech.Slot.CHARGE,
+            Mech.Slot.MODULE_1, Mech.Slot.MODULE_2, Mech.Slot.MODULE_3, Mech.Slot.MODULE_4
         ),
         (
-            Slot.SIDE_WEAPON_3, Slot.TORSO, Slot.SIDE_WEAPON_4, Slot.TELEPORTER,
-            Slot.MODULE_5, Slot.MODULE_6, Slot.MODULE_7, Slot.MODULE_8
+            Mech.Slot.SIDE_WEAPON_3, Mech.Slot.TORSO, Mech.Slot.SIDE_WEAPON_4, Mech.Slot.TELEPORTER,
+            Mech.Slot.MODULE_5, Mech.Slot.MODULE_6, Mech.Slot.MODULE_7, Mech.Slot.MODULE_8
         ),
-        (Slot.SIDE_WEAPON_1, Slot.LEGS, Slot.SIDE_WEAPON_2, Slot.HOOK),
+        (Mech.Slot.SIDE_WEAPON_1, Mech.Slot.LEGS, Mech.Slot.SIDE_WEAPON_2, Mech.Slot.HOOK),
     )
+    # fmt: on
 
     buffs_command: t.ClassVar[str]
     user_id: int
@@ -158,18 +148,20 @@ class MechView(PaginatorView):
         self.arena_buffs = player.arena_buffs
         self.renderer = renderer
         self.user_id = player.id
-        self.get_item = pack.get_item_by_name
+        self.get_item = pack.get_item_by_id
         self.mech_config = get_mech_config(mech)
 
         self.active: TrinaryButton[str] | None = None
         self.embed = embed_mech(mech, locale)
 
-        for pos, row in enumerate(self.row_layouts):
+        for pos, row in enumerate(self.LAYOUT):
             self.rows[pos].extend_page_items(
                 add_callback(
                     TrinaryButton(
                         custom_id=f"{self.id}:{slot.name}",
-                        item=TrinaryButton.NOTSET if (item := mech[slot]) is None else item.data.name,
+                        item=TrinaryButton.NOTSET
+                        if (item := mech[slot]) is None
+                        else item.data.name,
                         emoji=slot_to_emoji(slot),
                     ),
                     self.slot_button_cb,
@@ -188,7 +180,7 @@ class MechView(PaginatorView):
 
         for item in pack.items.values():
             self.item_groups[item.type].append(
-                SelectOption(label=item.name, emoji=ELEMENT[item.element].emoji)
+                SelectOption(label=item.name, value=str(item.id), emoji=ELEMENT[item.element].emoji)
             )
 
         ref = {ELEMENT[element].emoji: index for index, element in enumerate(Element)}
@@ -272,23 +264,22 @@ class MechView(PaginatorView):
             select.page += page
             return await inter.response.edit_message(view=self)
 
-        item_name = None if value == EMPTY_OPTION.value else value
-        item_data = None if item_name is None else self.get_item(item_name)
+        item_data = None if value == EMPTY_OPTION.value else self.get_item(int(value))
         slot = Mech.Slot.of_name(metadata_of(self.active)[0])
 
-        # sanity check if the item is actually valid
-        if item_data is not None and item_data.type is not slot.type:
-            raise RuntimeWarning(f"{item_data.type} is not valid for slot {slot}")
-
-        select.placeholder = item_name
-        self.active.item = item_name or TrinaryButton.NOTSET
-
         if item_data is not None:
+            if item_data.type is not slot.type:
+                # how did we get here?
+                raise RuntimeWarning(f"{item_data.type} is not valid for slot {slot}")
+
             item = Item.from_data(item_data, maxed=True)
             await self.renderer.get_item_sprite(item).load()
+            self.active.item = select.placeholder = item_data.name
 
         else:
             item = None
+            select.placeholder = None
+            self.active.item = TrinaryButton.NOTSET
 
         self.mech[slot] = item
         self.embed.color = color_from_mech(self.mech)
@@ -300,8 +291,8 @@ class MechView(PaginatorView):
             value=format_stats(
                 self.mech,
                 self.locale,
-                self.arena_buffs if self.buffs_button.on else None
-            )
+                self.arena_buffs if self.buffs_button.on else None,
+            ),
         )
         new_config = get_mech_config(self.mech)
 
@@ -344,4 +335,6 @@ class MechView(PaginatorView):
     def update_dropdown(self, button: TrinaryButton[str], /) -> None:
         options = self.item_groups[Mech.Slot.of_name(metadata_of(button)[0]).type]
         self.select.all_options = get_sorted_options(options, self.mech.dominant_element)
-        self.select.placeholder = EMPTY_OPTION.label if button.item is TrinaryButton.NOTSET else button.item
+        self.select.placeholder = (
+            EMPTY_OPTION.label if button.item is TrinaryButton.NOTSET else button.item
+        )

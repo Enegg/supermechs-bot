@@ -3,8 +3,9 @@ import typing as t
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
 
-from supermechs.api import Element, ItemData, Type
-from supermechs.typedefs import Name
+from supermechs.api import ItemData
+from supermechs.models.item import Element, Type
+from supermechs.typeshed import Name
 from supermechs.utils import acronym_of, search_for
 
 if t.TYPE_CHECKING:
@@ -51,7 +52,7 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     if not acronyms:
         _make_acronyms(pack.item_names)
 
-    def filter_item_names(names: t.Iterable[Name]) -> t.Iterator[Name]:
+    def filter_item_names(names: t.Iterable[Name], /) -> t.Iterator[Name]:
         items = map(pack.get_item_by_name, names)
 
         if filters:

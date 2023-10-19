@@ -6,8 +6,8 @@ from pathlib import Path
 
 from disnake import Locale
 
-from supermechs.item_stats import AnyStatKey
 from supermechs.platform import toml_decoder
+from supermechs.item_stats import Stat
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class _StatEntry(t.TypedDict):
 
 
 class _I18nFile(t.TypedDict):
-    stats: t.Mapping[AnyStatKey, _StatEntry]
+    stats: t.Mapping[tex.LiteralString, _StatEntry]
 
 
 class StatName(t.NamedTuple):
@@ -39,7 +39,7 @@ class StatName(t.NamedTuple):
         return self.default
 
 
-StatNames = dict[str, StatName]
+StatNames = dict[Stat, StatName]
 
 loc = dict[Locale, StatNames]()
 
@@ -53,7 +53,7 @@ def _load_file(path: Path, /) -> None:
     data: _I18nFile = toml_decoder(path.read_text("utf-8"))
 
     loc[locale] = {
-        key: StatName(entry.get("in_game", "???"), entry.get("default"), entry.get("short"))
+        Stat[key]: StatName(entry.get("in_game", "???"), entry.get("default"), entry.get("short"))
         for key, entry in data["stats"].items()
     }
 
@@ -92,7 +92,7 @@ def get_entries(locale: Locale, /, fallback: bool = True) -> StatNames:
     return loc[Locale.en_US]
 
 
-def get(locale: Locale, /, key: str, fallback: bool = True) -> StatName:
+def get(locale: Locale, key: Stat, /, fallback: bool = True) -> StatName:
     entry = get_entries(locale, fallback=fallback)
 
     try:

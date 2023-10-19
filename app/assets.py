@@ -2,19 +2,22 @@
 
 import typing as t
 import typing_extensions as tex
-from typing import TYPE_CHECKING
 
 from typeshed import T
 
-from supermechs import constants
-from supermechs.enums import Element, Tier, Type
-
-if TYPE_CHECKING:
-    from supermechs.models.item import TransformRange
+import supermechs.models.mech as mech
+from supermechs.item_stats import Stat, get_final_stage
+from supermechs.models.item import Element, ItemData, Tier, Type
 
 __all__ = (
-    "ELEMENT", "FRANTIC_GIFS", "SIDED_TYPE", "STAT", "TIER", "TYPE",
-    "get_weight_emoji", "range_to_str",
+    "ELEMENT",
+    "FRANTIC_GIFS",
+    "SIDED_TYPE",
+    "STAT",
+    "TIER",
+    "TYPE",
+    "get_weight_emoji",
+    "item_transform_range",
 )
 
 
@@ -69,72 +72,87 @@ SIDED_TYPE: t.Mapping[t.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided[TypeAs
         TypeAsset("https://i.imgur.com/1xlnVgK.png", "<:topl:730115768431280238>")
     ),
 }
-STAT: t.Mapping[str, tex.LiteralString] = {
-    "weight":        "<:weight:725870760484143174>",
-    "health":        "<:health:725870887588462652>",
-    "eneCap":        "<:energy:725870941883859054>",
-    "eneReg":         "<:regen:725871003665825822>",
-    "heaCap":          "<:heat:725871043767435336>",
-    "heaCol":       "<:cooling:725871075778363422>",
-    "bulletsCap": "🧰",
-    "rocketsCap": "🧰",
-    "phyRes":        "<:phyres:725871121051811931>",
-    "expRes":        "<:expres:725871136935772294>",
-    "eleRes":       "<:elecres:725871146716758077>",
-    "phyDmg":        "<:phydmg:725871208830074929>",
-    "phyResDmg":  "<:phyresdmg:725871259635679263>",
-    "expDmg":        "<:expdmg:725871223338172448>",
-    "heaDmg":        "<:headmg:725871613639393290>",
-    "heaCapDmg": "<:heatcapdmg:725871478083551272>",
-    "heaColDmg": "<:coolingdmg:725871499281563728>",
-    "expResDmg":  "<:expresdmg:725871281311842314>",
-    "eleDmg":        "<:eledmg:725871233614479443>",
-    "eneDmg":        "<:enedmg:725871599517171719>",
-    "eneCapDmg":  "<:enecapdmg:725871420126789642>",
-    "eneRegDmg":   "<:regendmg:725871443815956510>",
-    "eleResDmg":  "<:eleresdmg:725871296381976629>",
-    "range":          "<:range:725871752072134736>",
-    "push":            "<:push:725871716613488843>",
-    "pull":            "<:pull:725871734141616219>",
-    "recoil":        "<:recoil:725871778282340384>",
-    "retreat":      "<:retreat:725871804236955668>",
-    "advance":      "<:advance:725871818115907715>",
-    "walk":            "<:walk:725871844581834774>",
-    "jump":            "<:jump:725871869793796116>",
-    "uses":            "<:uses:725871917923303688>",
-    "backfire":    "<:backfire:725871901062201404>",
-    "heaCost":      "<:heatgen:725871674007879740>",
-    "eneCost":     "<:eneusage:725871660237979759>",
-    "bulletsCost": "🥕",
-    "rocketsCost": "🚀",
-    "spread":      "🎲",
-    "anyDmg":     "<:combined:1026853188940349490>",
+STAT: t.Mapping[Stat, tex.LiteralString] = {
+    Stat.weight:                         "<:weight:725870760484143174>",
+    Stat.hit_points:                     "<:health:725870887588462652>",
+    Stat.energy_capacity:                "<:energy:725870941883859054>",
+    Stat.regeneration:                    "<:regen:725871003665825822>",
+    Stat.heat_capacity:                    "<:heat:725871043767435336>",
+    Stat.cooling:                       "<:cooling:725871075778363422>",
+    Stat.bullets_capacity: "🧰",
+    Stat.rockets_capacity: "🧰",
+    Stat.physical_resistance:            "<:phyres:725871121051811931>",
+    Stat.explosive_resistance:           "<:expres:725871136935772294>",
+    Stat.electric_resistance:           "<:elecres:725871146716758077>",
+    Stat.physical_damage:                "<:phydmg:725871208830074929>",
+    Stat.physical_resistance_damage:  "<:phyresdmg:725871259635679263>",
+    Stat.electric_damage:                "<:eledmg:725871233614479443>",
+    Stat.energy_damage:                  "<:enedmg:725871599517171719>",
+    Stat.energy_capacity_damage:      "<:enecapdmg:725871420126789642>",
+    Stat.regeneration_damage:          "<:regendmg:725871443815956510>",
+    Stat.electric_resistance_damage:  "<:eleresdmg:725871296381976629>",
+    Stat.explosive_damage:               "<:expdmg:725871223338172448>",
+    Stat.heat_damage:                    "<:headmg:725871613639393290>",
+    Stat.heat_capacity_damage:       "<:heatcapdmg:725871478083551272>",
+    Stat.cooling_damage:             "<:coolingdmg:725871499281563728>",
+    Stat.explosive_resistance_damage: "<:expresdmg:725871281311842314>",
+    Stat.walk:                             "<:walk:725871844581834774>",
+    Stat.jump:                             "<:jump:725871869793796116>",
+    Stat.range:                           "<:range:725871752072134736>",
+    Stat.push:                             "<:push:725871716613488843>",
+    Stat.pull:                             "<:pull:725871734141616219>",
+    Stat.recoil:                         "<:recoil:725871778282340384>",
+    Stat.advance:                       "<:advance:725871818115907715>",
+    Stat.retreat:                       "<:retreat:725871804236955668>",
+    Stat.uses:                             "<:uses:725871917923303688>",
+    Stat.backfire:                     "<:backfire:725871901062201404>",
+    Stat.heat_generation:               "<:heatgen:725871674007879740>",
+    Stat.energy_cost:                  "<:eneusage:725871660237979759>",
+    Stat.bullets_cost: "🥕",
+    Stat.rockets_cost: "🚀",
+}
+STAT_EXTRAS: t.Mapping[tex.LiteralString, tex.LiteralString] = {
+    "spread":  "🎲",
+    "anyDmg": "<:combined:1026853188940349490>",
 }
 # fmt: on
 FRANTIC_GIFS: t.Sequence[tex.LiteralString] = (
     "https://i.imgur.com/Bbbf4AH.mp4",
-    "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4"
+    "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
 )
+
 
 def get_weight_emoji(weight: int, /) -> tex.LiteralString:
     if weight < 0:
         return "🗿"
-    if weight < constants.MAX_WEIGHT * 0.99:
+    if weight < mech.MAX_WEIGHT * 0.99:
         return "⚙️"
-    if weight < constants.MAX_WEIGHT:
+    if weight < mech.MAX_WEIGHT:
         return "🆗"
-    if weight == constants.MAX_WEIGHT:
+    if weight == mech.MAX_WEIGHT:
         return "👌"
-    if weight <= constants.OVERLOADED_MAX_WEIGHT:
+    if weight <= mech.OVERLOADED_MAX_WEIGHT:
         return "❕"
     return "⛔"
 
 
-def range_to_str(range: "TransformRange", /, at_tier: Tier | None = None) -> str:
-    if at_tier is None:
-        at_tier = range[-1]
+def transform_range(item: ItemData, /) -> t.Sequence[Tier]:
+    """Construct a transform range from item data.
 
-    index = at_tier.order - range[0].order
-    str_range = [TIER[tier].emoji for tier in range]
+    Note: unlike `range` object, upper bound is inclusive.
+    """
+    lower = item.start_stage.tier
+    upper = get_final_stage(item.start_stage).tier
+    return tuple(map(Tier.of_value, range(lower, upper + 1)))
+
+
+def item_transform_range(item: ItemData, /, at_tier: Tier | None = None) -> str:
+    tiers = transform_range(item)
+
+    if at_tier is None:
+        at_tier = tiers[-1]
+
+    index = at_tier - tiers[0]
+    str_range = [TIER[tier].emoji for tier in tiers]
     str_range[index] = f"({str_range[index]})"
     return "".join(str_range)
