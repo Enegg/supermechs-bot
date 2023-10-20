@@ -10,7 +10,7 @@ from disnake.ext.plugins import Plugin
 from disnake.utils import format_dt, oauth_url, utcnow
 
 from assets import FRANTIC_GIFS
-from config import DEFAULT_PACK_URL, TEST_GUILDS
+from config import DEFAULT_PACK_KEY, DEFAULT_PACK_URL, TEST_GUILDS
 from events import PACK_LOADED
 from library_extensions import RESPONSE_TIME_LIMIT, Markdown as MD, command_mention
 from managers import item_pack_manager, player_manager
@@ -72,7 +72,7 @@ async def info(inter: CommandInteraction) -> None:
         backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
     if PACK_LOADED.is_set():
-        default_pack = item_pack_manager["@Darkstare"]  # TODO
+        default_pack = item_pack_manager[DEFAULT_PACK_KEY]
         supermechs_fields += [
             f"Default item pack: {MD.hyperlink(default_pack.key, DEFAULT_PACK_URL)}",
             f"Total items: {len(default_pack.items)}",

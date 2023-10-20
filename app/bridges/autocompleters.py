@@ -1,5 +1,6 @@
 import typing as t
 
+from config import DEFAULT_PACK_KEY
 from library_extensions import OPTION_LIMIT
 from managers import item_pack_manager, player_manager
 
@@ -45,7 +46,7 @@ def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[Ite
 async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for type & element."""
 
-    pack = item_pack_manager["@Darkstare"]  # TODO: replace with default pack reference
+    pack = item_pack_manager[DEFAULT_PACK_KEY]
 
     filters = _get_item_filters(inter.filled_options)
 

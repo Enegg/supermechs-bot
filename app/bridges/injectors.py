@@ -1,6 +1,7 @@
 from disnake import CommandInteraction
 from disnake.ext import commands
 
+from config import DEFAULT_PACK_KEY
 from managers import item_pack_manager, player_manager
 
 from .autocompleters import item_name_autocomplete
@@ -28,7 +29,7 @@ def register_injections() -> None:
         """
         # TODO: make this pack-aware
         del inter
-        default_pack = item_pack_manager["@Darkstare"]  # TODO
+        default_pack = item_pack_manager[DEFAULT_PACK_KEY]
         try:
             return default_pack.get_item_by_name(name)
 
