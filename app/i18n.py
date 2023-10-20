@@ -103,3 +103,21 @@ def get(locale: Locale, key: Stat, /, fallback: bool = True) -> StatName:
             raise
 
     return loc[Locale.en_US].get(key) or StatName("???", None, None)
+
+
+if __name__ == "__main__":
+    def test_locales():
+        if not loc:
+            load(Path.cwd() / "game_locale")
+
+        for locale, names in loc.items():
+            for stat in Stat:
+                name = names.get(stat)
+
+                if name is None:
+                    print(f"{stat} for {locale=} is missing")
+
+                elif name.in_game == "???":
+                    print(f"{stat} for {locale=} is missing in_game name")
+
+    test_locales()

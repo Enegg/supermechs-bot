@@ -1,50 +1,53 @@
-[stats]
 [stats.weight]
 in_game = "Gewicht"
-[stats.health]
+[stats.hit_points]
 in_game = "Lebenspunkte"
-[stats.eneCap]
+[stats.energy_capacity]
 in_game = "Energie"
-[stats.eneReg]
+[stats.regeneration]
 in_game = "Regeneration"
-[stats.heaCap]
+[stats.heat_capacity]
 in_game = "Hitze"
-[stats.heaCol]
+[stats.cooling]
 in_game = "Abkuehlen"
-[stats.bulletCap]
+[stats.bullets_capacity]
 in_game = "???"
-[stats.rocketsCap]
+[stats.rockets_capacity]
 in_game = "???"
-[stats.phyRes]
+[stats.physical_resistance]
 in_game = "Physischer Widerstand"
-[stats.expRes]
+[stats.explosive_resistance]
 in_game = "Explosiver Widerstand"
-[stats.eleRes]
+[stats.electric_resistance]
 in_game = "Elektrischer Widerstand"
-[stats.phyDmg]
+[stats.physical_damage]
 in_game = "Physischer Schaden"
-[stats.phyResDmg]
+[stats.physical_resistance_damage]
 in_game = "Widerstand reduzieren"
-[stats.expDmg]
-in_game = "Explosiver Schaden"
-[stats.heaDmg]
-in_game = "Hitze Schaden"
-[stats.heaCapDmg]
-in_game = "Max Hitze Schaden"
-[stats.heaColDmg]
-in_game = "Abkuehlen Schaden"
-[stats.expResDmg]
-in_game = "Widerstand reduzieren"
-[stats.eleDmg]
+[stats.electric_damage]
 in_game = "Elektrischer Schaden"
-[stats.eneDmg]
+[stats.energy_damage]
 in_game = "Energie Schaden"
-[stats.eneCapDmg]
+[stats.energy_capacity_damage]
 in_game = "Max Energie Schaden"
-[stats.eneRegDmg]
+[stats.regeneration_damage]
 in_game = "Regeneration Schaden"
-[stats.eleResDmg]
+[stats.electric_resistance_damage]
 in_game = "Widerstand reduzieren"
+[stats.explosive_damage]
+in_game = "Explosiver Schaden"
+[stats.heat_damage]
+in_game = "Hitze Schaden"
+[stats.heat_capacity_damage]
+in_game = "Max Hitze Schaden"
+[stats.cooling_damage]
+in_game = "Abkuehlen Schaden"
+[stats.explosive_resistance_damage]
+in_game = "Widerstand reduzieren"
+[stats.walk]
+in_game = "Geh Distanz"
+[stats.jump]
+in_game = "Sprung Distanz"
 [stats.range]
 in_game = "Reichweite"
 [stats.push]
@@ -53,23 +56,19 @@ in_game = "Zurueckwerfen"
 in_game = "Ziehen"
 [stats.recoil]
 in_game = "Ru:kstoss"
-[stats.retreat]
-in_game = "Ru:ckzug"
 [stats.advance]
 in_game = "Vorru:cken"
-[stats.walk]
-in_game = "Geh Distanz"
-[stats.jump]
-in_game = "Sprung Distanz"
+[stats.retreat]
+in_game = "Ru:ckzug"
 [stats.uses]
 in_game = "Einsaetze"
 [stats.backfire]
 in_game = "Backfire"
-[stats.heaCost]
+[stats.heat_generation]
 in_game = "Verursachte Hitze"
-[stats.eneCost]
-in_game = "Pobór energii"
-[stats.bulletsCost]
+[stats.energy_cost]
 in_game = "???"
-[stats.rocketsCost]
+[stats.bullets_cost]
+in_game = "???"
+[stats.rockets_cost]
 in_game = "???"
