@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import contextlib
 import logging
 import os
-import typing as t
 from functools import partial
 
 import disnake.voice_client
-from aiohttp import ClientSession, ClientTimeout
 from disnake import AllowedMentions, Game, Intents
 from disnake.ext.commands import InteractionBot
 from dotenv import load_dotenv
@@ -17,12 +14,9 @@ from bridges import register_injections, register_listeners
 from config import DATE_FORMAT, DEFAULT_PACK_URL, HOME_GUILD_ID, LOGS_CHANNEL_ID, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
 from managers import load_default_pack
-from shared import IO_CLIENT
+from shared.session import IO_CLIENT, create_client_session
 
 from supermechs import init as sm_init
-
-if t.TYPE_CHECKING:
-    from disnake.http import HTTPClient
 
 load_dotenv()
 
@@ -37,16 +31,6 @@ logging.root.addHandler(stream)
 disnake.voice_client.VoiceClient.warn_nacl = False
 logging.getLogger("disnake").setLevel(logging.ERROR)
 logging.getLogger("disnake.client").setLevel(logging.CRITICAL)  # mute connection errors
-
-
-@contextlib.asynccontextmanager
-async def create_client_session(client: HTTPClient, /) -> t.AsyncIterator[ClientSession]:
-    """Context manager establishing a client session, reusing client's connector & proxy."""
-    async with ClientSession(
-        connector=client.connector, timeout=ClientTimeout(total=30)
-    ) as session:
-        session._request = partial(session._request, proxy=client.proxy)
-        yield session
 
 
 async def main() -> None:

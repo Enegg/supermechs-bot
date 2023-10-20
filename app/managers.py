@@ -5,8 +5,8 @@ import anyio
 from disnake.abc import User
 
 from library_extensions import RESPONSE_TIME_LIMIT
-from shared import IO_CLIENT
 from shared.manager import Manager
+from shared.session import IO_CLIENT
 from shared.utils import async_memoize
 
 from supermechs.api import ItemPack, Metadata, PackRenderer, Player
