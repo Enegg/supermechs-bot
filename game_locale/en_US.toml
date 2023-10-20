@@ -1,71 +1,74 @@
-[stats]
 [stats.weight]
 in_game = "Weight"
-[stats.health]
+[stats.hit_points]
 default = "HP"
 in_game = "Hit Points"
-[stats.eneCap]
+[stats.energy_capacity]
 default = "Energy capacity"
 in_game = "Energy"
-[stats.eneReg]
+[stats.regeneration]
 in_game = "Regeneration"
 short = "Regen"
-[stats.heaCap]
+[stats.heat_capacity]
 default = "Heat capacity"
 in_game = "Heat"
-[stats.heaCol]
+[stats.cooling]
 in_game = "Cooling"
-[stats.bulletCap]
+[stats.bullets_capacity]
 default = "Bullet capacity"
 in_game = "Bullet cap"
-[stats.rocketsCap]
+[stats.rockets_capacity]
 default = "Rocket capacity"
 in_game = "Rocket cap"
-[stats.phyRes]
+[stats.physical_resistance]
 default = "Physical resistance"
 in_game = "Pys resist"
-[stats.expRes]
+[stats.explosive_resistance]
 default = "Explosive resistance"
 in_game = "Exp resist"
-[stats.eleRes]
+[stats.electric_resistance]
 default = "Electric resistance"
 in_game = "Ele resist"
-[stats.phyDmg]
+[stats.physical_damage]
 default = "Physical damage"
 in_game = "Pys dmg"
-[stats.phyResDmg]
+[stats.physical_resistance_damage]
 default = "Resistance drain"
 in_game = "Resist drain"
-[stats.expDmg]
-default = "Explosive damage"
-in_game = "Exp dmg"
-[stats.heaDmg]
-default = "Heat damage"
-in_game = "Heat dmg"
-[stats.heaCapDmg]
-default = "Max heat damage"
-in_game = "Max heat dmg"
-[stats.heaColDmg]
-default = "Cooling damage"
-in_game = "Cooling dmg"
-[stats.expResDmg]
-default = "Resistance drain"
-in_game = "Resist drain"
-[stats.eleDmg]
+[stats.electric_damage]
 default = "Electric damage"
 in_game = "Ele dmg"
-[stats.eneDmg]
+[stats.energy_damage]
 default = "Energy damage"
 in_game = "Energy dmg"
-[stats.eneCapDmg]
+[stats.energy_capacity_damage]
 default = "Max energy damage"
 in_game = "Max energy dmg"
-[stats.eneRegDmg]
+[stats.regeneration_damage]
 default = "Regeneration damage"
 in_game = "Regen dmg"
-[stats.eleResDmg]
+[stats.electric_resistance_damage]
 default = "Resistance drain"
 in_game = "Resist drain"
+[stats.explosive_damage]
+default = "Explosive damage"
+in_game = "Exp dmg"
+[stats.heat_damage]
+default = "Heat damage"
+in_game = "Heat dmg"
+[stats.heat_capacity_damage]
+default = "Max heat damage"
+in_game = "Max heat dmg"
+[stats.cooling_damage]
+default = "Cooling damage"
+in_game = "Cooling dmg"
+[stats.explosive_resistance_damage]
+default = "Resistance drain"
+in_game = "Resist drain"
+[stats.walk]
+in_game = "Walking"
+[stats.jump]
+in_game = "Jumping"
 [stats.range]
 in_game = "Range"
 [stats.push]
@@ -75,30 +78,29 @@ in_game = "Push"
 in_game = "Pull"
 [stats.recoil]
 in_game = "Recoil"
-[stats.retreat]
-in_game = "Retreat"
 [stats.advance]
 in_game = "Advance"
-[stats.walk]
-in_game = "Walking"
-[stats.jump]
-in_game = "Jumping"
+[stats.retreat]
+in_game = "Retreat"
 [stats.uses]
 in_game = "Uses"
 [stats.backfire]
 in_game = "Backfire"
-[stats.heaCost]
+[stats.heat_generation]
 in_game = "Heat cost"
-[stats.eneCost]
+[stats.energy_cost]
 in_game = "Energy cost"
-[stats.bulletsCost]
+[stats.bullets_cost]
 in_game = "Bullets cost"
-[stats.rocketsCost]
+[stats.rockets_cost]
 in_game = "Rockets cost"
 
-# custom stats
-[stats.spread]
+
+[custom_stats.spread]
 default = "Damage spread"
-[stats.anyDmg]
+[custom_stats.anyDmg]
 default = "Damage"
 
+[other]
+jumpRequired = "Jumping required"
+transformRange = "Transformation range"
