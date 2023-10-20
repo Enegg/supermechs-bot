@@ -2,7 +2,14 @@ import typing as t
 import typing_extensions as tex
 from configparser import ConfigParser
 
-__all__ = ("DATE_FORMAT", "DEFAULT_PACK_URL", "HOME_GUILD_ID", "LOGS_CHANNEL_ID", "TEST_GUILDS")
+__all__ = (
+    "DATE_FORMAT",
+    "DEFAULT_PACK_KEY",
+    "DEFAULT_PACK_URL",
+    "HOME_GUILD_ID",
+    "LOGS_CHANNEL_ID",
+    "TEST_GUILDS",
+)
 
 _parser = ConfigParser()
 _parser.read("config.ini")
@@ -15,5 +22,6 @@ TEST_GUILDS: t.Sequence[int] = (HOME_GUILD_ID,)
 """The IDs of guilds the bot will register commands in while in dev mode."""
 DATE_FORMAT: tex.LiteralString = "%d.%m.%Y %H:%M:%S"
 DEFAULT_PACK_URL: str = _parser.get("SM", "PACK_URL")
+DEFAULT_PACK_KEY: str = "@Darkstare"
 
 del _parser

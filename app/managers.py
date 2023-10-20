@@ -4,12 +4,14 @@ import typing as t
 import anyio
 from disnake.abc import User
 
+from bridges import Player
+from config import DEFAULT_PACK_KEY
 from library_extensions import RESPONSE_TIME_LIMIT
 from shared.manager import Manager
 from shared.session import IO_CLIENT
 from shared.utils import async_memoize
 
-from supermechs.api import ItemPack, Metadata, PackRenderer, Player
+from supermechs.api import ItemPack, Metadata, PackRenderer
 from supermechs.ext.deserializers import extract_key, to_item_pack, to_pack_renderer
 from supermechs.ext.deserializers.typedefs import AnyItemPack
 
@@ -88,4 +90,4 @@ async def get_default_pack() -> tuple[ItemPack, PackRenderer]:
     async with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
         await PACK_LOADED.wait()
 
-    return item_pack_manager["@Darkstare"], renderer_manager["@Darkstare"]
+    return item_pack_manager[DEFAULT_PACK_KEY], renderer_manager[DEFAULT_PACK_KEY]
