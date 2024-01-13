@@ -37,15 +37,14 @@ async def main() -> None:
     bot = InteractionBot(
         intents=Intents(guilds=True),
         activity=Game("SuperMechs"),
-        test_guilds=TEST_GUILDS if __debug__ else None,
         allowed_mentions=AllowedMentions.none(),
-        strict_localization=True,
+        localization_provider=i18n.localization_provider,
+        test_guilds=TEST_GUILDS if __debug__ else None,
     )
     if __debug__:
         bot.get_global_command_named = partial(bot.get_guild_command_named, HOME_GUILD_ID)
 
-    bot.i18n.load("locale/")
-    i18n.load("game_locale/")
+    i18n.load("locale/")
     register_listeners(bot)
     register_injections()
     await sm_init()

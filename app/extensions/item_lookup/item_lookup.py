@@ -124,7 +124,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         if self.buffs_button.on:
             items_stats = map(MAX_BUFFS.buff_stats, items_stats)
 
-        name_field, first_field, second_field = stats_to_fields(*items_stats)
+        name_field, first_field, second_field = stats_to_fields(*items_stats, locale=self.locale)
 
         if require_jump := self.item_a.tags.require_jump:
             first_field.append("❕")
@@ -143,8 +143,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
         else:
             modify_field_at = self.embed.insert_field_at
 
-        entries = {stat.name: x for stat, x in i18n.get_entries(self.locale).items()}
-        modify_field_at(0, "Stat", "\n".join(name_field).format_map(entries))
+        modify_field_at(0, "Stat", "\n".join(name_field))
         modify_field_at(1, try_shorten(self.item_a.name), "\n".join(first_field))
         modify_field_at(2, try_shorten(self.item_b.name), "\n".join(second_field))
 
@@ -238,7 +237,7 @@ def default_fields(
             change = f" **{change}**"
 
         string_builder.write(
-            f"{STAT[stat_key]} **{str_value}** {i18n.get(locale, stat_key)}{change}\n"
+            f"{STAT[stat]} **{str_value}** {i18n.get_stat_name(locale, stat)}{change}\n"
         )
 
     if item.tags.require_jump:
@@ -350,14 +349,14 @@ def comparator(
 
 
 def stats_to_fields(
-    stats_a: StatsMapping, stats_b: StatsMapping
+    stats_a: StatsMapping, stats_b: StatsMapping, locale: Locale
 ) -> tuple[list[str], list[str], list[str]]:
     name_field: list[str] = []
     first_item: list[str] = []
     second_item: list[str] = []
 
     for stat, long_boy in comparator(stats_a, stats_b):
-        name_field.append(f"{STAT[stat]} {{{stat.name}}}")
+        name_field.append(f"{STAT[stat]} {i18n.get_stat_name(locale, stat)}")
 
         match (stat, long_boy):
             case Stat.range, ((a1, a2), (b1, b2)):

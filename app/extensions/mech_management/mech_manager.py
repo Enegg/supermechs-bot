@@ -58,13 +58,14 @@ def format_stats(mech: Mech, locale: Locale, included_buffs: ArenaBuffs | None =
         bank = included_buffs.buff_stats(mech.stat_summary, buff_health=True)
 
     return "\n".join(
+        f"{STAT[stat]} **{value}** {i18n.get_stat_name(locale, stat).default}"
         "{stat_emoji} **{value}** {stat_name}{extra}".format(  # TODO: stat names
+            stat_emoji=STAT[stat],
             value=value,
-            stat_name=i18n.get(locale, stat_key).default,
-            stat_emoji=STAT[stat_key],
-            extra=get_weight_usage(value) if stat_key is Stat.weight else "",
+            stat_name=i18n.get_stat_name(locale, stat).default,
+            extra=" " + get_weight_emoji(value) if stat is Stat.weight else "",
         )
-        for stat_key, value in bank.items()
+        for stat, value in summary.items()
     )
 
 
