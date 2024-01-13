@@ -1,12 +1,7 @@
 import re
-import string
 import typing as t
-from typing_extensions import LiteralString
 
-from disnake import Locale, LocalizationProtocol
-
-__all__ = ("SPACE", "Markdown", "monospace", "localized_text", "sanitize_filename")
-
+__all__ = ("SPACE", "Markdown", "sanitize_filename")
 
 SPACE: t.Final = "\u2800"
 """Invisible character discord does not truncate."""
@@ -17,17 +12,17 @@ class Markdown:
 
     @staticmethod
     def hyperlink(text: str, url: str) -> str:
-        """Return a hyperlink to a URL."""
+        """Returns a hyperlink to a URL."""
         return f"[{text}]({url})"
 
     @staticmethod
     def codeblock(text: str, lang: str = "") -> str:
-        """Return text formatted with a codeblock."""
+        """Returns text formatted with a codeblock."""
         return f"```{lang}\n{text}```"
 
     @staticmethod
-    def strip_codeblock(text: str) -> str:
-        """Return text stripped from codeblock syntax."""
+    def strip_codeblock(text: str, /) -> str:
+        """Returns text stripped from codeblock syntax."""
         text = text.removeprefix("```").removesuffix("```")
         lang, sep, stripped = text.partition("\n")
 
@@ -36,23 +31,6 @@ class Markdown:
             return stripped
 
         return text
-
-
-class monospace:
-    """Collection of monospace string constants."""
-
-    lowercase: LiteralString = "𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣"
-    uppercase: LiteralString = "𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉"  # noqa: RUF001
-    letters: LiteralString = lowercase + uppercase
-    digits: LiteralString = "𝟶𝟷𝟸𝟹𝟺𝟻𝟼𝟽𝟾𝟿"  # noqa: RUF001
-
-    table = str.maketrans(string.digits + string.ascii_letters, digits + letters)
-
-
-def localized_text(content: str, key: str, i18n: LocalizationProtocol, locale: Locale) -> str:
-    """Grabs text from a i18n provider under specified key, or fallbacks to content."""
-    locs = i18n.get(key) or {}
-    return locs.get(str(locale), content)
 
 
 _antipattern = re.compile(r"[^\w.-]")
