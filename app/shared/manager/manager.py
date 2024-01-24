@@ -1,6 +1,6 @@
 import inspect
-import typing as t
-from collections.abc import Mapping
+import typing
+from collections import abc
 from types import MappingProxyType
 
 from attrs import define, field
@@ -12,18 +12,13 @@ from supermechs.utils import large_mapping_repr
 __all__ = ("Manager", "default_key")
 
 
-# P: parameter specification of callable creating objects VT
-# VT: type of stored values
-# KT: type of keys values are stored under
-
-
-def callable_repr(func: t.Callable[..., t.Any], /) -> str:
-    """Returns a signature of a callable."""
+def callable_repr(func: abc.Callable[..., object], /) -> str:
+    """Returns the signature of a callable."""
     signature = inspect.signature(func)
     return f"{func.__name__}{signature}"
 
 
-def default_key(*args: t.Hashable, **kwargs: t.Hashable) -> t.Hashable:
+def default_key(*args: abc.Hashable, **kwargs: abc.Hashable) -> abc.Hashable:
     """Computes a key from all args and kwargs by creating a single large tuple.
     Requires all members to be hashable.
     """
@@ -39,7 +34,7 @@ def default_key(*args: t.Hashable, **kwargs: t.Hashable) -> t.Hashable:
 
 
 @define
-class Manager(t.Generic[P, VT, KT], Mapping[KT, VT]):
+class Manager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
     """Provides means to create, store and retrieve objects.
 
     Parameters
@@ -47,16 +42,17 @@ class Manager(t.Generic[P, VT, KT], Mapping[KT, VT]):
     factory: callable creating objects from arguments P.
     key: callable computing keys to store objects under.
     """
-    factory: t.Callable[P, VT] = field(repr=callable_repr)
+
+    factory: abc.Callable[P, VT] = field(repr=callable_repr)
     """Creates an object from given value."""
 
-    key: t.Callable[P, KT] = field(repr=callable_repr)
+    key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: t.MutableMapping[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
+    _store: dict[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
 
     @property
-    def mapping(self) -> t.Mapping[KT, VT]:
+    def mapping(self) -> abc.Mapping[KT, VT]:
         """Read-only proxy of the underlying mapping."""
         return MappingProxyType(self._store)
 
@@ -66,13 +62,13 @@ class Manager(t.Generic[P, VT, KT], Mapping[KT, VT]):
     def __len__(self) -> int:
         return len(self._store)
 
-    def __iter__(self) -> t.Iterator[KT]:
+    def __iter__(self) -> abc.Iterator[KT]:
         return iter(self._store)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        return self.lookup_or_create(*args, **kwargs)
+        return self.get_or_create(*args, **kwargs)
 
-    def lookup_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+    def get_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve stored or create an object from given value."""
         key = self.key(*args, **kwargs)
         try:
@@ -83,7 +79,9 @@ class Manager(t.Generic[P, VT, KT], Mapping[KT, VT]):
             self._store[key] = obj
             return obj
 
-    def create(self, *args: P.args, **kwargs: P.kwargs) -> None:
+    def create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Create and store an object from given value."""
         key = self.key(*args, **kwargs)
-        self._store[key] = self.factory(*args, **kwargs)
+        obj = self.factory(*args, **kwargs)
+        self._store[key] = obj
+        return obj

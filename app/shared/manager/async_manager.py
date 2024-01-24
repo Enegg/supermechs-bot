@@ -1,5 +1,5 @@
-import typing as t
-from collections.abc import Mapping
+import typing
+from collections import abc
 from contextlib import asynccontextmanager
 from types import MappingProxyType
 
@@ -16,7 +16,7 @@ __all__ = ("AsyncManager",)
 
 
 @define
-class AsyncManager(t.Generic[P, VT, KT], Mapping[KT, VT]):
+class AsyncManager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
     """Provides means to asynchronously create, store and retrieve objects.
 
     Note: concurrent calls with same arguments will run the factory only once.
@@ -26,17 +26,18 @@ class AsyncManager(t.Generic[P, VT, KT], Mapping[KT, VT]):
     factory: async callable creating objects from arguments P.
     key: callable computing keys to store objects under.
     """
-    factory: t.Callable[P, t.Awaitable[VT]] = field(repr=callable_repr)
+
+    factory: abc.Callable[P, abc.Awaitable[VT]] = field(repr=callable_repr)
     """Creates an object from given value."""
 
-    key: t.Callable[P, KT] = field(repr=callable_repr)
+    key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: t.MutableMapping[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
-    _locks: t.MutableMapping[KT, anyio.Lock] = field(factory=dict, init=False, repr=large_mapping_repr)
+    _store: dict[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
+    _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False, repr=large_mapping_repr)
 
     @property
-    def mapping(self) -> t.Mapping[KT, VT]:
+    def mapping(self) -> abc.Mapping[KT, VT]:
         """Read-only proxy of the underlying mapping."""
         return MappingProxyType(self._store)
 
@@ -46,13 +47,13 @@ class AsyncManager(t.Generic[P, VT, KT], Mapping[KT, VT]):
     def __len__(self) -> int:
         return len(self._store)
 
-    def __iter__(self) -> t.Iterator[KT]:
+    def __iter__(self) -> abc.Iterator[KT]:
         return iter(self._store)
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        return await self.lookup_or_create(*args, **kwargs)
+        return await self.get_or_create(*args, **kwargs)
 
-    async def lookup_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+    async def get_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve stored or create an object from given value."""
         key = self.key(*args, **kwargs)
 
@@ -69,14 +70,20 @@ class AsyncManager(t.Generic[P, VT, KT], Mapping[KT, VT]):
                 self._store[key] = obj
                 return obj
 
+    async def create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+        """Create and store an object from given value."""
+        key = self.key(*args, **kwargs)
+        obj = await self.factory(*args, **kwargs)
+        self._store[key] = obj
+        return obj
+
     @asynccontextmanager
-    async def _acquire_lock(self, key: KT, /) -> t.AsyncIterator[None]:
+    async def _acquire_lock(self, key: KT, /) -> abc.AsyncIterator[None]:
         lock = self._locks.get(key)
 
         if owner := lock is None:
             lock = self._locks[key] = anyio.Lock()
 
-        # is this try...finally needed here?
         try:
             async with lock:
                 yield
