@@ -5,10 +5,10 @@ from functools import partial
 
 import aiohttp
 
-__all__ = ("IO_CLIENT", "create_client_session")
+__all__ = ("IO_SESSION", "create_io_session")
 
 
-IO_CLIENT: ContextVar[aiohttp.ClientSession] = ContextVar("session")
+IO_SESSION = ContextVar[aiohttp.ClientSession]("io_session")
 """The aiohttp.ClientSession available for general use."""
 
 
@@ -18,7 +18,7 @@ class HTTPClient(t.Protocol):
 
 
 @contextlib.asynccontextmanager
-async def create_client_session(client: HTTPClient, /) -> t.AsyncIterator[aiohttp.ClientSession]:
+async def create_io_session(client: HTTPClient, /) -> t.AsyncIterator[aiohttp.ClientSession]:
     """Context manager establishing a client session, reusing client's connector & proxy."""
     async with aiohttp.ClientSession(
         connector=client.connector, timeout=aiohttp.ClientTimeout(total=30)
