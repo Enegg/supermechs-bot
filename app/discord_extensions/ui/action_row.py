@@ -15,7 +15,7 @@ ActionRowT = TypeVar(
     infer_variance=True,
 )
 
-__all__ = ("ActionRowT", "MessageUIComponent", "ActionRow", "PaginatedRow")
+__all__ = ("ActionRowT", "MessageUIComponent", "PaginatedRow")
 
 
 class PaginatedRow(ReprMixin, ActionRow[UIComponentT]):
@@ -152,7 +152,7 @@ class PaginatedRow(ReprMixin, ActionRow[UIComponentT]):
     def clear_items(self) -> Self:
         self.clear_page()
         self.page_items.clear()
-        self.persistent = [None] * 5
+        self.persistent[:] = [None] * 5
         return self
 
     def clear_page(self) -> None:

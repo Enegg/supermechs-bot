@@ -10,9 +10,7 @@ from typeshed import T
 if t.TYPE_CHECKING:
     from disnake import Emoji, PartialEmoji
 
-B_CO = t.TypeVar("B_CO", bound=Button[None], covariant=True)
-
-__all__ = ("ToggleButton", "TrinaryButton", "B_CO")
+__all__ = ("ToggleButton", "TrinaryButton")
 
 
 class LinkButton(Button[None]):

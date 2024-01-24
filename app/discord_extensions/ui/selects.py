@@ -4,7 +4,7 @@ from disnake import SelectOption
 from disnake.ui.select import StringSelect
 from disnake.utils import MISSING
 
-from library_extensions import OPTION_LIMIT
+from .. import ComponentLimits
 
 __all__ = ("EMPTY_OPTION", "PaginatedSelect")
 
@@ -49,17 +49,18 @@ class PaginatedSelect(StringSelect[None]):
         """The total number of pages this select has."""
         total_option_count = len(self._all_options)
 
-        if total_option_count <= OPTION_LIMIT:
+        if total_option_count <= ComponentLimits.select_options:
             return 1
 
-        if total_option_count <= (OPTION_LIMIT - 1) * 2:
+        if total_option_count <= (ComponentLimits.select_options - 1) * 2:
             # fits on two pages so we only add one of up/down option on each
             return 2
 
-        pages_with_both_options, last_page_option_count = divmod(
-            total_option_count - (OPTION_LIMIT - 1) * 2, OPTION_LIMIT - 2
+        both_options_pages, last_page_options = divmod(
+            total_option_count - (ComponentLimits.select_options - 1) * 2,
+            ComponentLimits.select_options - 2,
         )
-        return 2 + pages_with_both_options + (1 if last_page_option_count > 0 else 0)
+        return 2 + both_options_pages + (1 if last_page_options > 0 else 0)
 
     @property
     def all_options(self) -> t.Sequence[SelectOption]:
@@ -84,20 +85,20 @@ class PaginatedSelect(StringSelect[None]):
             options = self._all_options
 
         elif page == 0:
-            options = self._all_options[:OPTION_LIMIT - 1]
+            options = self._all_options[: ComponentLimits.select_options - 1]
             options.append(self.down)
 
         elif page == total - 1:
             # the +1 accounts for first page containing one extra option
-            offset = (OPTION_LIMIT - 2) * page + 1
+            offset = (ComponentLimits.select_options - 2) * page + 1
             options = [self.up]
             options += self._all_options[offset:]
 
         else:
-            offset = (OPTION_LIMIT - 2) * page + 1
-            size = OPTION_LIMIT - 2
+            offset = (ComponentLimits.select_options - 2) * page + 1
+            size = ComponentLimits.select_options - 2
             options = [self.up]
-            options += self._all_options[offset:offset + size]
+            options += self._all_options[offset : offset + size]
             options.append(self.down)
 
         self._underlying.options = options

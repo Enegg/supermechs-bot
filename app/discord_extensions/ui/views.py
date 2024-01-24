@@ -3,17 +3,17 @@ from __future__ import annotations
 import asyncio
 import os
 import typing as t
+import typing_extensions as tex
 from functools import partial
 
 from disnake import MessageInteraction
-from disnake.ui.action_row import MessageUIComponent
+from disnake.ui import ActionRow, MessageUIComponent, View
 from disnake.ui.item import DecoratedItem, Item
-from disnake.ui.view import View
-from typing_extensions import Self, TypeVar
 
 from shared.utils import ReprMixin
 
-from .action_row import ActionRow, ActionRowT, PaginatedRow
+from ..limits import ComponentLimits, MessageLimits
+from .action_row import ActionRowT, PaginatedRow
 
 if t.TYPE_CHECKING:
     from typeshed import Factory
@@ -27,11 +27,8 @@ __all__ = (
     "add_callback",
 )
 
-ItemT = TypeVar("ItemT", bound=Item[None], default=Item[None], infer_variance=True)
-MsgInterT = TypeVar(
-    "MsgInterT", bound=MessageInteraction, default=MessageInteraction, infer_variance=True
-)
-ItemCallbackType = t.Callable[[t.Any, ItemT, MsgInterT], t.Coroutine[t.Any, t.Any, t.Any]]
+ItemT = tex.TypeVar("ItemT", bound=Item[None], default=Item[None], infer_variance=True)
+ItemCallbackType = t.Callable[[t.Any, ItemT, MessageInteraction], t.Coroutine[t.Any, t.Any, None]]
 
 
 class ViewP(t.Protocol):
@@ -77,8 +74,6 @@ def positioned(row: int, column: int):
 class SaneView(t.Generic[ActionRowT], ReprMixin, View):
     """Represents a UI view.
 
-    This object must be inherited to create a UI within Discord.
-
     Parameters
     ----------
     timeout:
@@ -100,7 +95,7 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
             if hasattr(member, "__discord_ui_model_type__")
         ]
 
-        if len(children) > 25:
+        if len(children) > MessageLimits.action_rows * ComponentLimits.row_width:
             raise TypeError("View cannot have more than 25 children")
 
         cls.__view_children_items__ = children
@@ -143,7 +138,7 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
             action_row.insert_item(len(action_row) if column is None else column, item)
 
         self.id: str = os.urandom(16).hex()
-        self._View__cancel_callback: t.Callable[[Self], None] | None = None
+        self._View__cancel_callback: t.Callable[[tex.Self], None] | None = None
         self._View__timeout_expiry: float | None = None
         self._View__timeout_task: asyncio.Task[None] | None = None
         self._View__stopped: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
@@ -199,7 +194,7 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
         elif row is None:
             raise ValueError("Cannot add an item without row specified")
 
-        if not 0 <= row < 5:
+        if not 0 <= row < MessageLimits.action_rows:
             raise ValueError("row outside range 0-4")
 
         self.rows[row].append_item(item)
@@ -209,15 +204,15 @@ class SaneView(t.Generic[ActionRowT], ReprMixin, View):
     def remove_item(self, item: MessageUIComponent, row: int | None = None) -> None:
         if row is not None:
             self.rows[row].remove_item(item)
+            return
 
-        else:
-            for _row in self.rows:
-                try:
-                    _row.remove_item(item)
-                    return
+        for _row in self.rows:
+            try:
+                _row.remove_item(item)
+                return
 
-                except ValueError:
-                    pass
+            except ValueError:
+                pass
 
     def clear_items(self) -> None:
         """Removes all items from the view."""
