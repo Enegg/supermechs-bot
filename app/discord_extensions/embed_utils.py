@@ -1,13 +1,12 @@
 import io
 import pathlib
 import random
+import re
 import typing as t
 
 from disnake import Colour, Embed, File
 
 import config
-
-from .text_utils import sanitize_filename
 
 if t.TYPE_CHECKING:
     from PIL.Image import Image
@@ -18,9 +17,12 @@ EmbedColorType: t.TypeAlias = Colour | int
 
 
 def debug_footer(embed: Embed, /) -> None:
-    """Debug function, adds a footer with raw urls of various embed fields, and total characters."""
+    """Adds a footer with raw urls of various embed fields, and total characters."""
 
     parts: list[str] = ["Debug:", f"Size: {len(embed)}"]
+
+    if existing_footer := embed.footer.text:
+        parts.insert(0, existing_footer)
 
     if (url := embed.image.url) and url.startswith("attachment://"):
         parts.append(f"Image: {url}")
@@ -29,6 +31,14 @@ def debug_footer(embed: Embed, /) -> None:
         parts.append(f"Thumb: {url}")
 
     embed.set_footer(text="\n".join(parts))
+
+
+_antipattern = re.compile(r"[^\w.-]")
+
+
+def sanitize_filename(filename: str, /) -> str:
+    """Ensure filename conforms to discord attachment restrictions."""
+    return _antipattern.sub("_", filename).lower()
 
 
 def embed_image(image: "Image", filename: str, format: str = "png") -> tuple[str, File]:
@@ -41,9 +51,9 @@ def embed_image(image: "Image", filename: str, format: str = "png") -> tuple[str
         image.save(fp, format=format)
 
     except KeyError:
-        # PIL does not cleanly handle invalid formats and instead throws
-        # a vague mapping lookup error when not found
-        raise ValueError(f"Invalid file format: {format!r}") from None
+        # invalid formats not found in PIL's lookup table throw KeyError
+        msg = f"Invalid image format: {format!r}"
+        raise ValueError(msg) from None
 
     fp.seek(0)
     return f"attachment://{filename}", File(fp, filename)

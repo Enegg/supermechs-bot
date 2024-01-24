@@ -1,7 +1,6 @@
-import re
 import typing as t
 
-__all__ = ("SPACE", "Markdown", "sanitize_filename")
+__all__ = ("SPACE", "Markdown")
 
 SPACE: t.Final = "\u2800"
 """Invisible character discord does not truncate."""
@@ -31,11 +30,3 @@ class Markdown:
             return stripped
 
         return text
-
-
-_antipattern = re.compile(r"[^\w.-]")
-
-
-def sanitize_filename(filename: str, /) -> str:
-    """Ensure filename conforms to discord attachment restrictions."""
-    return _antipattern.sub("_", filename).lower()
