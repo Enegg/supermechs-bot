@@ -5,6 +5,8 @@ import importlib.util
 import os.path
 import typing as t
 
+from exceptiongroup import ExceptionGroup
+
 from .pending import walk_modules
 
 __all__ = ("load_extensions",)
@@ -36,5 +38,14 @@ def load_extensions(
         msg = f"Module '{root_module}' is not a package"
         raise ImportError(msg, name=root_module)
 
+    problems: list[Exception] = []
+
     for module_name in walk_modules(paths, f"{spec.name}.", ignore):
-        loader(module_name)
+        try:
+            loader(module_name)
+
+        except Exception as exc:
+            problems.append(exc)
+
+    if problems:
+        raise ExceptionGroup("Exceptions occured during loading", problems)
