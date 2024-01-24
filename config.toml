@@ -1,0 +1,23 @@
+[bot]
+# https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+DATE_FORMAT = "%d.%m.%Y %H:%M:%S"
+[SM]
+DEFAULT_PACK_URL = "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7dc669d484db89062/raw"
+MISSING_IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
+EMBED_TIPS = [
+    "What are you cooking?",
+    "Dawnblaze my beloved",
+    "<generic loading screen tip>",
+    '"💀"',
+    "BattleMechs reloaded",
+    "To the surprise of literally no one",
+    "Raul is KilliN confirmed",
+    "Raul is pronounced /Hau/",
+    "Reverie of a certain Moldovan",
+    "is alex, no me",
+    "If something's broken, blame Marija",
+    "oh Marija",
+    "Bocchi the Rock Recoiler",
+    "Disable my base pls",
+    "What time is it",
+]

@@ -1,27 +1,36 @@
+import os
 import typing as t
-import typing_extensions as tex
-from configparser import ConfigParser
+
+import rtoml
+
+from discord_extensions import RESPONSE_TIMEOUT
+
+from supermechs.gamerules import GameRules
 
 __all__ = (
     "DATE_FORMAT",
-    "DEFAULT_PACK_KEY",
     "DEFAULT_PACK_URL",
     "HOME_GUILD_ID",
     "LOGS_CHANNEL_ID",
     "TEST_GUILDS",
 )
 
-_parser = ConfigParser()
-_parser.read("config.ini")
+_config = rtoml.load("config.toml")
 
-LOGS_CHANNEL_ID: int = _parser.getint("bot", "LOGS_CHANNEL_ID")
+DATE_FORMAT: str = _config["bot"]["DATE_FORMAT"]
+LOGS_CHANNEL_ID: int = int(os.environ["LOGS_CHANNEL_ID"])
 """The ID of a text channel for ChannelHandler to send logs to."""
-HOME_GUILD_ID: int = _parser.getint("bot", "HOME_GUILD_ID")
+HOME_GUILD_ID: int = int(os.environ["HOME_GUILD_ID"])
 """The bot's home guild ID."""
 TEST_GUILDS: t.Sequence[int] = (HOME_GUILD_ID,)
 """The IDs of guilds the bot will register commands in while in dev mode."""
-DATE_FORMAT: tex.LiteralString = "%d.%m.%Y %H:%M:%S"
-DEFAULT_PACK_URL: str = _parser.get("SM", "PACK_URL")
-DEFAULT_PACK_KEY: str = "@Darkstare"
+EMBED_TIPS: t.Sequence[str] = _config["SM"]["EMBED_TIPS"]
 
-del _parser
+DEFAULT_PACK_URL: str = _config["SM"]["DEFAULT_PACK_URL"]
+
+del _config
+
+RESPONSE_TIME_LIMIT: float = RESPONSE_TIMEOUT - 0.5
+
+SM_GAME_RULES = GameRules()
+"""The set of rules to use for SuperMechs."""
