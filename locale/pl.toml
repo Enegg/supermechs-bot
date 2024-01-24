@@ -1,3 +1,4 @@
+[stats]
 [stats.weight]
 in_game = "Waga"
 [stats.hit_points]
@@ -97,3 +98,57 @@ in_game = "???"
 default = "Rozrzut"
 [custom_stats.anyDmg]
 default = "Obrażenia"
+
+[messages]
+cmd_dev = "To komenda wyłącznie deweloperska."
+cmd_running = "Twoje poprzednie wywołanie tej komendy nie zakończyło się."
+cmd_error = "Podczas wywołania wystąpił błąd..."
+cmd_timeout = "Komenda przekroczyła limit czasu."
+
+[commands]
+ARENA_BUFFS_NAME = "buffy"
+ARENA_BUFFS_DESCRIPTION = "Interaktywne menu do modyfikacji arena buffów."
+
+BUFFS_MAXED_NAME = "ustaw_max"
+BUFFS_MAXED_DESCRIPTION = "Ustawia twoje arena buffy na maksymalne poziomy."
+
+ITEM_NAME = "przedmiot"
+ITEM_DESCRIPTION = "Znajduje przedmiot i pokazuje jego statystyki."
+ITEM_NAME_NAME = "nazwa"
+ITEM_NAME_DESCRIPTION = "Nazwa przedmiotu."
+ITEM_TYPE_NAME = "typ"
+ITEM_TYPE_DESCRIPTION = "Sugerowane przedmioty będą jedynie tego typu."
+ITEM_ELEMENT_NAME = "element"
+ITEM_ELEMENT_DESCRIPTION = "Sugerowane przedmioty będą jedynie tego elementu."
+ITEM_COMPACT_NAME = "kompaktowy"
+ITEM_COMPACT_DESCRIPTION = "Włącza kompaktowe ułożenie (psuje się na aplikacji mobilnej)."
+
+COMPARE_NAME = "porównaj"
+COMPARE_DESCRIPTION = "Porównuje dwa przedmioty w interaktywnym menu."
+COMPARE_FIRST_NAME = "przedmiot1"
+COMPARE_FIRST_DESCRIPTION = "Pierwszy przedmiot do porównania."
+COMPARE_SECOND_NAME = "przedmiot2"
+COMPARE_SECOND_DESCRIPTION = "Drugi przedmiot do porównania."
+
+MECH_SHOW_NAME = "pokaż"
+MECH_SHOW_DESCRIPTION = "Wyświetla mecha i jego statystyki."
+MECH_SHOW_NAME_NAME = "nazwa"
+MECH_SHOW_NAME_DESCRIPTION = "Nazwa mecha do pokazania. Jeżeli nie podana, będzie to twój ostanio używany mech."
+
+MECH_BROWSE_NAME = "przeglądaj"
+MECH_BROWSE_DESCRIPTION = "Wyświetla listę twoich mechów."
+
+MECH_BUILD_NAME = "buduj"
+MECH_BUILD_DESCRIPTION = "Interaktywny interfejs do tworzenia i modyfikacji mechów."
+MECH_BUILD_NAME_NAME = "nazwa"
+MECH_BUILD_NAME_DESCRIPTION = "Nazwa istniejącego mecha lub do nadania nowemu. Jeżeli nie podana, będzie to \"Unnamed Mech\"."
+
+MECH_IMPORT_NAME = "importuj"
+MECH_IMPORT_DESCRIPTION = "importuj mechy z pliku .JSON."
+MECH_IMPORT_FILE_NAME = "plik"
+MECH_IMPORT_FILE_DESCRIPTION = "Plik .JSON w formacie wspierającym WU."
+
+MECH_EXPORT_NAME = "eksportuj"
+MECH_EXPORT_DESCRIPTION = "Eksportuj swoje mechy do pliku .JSON wspieranego przez WU."
+MECH_EXPORT_FORMAT_NAME = "format"
+MECH_EXPORT_FORMAT_DESCRIPTION = "Format pliku, w jaki zostanie załączony. Formaty inne niż .json nie są wspieranie przez WU."

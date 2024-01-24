@@ -104,3 +104,9 @@ default = "Damage"
 [other]
 jumpRequired = "Jumping required"
 transformRange = "Transformation range"
+
+[messages]
+cmd_dev = "This is a developer-only command."
+cmd_running = "Your previous invocation of this command has not finished executing."
+cmd_error = "Command executed with an error..."
+cmd_timeout = "Command execution timed out."
