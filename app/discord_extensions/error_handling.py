@@ -1,7 +1,7 @@
 import logging
 import os
 import traceback
-import typing as t
+import typing
 from contextlib import suppress
 from functools import partial
 
@@ -19,7 +19,7 @@ from .text_utils import SPACE, Markdown
 __all__ = ("setup_channel_logger",)
 
 
-class SenderKeywords(t.TypedDict, total=False):
+class SenderKeywords(typing.TypedDict, total=False):
     content: str
     embed: Embed
     file: File
