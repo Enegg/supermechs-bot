@@ -1,24 +1,16 @@
-from __future__ import annotations
-
-import ast
-import inspect
 import io
 import traceback
 import typing as t
-from contextlib import redirect_stderr, redirect_stdout
 
-import anyio
-from disnake import CommandInteraction, File, TextInputStyle
+from disnake import CommandInteraction
 from disnake.ext import commands, plugins
-from disnake.ui import TextInput
 
 from config import TEST_GUILDS
-from library_extensions import MSG_CHAR_LIMIT, OPTION_LIMIT, RESPONSE_TIME_LIMIT, Markdown
-from library_extensions.ui import random_str, wait_for_modal
+from discord_extensions import OPTION_LIMIT
 
 exception_names: t.Final = commands.errors.__all__
 
-plugin: t.Final = plugins.Plugin["commands.InteractionBot"](
+plugin: t.Final = plugins.Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
 )
 last_extension: str | None = None
@@ -137,77 +129,6 @@ async def raise_autocomplete(_: CommandInteraction, input: str) -> list[str]:
     matching = [exc for exc in exception_names if input in exc.lower()]
     del matching[OPTION_LIMIT:]
     return matching
-
-
-@plugin.slash_command(name="eval")
-@commands.default_member_permissions(administrator=True)
-@commands.is_owner()
-async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
-    """Evaluates the given input as code.
-
-    Parameters
-    ----------
-    code: code to execute.
-    """
-    response_inter = inter
-
-    if code is None:
-        custom_id = random_str()
-        text_input = TextInput(
-            label="Code to evaluate", custom_id=custom_id, style=TextInputStyle.paragraph
-        )
-        await inter.response.send_modal(
-            title="Prompt", custom_id=custom_id, components=text_input
-        )
-
-        try:
-            response_inter = await wait_for_modal(plugin.bot, custom_id)
-
-        except TimeoutError:
-            return await inter.send("Modal timed out.", ephemeral=True)
-
-        code = response_inter.text_values[text_input.custom_id]
-
-    code = Markdown.strip_codeblock(code)
-    local_stdout = io.StringIO()
-
-    compiled_code = compile(
-        code,
-        filename="<eval command>",
-        mode="exec",
-        flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
-    )
-
-    with redirect_stdout(local_stdout), redirect_stderr(local_stdout):
-        # TODO: run in thread
-        try:
-            obj = eval(
-                compiled_code,
-                {"bot": plugin.bot, "inter": response_inter}
-            )
-            if inspect.isawaitable(obj):
-                with anyio.fail_after(RESPONSE_TIME_LIMIT - 0.5):
-                    await obj
-
-        except TimeoutError:
-            local_stdout.write("Command execution timed out")
-
-        except Exception as exc:
-            traceback.print_exception(exc, file=local_stdout)
-
-    if len(text := local_stdout.getvalue()) == 0:
-        # response happened during exec
-        if response_inter.response.is_done():
-            return
-        text = "No output."
-
-    # newline and 6 backticks
-    if len(text) + 7 <= MSG_CHAR_LIMIT:
-        await response_inter.send(f"```\n{text}```", ephemeral=True)
-
-    else:
-        file = File(io.BytesIO(text.encode()), "output.txt")
-        await response_inter.send(file=file, ephemeral=True)
 
 
 setup, teardown = plugin.create_extension_handlers()
