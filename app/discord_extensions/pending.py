@@ -3,17 +3,17 @@ Things that have pending PRs and/or will eventually be found in future library r
 """
 import importlib
 import pkgutil
-import typing as t
+from collections import abc
 
 __all__ = ("walk_modules",)
 
 
 def walk_modules(
-    paths: t.Iterable[str],
+    paths: abc.Iterable[str],
     prefix: str = "",
-    ignore: t.Iterable[str] | t.Callable[[str], bool] | None = None,
-) -> t.Iterator[str]:
-    if isinstance(ignore, t.Iterable):
+    ignore: abc.Iterable[str] | abc.Callable[[str], bool] | None = None,
+) -> abc.Iterator[str]:
+    if isinstance(ignore, abc.Iterable):
         ignore_tup = tuple(ignore)
         ignore = lambda path: path.startswith(ignore_tup)  # noqa: E731
 

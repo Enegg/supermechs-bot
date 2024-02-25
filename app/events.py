@@ -1,6 +1,6 @@
-import typing as t
+import typing
 
 import anyio
 
-BUFFS_LOADED: t.Final = anyio.Event()
-PACK_LOADED: t.Final = anyio.Event()
+BUFFS_LOADED: typing.Final = anyio.Event()
+PACK_LOADED: typing.Final = anyio.Event()

@@ -1,8 +1,8 @@
-import typing as t
+import typing
 
 __all__ = ("command_mention",)
 
-class Commandish(t.Protocol):
+class Commandish(typing.Protocol):
     @property
     def id(self) -> int:
         ...

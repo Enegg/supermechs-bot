@@ -1,8 +1,8 @@
-import typing as t
+import typing
 
 __all__ = ("SPACE", "Markdown")
 
-SPACE: t.Final = "\u2800"
+SPACE: typing.Final = "\u2800"
 """Invisible character discord does not truncate."""
 
 
