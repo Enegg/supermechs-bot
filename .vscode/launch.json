@@ -3,16 +3,16 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "pythonArgs": ["-m"],
         },
         {
-            "name": "Python: Main",
-            "type": "python",
+            "name": "Python: Run Bot",
+            "type": "debugpy",
             "request": "launch",
-            "module": "app.main",
+            "program": "app/main.py",
             "justMyCode": true
         }
     ]

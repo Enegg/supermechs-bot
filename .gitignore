@@ -8,12 +8,9 @@ venv
 .venv
 !example.env
 *.log
-
 TODO.md
-dev/
+.pdm-python
 
 # local data files
 tests/data/
-
-# Ignore dynaconf secret files
-.secrets.*
+dev/

@@ -1,37 +1,67 @@
 [project]
 name = "supermechs-bot"
+version = "0.1.0"
+description = "SuperMechs themed discord bot. Features item lookup, comparison, mech building, & more."
 authors = [
-    {name = "Eneg"}
+    {name = "Eneg", email = "42005170+Enegg@users.noreply.github.com"},
 ]
-requires-python = ">= 3.10"
 dependencies = [
-    "aiohttp == 3.8.*",
-    "attrs == 22.1.*", # >= 22.1.0 for python 3.11
-    "disnake == 2.9.*", # Range/String; >= 2.8 for python 3.11
-    "git+https://github.com/Chromosomologist/disnake-ext-plugins",
-    "psutil == *",
-    "python-dotenv == 0.19.*",
-    "rtoml == *",
-    "typing-extensions >= 4.4.1",
-    # SM
-    "git+https://github.com/Enegg/supermechs",
-    "orjson == *",  # >= 3.7.7 for python 3.11
+    "disnake>=2.9.1",
+    "attrs>=23.2.0",
+    "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
+    "psutil>=5.9.7",
+    "python-dotenv>=1.0.0",
+    "rtoml>=0.10.0",
+    "typing-extensions>=4.9.0",
+    "orjson>=3.9.10",
+    "anyio>=4.2.0",
+    "supermechs @ git+https://github.com/Enegg/supermechs.git@grand",
 ]
-[project.optional-dependencies]
+requires-python = "==3.10.*"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
+
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
 dev = [
-    "ruff >= 0.0.291",
+    "-e supermechs @ file:///${PROJECT_ROOT}/../supermechs",
 ]
+lint = [
+    "ruff>=0.1.13",
+]
+
 
 [tool.ruff]
-select = ["E", "F", "G", "Q", "SIM", "TCH", "PTH", "RUF", "ASYNC"]
-
 src = ["app"]
+select = [
+    "E",
+    "F",
+    "RUF",
+    "PL",    # pylint
+
+    "G",     # avoid formatting in logging
+    "Q",     # consistent string quotes
+    "FLY",   # static joins
+    "ISC",   # string concatenation
+
+    "SIM",   # simplifiable logic
+    "C4",    # simplifiable comprehensions
+
+    "ASYNC", # blocking calls in async context
+    "TCH",   # type-checking-only imports
+    "PTH",   # pathlib > os.path / open
+    "TRY",   # try - except pitfalls
+    "EM",    # don't inline exception messages
+    "ERA",   # commented out code
+]
 line-length = 100
 target-version = "py310"
 
 [tool.ruff.per-file-ignores]
-"__init__.py" = ["F403"]
-"api.py" = ["F403"]
+"__init__.py" = ["F403"]  # import *
 
 [tool.ruff.isort]
 combine-as-imports = true
@@ -42,10 +72,14 @@ forced-separate = ["supermechs"]
 [tool.ruff.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]
 
+[tool.ruff.lint.pylint]
+max-args = 8
+
 
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["app"]
+exclude = ["app/dev"]
 
 pythonVersion = "3.10"
 

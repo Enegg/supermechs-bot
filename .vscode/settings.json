@@ -1,3 +1,26 @@
 {
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "modificationsIfAvailable",
+    "editor.semanticTokenColorCustomizations": {
+        "rules": {
+            "selfParameter": "#569cd6",
+            "clsParameter": "#569cd6",
+        }
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        ".ruff_cache": true,
+        ".venv": true,
+    },
     "python.analysis.extraPaths": [ "./app" ],
+    "python.analysis.typeCheckingMode": "strict",
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.rulers": [
+            100
+        ]
+    },
 }
