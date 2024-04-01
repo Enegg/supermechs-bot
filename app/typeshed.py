@@ -5,7 +5,8 @@ from typing_extensions import ParamSpec, TypeVar
 
 T = TypeVar("T", infer_variance=True)
 T2 = TypeVar("T2", infer_variance=True)
-RetT = TypeVar("RetT", infer_variance=True)
+RetT = TypeVar("RetT", infer_variance=True, default=None)
+"""Function return type variable."""
 KT = TypeVar("KT", bound=abc.Hashable)
 """Key-type of a mapping."""
 VT = TypeVar("VT")
@@ -17,13 +18,18 @@ twotuple = tuple[T, T]
 """Tuple of two elements of same type."""
 XOrTupleXY = T | tuple[T, T2]
 """Type or tuple of two types."""
-Factory = abc.Callable[[], T]
+Factory: typing.TypeAlias = abc.Callable[[], RetT]
 """0-argument callable returning an object of given type."""
 LiteralURL: typing.TypeAlias = str
 """String representing a URL."""
 Pathish: typing.TypeAlias = os.PathLike[str] | str
-Coro: typing.TypeAlias = abc.Coroutine[typing.Any, typing.Any, T]
-CoroFunc: typing.TypeAlias = abc.Callable[..., Coro[T]]
+"""Path-like or a string representing a path."""
+AsyncFunc: typing.TypeAlias = abc.Callable[P, abc.Awaitable[RetT]]
+"""Function yielding an awaitable."""
+Coro: typing.TypeAlias = abc.Coroutine[typing.Any, typing.Any, RetT]
+"""Shorthand for coroutine."""
+CoroFunc: typing.TypeAlias = abc.Callable[P, Coro[RetT]]
+"""Function yielding a coroutine."""
 
 
 class Getter(typing.Protocol[T, T2]):

@@ -1,30 +1,28 @@
-import typing as t
+import typing
+from collections import abc
 from contextlib import asynccontextmanager
 
 import anyio
 
 from config import RESPONSE_TIME_LIMIT
 from shared.manager import AsyncManager, default_key
-from typeshed import P, RetT, T
-
-AwaitableCallback = t.Callable[[T], t.Awaitable[RetT]]
+from typeshed import AsyncFunc, P, RetT, T
 
 
-def async_memoize(func: t.Callable[P, t.Awaitable[T]], /) -> t.Callable[P, t.Awaitable[T]]:
+def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:
     """Memoization decorator for async functions.
 
     It is safe to run the resulting coroutine function concurrently to self using same
     arguments, in which case the decorated coro is ran only once.
     """
-    key = t.cast(t.Callable[P, t.Hashable], default_key)
+    key = typing.cast(abc.Callable[P, abc.Hashable], default_key)
     manager = AsyncManager(func, key)
     return manager.get_or_create
 
 
-async def amap(coro: AwaitableCallback[T, RetT], /, *args: T) -> list[RetT]:
+async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
     """Asynchronously map coroutine function over arguments."""
-    # XXX: make it into AsyncIterator?
-    sentinel: t.Any = object()
+    sentinel: typing.Any = object()
     values: list[RetT] = [sentinel] * len(args)
 
     async def worker(arg: T, index: int) -> None:
