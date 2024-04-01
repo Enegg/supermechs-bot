@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import typing as t
 from collections import Counter
+from threading import Lock
 
 import anyio
+import anyio.to_thread
 import psutil
 
 from .utils import async_memoize
@@ -14,8 +16,8 @@ def _file_sloc(path: Pathish, /) -> int:
     sloc = 0
 
     with open(path, encoding="utf8") as file:  # noqa: PTH123
-        for line in file:
-            if not line or line.lstrip().startswith(("#", '"""')):
+        for line in map(str.lstrip, file):
+            if not line or line.startswith(("#", '"""')):
                 continue
 
             sloc += 1
@@ -26,16 +28,19 @@ def _file_sloc(path: Pathish, /) -> int:
 @async_memoize
 async def get_sloc(directory: Pathish = ".", /) -> int:
     """Get the number of source lines of code of python files within the directory."""
-    results: list[int] = []
+    total: int = 0
+    write_lock = Lock()
 
     def runner(path: Pathish, /) -> None:
-        results.append(_file_sloc(path))
+        nonlocal total
+        with write_lock:
+            total += _file_sloc(path)
 
     async with anyio.create_task_group() as tg:
         async for path in anyio.Path(directory).glob("**/*.py"):
-            tg.start_soon(anyio.to_thread.run_sync, runner, path)
+            tg.start_soon(anyio.to_thread.run_sync, runner, path)  # pyright: ignore[reportArgumentType]
 
-    return sum(results)
+    return total
 
 
 def get_ram_utilization(pid: int | None = None, /) -> int:
