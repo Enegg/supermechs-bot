@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
+import logging.config
 import os
 from functools import partial
 
-import disnake.voice_client
+import disnake
 from disnake import AllowedMentions, Game, Intents
 from disnake.ext.commands import InteractionBot
 from dotenv import load_dotenv
@@ -20,20 +21,12 @@ from supermechs import init as sm_init
 
 load_dotenv()
 
-logging.Formatter.default_time_format = DATE_FORMAT
-logging.captureWarnings(True)
-stream = logging.StreamHandler()
-stream.setLevel(logging.INFO)
-stream.setFormatter(logging.Formatter("{asctime} [{levelname}] {name} - {message}", style="{"))
-logging.root.setLevel(logging.INFO)
-logging.root.addHandler(stream)
-
-disnake.voice_client.VoiceClient.warn_nacl = False
-logging.getLogger("disnake").setLevel(logging.ERROR)
-logging.getLogger("disnake.client").setLevel(logging.CRITICAL)  # mute connection errors
-
 
 async def main() -> None:
+    logging.captureWarnings(True)
+    logging.config.dictConfig(config.LOGGING_CONFIG)
+    disnake.VoiceClient.warn_nacl = False
+
     bot = InteractionBot(
         intents=Intents(guilds=True),
         activity=Game("SuperMechs"),

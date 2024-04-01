@@ -11,12 +11,14 @@ __all__ = (
     "DATE_FORMAT",
     "DEFAULT_PACK_URL",
     "HOME_GUILD_ID",
+    "LOGGING_CONFIG",
     "LOGS_CHANNEL_ID",
     "TEST_GUILDS",
 )
 
 _config = rtoml.load("config.toml")
 
+LOGGING_CONFIG: dict[str, typing.Any] = _config["logging"]
 DATE_FORMAT: str = _config["bot"]["DATE_FORMAT"]
 LOGS_CHANNEL_ID: int = int(os.environ["LOGS_CHANNEL_ID"])
 """The ID of a text channel for ChannelHandler to send logs to."""

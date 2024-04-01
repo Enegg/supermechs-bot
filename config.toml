@@ -1,5 +1,4 @@
 [bot]
-# https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
 DATE_FORMAT = "%d.%m.%Y %H:%M:%S"
 [SM]
 DEFAULT_PACK_URL = "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7dc669d484db89062/raw"
@@ -21,3 +20,21 @@ EMBED_TIPS = [
     "Disable my base pls",
     "What time is it",
 ]
+[logging]
+version = 1
+disable_existing_loggers = false
+[logging.root]
+level = "INFO"
+handlers = ["stdout"]
+[logging.formatters.simple]
+format = "{asctime} [{levelname}] {name} - {message}"
+style = "{"
+datefmt = "%Y-%m-%dT%H:%M:%S%z"
+[logging.handlers.stdout]
+class = "logging.StreamHandler"
+level = "INFO"
+formatter = "simple"
+stream = "ext://sys.stdout"
+[logging.loggers]
+disnake = { "level" = "ERROR" }
+"disnake.client" = { "level" = "CRITICAL" }
