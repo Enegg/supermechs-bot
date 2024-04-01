@@ -7,12 +7,10 @@ import anyio
 import psutil
 
 from .utils import async_memoize
-
-if t.TYPE_CHECKING:
-    import os
+from typeshed import Pathish
 
 
-def _file_sloc(path: os.PathLike[str], /) -> int:
+def _file_sloc(path: Pathish, /) -> int:
     sloc = 0
 
     with open(path, encoding="utf8") as file:  # noqa: PTH123
@@ -26,11 +24,11 @@ def _file_sloc(path: os.PathLike[str], /) -> int:
 
 
 @async_memoize
-async def get_sloc(directory: str = ".", /) -> int:
+async def get_sloc(directory: Pathish = ".", /) -> int:
     """Get the number of source lines of code of python files within the directory."""
     results: list[int] = []
 
-    def runner(path: os.PathLike[str], /) -> None:
+    def runner(path: Pathish, /) -> None:
         results.append(_file_sloc(path))
 
     async with anyio.create_task_group() as tg:
