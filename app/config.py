@@ -1,5 +1,6 @@
 import os
 import typing as t
+from pathlib import Path
 
 import rtoml
 
@@ -16,7 +17,7 @@ __all__ = (
     "TEST_GUILDS",
 )
 
-_config = rtoml.load("config.toml")
+_config = rtoml.load(Path("config.toml"))
 
 LOGGING_CONFIG: dict[str, typing.Any] = _config["logging"]
 DATE_FORMAT: str = _config["bot"]["DATE_FORMAT"]
