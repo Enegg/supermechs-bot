@@ -1,5 +1,6 @@
 import os
-import typing as t
+import typing
+from collections import abc
 from pathlib import Path
 
 import rtoml
@@ -25,9 +26,9 @@ LOGS_CHANNEL_ID: int = int(os.environ["LOGS_CHANNEL_ID"])
 """The ID of a text channel for ChannelHandler to send logs to."""
 HOME_GUILD_ID: int = int(os.environ["HOME_GUILD_ID"])
 """The bot's home guild ID."""
-TEST_GUILDS: t.Sequence[int] = (HOME_GUILD_ID,)
+TEST_GUILDS: abc.Sequence[int] = (HOME_GUILD_ID,)
 """The IDs of guilds the bot will register commands in while in dev mode."""
-EMBED_TIPS: t.Sequence[str] = _config["SM"]["EMBED_TIPS"]
+EMBED_TIPS: abc.Sequence[str] = _config["SM"]["EMBED_TIPS"]
 
 DEFAULT_PACK_URL: str = _config["SM"]["DEFAULT_PACK_URL"]
 

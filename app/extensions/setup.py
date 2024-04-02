@@ -1,6 +1,7 @@
 import io
 import traceback
-import typing as t
+import typing
+from collections import abc
 
 from disnake import CommandInteraction
 from disnake.ext import commands, plugins
@@ -8,9 +9,9 @@ from disnake.ext import commands, plugins
 from config import TEST_GUILDS
 from discord_extensions import OPTION_LIMIT
 
-exception_names: t.Final = commands.errors.__all__
+exception_names: typing.Final = commands.errors.__all__
 
-plugin: t.Final = plugins.Plugin[commands.InteractionBot](
+plugin: typing.Final = plugins.Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
 )
 last_extension: str | None = None
@@ -24,7 +25,7 @@ async def plugin_(inter: CommandInteraction) -> None:
 
 
 async def _ext_helper(
-    inter: CommandInteraction, plugin: str | None, func: t.Callable[[str], None]
+    inter: CommandInteraction, plugin: str | None, func: abc.Callable[[str], None]
 ) -> None:
     global last_extension
     plugin = plugin or last_extension
@@ -104,7 +105,7 @@ async def force_error(
     inter: CommandInteraction,
     exception: str,
     message: str = "Exception raised via /raise",
-) -> t.NoReturn:
+) -> typing.NoReturn:
     """Explicitly raises chosen exception.
 
     Parameters

@@ -1,4 +1,4 @@
-import typing as t
+from collections import abc
 
 from attrs import define, field
 
@@ -14,7 +14,7 @@ class Player:
 
     id: int = field()
     name: str = field()
-    builds: t.MutableMapping[str, Mech] = field(factory=dict, init=False)
+    builds: abc.MutableMapping[str, Mech] = field(factory=dict, init=False)
     arena_buffs: ArenaBuffs = field(factory=ArenaBuffs, init=False)
     _active_build: Mech | None = field(default=None, init=False)
 

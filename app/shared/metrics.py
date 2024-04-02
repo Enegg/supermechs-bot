@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-import typing as t
+import typing
 from collections import Counter
 from threading import Lock
 
@@ -48,12 +46,12 @@ def get_ram_utilization(pid: int | None = None, /) -> int:
     return psutil.Process(pid).memory_info().rss
 
 
-class CommandData(t.NamedTuple):
+class CommandData(typing.NamedTuple):
     id: int
     name: str
 
 
-command_invocations: t.Final = Counter[CommandData]()
+command_invocations: typing.Final = Counter[CommandData]()
 
 
 def add_invocation(id: int, name: str, /) -> None:

@@ -4,7 +4,7 @@ import io
 import linecache
 import traceback
 import types
-import typing as t
+import typing
 from contextlib import redirect_stderr, redirect_stdout
 
 import anyio
@@ -16,7 +16,7 @@ import config
 from discord_extensions import Markdown, MessageLimits, text_to_file
 from discord_extensions.ui import random_str, wait_for_modal
 
-plugin: t.Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
+plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
 
 
 @plugin.slash_command(name="eval", guild_ids=config.TEST_GUILDS)

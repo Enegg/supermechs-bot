@@ -1,4 +1,4 @@
-import typing as t
+import typing
 
 from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption
 from disnake.ui import Button, button, string_select
@@ -130,7 +130,7 @@ class MechView(PaginatorView):
     )
     # fmt: on
 
-    buffs_command: t.ClassVar[str]
+    buffs_command: typing.ClassVar[str]
     user_id: int
 
     def __init__(

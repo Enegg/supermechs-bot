@@ -1,5 +1,6 @@
 import io
-import typing as t
+import typing
+from collections import abc
 from itertools import zip_longest
 
 from disnake import ButtonStyle, Embed, Locale, MessageInteraction
@@ -32,7 +33,7 @@ class ItemView(SaneView[ActionRow[MessageUIComponent]]):
         self,
         embed: Embed,
         item: ItemData,
-        factory: t.Callable[[ItemData, bool, bool, Locale], t.Iterable[tuple[str, str, bool]]],
+        factory: abc.Callable[[ItemData, bool, bool, Locale], abc.Iterable[tuple[str, str, bool]]],
         locale: Locale,
         *,
         user_id: int,
@@ -153,7 +154,7 @@ class ItemCompareView(SaneView[ActionRow[MessageUIComponent]]):
 
 def buffed_stats(
     stats: StatsMapping, buffs_enabled: bool
-) -> t.Iterator[tuple[Stat, twotuple[tuple[int, ...]]]]:
+) -> abc.Iterator[tuple[Stat, twotuple[tuple[int, ...]]]]:
     if buffs_enabled:
         apply_buff = MAX_BUFFS.buff_with_difference
 
@@ -203,7 +204,7 @@ def avg_value_formatter(values: tuple[int, ...], prec: int = 1) -> str:
 
 def shared_iter(
     stats: StatsMapping, buffs_enabled: bool, avg: bool, prec: int = 1
-) -> t.Iterator[tuple[Stat, str, str]]:
+) -> abc.Iterator[tuple[Stat, str, str]]:
     for stat_key, (values, diffs) in buffed_stats(stats, buffs_enabled):
         if stat_key == Stat.range:
             avg_fmt = value_formatter
@@ -220,7 +221,7 @@ def shared_iter(
 
 def default_fields(
     item: ItemData, buffs_enabled: bool, avg: bool, locale: Locale
-) -> t.Iterator[tuple[str, str, bool]]:
+) -> abc.Iterator[tuple[str, str, bool]]:
     """Fills embed with full-featured info about an item."""
     yield ("Transform range: ", item_transform_range(item), False)
 
@@ -248,7 +249,7 @@ def default_fields(
 
 def compact_fields(
     item: ItemData, buffs_enabled: bool, avg: bool, *_
-) -> t.Iterator[tuple[str, str, bool]]:
+) -> abc.Iterator[tuple[str, str, bool]]:
     """Fills embed with reduced in size item info."""
     lines: list[str] = []
 
@@ -268,12 +269,12 @@ def compact_fields(
         yield (name, field, True)
 
 
-@t.overload
+@typing.overload
 def cmp_num(x: int, y: int, lower_is_better: bool = ...) -> twotuple[twotuple[int]]:
     ...
 
 
-@t.overload
+@typing.overload
 def cmp_num(x: float, y: float, lower_is_better: bool = ...) -> twotuple[twotuple[float]]:
     ...
 
@@ -290,7 +291,7 @@ value_and_diff = tuple[int | float | None, float]
 
 def comparator(
     stats_a: StatsMapping, stats_b: StatsMapping
-) -> t.Iterator[
+) -> abc.Iterator[
     tuple[
         Stat,
         twotuple[value_and_diff]

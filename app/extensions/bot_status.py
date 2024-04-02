@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import random
 import sys
-import typing as t
+import typing
 
 import anyio
 from disnake import CommandInteraction, Embed, __version__ as disnake_version
@@ -19,14 +17,14 @@ from shared.utils import wrap_bytes
 
 import supermechs
 
-if t.TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from disnake.ext.commands import InteractionBot  # noqa: F401
 
 START_TIME = utcnow()
-python_version: t.Final = ".".join(map(str, sys.version_info[:3]))
-disnake_url: t.Final = "https://github.com/DisnakeDev/disnake"
+python_version: typing.Final = ".".join(map(str, sys.version_info[:3]))
+disnake_url: typing.Final = "https://github.com/DisnakeDev/disnake"
 
-plugin: t.Final = Plugin["InteractionBot"](name="Bot-status", logger=__name__)
+plugin: typing.Final = Plugin["InteractionBot"](name="Bot-status", logger=__name__)
 
 
 @plugin.slash_command()

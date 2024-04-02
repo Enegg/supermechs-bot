@@ -1,4 +1,5 @@
-import typing as t
+import typing
+from collections import abc
 
 from config import DEFAULT_PACK_KEY
 from library_extensions import OPTION_LIMIT
@@ -9,17 +10,17 @@ from supermechs.item import Element, Type
 from supermechs.typeshed import Name
 from supermechs.utils import acronym_of, search_for
 
-if t.TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from disnake import CommandInteraction, Localized
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
-AutocompleteReturnType = t.Sequence["str | Localized[str]"] | t.Mapping[str, "str | Localized[str]"]
+AutocompleteReturnType = abc.Sequence["str | Localized[str]"] | abc.Mapping[str, "str | Localized[str]"]
 
-acronyms: t.Mapping[str, set[Name]] = {}
+acronyms: abc.Mapping[str, set[Name]] = {}
 
 
-def _make_acronyms(names: t.Iterable[Name], /) -> None:
+def _make_acronyms(names: abc.Iterable[Name], /) -> None:
     for name in names:
         if acronym := acronym_of(name):
             try:
@@ -29,8 +30,10 @@ def _make_acronyms(names: t.Iterable[Name], /) -> None:
                 acronyms[acronym] = {name}
 
 
-def _get_item_filters(options: t.Mapping[str, t.Any], /) -> list[t.Callable[[ItemData], bool]]:
-    filters: list[t.Callable[[ItemData], bool]] = []
+def _get_item_filters(
+    options: abc.Mapping[str, typing.Any], /
+) -> list[abc.Callable[[ItemData], bool]]:
+    filters: list[abc.Callable[[ItemData], bool]] = []
 
     if (type_name := options.get("type", "ANY")) != "ANY":
         target_type = Type[type_name]
@@ -53,7 +56,7 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     if not acronyms:
         _make_acronyms(pack.item_names)
 
-    def filter_item_names(names: t.Iterable[Name], /) -> t.Iterator[Name]:
+    def filter_item_names(names: abc.Iterable[Name], /) -> t.Iterator[Name]:
         items = map(pack.get_item_by_name, names)
 
         if filters:

@@ -1,5 +1,5 @@
 import re
-import typing as t
+import typing
 
 from typeshed import twotuple
 
@@ -32,12 +32,12 @@ def try_shorten(name: str) -> str:
     return "".join(s for s in name if s.isupper())
 
 
-@t.overload
+@typing.overload
 def compare_numbers(x: int, y: int, lower_is_better: bool = False) -> twotuple[int]:
     ...
 
 
-@t.overload
+@typing.overload
 def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
     ...
 

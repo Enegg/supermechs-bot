@@ -1,4 +1,4 @@
-import typing as t
+import typing
 
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption
 from disnake.ext import commands, plugins
@@ -20,7 +20,7 @@ from library_extensions.ui import (
 from supermechs.arena_buffs import ArenaBuffs, iter_modifiers_of, max_level_of
 from supermechs.item_stats import Stat
 
-plugin: t.Final = plugins.Plugin["commands.InteractionBot"](name="ArenaBuffs", logger=__name__)
+plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
 
 
 def make_label(buffs: ArenaBuffs, stat_key: Stat, /) -> str:

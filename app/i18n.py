@@ -1,6 +1,7 @@
 import logging
-import typing as t
-import typing_extensions as tex
+import typing
+import typing_extensions as typing_
+from collections import abc
 from pathlib import Path
 
 import rtoml
@@ -12,22 +13,22 @@ from supermechs.item.enums import Stat
 
 __all__ = ("load", "stats", "messages", "get_stat_name", "get_message")
 
-LocalePair: t.TypeAlias = tuple[KT, Locale]
+LocalePair: typing.TypeAlias = tuple[KT, Locale]
 
 _LOGGER = logging.getLogger(__name__)
 FALLBACK_LOCALE = Locale.en_US
 FALLBACK_NAME = "???"
 FILE_EXT = ".toml"
 
-stats: t.Final[t.Mapping[LocalePair[Stat], "StatName"]] = {}
-messages: t.Final[t.Mapping[LocalePair[str], str]] = {}
-_command_locale: t.Final[t.Mapping[str, dict[str, str]]] = {}
+stats: typing.Final[abc.Mapping[LocalePair[Stat], "StatName"]] = {}
+messages: typing.Final[abc.Mapping[LocalePair[str], str]] = {}
+_command_locale: typing.Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
-localization_provider: t.Final = t.cast(LocalizationProtocol, _command_locale)
+localization_provider: typing.Final = typing.cast(LocalizationProtocol, _command_locale)
 
 
 def get(
-    store: t.Mapping[LocalePair[KT], VT], pair: LocalePair[KT], default: VT | None = None
+    store: abc.Mapping[LocalePair[KT], VT], pair: LocalePair[KT], default: VT | None = None
 ) -> VT:
     try:
         value = store[pair]
@@ -53,13 +54,13 @@ def get_message(locale: Locale, key: str, /) -> str:
     return get(messages, (key, locale))
 
 
-class _StatEntry(t.TypedDict):
+class _StatEntry(typing.TypedDict):
     in_game: str
-    default: tex.NotRequired[str]
-    short: tex.NotRequired[str]
+    default: typing_.NotRequired[str]
+    short: typing_.NotRequired[str]
 
 
-class StatName(t.NamedTuple):
+class StatName(typing.NamedTuple):
     in_game: str
     default_: str | None
     short_: str | None
@@ -79,8 +80,8 @@ class StatName(t.NamedTuple):
 _MISSING_STAT = StatName(FALLBACK_NAME, None, None)
 
 
-def _load_stats(data: t.Mapping[str, t.Any], /, locale: Locale) -> None:
-    stats_data: t.Mapping[str, _StatEntry] = data["stats"]
+def _load_stats(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
+    stats_data: abc.Mapping[str, _StatEntry] = data["stats"]
 
     for key, entry in stats_data.items():
         stat = Stat[key]
@@ -92,14 +93,14 @@ def _load_stats(data: t.Mapping[str, t.Any], /, locale: Locale) -> None:
         stats[stat, locale] = stat_name
 
 
-def _load_messages(data: t.Mapping[str, t.Any], /, locale: Locale) -> None:
-    messages_data: t.Mapping[str, str] = data["messages"]
+def _load_messages(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
+    messages_data: abc.Mapping[str, str] = data["messages"]
 
     for key, message in messages_data.items():
         messages[key, locale] = message
 
 
-def _load_commands(data: t.Mapping[str, t.Any], /, locale: Locale) -> None:
+def _load_commands(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
     commands_data: dict[str, str] | None = data.get("commands")
 
     if commands_data:
@@ -115,7 +116,7 @@ def _load_file(path: Path, /) -> None:
         loader(data, locale)
 
 
-def _walk_files(directory: Pathish, /, ext: str) -> t.Iterator[Path]:
+def _walk_files(directory: Pathish, /, ext: str) -> abc.Iterator[Path]:
     path = Path(directory)
 
     if not ext.startswith("."):

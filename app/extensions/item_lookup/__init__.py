@@ -1,5 +1,5 @@
 import io
-import typing as t
+import typing
 
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
@@ -18,16 +18,16 @@ from supermechs.item import Element, ItemData, Type
 from supermechs.item_stats import get_final_stage
 from supermechs.typeshed import Name
 
-if t.TYPE_CHECKING:
-    LiteralTypeOrAny = LiteralType | t.Literal["ANY"]
-    LiteralElementOrAny = LiteralElement | t.Literal["ANY"]
+if typing.TYPE_CHECKING:
+    LiteralTypeOrAny = LiteralType | typing.Literal["ANY"]
+    LiteralElementOrAny = LiteralElement | typing.Literal["ANY"]
 
 else:
     # disnake cannot parse unions of literals
-    LiteralTypeOrAny = t.Literal[(*t.get_args(LiteralType), "ANY")]
-    LiteralElementOrAny = t.Literal[(*t.get_args(LiteralElement), "ANY")]
+    LiteralTypeOrAny = typing.Literal[(*typing.get_args(LiteralType), "ANY")]
+    LiteralElementOrAny = typing.Literal[(*typing.get_args(LiteralElement), "ANY")]
 
-plugin = plugins.Plugin["commands.InteractionBot"](name="Item-lookup", logger=__name__)
+plugin = plugins.Plugin[commands.InteractionBot](name="Item-lookup", logger=__name__)
 
 
 @plugin.slash_command()
