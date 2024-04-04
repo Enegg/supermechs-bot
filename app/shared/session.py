@@ -1,6 +1,4 @@
-import contextlib
 import typing
-from collections import abc
 from contextvars import ContextVar
 from functools import partial
 
@@ -18,11 +16,10 @@ class HTTPClient(typing.Protocol):
     proxy: str | None
 
 
-@contextlib.asynccontextmanager
-async def create_io_session(client: HTTPClient, /) -> abc.AsyncIterator[aiohttp.ClientSession]:
-    """Context manager establishing a client session, reusing client's connector & proxy."""
-    async with aiohttp.ClientSession(
+def create_io_session(client: HTTPClient, /) -> aiohttp.ClientSession:
+    """Create a client session with client's connector & proxy."""
+    session = aiohttp.ClientSession(
         connector=client.connector, timeout=aiohttp.ClientTimeout(total=30)
-    ) as session:
-        session._request = partial(session._request, proxy=client.proxy)
-        yield session
+    )
+    session._request = partial(session._request, proxy=client.proxy)
+    return session

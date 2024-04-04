@@ -1,6 +1,5 @@
 import typing
 from collections import abc
-from contextlib import asynccontextmanager
 
 import anyio
 
@@ -35,9 +34,6 @@ async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
     return values
 
 
-@asynccontextmanager
-async def move_on_before_timeout() -> t.AsyncIterator[None]:
-    """Convenience context manager for stopping async block before interaction timeout."""
-
-    async with anyio.move_on_after(RESPONSE_TIME_LIMIT):
-        yield
+def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
+    """Create a cancel scope which timeouts before interaction response."""
+    return anyio.move_on_after(RESPONSE_TIMEOUT - threshold)
