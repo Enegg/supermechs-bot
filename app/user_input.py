@@ -1,24 +1,28 @@
-import typing as t
+from enum import Enum
+
+from disnake.ext import commands
 
 
-class StringLimits:
-    """Namespace for length limits of various kinds of strings."""
+class StringLimits(int, Enum):
+    """Arbitrary length limits of various kinds of strings."""
 
-    name: t.Final[int] = 32
-    description: t.Final[int] = 100
+    names = 32
+    description = 100
 
 
 def sanitize_string(
-    string: str, /, max_length: int = StringLimits.name, *, strict: bool = False
+    string: str, /, max_length: int = StringLimits.names, *, strict: bool = False
 ) -> str:
     """Utility to sanitize user-originating string data."""
 
     if strict:
         if len(string) > max_length:
-            raise ValueError("String is too long")
+            msg = "String is too long"
+            raise commands.UserInputError(msg)
 
         if any(not char.isascii() for char in string):
-            raise ValueError("Non-ascii characters found")
+            msg = "Non-ASCII characters found"
+            raise commands.UserInputError(msg)
 
     chars = (char if char.isascii() else "_" for char in string)
 
