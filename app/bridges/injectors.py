@@ -1,6 +1,9 @@
+from functools import partial
+
 from disnake import CommandInteraction
 from disnake.ext import commands
 
+import i18n
 from config import DEFAULT_PACK_KEY
 from managers import item_pack_manager, player_manager
 
@@ -40,5 +43,10 @@ def register_injections() -> None:
     def player_injector(inter: CommandInteraction) -> Player:
         return player_manager(inter.author)
 
+    @commands.register_injection
+    def l10n_injector(inter: CommandInteraction) -> i18n.L10nGetter:
+        """Injection returning a callable which returns localized messages."""
+        return partial(i18n.get_message, inter.locale)
+
     item_injector.autocomplete("name")(item_name_autocomplete)
-    del player_injector
+    del player_injector, l10n_injector

@@ -14,6 +14,7 @@ from supermechs.enums.stats import Stat
 __all__ = ("load", "stats", "messages", "get_stat_name", "get_message")
 
 LocalePair: typing.TypeAlias = tuple[KT, Locale]
+L10nGetter: typing.TypeAlias = abc.Callable[[str], str]
 
 _LOGGER = logging.getLogger(__name__)
 FALLBACK_LOCALE = Locale.en_US
