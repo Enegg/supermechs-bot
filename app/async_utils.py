@@ -12,11 +12,10 @@ def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:
     """Memoization decorator for async functions.
 
     It is safe to run the resulting coroutine function concurrently to self using same
-    arguments, in which case the decorated coro is ran only once.
+    arguments, in which case the decorated awaitable is ran only once.
     """
     key = typing.cast(abc.Callable[P, abc.Hashable], default_key)
-    manager = AsyncManager(func, key)
-    return manager.get_or_create
+    return AsyncManager(func, key)
 
 
 async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
