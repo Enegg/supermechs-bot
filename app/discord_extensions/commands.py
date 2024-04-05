@@ -2,6 +2,8 @@ import typing
 
 __all__ = ("command_mention",)
 
+
+@typing.runtime_checkable
 class Commandish(typing.Protocol):
     @property
     def id(self) -> int:
