@@ -3,7 +3,7 @@ from collections import abc
 
 import anyio
 
-from config import RESPONSE_TIME_LIMIT
+from discord_extensions import InteractionLimits
 from shared.manager import AsyncManager, default_key
 from typeshed import AsyncFunc, P, RetT, T
 
@@ -36,4 +36,4 @@ async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
 
 def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
     """Create a cancel scope which timeouts before interaction response."""
-    return anyio.move_on_after(RESPONSE_TIMEOUT - threshold)
+    return anyio.move_on_after(InteractionLimits.response_timeout - threshold)

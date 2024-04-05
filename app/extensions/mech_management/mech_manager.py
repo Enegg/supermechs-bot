@@ -7,8 +7,8 @@ from disnake.utils import MISSING
 import i18n
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
 from bridges.embeds import embed_image
-from discord_extensions import OPTION_LIMIT, SPACE, EmbedColorType, debug_footer
-from library_extensions.ui import (
+from discord_extensions import SPACE, ComponentLimits, EmbedColorType, debug_footer
+from discord_extensions.ui import (
     EMPTY_OPTION,
     PaginatedSelect,
     PaginatorView,
@@ -87,7 +87,7 @@ def get_sorted_options(
     """
     new_options = [EMPTY_OPTION]
 
-    if len(options) + 1 <= OPTION_LIMIT:
+    if len(options) + 1 <= ComponentLimits.select_options:
         return new_options + options
 
     element_emojis = [element.emoji for element in ELEMENT.values()]

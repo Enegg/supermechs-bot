@@ -11,8 +11,8 @@ from disnake.utils import MISSING
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
 from bridges import Player, mech_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
-from discord_extensions import OPTION_LIMIT, command_mention, debug_footer
-from library_extensions.ui import wait_for_component
+from discord_extensions import ComponentLimits, command_mention, debug_footer
+from discord_extensions.ui import wait_for_component
 from managers import get_default_pack
 from shared.utils import fold_binary_prefix
 from user_input import sanitize_string
@@ -201,8 +201,8 @@ async def export(
     # TODO: >25 mechs
     mech_select = StringSelect(
         placeholder="Select mechs to export",
-        max_values=min(OPTION_LIMIT, build_count),
-        options=list(player.builds)[:OPTION_LIMIT],
+        max_values=min(ComponentLimits.select_options, build_count),
+        options=list(player.builds)[:ComponentLimits.select_options],
     )
     await inter.response.send_message(components=mech_select, ephemeral=True)
 

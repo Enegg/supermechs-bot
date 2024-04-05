@@ -13,7 +13,7 @@ from disnake.ext import commands, plugins
 from disnake.ui import TextInput
 
 import config
-from discord_extensions import Markdown, MessageLimits, text_to_file
+from discord_extensions import InteractionLimits, Markdown, MessageLimits, text_to_file
 from discord_extensions.ui import random_str, wait_for_modal
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
@@ -69,7 +69,7 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         try:
             obj = fn()
             if inspect.isawaitable(obj):
-                with anyio.fail_after(config.RESPONSE_TIME_LIMIT):
+                with anyio.fail_after(InteractionLimits.response_timeout - 0.5):
                     await obj
             del obj
 

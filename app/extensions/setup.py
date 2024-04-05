@@ -7,7 +7,7 @@ from disnake import CommandInteraction
 from disnake.ext import commands, plugins
 
 from config import TEST_GUILDS
-from discord_extensions import OPTION_LIMIT
+from discord_extensions import AutocompleteReturnType, InteractionLimits
 from shared.utils import format_exception
 
 exception_names: typing.Final = commands.errors.__all__
@@ -121,13 +121,13 @@ async def force_error(
 
 
 @force_error.autocomplete("exception")
-async def raise_autocomplete(_: CommandInteraction, input: str) -> list[str]:
+def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteReturnType:
     if len(input) < 2:
         return []
 
     input = input.lower()
     matching = [exc for exc in exception_names if input in exc.lower()]
-    del matching[OPTION_LIMIT:]
+    del matching[InteractionLimits.autocomplete_options :]
     return matching
 
 

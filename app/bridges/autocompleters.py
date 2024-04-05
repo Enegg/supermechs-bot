@@ -2,7 +2,7 @@ import typing
 from collections import abc
 
 from config import DEFAULT_PACK_KEY
-from library_extensions import OPTION_LIMIT
+from discord_extensions import AutocompleteReturnType, InteractionLimits
 from managers import item_pack_manager, player_manager
 
 from supermechs.api import ItemData
@@ -11,11 +11,9 @@ from supermechs.typeshed import Name
 from supermechs.utils import acronym_of, search_for
 
 if typing.TYPE_CHECKING:
-    from disnake import CommandInteraction, Localized
+    from disnake import CommandInteraction
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
-
-AutocompleteReturnType = abc.Sequence["str | Localized[str]"] | abc.Mapping[str, "str | Localized[str]"]
 
 acronyms: abc.Mapping[str, set[Name]] = {}
 
@@ -69,8 +67,8 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
         matching_item_names = sorted(filter_item_names(items))
 
         # this shouldn't ever happen, but handle it anyway
-        if len(matching_item_names) >= OPTION_LIMIT:
-            del matching_item_names[OPTION_LIMIT:]
+        if len(matching_item_names) >= InteractionLimits.autocomplete_options:
+            del matching_item_names[InteractionLimits.autocomplete_options :]
             return matching_item_names
 
         # extra filter to exclude duplicates
@@ -81,9 +79,9 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
 
     import heapq
 
-    # extend names up to OPTION_LIMIT
+    # extend names up to option limit
     matching_item_names += heapq.nsmallest(
-        OPTION_LIMIT - len(matching_item_names),
+        InteractionLimits.autocomplete_options - len(matching_item_names),
         filter_item_names(search_for(input, pack.item_names)),
     )
     return matching_item_names
