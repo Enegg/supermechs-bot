@@ -13,7 +13,7 @@ from bridges import register_injections, register_listeners
 from config import DATE_FORMAT, DEFAULT_PACK_URL, HOME_GUILD_ID, LOGS_CHANNEL_ID, TEST_GUILDS
 from library_extensions import load_extensions, setup_channel_logger
 from managers import load_default_pack
-from shared.session import IO_CLIENT, create_client_session
+from shared.session import IO_SESSION, client_session
 
 from supermechs import init as sm_init
 
@@ -43,8 +43,8 @@ async def main() -> None:
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
     await setup_channel_logger(bot, LOGS_CHANNEL_ID, logging.root)
 
-    async with create_client_session(bot.http) as session:
-        IO_CLIENT.set(session)
+    async with client_session(bot.http) as session:
+        IO_SESSION.set(session)
         await load_default_pack(DEFAULT_PACK_URL)
         await bot.connect()
 

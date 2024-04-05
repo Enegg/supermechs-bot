@@ -3,8 +3,9 @@ from contextvars import ContextVar
 from functools import partial
 
 import aiohttp
+import orjson
 
-__all__ = ("IO_SESSION", "create_io_session")
+__all__ = ("IO_SESSION", "client_session")
 
 
 IO_SESSION = ContextVar[aiohttp.ClientSession]("io_session")
@@ -16,10 +17,16 @@ class HTTPClient(typing.Protocol):
     proxy: str | None
 
 
-def create_io_session(client: HTTPClient, /) -> aiohttp.ClientSession:
+def _dumps(obj: typing.Any, /) -> str:
+    return orjson.dumps(obj).decode()  # it will be encoded again right away but oh well
+
+
+def client_session(client: HTTPClient, /) -> aiohttp.ClientSession:
     """Create a client session with client's connector & proxy."""
     session = aiohttp.ClientSession(
-        connector=client.connector, timeout=aiohttp.ClientTimeout(total=30)
+        connector=client.connector,
+        timeout=aiohttp.ClientTimeout(total=30),
+        json_serialize=_dumps,
     )
     session._request = partial(session._request, proxy=client.proxy)
     return session
