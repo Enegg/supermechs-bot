@@ -1,0 +1,38 @@
+import io
+import pathlib
+import random
+import typing
+
+import disnake
+
+import config
+from discord_extensions.embeds import sanitize_filename
+
+if typing.TYPE_CHECKING:
+    from PIL.Image import Image
+
+__all__ = ("embed_image", "sikrit_footer")
+
+
+def embed_image(image: "Image", filename: str, format: str = "png") -> tuple[str, disnake.File]:
+    """Creates a File and returns it with an attachment url."""
+
+    filename = sanitize_filename(filename)
+    filename = str(pathlib.PurePath(filename).with_suffix(f".{format}"))
+    fp = io.BytesIO()
+    try:
+        image.save(fp, format=format)
+
+    except KeyError:
+        # thrown by PIL's format lookup table
+        msg = f"Invalid image format: {format!r}"
+        raise ValueError(msg) from None
+
+    fp.seek(0)
+    return f"attachment://{filename}", disnake.File(fp, filename)
+
+
+def sikrit_footer(embed: disnake.Embed, /, chance: float = 0.01) -> None:
+    """Randomly set a "tip" footer on an embed."""
+    if random.random() < chance:
+        embed.set_footer(text=random.choice(config.EMBED_TIPS))

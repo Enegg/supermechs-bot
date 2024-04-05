@@ -6,7 +6,8 @@ from disnake.utils import MISSING
 
 import i18n
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
-from library_extensions import OPTION_LIMIT, SPACE, ColorType, debug_footer, embed_image
+from bridges.embeds import embed_image
+from discord_extensions import OPTION_LIMIT, SPACE, EmbedColorType, debug_footer
 from library_extensions.ui import (
     EMPTY_OPTION,
     PaginatedSelect,

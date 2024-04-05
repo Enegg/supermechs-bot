@@ -7,8 +7,9 @@ from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
+from bridges.embeds import embed_image, sikrit_footer
 from config import TEST_GUILDS
-from library_extensions import debug_footer, embed_image, sikrit_footer
+from discord_extensions import debug_footer
 from managers import get_default_pack
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
@@ -93,14 +94,12 @@ async def item(
 
     view = ItemView(embed, item, field_factory, inter.locale, user_id=inter.author.id)
 
+    sikrit_footer(embed)
+
     if __debug__:
         debug_footer(embed)
 
-    else:
-        sikrit_footer(embed)
-
     await inter.response.send_message(embed=embed, file=file, view=view, ephemeral=True)
-
     await view.wait()
     await inter.edit_original_response(view=None)
 
@@ -176,8 +175,7 @@ async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
 
     embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
 
-    if not __debug__:
-        sikrit_footer(embed)
+    sikrit_footer(embed)
 
     view = ItemCompareView(embed, item_a, item_b, inter.locale, user_id=inter.author.id)
     await inter.response.send_message(embed=embed, view=view, ephemeral=True)

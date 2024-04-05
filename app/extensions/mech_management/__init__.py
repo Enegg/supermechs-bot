@@ -10,13 +10,8 @@ from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
 from bridges import Player, mech_name_autocomplete
-from library_extensions import (
-    OPTION_LIMIT,
-    command_mention,
-    debug_footer,
-    embed_image,
-    sikrit_footer,
-)
+from bridges.embeds import embed_image, sikrit_footer
+from discord_extensions import OPTION_LIMIT, command_mention, debug_footer
 from library_extensions.ui import wait_for_component
 from managers import get_default_pack
 from shared.utils import fold_binary_prefix
@@ -125,11 +120,10 @@ async def build(
         url, file = embed_image(image, view.mech_config + ".png")
         view.embed.set_image(url)
 
+    sikrit_footer(view.embed)
+
     if __debug__:
         debug_footer(view.embed)
-
-    else:
-        sikrit_footer(view.embed)
 
     await inter.response.send_message(embed=view.embed, file=file, view=view, ephemeral=True)
     await view.wait()
