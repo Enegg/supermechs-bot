@@ -94,7 +94,7 @@ def _load_stats(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
 
 
 def _load_messages(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
-    messages_data: abc.Mapping[str, str] = data["messages"]
+    messages_data: abc.Mapping[str, str] = data.get("messages") or {}
 
     for key, message in messages_data.items():
         messages[key, locale] = message
