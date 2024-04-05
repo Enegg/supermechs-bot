@@ -7,8 +7,8 @@ from managers import item_pack_manager, player_manager
 from .autocompleters import item_name_autocomplete
 from .player import Player
 
+from supermechs.abc.item import Name
 from supermechs.api import ItemData
-from supermechs.typeshed import Name
 
 __all__ = ("register_injections",)
 

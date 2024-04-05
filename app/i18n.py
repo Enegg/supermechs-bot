@@ -9,7 +9,7 @@ from disnake import Locale, LocalizationProtocol
 
 from typeshed import KT, VT, Pathish
 
-from supermechs.item.enums import Stat
+from supermechs.enums.stats import Stat
 
 __all__ = ("load", "stats", "messages", "get_stat_name", "get_message")
 
