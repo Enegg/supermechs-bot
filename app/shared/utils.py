@@ -1,9 +1,9 @@
-from __future__ import annotations
+import os
+import traceback
+import typing
+from collections import abc
 
-import typing as t
-from typing_extensions import LiteralString
-
-__all__ = ("fold_binary_prefix", "ReprMixin")
+__all__ = ("fold_binary_prefix", "ReprMixin", "format_exception")
 
 # https://en.wikipedia.org/wiki/Binary_prefix
 BinaryPrefix: typing.TypeAlias = typing.Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"]
@@ -42,9 +42,17 @@ def fold_binary_prefix(bytes_: int, /, prefix: BinaryPrefix = "") -> tuple[int, 
 class ReprMixin:
     """Class for programmatic __repr__ creation."""
 
-    __repr_attributes__: t.Iterable[str]
+    __repr_attributes__: abc.Iterable[str]
     __slots__ = ()
 
     def __repr__(self) -> str:
         attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
         return f"<{type(self).__name__} {attrs} at 0x{id(self):016X}>"
+
+
+def format_exception(exc: BaseException, /) -> str:
+    """Format the exception's traceback into a string.
+
+    Replaces absolute paths embedded within the message with paths relative to the cwd.
+    """
+    return "".join(traceback.format_exception(exc)).replace(os.getcwd(), ".")  # noqa: PTH109

@@ -8,6 +8,7 @@ from disnake.ext import commands, plugins
 
 from config import TEST_GUILDS
 from discord_extensions import OPTION_LIMIT
+from shared.utils import format_exception
 
 exception_names: typing.Final = commands.errors.__all__
 
@@ -36,11 +37,9 @@ async def _ext_helper(
     try:
         func(plugin)
 
-    except commands.ExtensionError as error:
-        sio = io.StringIO("An error occured:\n```py\n")
-        traceback.print_exception(error, file=sio)
-        sio.write("```")
-        await inter.response.send_message(sio.getvalue(), ephemeral=True)
+    except commands.ExtensionError as exc:
+        traceback_text = f"An exception occurred:\n```py\n{format_exception(exc)}```"
+        await inter.response.send_message(traceback_text, ephemeral=True)
 
     else:
         last_extension = plugin
