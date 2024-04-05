@@ -8,9 +8,9 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 import i18n
-from bridges import register_injections, register_listeners
+from bridges import register_injections, register_listeners, setup_channel_logger
 from config import DATE_FORMAT, DEFAULT_PACK_URL, HOME_GUILD_ID, LOGS_CHANNEL_ID, TEST_GUILDS
-from library_extensions import load_extensions, setup_channel_logger
+from discord_extensions import load_extensions
 from managers import load_default_pack
 from shared.session import IO_SESSION, client_session
 
@@ -40,7 +40,7 @@ async def main() -> None:
     await sm_init()
     load_extensions(bot.load_extension, "extensions")
     await bot.login(os.environ["TOKEN_DEV" if __debug__ else "TOKEN"])
-    await setup_channel_logger(bot, LOGS_CHANNEL_ID, logging.root)
+    await setup_channel_logger(bot, LOGS_CHANNEL_ID)
 
     async with client_session(bot.http) as session:
         IO_SESSION.set(session)
