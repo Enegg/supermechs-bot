@@ -4,8 +4,7 @@ import os
 from functools import partial
 
 import disnake
-from disnake import AllowedMentions, Game, Intents
-from disnake.ext.commands import InteractionBot
+from disnake.ext import commands
 from dotenv import load_dotenv
 
 import i18n
@@ -25,10 +24,10 @@ async def main() -> None:
     logging.config.dictConfig(config.LOGGING_CONFIG)
     disnake.VoiceClient.warn_nacl = False
 
-    bot = InteractionBot(
-        intents=Intents(guilds=True),
-        activity=Game("SuperMechs"),
-        allowed_mentions=AllowedMentions.none(),
+    bot = commands.InteractionBot(
+        intents=disnake.Intents(guilds=True),
+        activity=disnake.Game("SuperMechs"),
+        allowed_mentions=disnake.AllowedMentions.none(),
         localization_provider=i18n.localization_provider,
         test_guilds=TEST_GUILDS if __debug__ else None,
     )
