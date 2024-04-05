@@ -1,14 +1,14 @@
 import re
 import typing
 
-from disnake import Colour, Embed
+import disnake
 
 __all__ = ("EmbedColorType", "debug_footer")
 
-EmbedColorType: typing.TypeAlias = Colour | int
+EmbedColorType: typing.TypeAlias = disnake.Colour | int
 
 
-def debug_footer(embed: Embed, /) -> None:
+def debug_footer(embed: disnake.Embed, /) -> None:
     """Adds a footer with raw urls of various embed fields, and total characters."""
 
     parts: list[str] = ["Debug:", f"Size: {len(embed)}"]
