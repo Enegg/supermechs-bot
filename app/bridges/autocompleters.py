@@ -1,7 +1,6 @@
 import typing
-from collections import abc
+from collections import abc, defaultdict
 
-from config import DEFAULT_PACK_KEY
 from discord_extensions import AutocompleteReturnType, InteractionLimits
 from managers import item_pack_manager, player_manager
 
@@ -15,17 +14,13 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
-acronyms: abc.Mapping[str, set[Name]] = {}
+acronyms: abc.Mapping[str, set[Name]] = defaultdict(set)
 
 
 def _make_acronyms(names: abc.Iterable[Name], /) -> None:
     for name in names:
         if acronym := acronym_of(name):
-            try:
-                acronyms[acronym].add(name)
-
-            except KeyError:
-                acronyms[acronym] = {name}
+            acronyms[acronym].add(name)
 
 
 def _get_item_filters(
