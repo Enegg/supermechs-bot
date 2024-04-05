@@ -13,7 +13,7 @@ from events import PACK_LOADED
 from library_extensions import RESPONSE_TIME_LIMIT, Markdown as MD, command_mention
 from managers import item_pack_manager, player_manager
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
-from shared.utils import wrap_bytes
+from shared.utils import fold_binary_prefix
 
 import supermechs
 
@@ -58,11 +58,11 @@ async def info(inter: CommandInteraction) -> None:
         f"Registered players: {len(player_manager)}",
         f"Invoked commands: {command_invocations.total()}",
     ]
-    bits, exponent = wrap_bytes(get_ram_utilization())
+    bytes_, prefix = fold_binary_prefix(get_ram_utilization())
     perf_fields = [
         f"Started: {format_dt(START_TIME, 'R')}",
         f"Latency: {round(bot.latency * 1000)}ms",
-        f"RAM usage: {bits}{exponent}",
+        f"RAM usage: {bytes_}{prefix}B",
     ]
     async with anyio.move_on_after(RESPONSE_TIME_LIMIT - 0.5):
         app_loc = await get_sloc("app")

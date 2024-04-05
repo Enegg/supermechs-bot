@@ -19,7 +19,7 @@ from library_extensions import (
 )
 from library_extensions.ui import wait_for_component
 from managers import get_default_pack
-from shared.utils import wrap_bytes
+from shared.utils import fold_binary_prefix
 from user_input import sanitize_string
 
 from .mech_manager import MechView
@@ -148,7 +148,7 @@ async def import_(inter: CommandInteraction, player: Player, file: Attachment) -
     MAX_SIZE = 1 << 16
 
     if file.size > MAX_SIZE:
-        size, unit = wrap_bytes(MAX_SIZE)
+        size, unit = fold_binary_prefix(MAX_SIZE)
         raise commands.UserInputError(f"The maximum accepted file size is {size}{unit}.")
     # we could assert that content type is application/json, but we may just as well
     # rely on the loader to fail
