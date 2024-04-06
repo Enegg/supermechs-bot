@@ -7,8 +7,7 @@ from collections import abc
 from typeshed import T
 
 import supermechs.mech as mech
-from supermechs.item import Element, ItemData, Tier, Type
-from supermechs.item_stats import Stat, get_final_stage
+from supermechs.api import Category, Element, Stat, Tier, Type
 
 __all__ = (
     "ELEMENT",
@@ -18,7 +17,6 @@ __all__ = (
     "TIER",
     "TYPE",
     "get_weight_emoji",
-    "item_transform_range",
 )
 
 
@@ -115,6 +113,22 @@ STAT_EXTRAS: abc.Mapping[typing_.LiteralString, typing_.LiteralString] = {
     "spread": "🎲",
     "anyDmg": "<:combined:1026853188940349490>",
 }
+CATEGORY: abc.Mapping[Category, typing_.LiteralString] = {
+    Category.energy_capacity:      STAT[Stat.energy_capacity],
+    Category.energy_regeneration:  STAT[Stat.regeneration],
+    Category.energy_damage:        STAT[Stat.energy_damage],
+    Category.heat_capacity:        STAT[Stat.heat_capacity],
+    Category.heat_cooling:         STAT[Stat.cooling],
+    Category.heat_damage:          STAT[Stat.heat_damage],
+    Category.physical_damage:      STAT[Stat.physical_damage],
+    Category.explosive_damage:     STAT[Stat.explosive_damage],
+    Category.electric_damage:      STAT[Stat.electric_damage],
+    Category.physical_resistance:  STAT[Stat.physical_resistance],
+    Category.explosive_resistance: STAT[Stat.explosive_resistance],
+    Category.electric_resistance:  STAT[Stat.electric_resistance],
+    Category.total_hp:             STAT[Stat.hit_points],
+    Category.backfire_reduction:   STAT[Stat.backfire],
+}  # fmt: skip
 FRANTIC_GIFS: abc.Sequence[typing_.LiteralString] = (
     "https://i.imgur.com/Bbbf4AH.mp4",
     "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
@@ -133,25 +147,3 @@ def get_weight_emoji(weight: int, /) -> typing_.LiteralString:
     if weight <= mech.OVERLOADED_MAX_WEIGHT:
         return "❕"
     return "⛔"
-
-
-def transform_range(item: ItemData, /) -> abc.Sequence[Tier]:
-    """Construct a transform range from item data.
-
-    Note: unlike `range` object, upper bound is inclusive.
-    """
-    lower = item.start_stage.tier
-    upper = get_final_stage(item.start_stage).tier
-    return tuple(map(Tier.of_value, range(lower, upper + 1)))
-
-
-def item_transform_range(item: ItemData, /, at_tier: Tier | None = None) -> str:
-    tiers = transform_range(item)
-
-    if at_tier is None:
-        at_tier = tiers[-1]
-
-    index = at_tier - tiers[0]
-    str_range = [TIER[tier].emoji for tier in tiers]
-    str_range[index] = f"({str_range[index]})"
-    return "".join(str_range)
