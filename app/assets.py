@@ -35,41 +35,6 @@ class Sided(typing_.NamedTuple, typing.Generic[T]):
     left: T
 
 
-TIER: abc.Mapping[Tier, ColorEmojiAsset] = {
-    Tier.COMMON:    ColorEmojiAsset(0xB1B1B1, "⚪"),
-    Tier.RARE:      ColorEmojiAsset(0x55ACEE, "🔵"),
-    Tier.EPIC:      ColorEmojiAsset(0xCC41CC, "🟣"),
-    Tier.LEGENDARY: ColorEmojiAsset(0xE0A23C, "🟠"),
-    Tier.MYTHICAL:  ColorEmojiAsset(0xFE6333, "🟤"),
-    Tier.DIVINE:    ColorEmojiAsset(0xFFFFFF, "⚪"),
-    Tier.PERK:      ColorEmojiAsset(0xFFFF33, "🟡"),
-}  # fmt: skip
-ELEMENT: abc.Mapping[Element, ColorEmojiAsset] = {
-    Element.PHYSICAL:  ColorEmojiAsset(0xFFB800, "<:phydmg:725871208830074929>"),
-    Element.EXPLOSIVE: ColorEmojiAsset(0xB71010, "<:expdmg:725871223338172448>"),
-    Element.ELECTRIC:  ColorEmojiAsset(0x106ED8, "<:eledmg:725871233614479443>"),
-    Element.COMBINED:  ColorEmojiAsset(0x211D1D, "<:combined:1026853188940349490>"),
-    Element.UNKNOWN:   ColorEmojiAsset(0x000000, "❔"),
-}  # fmt: skip
-TYPE: abc.Mapping[Type, TypeAsset] = {
-    Type.TORSO:    TypeAsset("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>"),
-    Type.LEGS:     TypeAsset("https://i.imgur.com/6NBLOhU.png",   "<:legs:730115699397361827>"),
-    Type.DRONE:    TypeAsset("https://i.imgur.com/oqQmXTF.png",  "<:drone:730115574763618394>"),
-    Type.TELEPORT: TypeAsset("https://i.imgur.com/Fnq035A.png",   "<:tele:730115603683213423>"),
-    Type.CHARGE:   TypeAsset("https://i.imgur.com/UnDqJx8.png", "<:charge:730115557239685281>"),
-    Type.HOOK:     TypeAsset("https://i.imgur.com/8oAoPcJ.png",   "<:hook:730115622347735071>"),
-    Type.MODULE:   TypeAsset("https://i.imgur.com/dQR8UgN.png",    "<:mod:730115649866694686>"),
-}  # fmt: skip
-SIDED_TYPE: abc.Mapping[typing.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided[TypeAsset]] = {
-    Type.SIDE_WEAPON: Sided(
-        TypeAsset("https://i.imgur.com/CBbvOnQ.png", "<:sider:730115747799629940>"),
-        TypeAsset("https://i.imgur.com/UuyYCrw.png",  "<:sidel:730115729365663884>")
-    ),
-    Type.TOP_WEAPON: Sided(
-        TypeAsset("https://i.imgur.com/LW7ZCGZ.png", "<:topr:730115786735091762>"),
-        TypeAsset("https://i.imgur.com/1xlnVgK.png",  "<:topl:730115768431280238>")
-    ),
-}  # fmt: skip
 STAT: abc.Mapping[Stat, typing_.LiteralString] = {
     Stat.weight:                         "<:weight:725870760484143174>",
     Stat.hit_points:                     "<:health:725870887588462652>",
@@ -106,12 +71,47 @@ STAT: abc.Mapping[Stat, typing_.LiteralString] = {
     Stat.backfire:                     "<:backfire:725871901062201404>",
     Stat.heat_generation:               "<:heatgen:725871674007879740>",
     Stat.energy_cost:                  "<:eneusage:725871660237979759>",
-    Stat.bullets_cost: "🥕",
+    Stat.bullets_cost: "❔",
     Stat.rockets_cost: "🚀",
+}  # fmt: skip
+TIER: abc.Mapping[Tier, ColorEmojiAsset] = {
+    Tier.COMMON:    ColorEmojiAsset(0xB1B1B1, "⚪"),
+    Tier.RARE:      ColorEmojiAsset(0x55ACEE, "🔵"),
+    Tier.EPIC:      ColorEmojiAsset(0xCC41CC, "🟣"),
+    Tier.LEGENDARY: ColorEmojiAsset(0xE0A23C, "🟠"),
+    Tier.MYTHICAL:  ColorEmojiAsset(0xFE6333, "🟤"),
+    Tier.DIVINE:    ColorEmojiAsset(0xFFFFFF, "⚪"),
+    Tier.PERK:      ColorEmojiAsset(0xFFFF33, "🟡"),
+}  # fmt: skip
+ELEMENT: abc.Mapping[Element, ColorEmojiAsset] = {
+    Element.PHYSICAL:  ColorEmojiAsset(0xFFB800, STAT[Stat.physical_damage]),
+    Element.EXPLOSIVE: ColorEmojiAsset(0xB71010, STAT[Stat.explosive_damage]),
+    Element.ELECTRIC:  ColorEmojiAsset(0x106ED8, STAT[Stat.electric_damage]),
+    Element.COMBINED:  ColorEmojiAsset(0x211D1D, "<:combined:1026853188940349490>"),
+    Element.UNKNOWN:   ColorEmojiAsset(0x000000, "❔"),
+}  # fmt: skip
+TYPE: abc.Mapping[Type, TypeAsset] = {
+    Type.TORSO:    TypeAsset("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>"),
+    Type.LEGS:     TypeAsset("https://i.imgur.com/6NBLOhU.png",   "<:legs:730115699397361827>"),
+    Type.DRONE:    TypeAsset("https://i.imgur.com/oqQmXTF.png",  "<:drone:730115574763618394>"),
+    Type.TELEPORT: TypeAsset("https://i.imgur.com/Fnq035A.png",   "<:tele:730115603683213423>"),
+    Type.CHARGE:   TypeAsset("https://i.imgur.com/UnDqJx8.png", "<:charge:730115557239685281>"),
+    Type.HOOK:     TypeAsset("https://i.imgur.com/8oAoPcJ.png",   "<:hook:730115622347735071>"),
+    Type.MODULE:   TypeAsset("https://i.imgur.com/dQR8UgN.png",    "<:mod:730115649866694686>"),
+}  # fmt: skip
+SIDED_TYPE: abc.Mapping[typing.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided[TypeAsset]] = {
+    Type.SIDE_WEAPON: Sided(
+        TypeAsset("https://i.imgur.com/CBbvOnQ.png", "<:sider:730115747799629940>"),
+        TypeAsset("https://i.imgur.com/UuyYCrw.png",  "<:sidel:730115729365663884>")
+    ),
+    Type.TOP_WEAPON: Sided(
+        TypeAsset("https://i.imgur.com/LW7ZCGZ.png", "<:topr:730115786735091762>"),
+        TypeAsset("https://i.imgur.com/1xlnVgK.png",  "<:topl:730115768431280238>")
+    ),
 }  # fmt: skip
 STAT_EXTRAS: abc.Mapping[typing_.LiteralString, typing_.LiteralString] = {
     "spread": "🎲",
-    "anyDmg": "<:combined:1026853188940349490>",
+    "anyDmg": ELEMENT[Element.COMBINED].emoji,
 }
 CATEGORY: abc.Mapping[Category, typing_.LiteralString] = {
     Category.energy_capacity:      STAT[Stat.energy_capacity],
