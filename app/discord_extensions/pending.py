@@ -2,6 +2,7 @@
 Things that have pending PRs and/or will eventually be found in future library releases.
 """
 import importlib
+import importlib.util
 import pkgutil
 from collections import abc
 
@@ -42,3 +43,15 @@ def walk_modules(
 
         if sub_paths:
             yield from walk_modules(sub_paths, name + ".", ignore)
+
+
+def find_submodules(root_module: str, package: str | None = None) -> tuple[list[str], str]:
+    if (spec := importlib.util.find_spec(root_module, package=package)) is None:
+        msg = f"Unable to find root module '{root_module}'"
+        raise ImportError(msg, name=root_module)
+
+    if (paths := spec.submodule_search_locations) is None:
+        msg = f"Module '{root_module}' is not a package"
+        raise ImportError(msg, name=root_module)
+
+    return paths, spec.name
