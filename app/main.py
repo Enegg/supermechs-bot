@@ -8,7 +8,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 import i18n
-from bridges import register_injections, register_listeners, setup_channel_logger
+from bridges import register_injections, setup_channel_logger
 from config import DATE_FORMAT, DEFAULT_PACK_URL, HOME_GUILD_ID, LOGS_CHANNEL_ID, TEST_GUILDS
 from discord_extensions import load_extensions
 from managers import load_default_pack
@@ -35,7 +35,6 @@ async def main() -> None:
         bot.get_global_command_named = partial(bot.get_guild_command_named, HOME_GUILD_ID)
 
     i18n.load("locale/")
-    register_listeners(bot)
     register_injections()
     await sm_init()
     load_extensions(bot.load_extension, "extensions")
