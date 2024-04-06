@@ -1,12 +1,12 @@
 import random
-import sys
 import typing
 
 import anyio
-from disnake import CommandInteraction, Embed, __version__ as disnake_version
-from disnake.ext.plugins import Plugin
-from disnake.utils import format_dt, oauth_url, utcnow
+from disnake import CommandInteraction, Embed
+from disnake.ext import commands, plugins
+from disnake.utils import format_dt, oauth_url
 
+import meta
 from assets import FRANTIC_GIFS
 from config import DEFAULT_PACK_KEY, DEFAULT_PACK_URL, TEST_GUILDS
 from events import PACK_LOADED
@@ -17,14 +17,7 @@ from shared.utils import fold_binary_prefix
 
 import supermechs
 
-if typing.TYPE_CHECKING:
-    from disnake.ext.commands import InteractionBot  # noqa: F401
-
-START_TIME = utcnow()
-python_version: typing.Final = ".".join(map(str, sys.version_info[:3]))
-disnake_url: typing.Final = "https://github.com/DisnakeDev/disnake"
-
-plugin: typing.Final = Plugin["InteractionBot"](name="Bot-status", logger=__name__)
+plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="Bot-status", logger=__name__)
 
 
 @plugin.slash_command()
@@ -45,22 +38,22 @@ async def info(inter: CommandInteraction) -> None:
         f"Developer: {app_info.owner.mention}",
         f"Created: {format_dt(bot.user.created_at, 'R')}",
         f"Servers: {len(bot.guilds)}",
+        f"Invoked commands: {command_invocations.total()}",
     ]
     if app_info.bot_public:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
         general_fields.append(MD.hyperlink("**Invite link**", invite))
 
     backend_fields = [
-        f"Python version: {python_version}",
-        f"Discord library: {MD.hyperlink('disnake', disnake_url)} {disnake_version}",
+        f"Python version: {meta.python_version}",
+        f"Discord library: {MD.hyperlink('disnake', meta.disnake_url)} {meta.disnake_version}",
     ]
     supermechs_fields = [
         f"Registered players: {len(player_manager)}",
-        f"Invoked commands: {command_invocations.total()}",
     ]
     bytes_, prefix = fold_binary_prefix(get_ram_utilization())
     perf_fields = [
-        f"Started: {format_dt(START_TIME, 'R')}",
+        f"Started: {format_dt(meta.started_at, 'R')}",
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bytes_}{prefix}B",
     ]
@@ -83,7 +76,6 @@ async def info(inter: CommandInteraction) -> None:
         .add_field("SuperMechs", "\n".join(supermechs_fields), inline=False)
         .add_field("Performance", "\n".join(perf_fields), inline=False)
     )
-
     await inter.response.send_message(embed=embed, ephemeral=True)
 
 
@@ -98,7 +90,7 @@ async def activity(inter: CommandInteraction) -> None:
         or "No invocations since bot started"
     )
 
-    embed = Embed(title="Command activity", description=desc, timestamp=START_TIME)
+    embed = Embed(title="Command activity", description=desc, timestamp=meta.started_at)
     await inter.response.send_message(embed=embed)
 
 
