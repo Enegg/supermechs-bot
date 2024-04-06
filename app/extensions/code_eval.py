@@ -47,8 +47,10 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         code = last_inter.text_values[text_input.custom_id]
         del custom_id, text_input
 
+    code = Markdown.strip_codeblock(code)
+
     compiled_code: types.CodeType = compile(
-        source=Markdown.strip_codeblock(code),
+        source=code,
         filename="<eval command>",
         mode="exec",
         flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT,
