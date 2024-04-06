@@ -6,14 +6,16 @@ from disnake.ext import commands, plugins
 
 from config import TEST_GUILDS
 from discord_extensions import AutocompleteReturnType, InteractionLimits
+from discord_extensions.extensions import walk_extensions
 from shared.utils import format_exception
-
-exception_names: typing.Final = commands.errors.__all__
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
 )
-last_extension: str | None = None
+KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
+KNOWN_PLUGIN_PATHS = list[str | int | float](walk_extensions("extensions"))
+
+recently_loaded_plugin: str | None = None
 
 
 @plugin.slash_command(name="plugin")
@@ -23,11 +25,11 @@ async def plugin_(inter: CommandInteraction) -> None:
     del inter
 
 
-async def _ext_helper(
+async def _plugin_helper(
     inter: CommandInteraction, plugin: str | None, func: abc.Callable[[str], None]
 ) -> None:
-    global last_extension
-    plugin = plugin or last_extension
+    global recently_loaded_plugin  # noqa: PLW0603
+    plugin = plugin or recently_loaded_plugin
 
     if plugin is None:
         return await inter.response.send_message("No extension cached.", ephemeral=True)
@@ -40,49 +42,47 @@ async def _ext_helper(
         await inter.response.send_message(traceback_text, ephemeral=True)
 
     else:
-        last_extension = plugin
+        recently_loaded_plugin = plugin
         await inter.response.send_message("Success", ephemeral=True)
 
 
 @plugin_.sub_command()
-async def load(inter: CommandInteraction, ext: str | None = None) -> None:
-    """Load an extension.
+async def load(
+    inter: CommandInteraction, ext: str | None = commands.Param(None, choices=KNOWN_PLUGIN_PATHS)
+) -> None:
+    """Load a plugin.
 
     Parameters
     ----------
-    ext: The name of extension to perform action on.
+    ext: The name of a plugin to perform action on.
     """
-    await _ext_helper(inter, ext, plugin.bot.load_extension)
+    await _plugin_helper(inter, ext, plugin.bot.load_extension)
 
 
 @plugin_.sub_command()
-async def reload(inter: CommandInteraction, ext: str | None = None) -> None:
-    """Reload an extension.
+async def reload(
+    inter: CommandInteraction, ext: str | None = commands.Param(None, choices=KNOWN_PLUGIN_PATHS)
+) -> None:
+    """Reload a plugin.
 
     Parameters
     ----------
-    ext: The name of extension to perform action on.
+    ext: The name of a plugin to perform action on.
     """
-    await _ext_helper(inter, ext, plugin.bot.reload_extension)
+    await _plugin_helper(inter, ext, plugin.bot.reload_extension)
 
 
 @plugin_.sub_command()
-async def unload(inter: CommandInteraction, ext: str | None = None) -> None:
-    """Unload an extension.
+async def unload(
+    inter: CommandInteraction, ext: str | None = commands.Param(None, choices=KNOWN_PLUGIN_PATHS)
+) -> None:
+    """Unload a plugin.
 
     Parameters
     ----------
-    ext: The name of extension to perform action on.
+    ext: The name of a plugin to perform action on.
     """
-    await _ext_helper(inter, ext, plugin.bot.unload_extension)
-
-
-@load.autocomplete("ext")
-@reload.autocomplete("ext")
-@unload.autocomplete("ext")
-async def plugin_name_autocomplete(_: CommandInteraction, input: str) -> list[str]:
-    input = input.lower()
-    return [ext for ext in plugin.bot.extensions if input in ext.lower()]
+    await _plugin_helper(inter, ext, plugin.bot.unload_extension)
 
 
 @plugin.slash_command()
@@ -108,10 +108,10 @@ async def force_error(
     Parameters
     ----------
     exception: Name of the exception to raise.
-    message: Optional message to pass to the exception.
+    message: Message passed to the exception.
     """
-    if exception not in exception_names:
-        raise commands.UserInputError("Unknown exception.")
+    if exception not in KNOWN_EXCEPTION_NAMES:
+        raise commands.UserInputError("Unknown exception.")  # noqa: TRY003, EM101
 
     exc: type[commands.CommandError] = getattr(commands.errors, exception)
     await inter.response.defer()
@@ -120,12 +120,19 @@ async def force_error(
 
 @force_error.autocomplete("exception")
 def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteReturnType:
-    if len(input) < 2:
-        return []
+    if len(input) < 2:  # noqa: PLR2004
+        return KNOWN_EXCEPTION_NAMES[: InteractionLimits.autocomplete_options]
 
     input = input.lower()
-    matching = [exc for exc in exception_names if input in exc.lower()]
-    del matching[InteractionLimits.autocomplete_options :]
+    matching: list[str] = []
+
+    for exc in KNOWN_EXCEPTION_NAMES:
+        if input in exc.lower():
+            matching.append(exc)
+
+            if len(matching) == InteractionLimits.autocomplete_options:
+                break
+
     return matching
 
 
