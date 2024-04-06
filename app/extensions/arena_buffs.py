@@ -6,8 +6,8 @@ from disnake.ui import Button, StringSelect, button, string_select
 
 from assets import STAT
 from bridges import Player
-from library_extensions import SPACE
-from library_extensions.ui import (
+from discord_extensions import SPACE
+from discord_extensions.ui import (
     EMPTY_OPTION,
     PaginatorView,
     ToggleButton,
