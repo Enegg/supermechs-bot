@@ -8,6 +8,7 @@ import typing
 from contextlib import redirect_stderr, redirect_stdout
 
 import anyio
+import anyio.to_thread
 from disnake import CommandInteraction, TextInputStyle
 from disnake.ext import commands, plugins
 from disnake.ui import TextInput
@@ -69,11 +70,14 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         # TODO: run in thread
         fn = types.FunctionType(compiled_code, {"bot": plugin.bot, "inter": last_inter})
         try:
-            obj = fn()
-            if inspect.isawaitable(obj):
-                with anyio.fail_after(InteractionLimits.response_timeout - 0.5):
+            # TODO: allow running beyond interaction timeout
+            with anyio.fail_after(InteractionLimits.response_timeout - 0.5):
+                obj = await anyio.to_thread.run_sync(fn, abandon_on_cancel=True)
+
+                if inspect.isawaitable(obj):
                     await obj
-            del obj
+
+                del obj
 
         except TimeoutError:
             sio.write("Command execution timed out")
