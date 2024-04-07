@@ -67,17 +67,14 @@ async def item(
         icon_url = TYPE[item.type].image_url
 
     if compact:
-        # fmt: off
         embed = (
             Embed(color=embed_color)
             .set_author(name=item.name, icon_url=icon_url)
             .set_thumbnail(url)
-        )
-        # fmt: on
+        )  # fmt: skip
         field_factory = compact_fields
 
     else:
-        # fmt: off
         embed = (
             Embed(
                 title=item.name,
@@ -87,8 +84,7 @@ async def item(
             )
             .set_thumbnail(icon_url)
             .set_image(url)
-        )
-        # fmt: on
+        )  # fmt: skip
         field_factory = default_fields
 
     view = ItemView(embed, item, field_factory, inter.locale, user_id=inter.author.id)
