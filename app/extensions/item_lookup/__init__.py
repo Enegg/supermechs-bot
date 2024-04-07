@@ -14,10 +14,9 @@ from managers import get_default_pack
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
+from supermechs.abc.item import Name
+from supermechs.api import Element, ItemData, Type, get_final_stage
 from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
-from supermechs.item import Element, ItemData, Type
-from supermechs.item_stats import get_final_stage
-from supermechs.typeshed import Name
 
 if typing.TYPE_CHECKING:
     LiteralTypeOrAny = LiteralType | typing.Literal["ANY"]
