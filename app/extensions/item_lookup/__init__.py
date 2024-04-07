@@ -9,7 +9,7 @@ from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
 from config import TEST_GUILDS
-from discord_extensions import debug_footer
+from discord_extensions import MessageLimits, debug_footer
 from managers import get_default_pack
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
@@ -118,7 +118,7 @@ async def item_raw(
     element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """
     del type, element  # used for autocomplete only
-    await inter.response.send_message(f"`{item!r:.1998}`", ephemeral=True)
+    await inter.response.send_message(f"`{item!r:.{MessageLimits.content - 2}}`", ephemeral=True)
 
 
 def str_type(type: Type) -> str:
