@@ -66,7 +66,6 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
     sio = io.StringIO()
 
     with redirect_stdout(sio), redirect_stderr(sio):
-        # TODO: run in thread
         fn = types.FunctionType(compiled_code, {"bot": plugin.bot, "inter": last_inter})
         try:
             # TODO: allow running beyond interaction timeout
