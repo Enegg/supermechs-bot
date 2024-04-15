@@ -262,7 +262,7 @@ class MechView(PaginatorView):
         assert inter.values is not None
         value = inter.values[0]
 
-        if page := select.is_own_option(value):
+        if select.update_on_own_option(value):
             select.page += page
             return await inter.response.edit_message(view=self)
 
