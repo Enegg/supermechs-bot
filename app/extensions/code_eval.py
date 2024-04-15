@@ -40,7 +40,7 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         await inter.response.send_modal(title="Prompt", custom_id=custom_id, components=text_input)
 
         try:
-            last_inter = await wait_for_modal(plugin.bot, custom_id)
+            last_inter = await wait_for_modal(custom_id, plugin.bot, user_id=inter.author.id)
 
         except TimeoutError:
             return await inter.send("Modal timed out.", ephemeral=True)

@@ -42,15 +42,24 @@ async def wait_for_component(
 
 
 async def wait_for_modal(
-    client: Client, modal_or_id: Modal | str, timeout: float = 600
+    modal_or_id: Modal | str, client: Client, *, user_id: int | None = None, timeout: float = 600
 ) -> ModalInteraction:
-    """Wrapper for a simple modal listener."""
+    """Waits for a modal submission.
 
+    If `user_id` is provided, ignores interactions from anyone but the specified user.
+    """
     if not isinstance(modal_or_id, str):
         modal_or_id = modal_or_id.custom_id
 
-    def check(inter: ModalInteraction, /) -> bool:
-        return inter.data.custom_id == modal_or_id
+    if user_id is None:
+
+        def check(inter: ModalInteraction, /) -> bool:
+            return inter.data.custom_id == modal_or_id
+
+    else:
+
+        def check(inter: ModalInteraction, /) -> bool:
+            return inter.author.id == user_id and inter.data.custom_id == modal_or_id
 
     try:
         return await client.wait_for(Event.modal_submit, check=check, timeout=timeout)
