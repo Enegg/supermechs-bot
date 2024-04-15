@@ -4,7 +4,7 @@ from collections import abc
 import anyio
 
 from discord_extensions import InteractionLimits
-from shared.manager import AsyncManager, default_key
+from shared.memo import AsyncMemo, default_key
 from typeshed import AsyncFunc, P, RetT, T
 
 
@@ -15,7 +15,7 @@ def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:
     arguments, in which case the decorated awaitable is ran only once.
     """
     key = typing.cast(abc.Callable[P, abc.Hashable], default_key)
-    return AsyncManager(func, key)
+    return AsyncMemo(func, key)
 
 
 async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:

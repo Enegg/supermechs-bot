@@ -8,16 +8,17 @@ from attrs import define, field
 
 from typeshed import KT, VT, P
 
-from .manager import callable_repr
+from .memo import callable_repr
 
 from supermechs.utils import large_mapping_repr
 
-__all__ = ("AsyncManager",)
+__all__ = ("AsyncMemo",)
 
 
 @define
-class AsyncManager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
-    """Provides means to asynchronously create, store and retrieve objects.
+class AsyncMemo(typing.Generic[P, VT, KT]):
+    """Proxy for asynchronously creating objects via a callable.
+    Memoizes results under computed key.
 
     Note: concurrent calls with same arguments will run the factory only once.
 
@@ -41,20 +42,16 @@ class AsyncManager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
         """Read-only proxy of the underlying mapping."""
         return MappingProxyType(self._store)
 
-    def __getitem__(self, key: KT, /) -> VT:
-        return self._store[key]
-
-    def __len__(self) -> int:
-        return len(self._store)
-
-    def __iter__(self) -> abc.Iterator[KT]:
-        return iter(self._store)
-
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return await self.get_or_create(*args, **kwargs)
 
+    def get(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+        """Retrieve stored object by computing key from arguments."""
+        key = self.key(*args, **kwargs)
+        return self._store[key]
+
     async def get_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        """Retrieve stored or create an object from given value."""
+        """Retrieve or create an object under a key computed from arguments."""
         key = self.key(*args, **kwargs)
 
         # acquire a lock *before* accessing the value; if key not present
@@ -71,7 +68,7 @@ class AsyncManager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
                 return obj
 
     async def create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        """Create and store an object from given value."""
+        """Create and store an object under a key computed from arguments."""
         key = self.key(*args, **kwargs)
         obj = await self.factory(*args, **kwargs)
         self._store[key] = obj

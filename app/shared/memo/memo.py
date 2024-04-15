@@ -9,7 +9,7 @@ from typeshed import KT, VT, P
 
 from supermechs.utils import large_mapping_repr
 
-__all__ = ("Manager", "default_key")
+__all__ = ("Memo", "default_key")
 
 
 def callable_repr(func: abc.Callable[..., object], /) -> str:
@@ -34,8 +34,9 @@ def default_key(*args: abc.Hashable, **kwargs: abc.Hashable) -> abc.Hashable:
 
 
 @define
-class Manager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
-    """Provides means to create, store and retrieve objects.
+class Memo(typing.Generic[P, VT, KT]):
+    """Proxy for creating objects via a callable.
+    Memoizes results under computed key.
 
     Parameters
     ----------
@@ -56,20 +57,16 @@ class Manager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
         """Read-only proxy of the underlying mapping."""
         return MappingProxyType(self._store)
 
-    def __getitem__(self, key: KT, /) -> VT:
-        return self._store[key]
-
-    def __len__(self) -> int:
-        return len(self._store)
-
-    def __iter__(self) -> abc.Iterator[KT]:
-        return iter(self._store)
-
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return self.get_or_create(*args, **kwargs)
 
+    def get(self, *args: P.args, **kwargs: P.kwargs) -> VT:
+        """Retrieve object stored under a key computed from arguments."""
+        key = self.key(*args, **kwargs)
+        return self._store[key]
+
     def get_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        """Retrieve stored or create an object from given value."""
+        """Retrieve or create an object under a key computed from arguments."""
         key = self.key(*args, **kwargs)
         try:
             return self._store[key]
@@ -80,7 +77,7 @@ class Manager(typing.Generic[P, VT, KT], abc.Mapping[KT, VT]):
             return obj
 
     def create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        """Create and store an object from given value."""
+        """Create and store an object under a key computed from arguments."""
         key = self.key(*args, **kwargs)
         obj = self.factory(*args, **kwargs)
         self._store[key] = obj
