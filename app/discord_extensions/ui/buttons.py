@@ -7,6 +7,8 @@ from disnake.ui.button import Button
 
 from typeshed import T
 
+from ..typeshed import EmojiType
+
 if t.TYPE_CHECKING:
     from disnake import Emoji, PartialEmoji
 
@@ -22,7 +24,7 @@ class LinkButton(Button[None]):
         label: str | None = None,
         disabled: bool = False,
         url: str | None = None,
-        emoji: str | Emoji | PartialEmoji | None = None,
+        emoji: EmojiType | None = None,
         row: int | None = None,
     ) -> None:
         super().__init__(label=label, disabled=disabled, url=url, emoji=emoji, row=row)
@@ -40,7 +42,7 @@ class ToggleButton(Button[None]):
         style_on: ButtonStyle = ButtonStyle.green,
         label: str | None = None,
         disabled: bool = False,
-        emoji: str | Emoji | PartialEmoji | None = None,
+        emoji: EmojiType | None = None,
         row: int | None = None,
         on: bool = False,
     ) -> None:

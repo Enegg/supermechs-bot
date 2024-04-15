@@ -10,6 +10,7 @@ __all__ = ("AutocompleteReturnType", "ListenerRegistry", "SenderKeywords")
 AutocompleteReturnType: typing.TypeAlias = (
     abc.Sequence[str | disnake.Localized[str]] | abc.Mapping[str, str | disnake.Localized[str]]
 )
+EmojiType: typing.TypeAlias = str | disnake.Emoji | disnake.PartialEmoji
 
 
 @typing.runtime_checkable
