@@ -14,10 +14,12 @@ AutocompleteReturnType: typing.TypeAlias = (
 
 @typing.runtime_checkable
 class ListenerRegistry(typing.Protocol):
-    def add_listener(self, func: CoroFunc[...], /, name: str | disnake.Event = ...) -> None:
+    def add_listener(self, func: CoroFunc[..., None], /, name: str | disnake.Event = ...) -> None:
         ...
 
-    def remove_listener(self, func: CoroFunc[...], /, name: str | disnake.Event = ...) -> None:
+    def remove_listener(
+        self, func: CoroFunc[..., None], /, name: str | disnake.Event = ...
+    ) -> None:
         ...
 
 
