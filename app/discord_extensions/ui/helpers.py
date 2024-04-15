@@ -1,12 +1,13 @@
 import asyncio
 import os
 import typing
+import typing_extensions as typing_
 from collections import abc
 
 from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
 
-__all__ = ("HasCustomID", "metadata_of", "random_str", "wait_for_component", "wait_for_modal")
+__all__ = ("HasCustomID", "metadata_of", "random_str", "wait_for_components", "wait_for_modal")
 
 
 def random_str() -> str:
@@ -24,22 +25,42 @@ def metadata_of(component: HasCustomID, /, sep: str = ":") -> abc.Sequence[str]:
     return component.custom_id.split(sep, 1)[1:]
 
 
-async def wait_for_component(
-    client: Client, component_or_id: HasCustomID | str, timeout: float = 600
-) -> MessageInteraction:
-    """Wrapper for simple single component UI listeners."""
+IDHolderT = typing_.TypeVar("IDHolderT", bound=HasCustomID | str, infer_variance=True)
 
-    if not isinstance(component_or_id, str):
-        component_or_id = component_or_id.custom_id
 
-    def check(inter: MessageInteraction, /) -> bool:
-        return inter.data.custom_id == component_or_id
+async def wait_for_components(
+    *components_or_ids: IDHolderT,
+    client: Client,
+    user_id: int | None = None,
+    timeout: float = 600,
+) -> tuple[MessageInteraction, IDHolderT]:
+    """Waits for an interaction with any of given components.
+
+    If `user_id` is provided, ignores interactions from anyone but the specified user.
+    """
+    ids_to_components = {
+        comp if isinstance(comp, str) else comp.custom_id: comp for comp in components_or_ids
+    }
+
+    if user_id is None:
+
+        def check(inter: MessageInteraction, /) -> bool:
+            return inter.data.custom_id in ids_to_components
+
+    else:
+
+        def check(inter: MessageInteraction, /) -> bool:
+            return inter.author.id == user_id and inter.data.custom_id in ids_to_components
 
     try:
-        return await client.wait_for(Event.message_interaction, check=check, timeout=timeout)
+        component_inter: MessageInteraction = await client.wait_for(
+            Event.message_interaction, check=check, timeout=timeout
+        )
 
     except asyncio.TimeoutError:
         raise TimeoutError from None
+
+    return (component_inter, ids_to_components[component_inter.data.custom_id])
 
 
 async def wait_for_modal(
