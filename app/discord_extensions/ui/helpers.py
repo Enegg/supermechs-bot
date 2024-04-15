@@ -1,6 +1,7 @@
 import asyncio
 import os
-import typing as t
+import typing
+from collections import abc
 
 from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
@@ -13,13 +14,13 @@ def random_str() -> str:
     return os.urandom(16).hex()
 
 
-class HasCustomID(t.Protocol):
+class HasCustomID(typing.Protocol):
     @property
     def custom_id(self) -> str:
         ...
 
 
-def metadata_of(component: HasCustomID, /, sep: str = ":") -> t.Sequence[str]:
+def metadata_of(component: HasCustomID, /, sep: str = ":") -> abc.Sequence[str]:
     return component.custom_id.split(sep, 1)[1:]
 
 
