@@ -3,11 +3,12 @@ from collections import abc, defaultdict
 
 from discord_extensions import AutocompleteReturnType, InteractionLimits
 from managers import item_pack_manager, player_manager
+from sm.name_utils import acronym_of, search_for
 
 from supermechs.api import ItemData
 from supermechs.item import Element, Type
 from supermechs.typeshed import Name
-from supermechs.utils import acronym_of, search_for
+
 
 if typing.TYPE_CHECKING:
     from disnake import CommandInteraction
