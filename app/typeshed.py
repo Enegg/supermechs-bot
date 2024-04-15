@@ -1,17 +1,17 @@
 import os
 import typing
+import typing_extensions as typing_
 from collections import abc
-from typing_extensions import ParamSpec, TypeVar
 
-T = TypeVar("T", infer_variance=True)
-T2 = TypeVar("T2", infer_variance=True)
-RetT = TypeVar("RetT", infer_variance=True, default=None)
+T = typing_.TypeVar("T", infer_variance=True)
+T2 = typing_.TypeVar("T2", infer_variance=True)
+RetT = typing_.TypeVar("RetT", infer_variance=True)
 """Function return type variable."""
-KT = TypeVar("KT", bound=abc.Hashable)
+KT = typing.TypeVar("KT", bound=abc.Hashable)
 """Key-type of a mapping."""
-VT = TypeVar("VT")
+VT = typing.TypeVar("VT")
 """Value-type of a mapping."""
-P = ParamSpec("P")
+P = typing.ParamSpec("P")
 """Parameter specification of a callable."""
 
 twotuple = tuple[T, T]
