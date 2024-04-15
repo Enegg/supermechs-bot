@@ -9,9 +9,8 @@ from contextlib import redirect_stderr, redirect_stdout
 
 import anyio
 import anyio.to_thread
-from disnake import CommandInteraction, TextInputStyle
+from disnake import CommandInteraction, TextInputStyle, ui
 from disnake.ext import commands, plugins
-from disnake.ui import TextInput
 
 import config
 from discord_extensions import InteractionLimits, Markdown, MessageLimits, text_to_file
@@ -34,7 +33,7 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
 
     if code is None:
         custom_id = random_str()
-        text_input = TextInput(
+        text_input = ui.TextInput(
             label="Code to evaluate", custom_id="code", style=TextInputStyle.paragraph
         )
         await inter.response.send_modal(title="Prompt", custom_id=custom_id, components=text_input)
