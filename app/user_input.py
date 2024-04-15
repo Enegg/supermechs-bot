@@ -10,20 +10,17 @@ class StringLimits(int, Enum):
     description = 100
 
 
-def sanitize_string(
-    string: str, /, max_length: int = StringLimits.names, *, strict: bool = False
-) -> str:
-    """Utility to sanitize user-originating string data."""
+def validate_string(string: str, /, max_length: int = StringLimits.names) -> None:
+    """Validate string length and whether it is all ASCII."""
+    if len(string) > max_length:
+        msg = "String is too long"
+        raise commands.UserInputError(msg)
 
-    if strict:
-        if len(string) > max_length:
-            msg = "String is too long"
-            raise commands.UserInputError(msg)
+    if not string.isascii():
+        msg = "Non-ASCII characters found"
+        raise commands.UserInputError(msg)
 
-        if any(not char.isascii() for char in string):
-            msg = "Non-ASCII characters found"
-            raise commands.UserInputError(msg)
 
-    chars = (char if char.isascii() else "_" for char in string)
-
-    return "".join(chars)[:max_length]
+def sanitize_string(string: str, /, max_length: int = StringLimits.names) -> str:
+    """Sanitize user-originating strings."""
+    return "".join(char if char.isascii() else "_" for char in string)[:max_length]
