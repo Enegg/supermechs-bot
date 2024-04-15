@@ -1,4 +1,5 @@
-import typing as t
+import typing
+from collections import abc
 
 from disnake import SelectOption
 from disnake.ui.select import StringSelect
@@ -8,7 +9,7 @@ from .. import ComponentLimits
 
 __all__ = ("EMPTY_OPTION", "PaginatedSelect")
 
-EMPTY_OPTION: t.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
+EMPTY_OPTION: typing.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
 
 
 class PaginatedSelect(StringSelect[None]):
@@ -21,7 +22,7 @@ class PaginatedSelect(StringSelect[None]):
         up: SelectOption,
         down: SelectOption,
         custom_id: str = MISSING,
-        all_options: t.Iterable[SelectOption] = (),
+        all_options: abc.Iterable[SelectOption] = (),
         placeholder: str | None = None,
         disabled: bool = False,
     ) -> None:
@@ -63,12 +64,12 @@ class PaginatedSelect(StringSelect[None]):
         return 2 + both_options_pages + (1 if last_page_options > 0 else 0)
 
     @property
-    def all_options(self) -> t.Sequence[SelectOption]:
+    def all_options(self) -> abc.Sequence[SelectOption]:
         """All underlying `SelectOption`s."""
         return self._all_options
 
     @all_options.setter
-    def all_options(self, new: t.Iterable[SelectOption], /) -> None:
+    def all_options(self, new: abc.Iterable[SelectOption], /) -> None:
         self._all_options = list(new)
         self._page = 0
         self._update_page()
