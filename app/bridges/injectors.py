@@ -5,10 +5,10 @@ from disnake.ext import commands
 
 import i18n
 from config import DEFAULT_PACK_KEY
+from models import Player
 from managers import item_pack_manager, player_manager
 
 from .autocompleters import item_name_autocomplete
-from .player import Player
 
 from supermechs.abc.item import Name
 from supermechs.api import ItemData

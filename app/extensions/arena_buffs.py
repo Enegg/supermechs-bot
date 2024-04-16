@@ -5,7 +5,6 @@ from disnake.ext import commands, plugins
 from disnake.ui import Button, StringSelect, button, string_select
 
 from assets import STAT
-from bridges import Player
 from discord_extensions import SPACE
 from discord_extensions.ui import (
     EMPTY_OPTION,
@@ -16,6 +15,7 @@ from discord_extensions.ui import (
     metadata_of,
     positioned,
 )
+from models import Player
 
 from supermechs.arena_buffs import ArenaBuffs, iter_modifiers_of, max_level_of
 from supermechs.item_stats import Stat

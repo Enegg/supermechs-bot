@@ -19,6 +19,7 @@ from discord_extensions.ui import (
     metadata_of,
     positioned,
 )
+from models import ItemPack, MechBuild, Player
 
 from supermechs.api import ArenaBuffs, Item, ItemPack, Mech, Player, Stat
 from supermechs.models.item import Element, Type
@@ -136,7 +137,7 @@ class MechView(PaginatorView):
 
     def __init__(
         self,
-        mech: Mech,
+        build: MechBuild,
         pack: ItemPack,
         renderer: PackRenderer,
         player: Player,
@@ -145,7 +146,7 @@ class MechView(PaginatorView):
         timeout: float = 180.0,
     ) -> None:
         super().__init__(timeout=timeout, columns=5)
-        self.mech = mech
+        self.mech = mech = build.mech
         self.locale = locale
         self.arena_buffs = player.arena_buffs
         self.renderer = renderer

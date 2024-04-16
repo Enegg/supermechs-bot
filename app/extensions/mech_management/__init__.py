@@ -9,10 +9,11 @@ from disnake.ui import StringSelect
 from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE
-from bridges import Player, mech_name_autocomplete
+from bridges import mech_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
 from discord_extensions import ComponentLimits, command_mention, debug_footer
 from discord_extensions.ui import wait_for_components
+from models import Player
 from managers import get_default_pack
 from shared.utils import fold_binary_prefix
 from user_input import sanitize_string
@@ -97,13 +98,15 @@ async def build(
     default_pack, renderer = await get_default_pack()
 
     if name is None:
-        mech = player.get_active_or_create_build()
+        build = player.get_active_or_create_build()
 
     else:
-        mech = player.get_or_create_build(sanitize_string(name))
+        build = player.get_or_create_build(sanitize_string(name))
+
+    mech = build.mech
 
     view = MechView(
-        mech=mech,
+        build=build,
         pack=default_pack,
         renderer=renderer,
         player=player,
@@ -194,15 +197,20 @@ async def export(
     default_pack, _ = await get_default_pack()
 
     if build_count == 1:
-        fp = io.BytesIO(dump_mechs(player.builds.values(), default_pack.key))
+        mechs = [all_builds[0].as_mech()]
+        fp = io.BytesIO(dump_mechs(mechs, default_pack.key))
         file = File(fp, "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
     # TODO: >25 mechs
+    options = [(build.name, str(build.id)) for build in all_builds]
+    del options[ComponentLimits.select_options :]
+    options = dict(options)
+
     mech_select = StringSelect(
         placeholder="Select mechs to export",
         max_values=min(ComponentLimits.select_options, build_count),
-        options=list(player.builds)[:ComponentLimits.select_options],
+        options=options,
     )
     await inter.response.send_message(components=mech_select, ephemeral=True)
 
@@ -216,9 +224,8 @@ async def export(
 
     values = new_inter.values
     assert values is not None
-    selected = frozenset(values)
+    mechs = (player.builds[uuid.UUID(str_id)].as_mech() for str_id in values)
 
-    mechs = (mech for name, mech in player.builds.items() if name in selected)
     fp = io.BytesIO(dump_mechs(mechs, default_pack.key))
     file = File(fp, "mechs.json")
     await new_inter.response.edit_message(file=file, components=None)
