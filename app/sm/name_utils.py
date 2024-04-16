@@ -2,30 +2,32 @@ from collections import abc
 
 
 def search_for(
-    phrase: str, iterable: abc.Iterable[str], *, case_sensitive: bool = False
+    phrase: str, strings: abc.Iterable[str], *, ignore_case: bool = True
 ) -> abc.Iterator[str]:
-    """
-    Helper func capable of finding a specific string(s) in iterable.
-    It is considered a match if every word in phrase appears in the name
-    and in the same order. For example, both `burn scop` & `half scop`
-    would match name `Half Burn Scope`, but not `burn half scop`.
+    """Finds strings matching a phrase.
+
+    It is considered a match if for every word in the phrase there is a word
+    in a string that begins with it and it appears after all previous matches.
+    For example, `burn sco` would match both `half burnt scope` & `burn half scope`, but
+    `burn half` would match only the latter.
 
     Parameters
     ----------
     phrase:
         String of whitespace-separated words.
-    iterable:
+    strings:
         Iterable of strings to match against.
-    case_sensitive:
+    ignore_case:
         Whether the search should be case sensitive.
     """
-    parts = (phrase if case_sensitive else phrase.lower()).split()
+    case = str.lower if ignore_case else str
+    parts = case(phrase).split()
 
-    for name in iterable:
-        words = iter((name if case_sensitive else name.lower()).split())
+    for string in strings:
+        words = iter(case(string).split())
 
         if all(any(word.startswith(prefix) for word in words) for prefix in parts):
-            yield name
+            yield string
 
 
 # the urge to name this function in pascal case
@@ -67,10 +69,10 @@ def acronym_of(name: str, /) -> str | None:
     are an acronym for something (like EMP).
     """
     if is_pascal(name) and name[1:].islower():
-        # cannot make an acronym from a single capital letter
+        # don't bother with single capital letters
         return None
     # filter out already-acronym names, like "EMP"
     if name.isupper():
         return None
-    # Overloaded EMP is fine to make an abbreviation for though
+    # names which are partially acronyms are fine
     return "".join(filter(str.isupper, name)).lower()
