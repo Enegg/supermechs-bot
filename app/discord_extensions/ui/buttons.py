@@ -21,9 +21,9 @@ class LinkButton(Button[None]):
     def __init__(
         self,
         *,
+        url: str,
         label: str | None = None,
         disabled: bool = False,
-        url: str | None = None,
         emoji: EmojiType | None = None,
         row: int | None = None,
     ) -> None:
