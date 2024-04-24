@@ -4,4 +4,3 @@ from .buttons import *
 from .helpers import *
 from .selects import *
 from .store import *
-from .views import *
