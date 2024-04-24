@@ -98,7 +98,8 @@ class ArenaShopView:
 
         @self.store.bind(ui.StringSelect(options=[SelectOption(label=".")], disabled=True))
         async def select(inter: MessageInteraction) -> None:
-            level = int(select.values[0])
+            assert inter.values is not None
+            level = int(inter.values[0])
 
             assert self.active is not None
             self.modify_buff(self.active, level)
