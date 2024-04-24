@@ -8,9 +8,10 @@ from disnake.utils import format_dt, oauth_url
 
 import meta
 from assets import FRANTIC_GIFS
+from async_utils import amap, move_on_before_timeout
 from config import DEFAULT_PACK_KEY, DEFAULT_PACK_URL, TEST_GUILDS
+from discord_extensions import Markdown as MD, command_mention
 from events import DEFAULT_PACK_LOADED
-from library_extensions import RESPONSE_TIME_LIMIT, Markdown as MD, command_mention
 from shared.item_packs import get_default_pack
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from shared.utils import fold_binary_prefix
@@ -58,9 +59,8 @@ async def info(inter: CommandInteraction) -> None:
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bytes_}{prefix}B",
     ]
-    async with anyio.move_on_after(RESPONSE_TIME_LIMIT - 0.5):
-        app_loc = await get_sloc("app")
-        sm_loc = await get_sloc(next(iter(supermechs.__path__)))
+    with move_on_before_timeout():
+        app_loc, sm_loc = await amap(get_sloc, "app", *supermechs.__path__)
         backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
     if DEFAULT_PACK_LOADED.is_set():

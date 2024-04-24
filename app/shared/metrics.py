@@ -6,7 +6,7 @@ import anyio
 import anyio.to_thread
 import psutil
 
-from .utils import async_memoize
+from async_utils import async_memoize
 from typeshed import Pathish
 
 
