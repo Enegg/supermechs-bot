@@ -14,7 +14,7 @@ from bridges.embeds import embed_image, sikrit_footer
 from discord_extensions import ComponentLimits, command_mention, debug_footer
 from discord_extensions.ui import wait_for_components
 from models import Player
-from managers import get_default_pack
+from shared.item_packs import get_default_pack
 from shared.utils import fold_binary_prefix
 from user_input import sanitize_string
 

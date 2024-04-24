@@ -4,9 +4,9 @@ from disnake import CommandInteraction
 from disnake.ext import commands
 
 import i18n
-from config import DEFAULT_PACK_KEY
 from models import Player
-from managers import item_pack_manager, player_manager
+from shared.item_packs import get_item_by_name, get_item_pack_for
+from stored import players
 
 from .autocompleters import item_name_autocomplete
 
@@ -30,18 +30,18 @@ def register_injections() -> None:
         ----------
         name: The name of the item. {{ ITEM_NAME }}
         """
-        # TODO: make this pack-aware
-        del inter
-        default_pack = item_pack_manager[DEFAULT_PACK_KEY]
-        try:
-            return default_pack.get_item_by_name(name)
+        item_pack = get_item_pack_for(inter)
+        item = get_item_by_name(item_pack.items, name)
+        if item is not None:
+            return item
 
-        except KeyError as err:
-            raise commands.UserInputError("Item not found.") from err
+        msg = i18n.get_message(inter.locale, "unknown-item-name")
+        raise commands.UserInputError(msg)
 
     @commands.register_injection
     def player_injector(inter: CommandInteraction) -> Player:
-        return player_manager(inter.author)
+        """Injection creating a player from interaction."""
+        return players(inter.author)
 
     @commands.register_injection
     def l10n_injector(inter: CommandInteraction) -> i18n.L10nGetter:

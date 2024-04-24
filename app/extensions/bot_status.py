@@ -11,9 +11,10 @@ from assets import FRANTIC_GIFS
 from config import DEFAULT_PACK_KEY, DEFAULT_PACK_URL, TEST_GUILDS
 from events import DEFAULT_PACK_LOADED
 from library_extensions import RESPONSE_TIME_LIMIT, Markdown as MD, command_mention
-from managers import item_pack_manager, player_manager
+from shared.item_packs import get_default_pack
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from shared.utils import fold_binary_prefix
+from stored import players
 
 import supermechs
 
@@ -49,7 +50,7 @@ async def info(inter: CommandInteraction) -> None:
         f"Discord library: {MD.hyperlink('disnake', meta.disnake_url)} {meta.disnake_version}",
     ]
     supermechs_fields = [
-        f"Registered players: {len(player_manager)}",
+        f"Registered players: {len(players.mapping)}",
     ]
     bytes_, prefix = fold_binary_prefix(get_ram_utilization())
     perf_fields = [
@@ -63,7 +64,7 @@ async def info(inter: CommandInteraction) -> None:
         backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
     if DEFAULT_PACK_LOADED.is_set():
-        default_pack = item_pack_manager[DEFAULT_PACK_KEY]
+        default_pack = get_default_pack()
         supermechs_fields += [
             f"Default item pack: {MD.hyperlink(default_pack.key, DEFAULT_PACK_URL)}",
             f"Total items: {len(default_pack.items)}",

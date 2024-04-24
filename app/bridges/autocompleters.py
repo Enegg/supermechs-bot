@@ -2,8 +2,9 @@ import typing
 from collections import abc, defaultdict
 
 from discord_extensions import AutocompleteReturnType, InteractionLimits
-from managers import item_pack_manager, player_manager
+from shared.item_packs import get_item_pack_for
 from sm.name_utils import acronym_of, search_for
+from stored import players
 
 from supermechs.api import ItemData
 from supermechs.item import Element, Type
@@ -43,8 +44,7 @@ def _get_item_filters(
 async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for type & element."""
 
-    pack = item_pack_manager[DEFAULT_PACK_KEY]
-
+    pack = get_item_pack_for(inter)
     filters = _get_item_filters(inter.filled_options)
 
     if not acronyms:
@@ -86,7 +86,7 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
 async def mech_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteReturnType:
     """Autocomplete for player builds."""
 
-    player = player_manager(inter.author)
+    player = players(inter.author)
     lowercase = input.lower()
 
     matching = [name for name in player.builds if name.lower().startswith(lowercase)]

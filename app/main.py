@@ -11,7 +11,7 @@ import i18n
 from bridges import register_injections, setup_channel_logger
 from config import DATE_FORMAT, DEFAULT_PACK_URL, HOME_GUILD_ID, LOGS_CHANNEL_ID, TEST_GUILDS
 from discord_extensions import load_extensions
-from managers import load_default_pack
+from shared.item_packs import load_default_pack
 from shared.session import IO_SESSION, client_session
 
 from supermechs import init as sm_init
@@ -43,7 +43,7 @@ async def main() -> None:
 
     async with client_session(bot.http) as session:
         IO_SESSION.set(session)
-        await load_default_pack(DEFAULT_PACK_URL)
+        await load_default_pack(session)
         await bot.connect()
 
 

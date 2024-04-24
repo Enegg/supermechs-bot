@@ -10,7 +10,7 @@ from bridges import item_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
 from config import TEST_GUILDS
 from discord_extensions import MessageLimits, debug_footer
-from managers import get_default_pack
+from shared.item_packs import get_default_pack, get_item_by_name
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
 
@@ -126,22 +126,24 @@ def str_elem(element: Element) -> str:
 
 
 @plugin.slash_command()
-async def compare(inter: CommandInteraction, item1: Name, item2: Name) -> None:
-    """Shows an interactive comparison of two items. {{ COMPARE }}
+async def compare(
+    inter: CommandInteraction,
+    item1_name: Name = commands.Param(name="item1"),
+    item2_name: Name = commands.Param(name="item2"),
+) -> None:
+    """Interactive comparison between two items. {{ COMPARE }}
 
     Parameters
     ----------
     item1: First item to compare. {{ COMPARE_FIRST }}
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    pack, _ = await get_default_pack()
+    pack = get_default_pack()
+    item_a = get_item_by_name(pack.items, item1_name)
+    item_b = get_item_by_name(pack.items, item2_name)
 
-    try:
-        item_a = pack.get_item_by_name(item1)
-        item_b = pack.get_item_by_name(item2)
-
-    except LookupError as err:
-        raise commands.UserInputError(str(err)) from err
+    if item_a is None or item_b is None:
+        raise commands.UserInputError  # TODO
 
     if item_a.element is item_b.element:
         desc_builder = io.StringIO()
