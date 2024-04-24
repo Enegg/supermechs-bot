@@ -6,10 +6,10 @@ from shared.item_packs import get_item_pack_for
 from sm.name_utils import acronym_of, search_for
 from stored import players
 
-from supermechs.api import ItemData
-from supermechs.item import Element, Type
-from supermechs.typeshed import Name
+from supermechs.abc.item import Name
+from supermechs.api import Element, ItemData, Type
 
+from user_input import StringLimits
 
 if typing.TYPE_CHECKING:
     from disnake import CommandInteraction
@@ -17,6 +17,7 @@ if typing.TYPE_CHECKING:
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
 acronyms: abc.Mapping[str, set[Name]] = defaultdict(set)
+item_names: dict[str, ItemData] = {}
 
 
 def _make_acronyms(names: abc.Iterable[Name], /) -> None:
@@ -47,20 +48,22 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     pack = get_item_pack_for(inter)
     filters = _get_item_filters(inter.filled_options)
 
-    if not acronyms:
-        _make_acronyms(pack.item_names)
+    if not item_names:
+        for item in pack.items.values():
+            item_names[item.name] = item
 
-    def filter_item_names(names: abc.Iterable[Name], /) -> t.Iterator[Name]:
-        items = map(pack.get_item_by_name, names)
+        _make_acronyms(item_names)
 
-        if filters:
-            items = (item for item in items if all(func(item) for func in filters))
-
+    def filter_item_names(names: abc.Iterable[Name], /) -> abc.Iterator[Name]:
+        items = map(item_names.__getitem__, names)
+        items = (item for item in items if all(func(item) for func in filters))
         return (item.name for item in items)
+
+    input = input.strip()
 
     # place matching abbreviations at the top
     if items := acronyms.get(input.lower()):
-        matching_item_names = sorted(filter_item_names(items))
+        matching_item_names = sorted(filter_item_names(items) if filters else items)
 
         # this shouldn't ever happen, but handle it anyway
         if len(matching_item_names) >= InteractionLimits.autocomplete_options:
@@ -78,7 +81,7 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     # extend names up to option limit
     matching_item_names += heapq.nsmallest(
         InteractionLimits.autocomplete_options - len(matching_item_names),
-        filter_item_names(search_for(input, pack.item_names)),
+        filter_item_names(search_for(input, item_names)),
     )
     return matching_item_names
 
@@ -89,9 +92,11 @@ async def mech_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     player = players(inter.author)
     lowercase = input.lower()
 
-    matching = [name for name in player.builds if name.lower().startswith(lowercase)]
+    matching = [
+        build.name for build in player.builds.values() if build.name.lower().startswith(lowercase)
+    ]
 
     if not matching and input:
-        return [input]
+        return [input[:StringLimits.names]]
 
     return matching
