@@ -1,21 +1,14 @@
 import typing
 from collections import abc
+from functools import partial
 
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption, ui
 from disnake.ext import commands, plugins
 
 from assets import CATEGORY
+from bridges.ui import get_check
 from discord_extensions import SPACE
-from discord_extensions.ui import (
-    EMPTY_OPTION,
-    Paginator,
-    SaneView,
-    ToggleButton,
-    invoker_bound,
-    metadata_of,
-    random_str,
-    with_callback,
-)
+from discord_extensions.ui import ActionButton, ComponentStore, Paginator, ToggleButton
 from models import Player
 
 from supermechs.api import ArenaShop, Category
@@ -46,8 +39,7 @@ def make_label(shop: ArenaShop, category: Category, /) -> str:
     return format_value(category, shop[category]).rjust(4, SPACE)
 
 
-@invoker_bound
-class ArenaShopView(SaneView):
+class ArenaShopView:
     LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[Category]]] = (
         (
             (Category.energy_capacity,     Category.heat_capacity, Category.physical_damage),
@@ -61,48 +53,97 @@ class ArenaShopView(SaneView):
         ),
     )  # fmt: skip
 
-    def __init__(self, shop: ArenaShop, *, user_id: int, timeout: float = 180) -> None:
-        self.user_id = user_id
+    def __init__(self, store: ComponentStore, shop: ArenaShop) -> None:
+        self.store = store
         self.shop = shop
         self.active: ToggleButton | None = None
         self.all_slot_buttons: list[ToggleButton] = []
-        self.id = random_str()
+        self.init_pages()
 
-        pages: list[list[ui.ActionRow[ui.MessageUIComponent]]] = []
-        self.paginator = Paginator(pages)
+    def init_pages(self) -> None:
+        @self.store.bind(ActionButton(label="Quit", style=ButtonStyle.red))
+        async def quit_button(inter: MessageInteraction) -> None:
+            self.store.stop()
+            await inter.response.edit_message(components=self.get_state_stopped())
 
-        for page in self.LAYOUT:
-            rows: list[ui.ActionRow[ui.MessageUIComponent]] = []
-            pages.append(rows)
+        @self.store.bind(ActionButton(label="🡸", style=ButtonStyle.blurple, disabled=True))
+        async def prev_button(inter: MessageInteraction) -> None:
+            self.paginator.prev_page()
+            next_button.disabled = False
 
-            for row in page:
-                action_row = ui.ActionRow[ui.MessageUIComponent]()
-                rows.append(action_row)
+            if self.paginator.at_first_page:
+                prev_button.disabled = True
 
-                for category in row:
-                    btn = ToggleButton(
-                        style_off=(
-                            ButtonStyle.green
-                            if shop[category] == category.data.max_level
-                            else ButtonStyle.gray
-                        ),
-                        style_on=ButtonStyle.blurple,
-                        label=make_label(shop, category),
-                        custom_id=f"{self.id}:{category.name}",
-                        emoji=CATEGORY[category],
-                    )
-                    with_callback(btn, self.buff_button)
-                    self.all_slot_buttons.append(btn)
-                    action_row.append_item(btn)
+            await inter.response.edit_message(components=self.paginator.page)
 
-        super().__init__(*self.paginator.page, timeout=timeout)
+        @self.store.bind(ActionButton(label="🡺", style=ButtonStyle.blurple))
+        async def next_button(inter: MessageInteraction) -> None:
+            self.paginator.next_page()
+            prev_button.disabled = False
 
-        self.max_button.disabled = all(
+            if self.paginator.at_last_page:
+                next_button.disabled = True
+
+            await inter.response.edit_message(components=self.paginator.page)
+
+        @self.store.bind(ActionButton(label="Max", style=ButtonStyle.green))
+        async def max_button(inter: MessageInteraction) -> None:
+            for btn in self.all_slot_buttons:
+                self.modify_buff(btn)
+                btn.on = False
+
+            max_button.disabled = True
+            self.set_state_idle()
+            await inter.response.edit_message(components=self.paginator.page)
+
+        @self.store.bind(ui.StringSelect(options=[SelectOption(label=".")], disabled=True))
+        async def select(inter: MessageInteraction) -> None:
+            level = int(select.values[0])
+
+            assert self.active is not None
+            self.modify_buff(self.active, level)
+            self.set_state_idle()
+
+            await inter.response.edit_message(components=self.paginator.page)
+
+        self.max_button = max_button
+        self.select = select
+        self.paginator = Paginator(
+            [
+                [
+                    [*map(self.make_button, self.LAYOUT[0][0])],
+                    [*map(self.make_button, self.LAYOUT[0][1])],
+                    [*map(self.make_button, self.LAYOUT[0][2])],
+                    [quit_button, prev_button, next_button, max_button],
+                    [select],
+                ],
+                [
+                    [*map(self.make_button, self.LAYOUT[1][0])],
+                    [*map(self.make_button, self.LAYOUT[1][1])],
+                    [*map(self.make_button, self.LAYOUT[1][2])],
+                    [quit_button, prev_button, next_button, max_button],
+                    [select],
+                ],
+            ]
+        )
+        max_button.disabled = all(
             btn.style_off is ButtonStyle.green for btn in self.all_slot_buttons
         )
 
-    def swap_rows(self) -> None:
-        self.rows[:3] = self.paginator.page
+    def make_button(self, category: Category, /) -> ToggleButton:
+        btn = ToggleButton(
+            style_off=(
+                ButtonStyle.green
+                if self.shop[category] == category.data.max_level
+                else ButtonStyle.gray
+            ),
+            style_on=ButtonStyle.blurple,
+            label=make_label(self.shop, category),
+            emoji=CATEGORY[category],
+        )
+        self.store.bind(btn, category.name)(partial(self.buff_button, btn))
+        self.all_slot_buttons.append(btn)
+        return btn
 
     async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
         if self.active is button:
@@ -119,63 +160,15 @@ class ArenaShopView(SaneView):
 
         self.active = button
         self.select.placeholder = button.label
-        category = Category.of_name(metadata_of(button)[0])
+        category = Category.of_name(self.store.strip_id(button.custom_id))
         self.select.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
             for level, buff in enumerate(iter_category(category))
         ]
-        await inter.response.edit_message(view=self)
-
-    @SaneView.button(3, 0, label="Quit", style=ButtonStyle.red)
-    async def quit_button(self, inter: MessageInteraction) -> None:
-        self.stop()
-        self.set_state_stopped()
-        await inter.response.edit_message(view=self)
-
-    @SaneView.button(3, 1, label="🡸", style=ButtonStyle.blurple, disabled=True)
-    async def prev_button(self, inter: MessageInteraction) -> None:
-        self.paginator.prev_page()
-        self.next_button.disabled = False
-
-        if self.paginator.at_first_page:
-            self.prev_button.disabled = True
-
-        self.swap_rows()
-        await inter.response.edit_message(view=self)
-
-    @SaneView.button(3, 2, label="🡺", style=ButtonStyle.blurple)
-    async def next_button(self, inter: MessageInteraction) -> None:
-        self.paginator.next_page()
-        self.prev_button.disabled = False
-
-        if self.paginator.at_last_page:
-            self.next_button.disabled = True
-
-        self.swap_rows()
-        await inter.response.edit_message(view=self)
-
-    @SaneView.button(3, 3, label="Max", style=ButtonStyle.green)
-    async def max_button(self, inter: MessageInteraction) -> None:
-        for btn in self.all_slot_buttons:
-            self.modify_buff(btn)
-            btn.on = False
-
-        self.max_button.disabled = True
-        self.set_state_idle()
-        await inter.response.edit_message(view=self)
-
-    @SaneView.string_select(4, 0, options=[EMPTY_OPTION], disabled=True)
-    async def select(self, inter: MessageInteraction) -> None:
-        level = int(self.select.values[0])
-
-        assert self.active is not None
-        self.modify_buff(self.active, level)
-        self.set_state_idle()
-
-        await inter.response.edit_message(view=self)
+        await inter.response.edit_message(components=self.paginator.page)
 
     def modify_buff(self, button: ToggleButton, level: int = -1) -> None:
-        category = Category.of_name(metadata_of(button)[0])
+        category = Category.of_name(self.store.strip_id(button.custom_id))
         max_level = category.data.max_level
 
         if level == -1:
@@ -200,25 +193,29 @@ class ArenaShopView(SaneView):
         self.select.placeholder = None
         self.select.disabled = True
 
-    def set_state_stopped(self) -> None:
-        for row in self.rows[:3]:
-            for btn in row:
-                btn.disabled = True
+    def get_state_stopped(self) -> ui.Components[ui.MessageUIComponent]:
+        page = self.paginator.page
+        del page[3:]
+        for row in page:
+            for component in row:
+                component.disabled = True
 
-        for row in self.rows[3:]:
-            row.clear_items()
+        return page
 
 
 @plugin.slash_command()
 @commands.max_concurrency(1, commands.BucketType.user)
 async def buffs(inter: CommandInteraction, player: Player) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""
-    view = ArenaShopView(player.arena_shop, user_id=inter.author.id)
-    await inter.response.send_message("**Arena Shop**", view=view, ephemeral=True)
+    store = ComponentStore(interaction_check=get_check(inter.author))
+    view = ArenaShopView(store, player.arena_shop)
 
-    if await view.wait():
-        view.set_state_stopped()
-        await inter.edit_original_response(view=view)
+    await inter.response.send_message(
+        "**Arena Shop**", components=view.paginator.page, ephemeral=True
+    )
+
+    if await store.listen(plugin.bot, 180):
+        await inter.edit_original_response(components=view.get_state_stopped())
 
 
 setup, teardown = plugin.create_extension_handlers()
