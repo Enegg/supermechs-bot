@@ -4,15 +4,25 @@ import typing
 import typing_extensions as typing_
 from collections import abc
 
+from attrs import define, field
 from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
 
-__all__ = ("HasCustomID", "metadata_of", "random_str", "wait_for_components", "wait_for_modal")
+from typeshed import T
+
+__all__ = (
+    "HasCustomID",
+    "metadata_of",
+    "random_str",
+    "wait_for_components",
+    "wait_for_modal",
+    "Paginator",
+)
 
 
 def random_str() -> str:
     """Generates a random string."""
-    return os.urandom(16).hex()
+    return os.urandom(8).hex()
 
 
 class HasCustomID(typing.Protocol):
@@ -22,7 +32,7 @@ class HasCustomID(typing.Protocol):
 
 
 def metadata_of(component: HasCustomID, /, sep: str = ":") -> abc.Sequence[str]:
-    return component.custom_id.split(sep, 1)[1:]
+    return component.custom_id.split(sep)[1:]
 
 
 IDHolderT = typing_.TypeVar("IDHolderT", bound=HasCustomID | str, infer_variance=True)
@@ -88,3 +98,54 @@ async def wait_for_modal(
 
     except asyncio.TimeoutError:
         raise TimeoutError from None
+
+
+@define
+class Paginator(typing.Generic[T]):
+    """State machine proxying a value at a specific index of a sequence."""
+
+    pages: typing.Final[abc.Sequence[T]] = field()
+    index: int = field(default=0)
+
+    @property
+    def page(self) -> T:
+        return self.pages[self.index]
+
+    @property
+    def at_first_page(self) -> bool:
+        """Whether the page is the first page."""
+        return self.index == 0
+
+    @property
+    def at_last_page(self) -> bool:
+        """Whether the page is the last page."""
+        return self.index == len(self.pages) - 1
+
+    def next_page(self) -> None:
+        """Advance the page index."""
+        if self.at_last_page:
+            raise IndexError
+
+        self.index += 1
+
+    def prev_page(self) -> None:
+        """Reduce the page index."""
+        if self.at_first_page:
+            raise IndexError
+
+        self.index -= 1
+
+    def goto(self, page: int, /) -> None:
+        """Go to an absolute page index."""
+        if not 0 <= page <= len(self.pages) - 1:
+            raise IndexError
+
+        self.index = page
+
+    def jump_by(self, page: int, /) -> None:
+        """Jump by n pages."""
+
+        if not 0 <= self.index + page <= len(self.pages) - 1:
+            raise IndexError
+
+        self.index += page

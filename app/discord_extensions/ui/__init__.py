@@ -1,7 +1,7 @@
 """Module extending the library provided UI kit."""
 
-from .action_row import *
 from .buttons import *
 from .helpers import *
 from .selects import *
+from .store import *
 from .views import *

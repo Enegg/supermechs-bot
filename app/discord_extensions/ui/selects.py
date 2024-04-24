@@ -1,4 +1,3 @@
-import typing
 from collections import abc
 
 from disnake import SelectOption, ui
@@ -6,9 +5,7 @@ from disnake.utils import MISSING
 
 from .. import ComponentLimits
 
-__all__ = ("EMPTY_OPTION", "PaginatedSelect")
-
-EMPTY_OPTION: typing.Final = SelectOption(label="empty", description="Select to remove", emoji="🗑️")
+__all__ = ("PaginatedSelect",)
 
 
 class PaginatedSelect(ui.StringSelect[None]):
