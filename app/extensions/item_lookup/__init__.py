@@ -38,13 +38,13 @@ async def item(
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
 ) -> None:
-    """Finds an item and returns its stats. {{ ITEM }}
+    """Lookup item stats. {{ ITEM }}
 
     Parameters
-    -----------
-    type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
-    element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
-    compact: Whether the embed sent back should be compact (breaks on mobile). {{ ITEM_COMPACT }}
+    ----------
+    type: Limits suggestions to chosen type. {{ ITEM_TYPE }}
+    element: Limits suggestions to chosen element. {{ ITEM_ELEMENT }}
+    compact: Compact layout. (broken on mobile) {{ ITEM_COMPACT }}
     """
     del type, element  # used for autocomplete only
 
