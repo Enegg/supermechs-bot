@@ -24,7 +24,7 @@ def register_injections() -> None:
 
     @commands.register_injection
     def item_injector(inter: CommandInteraction, name: Name) -> ItemData:
-        """Injection taking Item name and returning the Item.
+        """Injection taking Item name and returning ItemData.
 
         Parameters
         ----------
@@ -44,7 +44,7 @@ def register_injections() -> None:
         return players(inter.author)
 
     @commands.register_injection
-    def l10n_injector(inter: CommandInteraction) -> i18n.L10nGetter:
+    def l10n_injector(inter: CommandInteraction) -> i18n.GetText:
         """Injection returning a callable which returns localized messages."""
         return partial(i18n.get_message, inter.locale)
 
