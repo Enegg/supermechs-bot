@@ -8,18 +8,21 @@ __all__ = ("EmbedColorType", "debug_footer")
 EmbedColorType: typing.TypeAlias = disnake.Colour | int
 
 
-def debug_footer(embed: disnake.Embed, /) -> None:
+def debug_footer(embed: disnake.Embed, /, *, replace: bool = False) -> None:
     """Adds a footer with raw urls of various embed fields, and total characters."""
+
+    if replace:
+        embed.remove_footer()
 
     parts: list[str] = ["Debug:", f"Size: {len(embed)}"]
 
     if existing_footer := embed.footer.text:
         parts.insert(0, existing_footer)
 
-    if (url := embed.image.url) and url.startswith("attachment://"):
+    if (url := embed.image.url) is not None and url.startswith("attachment://"):
         parts.append(f"Image: {url}")
 
-    if (url := embed.thumbnail.url) and url.startswith("attachment://"):
+    if (url := embed.thumbnail.url) is not None and url.startswith("attachment://"):
         parts.append(f"Thumb: {url}")
 
     embed.set_footer(text="\n".join(parts))
