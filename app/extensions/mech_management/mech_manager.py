@@ -1,197 +1,374 @@
 import typing
+from collections import abc
+from functools import partial
 
-from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption
-from disnake.ui import Button, button, string_select
+from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption, ui
 from disnake.utils import MISSING
 
 import i18n
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
 from bridges.embeds import embed_image
+from bridges.ui import make_empty_option
 from discord_extensions import SPACE, ComponentLimits, EmbedColorType, debug_footer
-from discord_extensions.ui import (
-    EMPTY_OPTION,
-    PaginatedSelect,
-    PaginatorView,
-    ToggleButton,
-    TrinaryButton,
-    add_callback,
-    invoker_bound,
-    metadata_of,
-    positioned,
-)
+from discord_extensions.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
+from discord_extensions.ui.store import ComponentStore
 from models import ItemPack, MechBuild, Player
 
-from supermechs.api import ArenaBuffs, Item, ItemPack, Mech, Player, Stat
-from supermechs.models.item import Element, Type
-from supermechs.rendering import PackRenderer
+from supermechs.abc.item import ItemID
+from supermechs.api import ArenaShop, Element, Item, ItemData, Mech, Stat, Type, is_shop_empty
+from supermechs.mech import SlotType
+from supermechs.tools.mech import dominant_element
+from supermechs.tools.stats import buff_stats, mech_summary
 
 
-def embed_mech(mech: Mech, locale: Locale, included_buffs: ArenaBuffs | None = None) -> Embed:
+def embed_mech(mech: Mech, locale: Locale, name: str) -> Embed:
     embed = Embed(
-        title=f'Mech build "{mech.name}"',
-        color=ELEMENT[mech.dominant_element or Element.UNKNOWN].color,
-    ).add_field("Summary:", format_stats(mech, locale, included_buffs))
+        title=i18n.get_message(locale, "mech-summary-title").format(name=name),
+        color=color_from_mech(mech),
+    ).add_field(i18n.get_message(locale, "mech-summary-field"), format_summary(mech, locale))
     return embed
 
 
 def get_mech_config(mech: Mech, /) -> str:
-    """Returns a str of item IDs that are visible on image."""
+    """Returns a string of item IDs that are visible on image."""
     return "_".join(
         "0" if item is None else str(item.data.id) for item in mech.iter_items("body", "weapons")
     )
 
 
-def get_weight_usage(weight: int, /) -> str:
-    return " " + get_weight_emoji(weight)
-
-
-def format_stats(mech: Mech, locale: Locale, included_buffs: ArenaBuffs | None = None, /) -> str:
+def format_summary(mech: Mech, locale: Locale, buff_with: ArenaShop | None = None) -> str:
     """Returns a string of lines formatted with mech stats.
 
     Parameters
     ----------
-    mech: `Mech` object which stats to format.
-    included_buffs: `ArenaBuffs` object to apply buffs from.
+    mech: `Mech` to format stats of.
+    locale: `Locale` to use for i18n of stat names.
+    buff_with: optional `ArenaShop` to apply buffs from.
     """
-    if included_buffs is None:
-        bank = mech.stat_summary
+    summary = mech_summary(mech)
 
-    else:
-        bank = included_buffs.buff_stats(mech.stat_summary, buff_health=True)
+    if buff_with is not None:
+        summary = buff_stats(summary, buff_with, skip_hp=False)
 
     return "\n".join(
-        f"{STAT[stat]} **{value}** {i18n.get_stat_name(locale, stat).default}"
-        "{stat_emoji} **{value}** {stat_name}{extra}".format(  # TODO: stat names
+        "{stat_emoji} **{value}** {stat_name}{extra}".format(
             stat_emoji=STAT[stat],
             value=value,
             stat_name=i18n.get_stat_name(locale, stat).default,
             extra=" " + get_weight_emoji(value) if stat is Stat.weight else "",
         )
         for stat, value in summary.items()
+        if value != 0 or stat is Stat.weight
     )
 
 
-def slot_to_emoji(slot: Mech.Slot, /) -> str:
-    if slot.type is Type.SIDE_WEAPON or slot.type is Type.TOP_WEAPON:
-        asset = SIDED_TYPE[slot.type]
-        return (asset.left if int(slot.name[-1]) % 2 else asset.right).emoji
+def slot_emoji(slot: SlotType, /) -> str:
+    """Returns the emoji representing a slot, with respect to the right & left variants."""
 
-    return TYPE[slot.type].emoji
+    if isinstance(slot, tuple):
+        slot, n = slot
+
+        if slot is not Type.MODULE:
+            asset = SIDED_TYPE[slot]
+            return (asset.right if n % 2 else asset.left).emoji
+
+    return TYPE[slot].emoji
 
 
-def get_sorted_options(
-    options: list[SelectOption], primary_element: Element | None, /
+def sorted_options(
+    options: abc.Mapping[Element, list[SelectOption]], primary_element: Element | None, /
 ) -> list[SelectOption]:
     """Returns a list of `SelectOption`s sorted by element.
 
     Note: this ignores the option limit.
     """
-    new_options = [EMPTY_OPTION]
+    all_options: list[SelectOption] = []
 
-    if len(options) + 1 <= ComponentLimits.select_options:
-        return new_options + options
+    if sum(map(len, options.values())) + 1 <= ComponentLimits.select_options:
+        it = options.values()
 
-    element_emojis = [element.emoji for element in ELEMENT.values()]
+    else:
+        element_order = list(ELEMENT)
 
-    if primary_element is not None and primary_element is not Element.PHYSICAL:
-        # physical is the first one anyway
-        primary_emoji = ELEMENT[primary_element].emoji
-        element_emojis.remove(primary_emoji)
-        element_emojis.insert(0, primary_emoji)
+        if primary_element is not None:
+            element_order.remove(primary_element)
+            element_order.insert(0, primary_element)
 
-    new_options += sorted(options, key=lambda o: (element_emojis.index(str(o.emoji)), o.label))
+        it = (options[key] for key in element_order)
 
-    return new_options
+    for option_list in it:
+        all_options += option_list
+
+    return all_options
 
 
-def color_from_mech(mech: Mech, /) -> ColorType:
-    if (dominant := mech.dominant_element) is not None:
+def color_from_mech(mech: Mech, /) -> EmbedColorType:
+    if (dominant := dominant_element(mech)) is not None:
         return ELEMENT[dominant].color
 
     if mech.torso is not None:
-        return ELEMENT[mech.torso.data.element].color
+        return ELEMENT[mech.torso.element].color
 
     return ELEMENT[Element.UNKNOWN].color
 
 
-@invoker_bound
-class MechView(PaginatorView):
-    """View for button-based mech building."""
+def parse_slot(metadata: abc.Sequence[str], /) -> SlotType:
+    type_ = Type.of_name(metadata[0])
 
-    # fmt: off
-    LAYOUT = (
+    if type_ is Type.SIDE_WEAPON or type_ is Type.TOP_WEAPON or type_ is Type.MODULE:
+        return type_, int(metadata[1])
+
+    return type_
+
+
+def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption]]]:
+    item_groups = {type: {element: list[ItemData]() for element in Element} for type in Type}
+
+    for item in pack.items.values():
+        item_groups[item.type][item.element].append(item)
+
+    for element_dict in item_groups.values():
+        for item_list in element_dict.values():
+            item_list.sort(key=lambda item: item.name)
+
+    return {
+        type: {
+            element: [
+                SelectOption(label=item.name, value=str(item.id), emoji=ELEMENT[item.element].emoji)
+                for item in items
+            ]
+            for element, items in element_dict.items()
+        }
+        for type, element_dict in item_groups.items()
+    }
+
+
+class MechView:
+    store: ComponentStore
+    mech: Mech
+    pack: ItemPack
+    player: Player
+    embed: Embed
+    locale: Locale
+    paginator: Paginator[abc.Sequence[abc.Sequence[ui.MessageUIComponent]]]
+    active: ToggleButton | None
+    empty_option: SelectOption
+    mech_config: str
+
+    command_mention: typing.ClassVar[str] = "`/buffs`"
+
+    # pages of rows of components
+    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[SlotType]]] = (
         (
-            Mech.Slot.TOP_WEAPON_1, Mech.Slot.DRONE, Mech.Slot.TOP_WEAPON_2, Mech.Slot.CHARGE,
-            Mech.Slot.MODULE_1, Mech.Slot.MODULE_2, Mech.Slot.MODULE_3, Mech.Slot.MODULE_4
+            ((Type.TOP_WEAPON,  0), Type.DRONE, (Type.TOP_WEAPON,  1), Type.CHARGE),
+            ((Type.SIDE_WEAPON, 2), Type.TORSO, (Type.SIDE_WEAPON, 3), Type.TELEPORTER),
+            ((Type.SIDE_WEAPON, 0), Type.LEGS,  (Type.SIDE_WEAPON, 1), Type.HOOK),
         ),
         (
-            Mech.Slot.SIDE_WEAPON_3, Mech.Slot.TORSO, Mech.Slot.SIDE_WEAPON_4, Mech.Slot.TELEPORTER,
-            Mech.Slot.MODULE_5, Mech.Slot.MODULE_6, Mech.Slot.MODULE_7, Mech.Slot.MODULE_8
+            tuple((Type.MODULE, n) for n in range(0, 4)),
+            tuple((Type.MODULE, n) for n in range(4, 8)),
         ),
-        (Mech.Slot.SIDE_WEAPON_1, Mech.Slot.LEGS, Mech.Slot.SIDE_WEAPON_2, Mech.Slot.HOOK),
+    )  # fmt: skip
+    DUMMY_BUTTONS = tuple(
+        ActionButton(label=SPACE, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
     )
-    # fmt: on
-
-    buffs_command: typing.ClassVar[str]
-    user_id: int
+    PAGE_EMOJI = (TYPE[Type.MODULE].emoji, TYPE[Type.TORSO].emoji)
 
     def __init__(
         self,
+        store: ComponentStore,
         build: MechBuild,
         pack: ItemPack,
-        renderer: PackRenderer,
+        # renderer: PackRenderer,
         player: Player,
         locale: Locale,
-        *,
-        timeout: float = 180.0,
     ) -> None:
-        super().__init__(timeout=timeout, columns=5)
-        self.mech = mech = build.mech
+        self.store = store
+        self.mech = build.mech
+        self.pack = pack
+        self.renderer: typing.Any = object()  # TODO
+        self.player = player
+        self.embed = embed_mech(build.mech, locale, build.name)
         self.locale = locale
-        self.arena_buffs = player.arena_buffs
-        self.renderer = renderer
-        self.user_id = player.id
-        self.get_item = pack.get_item_by_id
-        self.mech_config = get_mech_config(mech)
+        self.active = None
+        self.empty_option = make_empty_option(locale)
+        self.mech_config = get_mech_config(build.mech)
+        self.init_pages()
+        self.item_groups = group_items(pack)
 
-        self.active: TrinaryButton[str] | None = None
-        self.embed = embed_mech(mech, locale)
+    def init_pages(self) -> None:  # noqa: PLR0915
+        gettext = partial(i18n.get_message, self.locale)
 
-        for pos, row in enumerate(self.LAYOUT):
-            self.rows[pos].extend_page_items(
-                add_callback(
-                    TrinaryButton(
-                        custom_id=f"{self.id}:{slot.name}",
-                        item=TrinaryButton.NOTSET
-                        if (item := mech[slot]) is None
-                        else item.data.name,
-                        emoji=slot_to_emoji(slot),
-                    ),
-                    self.slot_button_cb,
+        @self.store.bind(ActionButton(emoji=self.PAGE_EMOJI[0]))
+        async def modules_button(inter: MessageInteraction) -> None:
+            """Button swapping mech editor with modules and vice versa."""
+            self.paginator.index ^= 1  # toggle between 0 and 1
+            modules_button.emoji = self.PAGE_EMOJI[self.paginator.index]
+            await inter.response.edit_message(components=self.paginator.page)
+
+        @self.store.bind(ToggleButton(label="🡅"))
+        async def buffs_button(inter: MessageInteraction) -> None:
+            """Button toggling arena buffs being applied to mech's stats."""
+            if is_shop_empty(self.player.arena_shop):
+                return await inter.response.send_message(
+                    gettext("mech-build-no-buffs").format(command_mention=self.command_mention),
+                    ephemeral=True,
                 )
-                for slot in row
+
+            buffs_button.toggle()
+            assert self.embed._fields is not None
+            self.embed._fields[0]["value"] = format_summary(
+                self.mech, self.locale, self.player.arena_shop if buffs_button.on else None
+            )
+            await inter.response.edit_message(embed=self.embed, components=self.paginator.page)
+
+        @self.store.bind(ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red))
+        async def quit_button(inter: MessageInteraction) -> None:
+            self.store.stop()
+            await inter.response.defer(ephemeral=True)
+
+        @self.store.bind(
+            PaginatedSelect(
+                up=SelectOption(
+                    label=gettext("mech-build-ui-select-up-label"),
+                    value="option:up",
+                    emoji="🔺",
+                    description=gettext("mech-build-ui-select-up-desc"),
+                ),
+                down=SelectOption(
+                    label=gettext("mech-build-ui-select-down-label"),
+                    value="option:down",
+                    emoji="🔻",
+                    description=gettext("mech-build-ui-select-down-desc"),
+                ),
+                placeholder=gettext("mech-build-ui-select-placeholder"),
+                all_options=[SelectOption(label=".")],  # 1 option required even when disabled
+                disabled=True,
+            )
+        )
+        async def select(inter: MessageInteraction) -> None:
+            """Item select dropdown."""
+            assert self.active is not None
+            assert inter.values is not None
+            value = inter.values[0]
+
+            if select.update_on_own_option(value):
+                return await inter.response.edit_message(components=self.paginator.page)
+
+            slot = parse_slot(self.store.strip_id(self.active.custom_id).split(":"))
+
+            if value == self.empty_option.value:
+                item = None
+                select.placeholder = None
+                self.active.style_off = ButtonStyle.gray
+
+            else:
+                item_data = self.pack.get_item(ItemID(int(value)))
+                target_type = slot[0] if isinstance(slot, tuple) else slot
+
+                if item_data.type is not target_type:
+                    # challenge complete: How Did We Get Here?
+                    msg = f"{item_data.type} is not valid for slot {target_type}"
+                    raise RuntimeWarning(msg)
+
+                item = Item.maxed(item_data)
+                select.placeholder = item_data.name
+                self.active.style_off = ButtonStyle.green
+
+            self.mech[slot] = item
+            self.embed.color = color_from_mech(self.mech)
+            self.set_state_idle()
+
+            self.embed.set_field_at(
+                0,
+                name="Stats:",
+                value=format_summary(
+                    self.mech,
+                    self.locale,
+                    self.player.arena_shop if buffs_button.on else None,
+                ),
+            )
+            new_config = get_mech_config(self.mech)
+
+            if new_config == self.mech_config:
+                return await inter.response.edit_message(
+                    embed=self.embed, components=self.paginator.page
+                )
+
+            self.mech_config = new_config
+            url, file = None, MISSING
+
+            if False:
+                if self.mech.torso is not None:
+                    image = self.renderer.create_mech_image(self.mech)
+                    url, file = embed_image(image, new_config)
+
+            self.embed.set_image(url)
+
+            if __debug__:
+                debug_footer(self.embed, replace=True)
+
+            await inter.response.edit_message(
+                embed=self.embed, file=file, components=self.paginator.page, attachments=[]
             )
 
-        self.rows[2].extend_page_items(
-            Button(label=SPACE, custom_id=f"{self.id}:no_op{i}", disabled=True, row=2)
-            for i in range(4)
+        self.select = select
+        self.paginator = Paginator(
+            (
+                [
+                    [*map(self.make_button, self.LAYOUT[0][0]), modules_button],
+                    [*map(self.make_button, self.LAYOUT[0][1]), buffs_button],
+                    [*map(self.make_button, self.LAYOUT[0][2]), quit_button],
+                    [select],
+                ],
+                [
+                    [*map(self.make_button, self.LAYOUT[1][0]), modules_button],
+                    [*map(self.make_button, self.LAYOUT[1][1]), buffs_button],
+                    [*self.DUMMY_BUTTONS, quit_button],
+                    [select],
+                ],
+            )
         )
 
-        # property updates the rows
-        self.page = 0
-        self.item_groups: dict[Type, list[SelectOption]] = {type: [] for type in Type}
+    def set_state_idle(self) -> None:
+        if self.active is not None:
+            self.active.on = False
+            self.active = None
+        self.select.disabled = True
 
-        for item in pack.items.values():
-            self.item_groups[item.type].append(
-                SelectOption(label=item.name, value=str(item.id), emoji=ELEMENT[item.element].emoji)
-            )
+    def set_state_active(self, button: ToggleButton, /) -> None:
+        button.on = True
+        self.active = button
+        self.select.disabled = False
+        self.update_dropdown(button)
 
-        ref = {ELEMENT[element].emoji: index for index, element in enumerate(Element)}
+    def switch_active_button(self, button: ToggleButton, /) -> None:
+        assert self.active is not None
+        self.active.on = False
+        button.on = True
+        self.active = button
+        self.update_dropdown(button)
 
-        for item_list in self.item_groups.values():
-            item_list.sort(key=lambda option: (ref[str(option.emoji)], option.label))
+    def update_dropdown(self, button: ToggleButton, /) -> None:
+        metadata = self.store.strip_id(button.custom_id).split(":")
+        options = self.item_groups[Type.of_name(metadata[0])]
+        element = dominant_element(self.mech)
+        self.select.all_options = [self.empty_option, *sorted_options(options, element)]
+        slot = parse_slot(metadata)
+        item = self.mech[slot]
+        self.select.placeholder = self.empty_option.label if item is None else item.name
 
-    async def slot_button_cb(self, button: TrinaryButton[str], inter: MessageInteraction) -> None:
+    def make_button(self, slot: SlotType, /) -> ToggleButton:
+        metadata = f"{slot[0].name}:{slot[1]}" if isinstance(slot, tuple) else slot.name
+        btn = ToggleButton(
+            style_off=(ButtonStyle.gray if self.mech[slot] is None else ButtonStyle.green),
+            style_on=ButtonStyle.blurple,
+            emoji=slot_emoji(slot),
+        )
+        self.store.bind(btn, metadata)(partial(self.slot_button_cb, btn))
+        return btn
+
+    async def slot_button_cb(self, button: ToggleButton, inter: MessageInteraction) -> None:
         """Callback shared by all of the item slot buttons."""
         if button.on:
             self.set_state_idle()
@@ -202,142 +379,4 @@ class MechView(PaginatorView):
         else:
             self.set_state_active(button)
 
-        await inter.response.edit_message(view=self)
-
-    @positioned(0, 4)
-    @button(emoji=TYPE[Type.MODULE].emoji)
-    async def modules_button(self, button: Button[None], inter: MessageInteraction) -> None:
-        """Button swapping mech editor with modules and vice versa."""
-        self.page ^= 1  # toggle between 0 and 1
-        button.emoji = TYPE[Type.TORSO if self.page == 1 else Type.MODULE].emoji
-
-        await inter.response.edit_message(view=self)
-
-    @positioned(1, 4)
-    @button(ToggleButton, label="Buffs")
-    async def buffs_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
-        """Button toggling arena buffs being applied to mech's stats."""
-        if self.arena_buffs.is_at_zero():
-            return await inter.response.send_message(
-                "This won't show any effect because all your buffs are at level zero.\n"
-                f"You can change that using {self.buffs_command} command.",
-                ephemeral=True,
-            )
-
-        button.toggle()
-        assert self.embed._fields is not None
-        self.embed._fields[0]["value"] = format_stats(
-            self.mech, self.locale, self.arena_buffs if button.on else None
-        )
-        await inter.response.edit_message(embed=self.embed, view=self)
-
-    @positioned(2, 4)
-    @button(label="Quit", style=ButtonStyle.red)
-    async def quit_button(self, button: Button[None], inter: MessageInteraction) -> None:
-        del button
-        await inter.response.defer(ephemeral=True)
-        self.stop()
-
-    @positioned(3, 0)
-    @string_select(
-        PaginatedSelect,
-        up=SelectOption(
-            label="Previous items",
-            value="option:up",
-            emoji="🔼",
-            description="Click to show previous items",
-        ),
-        down=SelectOption(
-            label="More items",
-            value="option:down",
-            emoji="🔽",
-            description="Click to show more items",
-        ),
-        placeholder="Choose slot",
-        all_options=[EMPTY_OPTION],
-        disabled=True,
-    )
-    async def select(self, select: PaginatedSelect, inter: MessageInteraction) -> None:
-        """Dropdown menu with all the items."""
-        assert self.active is not None
-        assert inter.values is not None
-        value = inter.values[0]
-
-        if select.update_on_own_option(value):
-            select.page += page
-            return await inter.response.edit_message(view=self)
-
-        item_data = None if value == EMPTY_OPTION.value else self.get_item(int(value))
-        slot = Mech.Slot.of_name(metadata_of(self.active)[0])
-
-        if item_data is not None:
-            if item_data.type is not slot.type:
-                # how did we get here?
-                raise RuntimeWarning(f"{item_data.type} is not valid for slot {slot}")
-
-            item = Item.from_data(item_data, maxed=True)
-            await self.renderer.get_item_sprite(item).load()
-            self.active.item = select.placeholder = item_data.name
-
-        else:
-            item = None
-            select.placeholder = None
-            self.active.item = TrinaryButton.NOTSET
-
-        self.mech[slot] = item
-        self.embed.color = color_from_mech(self.mech)
-        self.set_state_idle()
-
-        self.embed.set_field_at(
-            0,
-            name="Stats:",
-            value=format_stats(
-                self.mech,
-                self.locale,
-                self.arena_buffs if self.buffs_button.on else None,
-            ),
-        )
-        new_config = get_mech_config(self.mech)
-
-        if new_config == self.mech_config:
-            return await inter.response.edit_message(embed=self.embed, view=self)
-
-        self.mech_config = new_config
-        url, file = None, MISSING
-
-        if self.mech.torso is not None:
-            image = self.renderer.create_mech_image(self.mech)
-            url, file = embed_image(image, new_config)
-
-        self.embed.set_image(url)
-
-        if __debug__:
-            debug_footer(self.embed)
-
-        await inter.response.edit_message(embed=self.embed, file=file, view=self, attachments=[])
-
-    def set_state_idle(self) -> None:
-        if self.active is not None:
-            self.active.on = False
-            self.active = None
-        self.select.disabled = True
-
-    def set_state_active(self, button: TrinaryButton[str], /) -> None:
-        button.on = True
-        self.active = button
-        self.select.disabled = False
-        self.update_dropdown(button)
-
-    def switch_active_button(self, button: TrinaryButton[str], /) -> None:
-        assert self.active is not None
-        self.active.on = False
-        button.on = True
-        self.active = button
-        self.update_dropdown(button)
-
-    def update_dropdown(self, button: TrinaryButton[str], /) -> None:
-        options = self.item_groups[Mech.Slot.of_name(metadata_of(button)[0]).type]
-        self.select.all_options = get_sorted_options(options, self.mech.dominant_element)
-        self.select.placeholder = (
-            EMPTY_OPTION.label if button.item is TrinaryButton.NOTSET else button.item
-        )
+        await inter.response.edit_message(components=self.paginator.page)
