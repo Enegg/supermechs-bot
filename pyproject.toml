@@ -6,16 +6,16 @@ authors = [
     {name = "Eneg", email = "42005170+Enegg@users.noreply.github.com"},
 ]
 dependencies = [
-    "disnake>=2.9.1",
+    "anyio>=4.2.0",
     "attrs>=23.2.0",
+    "disnake>=2.9.1",
     "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
+    "orjson>=3.8.10",
     "psutil>=5.9.7",
     "python-dotenv>=1.0.0",
-    "rtoml>=0.10.0",
+    "rtoml>=0.9.0",
+    "supermechs @ git+https://github.com/Enegg/supermechs.git",
     "typing-extensions>=4.9.0",
-    "orjson>=3.9.10",
-    "anyio>=4.2.0",
-    "supermechs @ git+https://github.com/Enegg/supermechs.git@grand",
 ]
 requires-python = "==3.10.*"
 readme = "README.md"
@@ -26,9 +26,6 @@ license = {text = "GPL-3.0-or-later"}
 distribution = false
 
 [tool.pdm.dev-dependencies]
-dev = [
-    "-e supermechs @ file:///${PROJECT_ROOT}/../supermechs",
-]
 lint = [
     "ruff>=0.1.13",
 ]
