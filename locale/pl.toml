@@ -40,9 +40,9 @@ in_game = "Obrażenia elektryczne"
 in_game = "Obrażenia energetyczne"
 [stats.energy_capacity_damage]
 default = "Redukcja pojemności energii"
-in_game = "Max. obrażenia energetyczne"
+in_game = "Maks. obrażenia energetyczne"
 [stats.regeneration_damage]
-in_game = "Obrażenia regeneracji"
+in_game = "Redukcja regeneracji"
 [stats.electric_resistance_damage]
 in_game = "Zmniejszanie wytrzymałości"
 short = "Redukcja odporności"
@@ -52,14 +52,14 @@ in_game = "Obrażenia wybuchowe"
 in_game = "Obrażenia cieplne"
 [stats.heat_capacity_damage]
 default = "Redukcja pojemności cieplnej"
-in_game = "Max. obrażenia cieplne"
+in_game = "Maks. obrażenia cieplne"
 [stats.cooling_damage]
-in_game = "Obrażenia chłodzenia"
+in_game = "Redukcja chłodzenia"
 [stats.explosive_resistance_damage]
 in_game = "Zmniejszanie wytrzymałości"
 short = "Redukcja odporności"
 [stats.walk]
-in_game = "Zasięg poruszania"
+in_game = "Zasięg chodu"
 [stats.jump]
 in_game = "Zasięg skoku"
 [stats.range]
@@ -80,8 +80,9 @@ in_game = "Odwrót"
 in_game = "Liczba użyć"
 short = "Użycia"
 [stats.backfire]
-default = "Rykoszet"
+default = "Samoobrażenia"
 in_game = "Strzał"
+short = "Rykoszet"
 [stats.heat_generation]
 in_game = "Wydzielanie ciepła"
 short = "Emisja ciepła"
@@ -94,61 +95,95 @@ in_game = "???"
 default = "Zużycie rakiet"
 in_game = "???"
 
+[custom_stats]
 [custom_stats.spread]
 default = "Rozrzut"
 [custom_stats.anyDmg]
 default = "Obrażenia"
 
+[other]
+jumpRequired = "Wymagana zdolność skoku"
+transformRange = "Etapy transformacji"
+
 [messages]
-cmd_dev = "To komenda wyłącznie deweloperska."
-cmd_running = "Twoje poprzednie wywołanie tej komendy nie zakończyło się."
-cmd_error = "Podczas wywołania wystąpił błąd..."
-cmd_timeout = "Komenda przekroczyła limit czasu."
+command-dev = "To komenda wyłącznie deweloperska."
+command-running = "Twoje poprzednie wywołanie tej komendy jest nadal w toku."
+command-timeout = "Komenda przekroczyła limit czasu."
+command-error = "Wystąpił problem :( Szczegóły zostały przekazane winnemu deweloperowi."
+
+ui-disallowed = "Tylko osoba wywołująca komendę może tego używać."
+ui-quit = "Wyjście"
+ui-empty-option-label = "pusty"
+ui-empty-option-desc = "Wybierz by usunąć"
+
+unknown-item-name = "Nie odnaleziono przedmiotu '{name}'."
+
+import-size-error = "Maksymalny rozmiar pliku to {size}{unit}."
+import-parse-error = "Niepowodzenie przetwarzania pliku:"
+import-failed = "Niepowodzenia w ładowaniu:"
+import-loaded = "Załadowano mechy:"
+import-none = "Nie załadowano żadnych mechów."
+
+export-none = "Nie masz żadnych mechów do eksportu."
+export-select = "Wybierz mechy do eksportu"
+export-all = "wszystko"
+export-items-warning = "Masz {build_cound} mechów. Lista wyboru poniżej może wyświetlić jedynie {display_limit}."
+
+mech-summary-title = 'Wyposażenie mecha "{name}"'
+mech-summary-field = "Podsumowanie:"
+
+mech-build-no-buffs = "Ta funkcja nie będzie miała efektu, gdyż nie ustawiono poziomów bonusów areny.\nMożesz je edytować używając komendy {command_mention}."
+mech-build-ui-select-placeholder = "Wybierz slot"
+mech-build-ui-select-up-label = "Poprzednie przedmioty"
+mech-build-ui-select-up-desc = "Wybierz by zobaczyć poprzednie przedmioty"
+mech-build-ui-select-down-label = "Więcej przedmiotów"
+mech-build-ui-select-down-desc = "Wybierz by zobaczyć więcej przedmiotów"
+
+item-compare-ui-buffs = "Bonusy"
+item-compare-jump-required = "Wymagana zdolność skoku"
+item-compare-stat-header = "Statystyka"
 
 [commands]
-ARENA_BUFFS_NAME = "buffy"
-ARENA_BUFFS_DESCRIPTION = "Interaktywne menu do modyfikacji arena buffów."
-
-BUFFS_MAXED_NAME = "ustaw_max"
-BUFFS_MAXED_DESCRIPTION = "Ustawia twoje arena buffy na maksymalne poziomy."
+ARENA_BUFFS_NAME = "arena-bonusy"
+ARENA_BUFFS_DESCRIPTION = "Menu modyfikacji bonusów areny."
 
 ITEM_NAME = "przedmiot"
-ITEM_DESCRIPTION = "Znajduje przedmiot i pokazuje jego statystyki."
+ITEM_DESCRIPTION = "Podgląd przedmiotów i ich statystyk."
 ITEM_NAME_NAME = "nazwa"
 ITEM_NAME_DESCRIPTION = "Nazwa przedmiotu."
 ITEM_TYPE_NAME = "typ"
-ITEM_TYPE_DESCRIPTION = "Sugerowane przedmioty będą jedynie tego typu."
+ITEM_TYPE_DESCRIPTION = "Ogranicza sugestie do wybranego typu."
 ITEM_ELEMENT_NAME = "element"
-ITEM_ELEMENT_DESCRIPTION = "Sugerowane przedmioty będą jedynie tego elementu."
+ITEM_ELEMENT_DESCRIPTION = "Ogranicza sugestie do wybranego elementu."
 ITEM_COMPACT_NAME = "kompaktowy"
-ITEM_COMPACT_DESCRIPTION = "Włącza kompaktowe ułożenie (psuje się na aplikacji mobilnej)."
+ITEM_COMPACT_DESCRIPTION = "Kompaktowe ułożenie (psuje się na aplikacji mobilnej)."
 
 COMPARE_NAME = "porównaj"
-COMPARE_DESCRIPTION = "Porównuje dwa przedmioty w interaktywnym menu."
+COMPARE_DESCRIPTION = "Menu porównania dwóch przedmiotów."
 COMPARE_FIRST_NAME = "przedmiot1"
 COMPARE_FIRST_DESCRIPTION = "Pierwszy przedmiot do porównania."
 COMPARE_SECOND_NAME = "przedmiot2"
 COMPARE_SECOND_DESCRIPTION = "Drugi przedmiot do porównania."
 
-MECH_SHOW_NAME = "pokaż"
+MECH_SHOW_NAME = "podgląd"
 MECH_SHOW_DESCRIPTION = "Wyświetla mecha i jego statystyki."
 MECH_SHOW_NAME_NAME = "nazwa"
-MECH_SHOW_NAME_DESCRIPTION = "Nazwa mecha do pokazania. Jeżeli nie podana, będzie to twój ostanio używany mech."
+MECH_SHOW_NAME_DESCRIPTION = "Nazwa mecha do pokazania. Domyślnie ostanio używany mech."
 
-MECH_BROWSE_NAME = "przeglądaj"
-MECH_BROWSE_DESCRIPTION = "Wyświetla listę twoich mechów."
+MECH_BROWSE_NAME = "katalog"
+MECH_BROWSE_DESCRIPTION = "Katalog twoich mechów."
 
 MECH_BUILD_NAME = "buduj"
-MECH_BUILD_DESCRIPTION = "Interaktywny interfejs do tworzenia i modyfikacji mechów."
+MECH_BUILD_DESCRIPTION = "Interfejs tworzenia i modyfikacji mechów."
 MECH_BUILD_NAME_NAME = "nazwa"
-MECH_BUILD_NAME_DESCRIPTION = "Nazwa istniejącego mecha lub do nadania nowemu. Jeżeli nie podana, będzie to \"Unnamed Mech\"."
+MECH_BUILD_NAME_DESCRIPTION = "Nazwa istniejącego mecha lub do nadania nowemu."
 
 MECH_IMPORT_NAME = "importuj"
 MECH_IMPORT_DESCRIPTION = "importuj mechy z pliku .JSON."
 MECH_IMPORT_FILE_NAME = "plik"
-MECH_IMPORT_FILE_DESCRIPTION = "Plik .JSON w formacie wspierającym WU."
+MECH_IMPORT_FILE_DESCRIPTION = "Plik .JSON w formacie wspieranym przez WU."
 
 MECH_EXPORT_NAME = "eksportuj"
-MECH_EXPORT_DESCRIPTION = "Eksportuj swoje mechy do pliku .JSON wspieranego przez WU."
+MECH_EXPORT_DESCRIPTION = "Eksportuj swoje mechy do pliku wspieranego przez WU."
 MECH_EXPORT_FORMAT_NAME = "format"
-MECH_EXPORT_FORMAT_DESCRIPTION = "Format pliku, w jaki zostanie załączony. Formaty inne niż .json nie są wspieranie przez WU."
+MECH_EXPORT_FORMAT_DESCRIPTION = "Format pliku, jaki zostanie załączony; inne niż .json nie są wspieranie przez WU."

@@ -1,3 +1,4 @@
+[stats]
 [stats.weight]
 in_game = "Weight"
 [stats.hit_points]
@@ -95,18 +96,49 @@ in_game = "Bullets cost"
 [stats.rockets_cost]
 in_game = "Rockets cost"
 
-
+[custom_stats]
 [custom_stats.spread]
 default = "Damage spread"
 [custom_stats.anyDmg]
 default = "Damage"
 
 [other]
-jumpRequired = "Jumping required"
-transformRange = "Transformation range"
+transform-range = "Transformation tiers"
 
 [messages]
-cmd_dev = "This is a developer-only command."
-cmd_running = "Your previous invocation of this command has not finished executing."
-cmd_error = "Command executed with an error..."
-cmd_timeout = "Command execution timed out."
+command-dev = "This is a developer-only command."
+command-running = "Your previous instance of this command is still running."
+command-timeout = "Command execution timed out."
+command-error = "An error occured :( Details were relayed to the guilty developer."
+
+ui-disallowed = "Only the command invoker can interact with that."
+ui-quit = "Quit"
+ui-empty-option-label = "empty"
+ui-empty-option-desc = "Select to remove"
+
+unknown-item-name = "Item '{name}' not found."
+
+import-size-error = "The maximum file size is {size}{unit}."
+import-parse-error = "Falied to parse data:"
+import-failed = "Failed to load:"
+import-loaded = "Loaded mechs:"
+import-none = "No mechs loaded."
+
+export-none = "You do not have any mechs to export."
+export-select = "Select mechs to export"
+export-all = "all"
+export-items-warning = "You have {build_count} builds. The selection list below can only show {display_limit}."
+
+mech-summary-title = 'Mech build "{name}"'
+mech-summary-field = "Summary:"
+
+mech-build-no-buffs = "This won't show any effect as all your buffs are at level zero.\nYou can change that using the {command_mention} command."
+mech-build-ui-select-placeholder = "Choose slot"
+mech-build-ui-select-up-label = "Previous items"
+mech-build-ui-select-up-desc = "Select to show previous items"
+mech-build-ui-select-down-label = "More items"
+mech-build-ui-select-down-desc = "Select to show more items"
+
+item-compare-ui-buffs = "Buffs"
+item-compare-jump-required = "Jumping required"
+item-compare-stat-header = "Stat"
