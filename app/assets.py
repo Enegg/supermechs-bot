@@ -4,6 +4,8 @@ import typing
 import typing_extensions as typing_
 from collections import abc
 
+from disnake import Colour
+
 from typeshed import T
 
 import supermechs.mech as mech
@@ -21,7 +23,7 @@ __all__ = (
 
 
 class ColorEmojiAsset(typing_.NamedTuple):
-    color: int
+    color: Colour
     emoji: typing_.LiteralString
 
 
@@ -75,20 +77,20 @@ STAT: abc.Mapping[Stat, typing_.LiteralString] = {
     Stat.rockets_cost: "🚀",
 }  # fmt: skip
 TIER: abc.Mapping[Tier, ColorEmojiAsset] = {
-    Tier.COMMON:    ColorEmojiAsset(0xB1B1B1, "⚪"),
-    Tier.RARE:      ColorEmojiAsset(0x55ACEE, "🔵"),
-    Tier.EPIC:      ColorEmojiAsset(0xCC41CC, "🟣"),
-    Tier.LEGENDARY: ColorEmojiAsset(0xE0A23C, "🟠"),
-    Tier.MYTHICAL:  ColorEmojiAsset(0xFE6333, "🟤"),
-    Tier.DIVINE:    ColorEmojiAsset(0xFFFFFF, "⚪"),
-    Tier.PERK:      ColorEmojiAsset(0xFFFF33, "🟡"),
+    Tier.COMMON:    ColorEmojiAsset(Colour(0xB1B1B1), "⚪"),
+    Tier.RARE:      ColorEmojiAsset(Colour(0x55ACEE), "🔵"),
+    Tier.EPIC:      ColorEmojiAsset(Colour(0xCC41CC), "🟣"),
+    Tier.LEGENDARY: ColorEmojiAsset(Colour(0xE0A23C), "🟠"),
+    Tier.MYTHICAL:  ColorEmojiAsset(Colour(0xFE6333), "🟤"),
+    Tier.DIVINE:    ColorEmojiAsset(Colour(0xFFFFFF), "⚪"),
+    Tier.PERK:      ColorEmojiAsset(Colour(0xFFFF33), "🟡"),
 }  # fmt: skip
 ELEMENT: abc.Mapping[Element, ColorEmojiAsset] = {
-    Element.PHYSICAL:  ColorEmojiAsset(0xFFB800, STAT[Stat.physical_damage]),
-    Element.EXPLOSIVE: ColorEmojiAsset(0xB71010, STAT[Stat.explosive_damage]),
-    Element.ELECTRIC:  ColorEmojiAsset(0x106ED8, STAT[Stat.electric_damage]),
-    Element.COMBINED:  ColorEmojiAsset(0x211D1D, "<:combined:1026853188940349490>"),
-    Element.UNKNOWN:   ColorEmojiAsset(0x000000, "❔"),
+    Element.PHYSICAL:  ColorEmojiAsset(Colour(0xFFB800), STAT[Stat.physical_damage]),
+    Element.EXPLOSIVE: ColorEmojiAsset(Colour(0xB71010), STAT[Stat.explosive_damage]),
+    Element.ELECTRIC:  ColorEmojiAsset(Colour(0x106ED8), STAT[Stat.electric_damage]),
+    Element.COMBINED:  ColorEmojiAsset(Colour(0x211D1D), "<:combined:1026853188940349490>"),
+    Element.UNKNOWN:   ColorEmojiAsset(Colour(0x000000), "❔"),
 }  # fmt: skip
 TYPE: abc.Mapping[Type, TypeAsset] = {
     Type.TORSO:    TypeAsset("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>"),
