@@ -1,7 +1,6 @@
 import random
 import typing
 
-import anyio
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 from disnake.utils import format_dt, oauth_url
@@ -9,8 +8,9 @@ from disnake.utils import format_dt, oauth_url
 import meta
 from assets import FRANTIC_GIFS
 from async_utils import amap, move_on_before_timeout
-from config import DEFAULT_PACK_KEY, DEFAULT_PACK_URL, TEST_GUILDS
+from config import CONFIG
 from discord_extensions import Markdown as MD, command_mention
+from env import ENV
 from events import DEFAULT_PACK_LOADED
 from shared.item_packs import get_default_pack
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
@@ -66,7 +66,7 @@ async def info(inter: CommandInteraction) -> None:
     if DEFAULT_PACK_LOADED.is_set():
         default_pack = get_default_pack()
         supermechs_fields += [
-            f"Default item pack: {MD.hyperlink(default_pack.key, DEFAULT_PACK_URL)}",
+            f"Default item pack: {MD.hyperlink(default_pack.key, CONFIG.default_pack_url)}",
             f"Total items: {len(default_pack.items)}",
         ]
     embed = (
@@ -80,7 +80,7 @@ async def info(inter: CommandInteraction) -> None:
     await inter.response.send_message(embed=embed, ephemeral=True)
 
 
-@plugin.slash_command(guild_ids=TEST_GUILDS)
+@plugin.slash_command(guild_ids=ENV.test_guild_ids)
 async def activity(inter: CommandInteraction) -> None:
     """Displays command invocation activity."""
     desc = (

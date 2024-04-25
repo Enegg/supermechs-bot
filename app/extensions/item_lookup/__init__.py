@@ -8,8 +8,9 @@ from disnake.utils import MISSING
 from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
-from config import TEST_GUILDS
+from config import CONFIG
 from discord_extensions import MessageLimits, debug_footer
+from env import ENV
 from shared.item_packs import get_default_pack, get_item_by_name
 
 from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
@@ -48,15 +49,16 @@ async def item(
     """
     del type, element  # used for autocomplete only
 
-    _, renderer = await get_default_pack()
-    sprite = renderer.get_item_sprite(item, get_final_stage(item.start_stage).tier)
+    # _, renderer = get_default_pack()
+    # sprite = renderer.get_item_sprite(item, get_final_stage(item.start_stage).tier)
 
-    if sprite.metadata.source == "url" and sprite.metadata.method == "single":
-        url, file = sprite.metadata.value, MISSING
+    # if sprite.metadata.source == "url" and sprite.metadata.method == "single":
+    #     url, file = sprite.metadata.value, MISSING
 
-    else:
-        await sprite.load()
-        url, file = embed_image(sprite.image, item.name)
+    # else:
+        # await sprite.load()
+        # url, file = embed_image(sprite.image, item.name)
+    url, file = CONFIG.missing_image_url, MISSING  # FIXME
 
     embed_color = ELEMENT[item.element].color
 
@@ -99,7 +101,7 @@ async def item(
     await inter.edit_original_response(view=None)
 
 
-@plugin.slash_command(guild_ids=TEST_GUILDS)
+@plugin.slash_command(guild_ids=ENV.test_guild_ids)
 async def item_raw(
     inter: CommandInteraction,
     item: ItemData,

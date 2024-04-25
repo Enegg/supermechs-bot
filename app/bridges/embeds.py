@@ -5,7 +5,7 @@ import typing
 
 import disnake
 
-import config
+from config import CONFIG
 from discord_extensions.embeds import sanitize_filename
 
 if typing.TYPE_CHECKING:
@@ -35,4 +35,4 @@ def embed_image(image: "Image", filename: str, format: str = "png") -> tuple[str
 def sikrit_footer(embed: disnake.Embed, /, chance: float = 0.01) -> None:
     """Randomly set a "tip" footer on an embed."""
     if random.random() < chance:
-        embed.set_footer(text=random.choice(config.EMBED_TIPS))
+        embed.set_footer(text=random.choice(CONFIG.embed_tips))

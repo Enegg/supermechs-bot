@@ -4,13 +4,13 @@ from collections import abc
 from disnake import CommandInteraction
 from disnake.ext import commands, plugins
 
-from config import TEST_GUILDS
 from discord_extensions import AutocompleteReturnType, InteractionLimits
 from discord_extensions.extensions import walk_extensions
+from env import ENV
 from shared.utils import format_exception
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](
-    name="Setup", slash_command_attrs={"guild_ids": TEST_GUILDS}, logger=__name__
+    name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
 KNOWN_PLUGIN_PATHS = list[str | int | float](walk_extensions("extensions"))

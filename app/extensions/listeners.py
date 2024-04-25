@@ -3,7 +3,7 @@ import logging
 from disnake import CommandInteraction
 from disnake.ext import plugins
 
-import config
+from config import CONFIG
 from shared.metrics import add_invocation
 
 plugin = plugins.Plugin(name="listeners", logger="event")
@@ -19,7 +19,7 @@ async def on_ready() -> None:
         assert limit is not None
         _LOG_READY.info(
             f"Session #{limit.total - limit.remaining}/{limit.total}"
-            f" (expires {limit.reset_time:{config.DATE_FORMAT}})"
+            f" (expires {limit.reset_time:{CONFIG.date_format}})"
         )
 
 

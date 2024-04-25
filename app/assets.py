@@ -6,9 +6,9 @@ from collections import abc
 
 from disnake import Colour
 
+from config import CONFIG
 from typeshed import T
 
-import supermechs.mech as mech
 from supermechs.api import Category, Element, Stat, Tier, Type
 
 __all__ = (
@@ -138,14 +138,15 @@ FRANTIC_GIFS: abc.Sequence[typing_.LiteralString] = (
 
 
 def get_weight_emoji(weight: int, /) -> typing_.LiteralString:
+    rules = CONFIG.game_rules.builds
     if weight < 0:
         return "🗿"
-    if weight < mech.MAX_WEIGHT * 0.99:
+    if weight < rules.MAX_WEIGHT * 0.99:
         return "⚙️"
-    if weight < mech.MAX_WEIGHT:
+    if weight < rules.MAX_WEIGHT:
         return "🆗"
-    if weight == mech.MAX_WEIGHT:
+    if weight == rules.MAX_WEIGHT:
         return "👌"
-    if weight <= mech.OVERLOADED_MAX_WEIGHT:
+    if weight <= rules.OVERLOADED_MAX_WEIGHT:
         return "❕"
     return "⛔"

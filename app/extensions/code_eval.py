@@ -12,14 +12,14 @@ import anyio.to_thread
 from disnake import CommandInteraction, TextInputStyle, ui
 from disnake.ext import commands, plugins
 
-import config
 from discord_extensions import InteractionLimits, Markdown, MessageLimits, text_to_file
 from discord_extensions.ui import random_str, wait_for_modal
+from env import ENV
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
 
 
-@plugin.slash_command(name="eval", guild_ids=config.TEST_GUILDS)
+@plugin.slash_command(name="eval", guild_ids=ENV.test_guild_ids)
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
 async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
