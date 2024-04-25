@@ -7,16 +7,18 @@ from disnake.utils import MISSING
 
 from assets import ELEMENT, SIDED_TYPE, TYPE
 from bridges import item_name_autocomplete
-from bridges.embeds import embed_image, sikrit_footer
+from bridges.embeds import sikrit_footer
+from bridges.ui import get_check
 from config import CONFIG
-from discord_extensions import MessageLimits, debug_footer
+from discord_extensions import MessageLimits
+from discord_extensions.ui.store import ComponentStore
 from env import ENV
 from shared.item_packs import get_default_pack, get_item_by_name
 
-from .item_lookup import ItemCompareView, ItemView, compact_fields, default_fields
+from .item_lookup import item_compare_view, item_view
 
 from supermechs.abc.item import Name
-from supermechs.api import Element, ItemData, Type, get_final_stage
+from supermechs.api import Element, ItemData, Type
 from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
 
 if typing.TYPE_CHECKING:
@@ -74,7 +76,6 @@ async def item(
             .set_author(name=item.name, icon_url=icon_url)
             .set_thumbnail(url)
         )  # fmt: skip
-        field_factory = compact_fields
 
     else:
         embed = (
@@ -87,18 +88,14 @@ async def item(
             .set_thumbnail(icon_url)
             .set_image(url)
         )  # fmt: skip
-        field_factory = default_fields
-
-    view = ItemView(embed, item, field_factory, inter.locale, user_id=inter.author.id)
 
     sikrit_footer(embed)
 
-    if __debug__:
-        debug_footer(embed)
-
-    await inter.response.send_message(embed=embed, file=file, view=view, ephemeral=True)
-    await view.wait()
-    await inter.edit_original_response(view=None)
+    store = ComponentStore(interaction_check=get_check(inter.author))
+    layout = item_view(store, embed, item, inter.locale, compact)
+    await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
+    await store.listen(plugin.bot)
+    await inter.edit_original_response(components=None)
 
 
 @plugin.slash_command(guild_ids=ENV.test_guild_ids)
@@ -176,11 +173,11 @@ async def compare(
 
     sikrit_footer(embed)
 
-    view = ItemCompareView(embed, item_a, item_b, inter.locale, user_id=inter.author.id)
-    await inter.response.send_message(embed=embed, view=view, ephemeral=True)
-
-    await view.wait()
-    await inter.edit_original_response(view=None)
+    store = ComponentStore(interaction_check=get_check(inter.author))
+    layout = item_compare_view(store, embed, item_a, item_b, inter.locale)
+    await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
+    await store.listen(plugin.bot)
+    await inter.edit_original_response(components=None)
 
 
 compare.autocomplete("item1")(item_name_autocomplete)
