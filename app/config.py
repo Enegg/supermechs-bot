@@ -1,40 +1,41 @@
-import os
 import typing
+import typing_extensions as typing_
 from collections import abc
 from pathlib import Path
 
+import attrs
 import rtoml
-
-from discord_extensions import RESPONSE_TIMEOUT
 
 from supermechs.gamerules import GameRules
 
-__all__ = (
-    "DATE_FORMAT",
-    "DEFAULT_PACK_URL",
-    "HOME_GUILD_ID",
-    "LOGGING_CONFIG",
-    "LOGS_CHANNEL_ID",
-    "TEST_GUILDS",
-)
+__all__ = ("CONFIG",)
 
-_config = rtoml.load(Path("config.toml"))
 
-LOGGING_CONFIG: dict[str, typing.Any] = _config["logging"]
-DATE_FORMAT: str = _config["bot"]["DATE_FORMAT"]
-LOGS_CHANNEL_ID: int = int(os.environ["LOGS_CHANNEL_ID"])
-"""The ID of a text channel for ChannelHandler to send logs to."""
-HOME_GUILD_ID: int = int(os.environ["HOME_GUILD_ID"])
-"""The bot's home guild ID."""
-TEST_GUILDS: abc.Sequence[int] = (HOME_GUILD_ID,)
-"""The IDs of guilds the bot will register commands in while in dev mode."""
-EMBED_TIPS: abc.Sequence[str] = _config["SM"]["EMBED_TIPS"]
+@attrs.frozen
+class _Config:
+    logging: dict[str, typing.Any]
+    """Configuration for the logging module."""
+    date_format: str
+    """General date format for logging purposes."""
 
-DEFAULT_PACK_URL: str = _config["SM"]["DEFAULT_PACK_URL"]
+    embed_tips: abc.Sequence[str]
+    """Sequence of embed footers randomly displayed to users."""
+    default_pack_url: str
+    """The URL of the default item pack."""
+    missing_image_url: str
+    game_rules: GameRules = attrs.field(factory=GameRules, init=False)
+    """Set of rules the game shall obey."""
 
-del _config
+    @classmethod
+    def from_path(cls, path: Path, /) -> typing_.Self:
+        _config = rtoml.load(path)
+        return cls(
+            _config["logging"],
+            _config["bot"]["DATE_FORMAT"],
+            _config["SM"]["EMBED_TIPS"],
+            _config["SM"]["DEFAULT_PACK_URL"],
+            _config["SM"]["MISSING_IMAGE_URL"],
+        )
 
-RESPONSE_TIME_LIMIT: float = RESPONSE_TIMEOUT - 0.5
 
-SM_GAME_RULES = GameRules()
-"""The set of rules to use for SuperMechs."""
+CONFIG = _Config.from_path(Path("config.toml"))
