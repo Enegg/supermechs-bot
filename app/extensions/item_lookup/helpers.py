@@ -32,7 +32,7 @@ def compare_numbers(
     return (x - y, 0) if lower_is_better ^ (x > y) else (0, y - x)
 
 
-def wrap_nicely(size: int, max_length: int) -> int:
+def get_row_width(size: int, max_length: int) -> int:
     """Returns the length `l` of slices a sequence of given `size` can be partitioned into.
 
     `max_length` determines the upper bound for `l`, however `l` is determined in a way

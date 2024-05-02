@@ -11,7 +11,7 @@ from discord_extensions.ui import ActionButton, ToggleButton
 from discord_extensions.ui.store import ComponentStore
 from sm.asset_utils import item_transform_range
 
-from .helpers import iter_formatted_stats, try_shorten, wrap_nicely
+from .helpers import get_row_width, iter_formatted_stats, try_shorten
 
 from supermechs.api import MAX_SHOP, ItemData, Stat
 from supermechs.tools.stats import buff_stats, max_stats
@@ -115,7 +115,7 @@ def compact_fields(
         lines.append(f"{STAT[Stat.jump]}❗")
 
     line_count = len(lines)
-    div = wrap_nicely(line_count, 4)
+    div = get_row_width(line_count, 4)
 
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
     transform_range = item_transform_range(item)
