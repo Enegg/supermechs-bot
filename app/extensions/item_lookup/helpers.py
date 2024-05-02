@@ -1,5 +1,4 @@
 import math
-import re
 import typing
 from collections import abc
 from functools import partial
@@ -9,8 +8,6 @@ from typeshed import twotuple
 
 from supermechs.abc.stats import StatsMapping
 from supermechs.api import Stat
-
-_pattern = re.compile(r"\.(\d+)")
 
 
 def truncate_float(num: float, decimals: int) -> tuple[float, int]:
