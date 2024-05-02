@@ -6,11 +6,12 @@ import disnake
 from async_utils import async_memoize
 from models import ItemPack, Player
 
+from .shared.session import IO_SESSION
+
 from supermechs.ext.deserializers import to_item_pack
 from supermechs.ext.deserializers.typedefs import AnyItemPack
 
 if typing.TYPE_CHECKING:
-    from aiohttp import ClientSession
     from PIL import Image
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,12 +31,12 @@ def item_pack_factory(data: AnyItemPack, /) -> ItemPack:
 
 
 @async_memoize
-async def image_factory(url: str, /, session: "ClientSession") -> "Image.Image":
+async def image_factory(url: str, /) -> "Image.Image":
     _LOGGER.debug("Requesting %s", url)
 
     from PIL import ImageFile
 
-    async with session.get(url) as response:
+    async with IO_SESSION.get().get(url) as response:
         response.raise_for_status()
         parser = ImageFile.Parser()
 
