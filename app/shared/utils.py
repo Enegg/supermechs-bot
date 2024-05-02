@@ -3,7 +3,7 @@ import traceback
 import typing
 from collections import abc
 
-__all__ = ("fold_binary_prefix", "ReprMixin", "format_exception")
+__all__ = ("ReprMixin", "fold_binary_prefix", "format_exception")
 
 # https://en.wikipedia.org/wiki/Binary_prefix
 BinaryPrefix: typing.TypeAlias = typing.Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"]
