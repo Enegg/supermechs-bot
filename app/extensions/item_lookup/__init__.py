@@ -17,7 +17,6 @@ from shared.item_packs import DEFAULT_PACK, get_item_by_name
 
 from .item_lookup import item_compare_view, item_view
 
-from supermechs.abc.item import Name
 from supermechs.api import Element, ItemData, Type
 from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
 
@@ -127,8 +126,8 @@ def str_elem(element: Element) -> str:
 @plugin.slash_command()
 async def compare(
     inter: CommandInteraction,
-    item1_name: Name = commands.Param(name="item1"),
-    item2_name: Name = commands.Param(name="item2"),
+    item1_name: str = commands.Param(name="item1"),
+    item2_name: str = commands.Param(name="item2"),
 ) -> None:
     """Interactive comparison between two items. {{ COMPARE }}
 
