@@ -113,10 +113,10 @@ in_game = "Bullets cost"
 [stats.rockets_cost]
 in_game = "Rockets cost"
 
-[custom_stats]
-[custom_stats.spread]
+[custom-stats]
+[custom-stats.spread]
 default = "Damage spread"
-[custom_stats.anyDmg]
+[custom-stats.anyDmg]
 default = "Damage"
 
 [other]
