@@ -3,20 +3,21 @@ import typing_extensions as typing_
 from pathlib import Path
 
 import attrs
+import cattrs
 import rtoml
 
 from supermechs.gamerules import GameRules
+
+if typing.TYPE_CHECKING:
+    from typeshed import Pathish
 
 __all__ = ("CONFIG",)
 
 
 @attrs.frozen
 class _Config:
-    logging: dict[str, typing.Any]
-    """Configuration for the logging module."""
     date_format: str
     """General date format for logging purposes."""
-
     default_pack_url: str
     """The URL of the default item pack."""
     missing_image_url: str
@@ -24,14 +25,15 @@ class _Config:
     """Set of rules the game shall obey."""
 
     @classmethod
-    def from_path(cls, path: Path, /) -> typing_.Self:
-        _config = rtoml.load(path)
-        return cls(
-            _config["logging"],
-            _config["bot"]["DATE_FORMAT"],
-            _config["SM"]["DEFAULT_PACK_URL"],
-            _config["SM"]["MISSING_IMAGE_URL"],
-        )
+    def from_path(cls, path: "Pathish", /) -> typing_.Self:
+        return cattrs.structure_attrs_fromdict(rtoml.load(Path(path)), cls)
 
 
-CONFIG = _Config.from_path(Path("config.toml"))
+CONFIG = _Config.from_path("config.toml")
+
+
+def logging_config(path: "Pathish" = "config.toml", /) -> dict[str, typing.Any]:
+    """Read the configuration for the logging module."""
+    # this is not a part of the _Config object as
+    # it doesn't have to live for the lifetime of the app
+    return rtoml.load(Path(path))["logging"]
