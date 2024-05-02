@@ -3,7 +3,7 @@ import traceback
 import typing
 from collections import abc
 
-__all__ = ("ReprMixin", "fold_binary_prefix", "format_exception")
+__all__ = ("fold_binary_prefix", "format_exception")
 
 # https://en.wikipedia.org/wiki/Binary_prefix
 BinaryPrefix: typing.TypeAlias = typing.Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"]
@@ -37,17 +37,6 @@ def fold_binary_prefix(bytes_: int, /, prefix: BinaryPrefix = "") -> tuple[int, 
     # equivalent to bytes_ //= 1024 ** exp
     bytes_ >>= 10 * exp
     return bytes_, BINARY_PREFIXES[current_exp + exp]
-
-
-class ReprMixin:
-    """Class for programmatic __repr__ creation."""
-
-    __repr_attributes__: abc.Iterable[str]
-    __slots__ = ()
-
-    def __repr__(self) -> str:
-        attrs = " ".join(f"{key}={getattr(self, key)!r}" for key in self.__repr_attributes__)
-        return f"<{type(self).__name__} {attrs} at 0x{id(self):016X}>"
 
 
 def format_exception(exc: BaseException, /) -> str:
