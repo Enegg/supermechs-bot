@@ -22,8 +22,8 @@ def format_float(num: float, decimals: int) -> str:
     return f"{num:.{decimals}f}"
 
 
-def try_shorten(name: str) -> str:
-    if len(name) < 16:
+def try_shorten(name: str, limit: int = 16) -> str:
+    if len(name) < limit:
         return name
 
     return "".join(s for s in name if s.isupper())
