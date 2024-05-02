@@ -3,7 +3,7 @@ import typing
 
 import disnake
 
-__all__ = ("EmbedColorType", "debug_footer")
+__all__ = ("EmbedColorType", "debug_footer", "sanitize_filename")
 
 EmbedColorType: typing.TypeAlias = disnake.Colour | int
 

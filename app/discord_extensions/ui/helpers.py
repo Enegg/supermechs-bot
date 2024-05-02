@@ -12,11 +12,11 @@ from typeshed import T
 
 __all__ = (
     "HasCustomID",
+    "Paginator",
     "metadata_of",
     "random_str",
     "wait_for_components",
     "wait_for_modal",
-    "Paginator",
 )
 
 
