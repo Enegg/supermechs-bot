@@ -11,7 +11,7 @@ from typeshed import KT, VT, Pathish
 
 from supermechs.enums.stats import Stat
 
-__all__ = ("load", "stats", "messages", "get_stat_name", "get_message")
+__all__ = ("GetText", "get_embed_tips", "get_message", "get_stat_name", "load")
 
 LocalePair: typing.TypeAlias = tuple[KT, Locale]
 GetText: typing.TypeAlias = abc.Callable[[str], str]
@@ -23,6 +23,7 @@ FILE_EXT = ".toml"
 
 stats: typing.Final[abc.Mapping[LocalePair[Stat], "StatName"]] = {}
 messages: typing.Final[abc.Mapping[LocalePair[str], str]] = {}
+embed_tips: typing.Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
 _command_locale: typing.Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
 localization_provider: typing.Final = typing.cast(LocalizationProtocol, _command_locale)
@@ -47,18 +48,24 @@ def get(
     return value
 
 
-def get_stat_name(locale: Locale, stat: Stat, /) -> "StatName":
+def get_stat_name(locale: Locale, stat: Stat) -> "StatName":
     return get(stats, (stat, locale), default=_MISSING_STAT)
 
 
-def get_message(locale: Locale, key: str, /) -> str:
+def get_message(locale: Locale, key: str) -> str:
     return get(messages, (key, locale))
 
 
-class _StatEntry(typing.TypedDict):
-    in_game: str
-    default: typing_.NotRequired[str]
-    short: typing_.NotRequired[str]
+def get_embed_tips(locale: Locale, /) -> abc.Sequence[str]:
+    try:
+        return embed_tips[locale]
+
+    except KeyError as err:
+        try:
+            return embed_tips[FALLBACK_LOCALE]
+
+        except KeyError:
+            raise err from None
 
 
 class StatName(typing.NamedTuple):
@@ -74,11 +81,18 @@ class StatName(typing.NamedTuple):
     def short(self) -> str:
         return self.short_ or min(self.default, self.in_game, key=len)
 
+    @typing_.override
     def __str__(self) -> str:
         return self.default
 
 
 _MISSING_STAT = StatName(FALLBACK_NAME, None, None)
+
+
+class _StatEntry(typing.TypedDict):
+    in_game: str
+    default: typing_.NotRequired[str]
+    short: typing_.NotRequired[str]
 
 
 def _load_stats(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
@@ -108,12 +122,19 @@ def _load_commands(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> Non
         _command_locale[locale.value] = commands_data
 
 
+def _load_tips(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
+    tips_data: abc.Sequence[str] | None = data.get("embed_tips")
+
+    if tips_data is not None:
+        embed_tips[locale] = tuple(tips_data)
+
+
 def _load_file(path: Path, /) -> None:
     locale = Locale[path.stem]
     _LOGGER.info("Loading locale for %s", locale)
     data = rtoml.loads(path.read_text("utf-8"))
 
-    for loader in (_load_stats, _load_messages, _load_commands):
+    for loader in (_load_stats, _load_messages, _load_commands, _load_tips):
         loader(data, locale)
 
 
@@ -144,15 +165,13 @@ def _walk_files(directory: Pathish, /, ext: str) -> abc.Iterator[Path]:
 
 
 def load(directory: Pathish, /) -> None:
-    path = Path(directory)
-
-    for subpath in _walk_files(path, FILE_EXT):
+    for subpath in _walk_files(Path(directory), FILE_EXT):
         _load_file(subpath)
 
 
 if __name__ == "__main__":
 
-    def test_stat_locales():
+    def test_stat_locales() -> None:
         locale_path = Path.cwd() / "locale"
         load(locale_path)
 

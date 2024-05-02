@@ -1,3 +1,20 @@
+embed_tips = [
+    "What are you cooking?",
+    "Dawnblaze my beloved",
+    "<generic loading screen tip>",
+    '"💀"',
+    "BattleMechs reloaded",
+    "To the surprise of literally no one",
+    "Raul is KilliN confirmed",
+    "Raul is pronounced /Hau/",
+    "Reverie of a certain Moldovan",
+    "is alex, no me",
+    "If something's broken, blame Marija",
+    "oh Marija",
+    "Bocchi the Rock Recoiler",
+    "Disable my base pls",
+    "What time is it",
+]
 [stats]
 [stats.weight]
 in_game = "Weight"

@@ -89,7 +89,7 @@ async def item(
             .set_image(url)
         )  # fmt: skip
 
-    sikrit_footer(embed)
+    sikrit_footer(embed, inter.locale)
 
     store = ComponentStore(interaction_check=get_check(inter.author))
     layout = item_view(store, embed, item, inter.locale, compact)
@@ -171,7 +171,7 @@ async def compare(
 
     embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
 
-    sikrit_footer(embed)
+    sikrit_footer(embed, inter.locale)
 
     store = ComponentStore(interaction_check=get_check(inter.author))
     layout = item_compare_view(store, embed, item_a, item_b, inter.locale)

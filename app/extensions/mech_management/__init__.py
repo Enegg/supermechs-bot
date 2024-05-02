@@ -123,7 +123,7 @@ async def build(
             url, file = embed_image(image, view.mech_config)
             view.embed.set_image(url)
 
-    sikrit_footer(view.embed)
+    sikrit_footer(view.embed, inter.locale)
 
     if __debug__:
         debug_footer(view.embed)
