@@ -4,7 +4,7 @@ import typing
 import typing_extensions as typing_
 from collections import abc
 
-from disnake import Colour
+from disnake import Color
 
 from config import CONFIG
 from typeshed import T
@@ -23,7 +23,7 @@ __all__ = (
 
 
 class ColorEmojiAsset(typing_.NamedTuple):
-    color: Colour
+    color: Color
     emoji: typing_.LiteralString
 
 
@@ -77,20 +77,20 @@ STAT: abc.Mapping[Stat, typing_.LiteralString] = {
     Stat.rockets_cost: "🚀",
 }  # fmt: skip
 TIER: abc.Mapping[Tier, ColorEmojiAsset] = {
-    Tier.COMMON:    ColorEmojiAsset(Colour(0xB1B1B1), "⚪"),
-    Tier.RARE:      ColorEmojiAsset(Colour(0x55ACEE), "🔵"),
-    Tier.EPIC:      ColorEmojiAsset(Colour(0xCC41CC), "🟣"),
-    Tier.LEGENDARY: ColorEmojiAsset(Colour(0xE0A23C), "🟠"),
-    Tier.MYTHICAL:  ColorEmojiAsset(Colour(0xFE6333), "🟤"),
-    Tier.DIVINE:    ColorEmojiAsset(Colour(0xFFFFFF), "⚪"),
-    Tier.PERK:      ColorEmojiAsset(Colour(0xFFFF33), "🟡"),
+    Tier.COMMON:    ColorEmojiAsset(Color(0xB1B1B1), "⚪"),
+    Tier.RARE:      ColorEmojiAsset(Color(0x55ACEE), "🔵"),
+    Tier.EPIC:      ColorEmojiAsset(Color(0xCC41CC), "🟣"),
+    Tier.LEGENDARY: ColorEmojiAsset(Color(0xE0A23C), "🟠"),
+    Tier.MYTHICAL:  ColorEmojiAsset(Color(0xFE6333), "🟤"),
+    Tier.DIVINE:    ColorEmojiAsset(Color(0xFFFFFF), "⚪"),
+    Tier.PERK:      ColorEmojiAsset(Color(0xFFFF33), "🟡"),
 }  # fmt: skip
 ELEMENT: abc.Mapping[Element, ColorEmojiAsset] = {
-    Element.PHYSICAL:  ColorEmojiAsset(Colour(0xFFB800), STAT[Stat.physical_damage]),
-    Element.EXPLOSIVE: ColorEmojiAsset(Colour(0xB71010), STAT[Stat.explosive_damage]),
-    Element.ELECTRIC:  ColorEmojiAsset(Colour(0x106ED8), STAT[Stat.electric_damage]),
-    Element.COMBINED:  ColorEmojiAsset(Colour(0x211D1D), "<:combined:1026853188940349490>"),
-    Element.UNKNOWN:   ColorEmojiAsset(Colour(0x000000), "❔"),
+    Element.PHYSICAL:  ColorEmojiAsset(Color(0xFFB800), STAT[Stat.physical_damage]),
+    Element.EXPLOSIVE: ColorEmojiAsset(Color(0xB71010), STAT[Stat.explosive_damage]),
+    Element.ELECTRIC:  ColorEmojiAsset(Color(0x106ED8), STAT[Stat.electric_damage]),
+    Element.COMBINED:  ColorEmojiAsset(Color(0x211D1D), "<:combined:1026853188940349490>"),
+    Element.UNKNOWN:   ColorEmojiAsset(Color(0x000000), "❔"),
 }  # fmt: skip
 TYPE: abc.Mapping[Type, TypeAsset] = {
     Type.TORSO:    TypeAsset("https://i.imgur.com/iNtSziV.png",  "<:torso:730115680363347968>"),
@@ -104,11 +104,11 @@ TYPE: abc.Mapping[Type, TypeAsset] = {
 SIDED_TYPE: abc.Mapping[typing.Literal[Type.SIDE_WEAPON, Type.TOP_WEAPON], Sided[TypeAsset]] = {
     Type.SIDE_WEAPON: Sided(
         TypeAsset("https://i.imgur.com/CBbvOnQ.png", "<:sider:730115747799629940>"),
-        TypeAsset("https://i.imgur.com/UuyYCrw.png",  "<:sidel:730115729365663884>")
+        TypeAsset("https://i.imgur.com/UuyYCrw.png", "<:sidel:730115729365663884>")
     ),
     Type.TOP_WEAPON: Sided(
         TypeAsset("https://i.imgur.com/LW7ZCGZ.png", "<:topr:730115786735091762>"),
-        TypeAsset("https://i.imgur.com/1xlnVgK.png",  "<:topl:730115768431280238>")
+        TypeAsset("https://i.imgur.com/1xlnVgK.png", "<:topl:730115768431280238>")
     ),
 }  # fmt: skip
 STAT_EXTRAS: abc.Mapping[typing_.LiteralString, typing_.LiteralString] = {
