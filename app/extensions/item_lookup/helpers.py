@@ -1,12 +1,9 @@
 import math
-import typing
 from collections import abc
 from functools import partial
 from itertools import islice
 
-from typeshed import twotuple
-
-from supermechs.abc.stats import StatsMapping
+from supermechs.abc.stats import StatsMapping, StatType
 from supermechs.api import Stat
 
 
@@ -29,17 +26,9 @@ def try_shorten(name: str, limit: int = 16) -> str:
     return "".join(s for s in name if s.isupper())
 
 
-@typing.overload
-def compare_numbers(x: int, y: int, lower_is_better: bool = False) -> twotuple[int]:
-    ...
-
-
-@typing.overload
-def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
-    ...
-
-
-def compare_numbers(x: float, y: float, lower_is_better: bool = False) -> twotuple[float]:
+def compare_numbers(
+    x: StatType, y: StatType, lower_is_better: bool = False
+) -> tuple[StatType, StatType]:
     return (x - y, 0) if lower_is_better ^ (x > y) else (0, y - x)
 
 
