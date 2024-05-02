@@ -47,7 +47,7 @@ if __name__ == "__main__":
     try:
         anyio.run(main)
 
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, anyio.get_cancelled_exc_class()):
         # graceful shutdown it is not
         pass
 
