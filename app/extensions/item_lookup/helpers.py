@@ -58,87 +58,80 @@ def format_average(a: float, b: float, decimals: int = 1) -> str:
     dev = deviation / mean * 100
     str_mean = format_float(mean, 1)
     str_dev = format_float(dev, decimals)
-    return f"x̄{str_mean} ±{str_dev}%"
+    return f"{str_mean} ±{str_dev}%"
+
+
+def _format_single(
+    stats: StatsMapping, selectors: abc.Iterable[Stat]
+) -> abc.Iterator[tuple[Stat, str]]:
+    for stat in selectors:
+        if value := stats.get(stat, 0):
+            yield (stat, str(value))
+
+
+def _format_double(
+    stats: StatsMapping,
+    format_: abc.Callable[[float, float], str],
+    main_stat: Stat,
+    addon_stat: Stat,
+) -> abc.Iterator[tuple[Stat, str]]:
+    if value := stats.get(main_stat, 0):
+        if (value2 := stats.get(addon_stat, value)) != value:
+            yield (main_stat, format_(value, value2))
+
+        else:
+            yield (main_stat, str(value))
 
 
 def iter_formatted_stats(
     stats: StatsMapping, avg: bool, decimals: int = 1
 ) -> abc.Iterator[tuple[Stat, str]]:
+    def format_two(a: float, b: float) -> str:
+        return f"{a}-{b}"
+
     format_: abc.Callable[[float, float], str] = (
-        partial(format_average, decimals=decimals) if avg else lambda a, b: f"{a}-{b}"
+        partial(format_average, decimals=decimals) if avg else format_two
     )
 
-    for stat in islice(Stat, 11):
-        if value := stats.get(stat, 0):
-            yield (stat, str(value))
-
-    if value := stats.get(Stat.physical_damage, 0):
-        stat = Stat.physical_damage
-        if (value2 := stats.get(Stat.physical_damage_addon, value)) != value:
-            yield (stat, format_(value, value2))
-
-        else:
-            yield (stat, str(value))
-
-    if value := stats.get(Stat.physical_resistance_damage, 0):
-        yield (Stat.physical_resistance_damage, str(value))
-
-    if value := stats.get(Stat.electric_damage, 0):
-        stat = Stat.electric_damage
-        if (value2 := stats.get(Stat.electric_damage_addon, value)) != value:
-            yield (stat, format_(value, value2))
-
-        else:
-            yield (stat, str(value))
-
-    for stat in (
-        Stat.energy_damage,
-        Stat.energy_capacity_damage,
-        Stat.regeneration_damage,
-        Stat.electric_resistance_damage,
-    ):
-        if value := stats.get(stat, 0):
-            yield (stat, str(value))
-
-    if value := stats.get(Stat.explosive_damage, 0):
-        stat = Stat.explosive_damage
-        if (value2 := stats.get(Stat.explosive_damage_addon, value)) != value:
-            yield (stat, format_(value, value2))
-
-        else:
-            yield (stat, str(value))
-
-    for stat in (
-        Stat.heat_damage,
-        Stat.heat_capacity_damage,
-        Stat.cooling_damage,
-        Stat.explosive_resistance_damage,
-        Stat.walk,
-        Stat.jump,
-    ):
-        if value := stats.get(stat, 0):
-            yield (stat, str(value))
-
-    if value := stats.get(Stat.range, 0):
-        stat = Stat.range
-        if (value2 := stats.get(Stat.range_addon, value)) != value:
-            yield (stat, f"{value}-{value2}")
-
-        else:
-            yield (Stat.range, str(value))
-
-    for stat in (
-        Stat.push,
-        Stat.pull,
-        Stat.recoil,
-        Stat.advance,
-        Stat.retreat,
-        Stat.uses,
-        Stat.backfire,
-        Stat.heat_generation,
-        Stat.energy_cost,
-        Stat.bullets_cost,
-        Stat.rockets_cost,
-    ):
-        if value := stats.get(stat, 0):
-            yield (stat, str(value))
+    yield from _format_single(stats, islice(Stat, 11))
+    yield from _format_double(stats, format_, Stat.physical_damage, Stat.physical_damage_addon)
+    yield from _format_single(stats, (Stat.physical_resistance_damage,))
+    yield from _format_double(stats, format_, Stat.electric_damage, Stat.electric_damage_addon)
+    yield from _format_single(
+        stats,
+        (
+            Stat.energy_damage,
+            Stat.energy_capacity_damage,
+            Stat.regeneration_damage,
+            Stat.electric_resistance_damage,
+        ),
+    )
+    yield from _format_double(stats, format_, Stat.explosive_damage, Stat.explosive_damage_addon)
+    yield from _format_single(
+        stats,
+        (
+            Stat.heat_damage,
+            Stat.heat_capacity_damage,
+            Stat.cooling_damage,
+            Stat.explosive_resistance_damage,
+            Stat.walk,
+            Stat.jump,
+        ),
+    )
+    yield from _format_double(stats, format_two, Stat.range, Stat.range_addon)
+    yield from _format_single(
+        stats,
+        (
+            Stat.push,
+            Stat.pull,
+            Stat.recoil,
+            Stat.advance,
+            Stat.retreat,
+            Stat.uses,
+            Stat.backfire,
+            Stat.heat_generation,
+            Stat.energy_cost,
+            Stat.bullets_cost,
+            Stat.rockets_cost,
+        ),
+    )
