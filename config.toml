@@ -1,8 +1,6 @@
-[bot]
-DATE_FORMAT = "%d.%m.%Y %H:%M:%S"
-[SM]
-DEFAULT_PACK_URL = "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7dc669d484db89062/raw"
-MISSING_IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
+date_format = "%d.%m.%Y %H:%M:%S"
+default_pack_url = "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7dc669d484db89062/raw"
+missing_image_url = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
 [logging]
 version = 1
 disable_existing_loggers = false
@@ -19,5 +17,5 @@ level = "INFO"
 formatter = "simple"
 stream = "ext://sys.stdout"
 [logging.loggers]
-disnake = { "level" = "ERROR" }
-"disnake.client" = { "level" = "CRITICAL" }
+disnake = { level = "ERROR" }
+"disnake.client" = { level = "CRITICAL" }
