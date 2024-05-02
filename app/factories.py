@@ -5,8 +5,7 @@ import disnake
 
 from async_utils import async_memoize
 from models import ItemPack, Player
-
-from .shared.session import IO_SESSION
+from shared.session import IO_SESSION
 
 from supermechs.ext.deserializers import to_item_pack
 from supermechs.ext.deserializers.typedefs import AnyItemPack
