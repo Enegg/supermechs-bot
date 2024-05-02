@@ -15,7 +15,7 @@ from discord_extensions import ComponentLimits, command_mention, debug_footer
 from discord_extensions.ui import ActionButton, wait_for_components
 from discord_extensions.ui.store import ComponentStore
 from models import Player
-from shared.item_packs import get_default_pack
+from shared.item_packs import DEFAULT_PACK
 from shared.utils import fold_binary_prefix
 from user_input import StringLimits, sanitize_string
 
@@ -30,11 +30,8 @@ plugin = plugins.Plugin[commands.InteractionBot](name="Mech-manager", logger=__n
 
 @plugin.load_hook(post=True)
 async def on_load() -> None:
-    from events import BUFFS_LOADED
-
     # we need to wait for command sync to finish as that's what populates API command dicts
     # too bad command sync is thrown into a task there's no way to await on
-    await BUFFS_LOADED.wait()
     await plugin.bot.wait_until_ready()
     buffs_command = plugin.bot.get_global_command_named("buffs")
     assert buffs_command is not None
@@ -103,7 +100,7 @@ async def build(
     ----------
     name: The name of an existing build or of one to create. {{ MECH_BUILD_NAME }}
     """
-    item_pack = get_default_pack()
+    item_pack = DEFAULT_PACK.get_nowait()
 
     if name is None:
         build = player.get_active_or_create_build()
@@ -156,7 +153,7 @@ async def import_(
     # the content type should be application/json,
     # but we may as well just rely on the loader to fail
 
-    default_pack = get_default_pack()
+    default_pack = DEFAULT_PACK.get_nowait()
     data = await file.read()
     try:
         mechs, failed = load_mechs(data, default_pack)
@@ -172,7 +169,7 @@ async def import_(
         # holy moly
         msg = "Parsing failed with unexpected error:"
         plugin.logger.warning(msg, exc_info=exc)
-        raise commands.UserInputError() from exc
+        raise commands.UserInputError from exc
 
     string_builder = io.StringIO()
 
@@ -214,7 +211,7 @@ async def export(
     if build_count == 0:
         return await inter.response.send_message(gettext("export-none"), ephemeral=True)
 
-    default_pack = get_default_pack()
+    default_pack = DEFAULT_PACK.get_nowait()
     all_builds = tuple(player.builds.values())
 
     if build_count == 1:

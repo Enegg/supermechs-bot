@@ -16,13 +16,6 @@ from supermechs.api import ArenaShop, Category
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
 
 
-@plugin.load_hook(post=True)
-async def on_load() -> None:
-    from events import BUFFS_LOADED
-
-    BUFFS_LOADED.set()
-
-
 def format_value(category: Category, level: int, /) -> str:
     string = f"{category.data.progression[level]:+}"
     if not category.data.is_absolute:

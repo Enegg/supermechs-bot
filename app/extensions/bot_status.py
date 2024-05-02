@@ -11,8 +11,7 @@ from async_utils import amap, move_on_before_timeout
 from config import CONFIG
 from discord_extensions import Markdown as MD, command_mention
 from env import ENV
-from events import DEFAULT_PACK_LOADED
-from shared.item_packs import get_default_pack
+from shared.item_packs import DEFAULT_PACK
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from shared.utils import fold_binary_prefix
 from stored import players
@@ -63,8 +62,8 @@ async def info(inter: CommandInteraction) -> None:
         app_loc, sm_loc = await amap(get_sloc, "app", *supermechs.__path__)
         backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
-    if DEFAULT_PACK_LOADED.is_set():
-        default_pack = get_default_pack()
+    if DEFAULT_PACK.is_set():
+        default_pack = DEFAULT_PACK.get_nowait()
         supermechs_fields += [
             f"Default item pack: {MD.hyperlink(default_pack.data.key, CONFIG.default_pack_url)}",
             f"Total items: {len(default_pack.items)}",

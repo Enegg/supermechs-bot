@@ -13,7 +13,7 @@ from config import CONFIG
 from discord_extensions import MessageLimits
 from discord_extensions.ui.store import ComponentStore
 from env import ENV
-from shared.item_packs import get_default_pack, get_item_by_name
+from shared.item_packs import DEFAULT_PACK, get_item_by_name
 
 from .item_lookup import item_compare_view, item_view
 
@@ -137,7 +137,7 @@ async def compare(
     item1: First item to compare. {{ COMPARE_FIRST }}
     item2: Second item to compare. {{ COMPARE_SECOND }}
     """
-    pack = get_default_pack()
+    pack = DEFAULT_PACK.get_nowait()
     item_a = get_item_by_name(pack.items, item1_name)
     item_b = get_item_by_name(pack.items, item2_name)
 

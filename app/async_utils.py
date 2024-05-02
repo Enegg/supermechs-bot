@@ -2,6 +2,7 @@ import typing
 from collections import abc
 
 import anyio
+import attrs
 
 from discord_extensions import InteractionLimits
 from shared.memo import AsyncMemo, default_key
@@ -36,3 +37,35 @@ async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
 def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
     """Create a cancel scope which timeouts before interaction response."""
     return anyio.move_on_after(InteractionLimits.response_timeout - threshold)
+
+
+@attrs.define
+class Deferred(typing.Generic[T]):
+    """Future-like object"""
+
+    _sentinel: typing.ClassVar[typing.Any] = object()
+
+    _value: T = attrs.field(default=_sentinel, init=False)
+    _event: anyio.Event = attrs.field(factory=anyio.Event, init=False)
+
+    def set(self, value: T, /) -> None:
+        """Set the value and awaken waiters."""
+        self._value = value
+        self._event.set()
+
+    def is_set(self) -> bool:
+        """Whether the value has been set."""
+        return self._event.is_set()
+
+    async def get(self) -> T:
+        """Wait for value to be set and return it."""
+        await self._event.wait()
+        return self._value
+
+    def get_nowait(self) -> T:
+        """Get the underlying value without awaiting."""
+        if self._value is self._sentinel:
+            msg = "Value access before .set"
+            raise LookupError(msg)
+
+        return self._value
