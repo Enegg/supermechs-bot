@@ -122,7 +122,7 @@ def parse_slot(metadata: abc.Sequence[str], /) -> SlotType:
 
 
 def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption]]]:
-    item_groups = {type: {element: list[ItemData]() for element in Element} for type in Type}
+    item_groups = {type_: {element: list[ItemData]() for element in Element} for type_ in Type}
 
     for item in pack.items.values():
         item_groups[item.type][item.element].append(item)
@@ -132,14 +132,14 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption
             item_list.sort(key=lambda item: item.name)
 
     return {
-        type: {
+        type_: {
             element: [
                 SelectOption(label=item.name, value=str(item.id), emoji=ELEMENT[item.element].emoji)
                 for item in items
             ]
             for element, items in element_dict.items()
         }
-        for type, element_dict in item_groups.items()
+        for type_, element_dict in item_groups.items()
     }
 
 
@@ -165,7 +165,7 @@ class MechView:
             ((Type.SIDE_WEAPON, 0), Type.LEGS,  (Type.SIDE_WEAPON, 1), Type.HOOK),
         ),
         (
-            tuple((Type.MODULE, n) for n in range(0, 4)),
+            tuple((Type.MODULE, n) for n in range(0, 4)),  # noqa: PIE808
             tuple((Type.MODULE, n) for n in range(4, 8)),
         ),
     )  # fmt: skip
@@ -216,8 +216,8 @@ class MechView:
                 )
 
             buffs_button.toggle()
-            assert self.embed._fields is not None
-            self.embed._fields[0]["value"] = format_summary(
+            assert self.embed._fields is not None  # pyright: ignore[reportPrivateUsage]
+            self.embed._fields[0]["value"] = format_summary(  # pyright: ignore[reportPrivateUsage]
                 self.mech, self.locale, self.player.arena_shop if buffs_button.on else None
             )
             await inter.response.edit_message(embed=self.embed, components=self.paginator.page)

@@ -17,7 +17,7 @@ class HTTPClient(typing.Protocol):
     proxy: str | None
 
 
-def _dumps(obj: typing.Any, /) -> str:
+def _dumps(obj: object, /) -> str:
     return orjson.dumps(obj).decode()  # it will be encoded again right away but oh well
 
 
@@ -28,5 +28,5 @@ def client_session(client: HTTPClient, /) -> aiohttp.ClientSession:
         timeout=aiohttp.ClientTimeout(total=30),
         json_serialize=_dumps,
     )
-    session._request = partial(session._request, proxy=client.proxy)
+    session._request = partial(session._request, proxy=client.proxy)  # pyright: ignore[reportPrivateUsage]
     return session

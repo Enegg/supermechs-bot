@@ -152,7 +152,7 @@ def item_compare_view(
             stats_a = buff_stats(stats_a, MAX_SHOP)
             stats_b = buff_stats(stats_b, MAX_SHOP)
 
-        raise NotImplementedError("borked")
+        raise NotImplementedError
         name_field, first_field, second_field = stats_to_fields(stats_a, stats_b, locale=locale)
 
         if require_jump := item_a.tags.require_jump:

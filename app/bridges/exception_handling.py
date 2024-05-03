@@ -51,7 +51,7 @@ async def handle_user_exception(inter: CommandInteraction, exc: commands.Command
     if isinstance(exc, commands.NotOwner):
         info = localize("command-dev")
 
-    elif isinstance(exc, (commands.UserInputError, commands.CheckFailure)):
+    elif isinstance(exc, commands.UserInputError | commands.CheckFailure):
         info = str(exc)  # TODO: localize (some UserInputErrors are localized)
 
     elif isinstance(exc, commands.MaxConcurrencyReached):

@@ -8,8 +8,9 @@ import attrs
 import disnake
 from disnake import MessageInteraction, ui
 
-from discord_extensions.ui import random_str
 from typeshed import T
+
+from .helpers import random_str
 
 __all__ = ("ComponentStore",)
 
@@ -74,7 +75,7 @@ class ComponentStore:
 
         def catch_callback(func: InteractionCallback[None]) -> ItemT:
             self._callbacks[custom_id] = func
-            component._underlying.custom_id = custom_id
+            component._underlying.custom_id = custom_id  # pyright: ignore[reportPrivateUsage]
 
             return component
 
