@@ -27,50 +27,80 @@ distribution = false
 
 [tool.pdm.dev-dependencies]
 lint = [
-    "ruff>=0.1.13",
+    "ruff>=0.4.2",
 ]
 
 
 [tool.ruff]
 src = ["app"]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
 select = [
+    "I",     # isort
     "E",
     "F",
+    "A",     # shadowing built-ins
     "RUF",
+    "UP",
     "PL",    # pylint
 
-    "G",     # avoid formatting in logging
     "Q",     # consistent string quotes
     "FLY",   # static joins
     "ISC",   # string concatenation
 
     "SIM",   # simplifiable logic
     "C4",    # simplifiable comprehensions
+    "PIE",   # misc
 
-    "ASYNC", # blocking calls in async context
-    "TCH",   # type-checking-only imports
-    "PTH",   # pathlib > os.path / open
+    "G",     # avoid formatting in logging
+    "LOG",   # logging stuff
+
     "TRY",   # try - except pitfalls
     "EM",    # don't inline exception messages
+    "RSE",   # skip parens on empty exceptions
+
+    "ANN",   # annotations
+    "ASYNC", # blocking calls in async context
+    "TRIO",  # anyio stuff
+    "TCH",   # type-checking-only imports
+    "FURB",
+    "PTH",   # pathlib > os.path / open
     "ERA",   # commented out code
 ]
-line-length = 100
-target-version = "py310"
+ignore = [
+    "ANN101", # type of self
+    "ANN102", # type of cls
+    "PIE796", # non-unique enums (that's a job for @unique)
+    # "E501",   # line too long; handled by formatter
+]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.pycodestyle]
+max-line-length = 105
+
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F403"]  # import *
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
 split-on-trailing-comma = false
 extra-standard-library = ["typing_extensions"]
 forced-separate = ["supermechs"]
 
-[tool.ruff.flake8-type-checking]
+[tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]
+
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = ["id", "format", "input"]
 
 [tool.ruff.lint.pylint]
 max-args = 8
+allow-dunder-method-names = [
+    "__attrs_pre_init__ ",
+    "__attrs_post_init__",
+    "__attrs_init__",
+]
 
 
 [tool.pyright]
@@ -80,20 +110,20 @@ exclude = ["app/dev"]
 
 pythonVersion = "3.10"
 
-reportUnnecessaryTypeIgnoreComment = true
-reportUnnecessaryCast = true
-reportMatchNotExhaustive = "warning"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportUnnecessaryCast = "warning"
+reportUnnecessaryIsInstance = "information"
+
+reportUnknownMemberType = false  # disnake causes plenty errors
+
+deprecateTypingAliases = true
+reportMissingTypeStubs = false
 reportUnusedImport = "warning"
 
-reportOverlappingOverload = false
-reportPrivateUsage = false
-reportUnnecessaryIsInstance = false
-reportFunctionMemberAccess = false
-reportImportCycles = false
-reportIncompatibleMethodOverride = false
-reportIncompatibleVariableOverride = false
+reportImportCycles = true
 
-reportUnknownMemberType = false
-reportUnknownArgumentType = false
-reportUnknownVariableType = false
-reportMissingTypeStubs = false
+reportMatchNotExhaustive = "warning"
+reportImplicitOverride = "warning"
+reportOverlappingOverload = "warning"
+reportPrivateUsage = "warning"
+
