@@ -36,7 +36,7 @@ plugin = plugins.Plugin[commands.InteractionBot](name="Item-lookup", logger=__na
 async def item(
     inter: CommandInteraction,
     item: ItemData,
-    type: LiteralTypeOrAny = "ANY",
+    type: LiteralTypeOrAny = "ANY",  # noqa: A002
     element: LiteralElementOrAny = "ANY",
     compact: bool = False,
 ) -> None:
@@ -101,7 +101,7 @@ async def item(
 async def item_raw(
     inter: CommandInteraction,
     item: ItemData,
-    type: LiteralTypeOrAny = "ANY",
+    type: LiteralTypeOrAny = "ANY",  # noqa: A002
     element: LiteralElementOrAny = "ANY",
 ) -> None:
     """Finds an item and returns its raw stats. {{ ITEM }}
@@ -115,7 +115,7 @@ async def item_raw(
     await inter.response.send_message(f"`{item!r:.{MessageLimits.content - 2}}`", ephemeral=True)
 
 
-def str_type(type: Type) -> str:
+def str_type(type: Type) -> str:  # noqa: A002
     return type.name.replace("_", " ").lower()
 
 
