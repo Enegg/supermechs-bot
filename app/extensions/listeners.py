@@ -6,7 +6,7 @@ from disnake.ext import plugins
 from config import CONFIG
 from shared.metrics import add_invocation
 
-plugin = plugins.Plugin(name="listeners", logger="event")
+plugin = plugins.Plugin(name="listeners", logger=__name__)
 _LOG_READY = logging.getLogger("event.ready")
 
 
