@@ -30,9 +30,10 @@ plugin = plugins.Plugin[commands.InteractionBot](name="Mech-manager", logger=__n
 
 @plugin.load_hook(post=True)
 async def on_load() -> None:
-    # we need to wait for command sync to finish as that's what populates API command dicts
-    # too bad command sync is thrown into a task there's no way to await on
-    await plugin.bot.wait_until_ready()
+    import sync
+
+    # wait until API command caches are populated
+    await sync.SYNC_FINISHED.wait()
     buffs_command = plugin.bot.get_global_command_named("buffs")
     assert buffs_command is not None
     MechView.command_mention = command_mention(buffs_command)
