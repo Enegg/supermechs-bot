@@ -7,9 +7,9 @@ from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
 import i18n
 from assets import STAT
 from devtools import debug_footer
-from discord_extensions import SPACE
-from discord_extensions.ui import ActionButton, ToggleButton
-from discord_extensions.ui.store import ComponentStore
+from discord_utils import SPACE
+from discord_utils.ui import ActionButton, ToggleButton
+from discord_utils.ui.store import ComponentStore
 from sm.asset_utils import item_transform_range
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten

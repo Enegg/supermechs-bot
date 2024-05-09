@@ -9,7 +9,7 @@ from disnake.ext import commands
 import i18n
 from bridges import register_injections, setup_channel_logger
 from config import logging_config
-from discord_extensions import load_extensions
+from discord_utils import load_extensions
 from env import ENV
 from shared.item_packs import load_default_pack
 from shared.session import IO_SESSION, client_session

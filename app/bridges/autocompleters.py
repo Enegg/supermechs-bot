@@ -1,7 +1,7 @@
 import typing
 from collections import abc, defaultdict
 
-from discord_extensions import AutocompleteReturnType, InteractionLimits
+from discord_utils import AutocompleteReturnType, InteractionLimits
 from shared.item_packs import get_item_pack_for
 from sm.name_utils import acronym_of, search_for
 from stored import players

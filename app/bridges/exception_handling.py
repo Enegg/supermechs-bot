@@ -7,7 +7,7 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 
 import i18n
-from discord_extensions import (
+from discord_utils import (
     SPACE,
     EmbedLimits,
     ListenerRegistry,

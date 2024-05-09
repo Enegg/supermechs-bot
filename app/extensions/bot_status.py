@@ -9,7 +9,7 @@ import meta
 from assets import FRANTIC_GIFS
 from async_utils import amap, move_on_before_timeout
 from config import CONFIG
-from discord_extensions import Markdown as MD, command_mention
+from discord_utils import Markdown as MD, command_mention
 from env import ENV
 from shared.item_packs import DEFAULT_PACK
 from shared.metrics import command_invocations, get_ram_utilization, get_sloc

@@ -12,8 +12,8 @@ import anyio.to_thread
 from disnake import CommandInteraction, TextInputStyle, ui
 from disnake.ext import commands, plugins
 
-from discord_extensions import InteractionLimits, Markdown, MessageLimits, text_to_file
-from discord_extensions.ui import random_str, wait_for_modal
+from discord_utils import InteractionLimits, Markdown, MessageLimits, text_to_file
+from discord_utils.ui import random_str, wait_for_modal
 from env import ENV
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)

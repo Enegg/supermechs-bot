@@ -10,9 +10,9 @@ from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
 from bridges.embeds import embed_image
 from bridges.ui import make_empty_option
 from devtools import debug_footer
-from discord_extensions import SPACE, ComponentLimits, EmbedColorType
-from discord_extensions.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
-from discord_extensions.ui.store import ComponentStore
+from discord_utils import SPACE, ComponentLimits, EmbedColorType
+from discord_utils.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
+from discord_utils.ui.store import ComponentStore
 from models import ItemPack, MechBuild, Player
 
 from supermechs.abc.item import ItemID

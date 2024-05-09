@@ -7,8 +7,8 @@ from disnake.ext import commands, plugins
 
 from assets import CATEGORY
 from bridges.ui import get_check
-from discord_extensions import SPACE
-from discord_extensions.ui import ActionButton, ComponentStore, Paginator, ToggleButton
+from discord_utils import SPACE
+from discord_utils.ui import ActionButton, ComponentStore, Paginator, ToggleButton
 from models import Player
 
 from supermechs.api import ArenaShop, Category

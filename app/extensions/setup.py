@@ -4,8 +4,8 @@ from collections import abc
 from disnake import CommandInteraction
 from disnake.ext import commands, plugins
 
-from discord_extensions import AutocompleteReturnType, InteractionLimits
-from discord_extensions.extensions import walk_extensions
+from discord_utils import AutocompleteReturnType, InteractionLimits
+from discord_utils.extensions import walk_extensions
 from env import ENV
 from shared.utils import format_exception
 

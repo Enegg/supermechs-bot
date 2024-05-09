@@ -2,7 +2,7 @@ import disnake
 from disnake import Locale, MessageInteraction, SelectOption
 
 import i18n
-from discord_extensions.ui.store import InteractionCallback
+from discord_utils.ui.store import InteractionCallback
 
 
 def make_empty_option(locale: Locale, /) -> SelectOption:

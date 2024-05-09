@@ -10,8 +10,8 @@ from bridges import item_name_autocomplete
 from bridges.embeds import sikrit_footer
 from bridges.ui import get_check
 from config import CONFIG
-from discord_extensions import MessageLimits
-from discord_extensions.ui.store import ComponentStore
+from discord_utils import MessageLimits
+from discord_utils.ui.store import ComponentStore
 from env import ENV
 from shared.item_packs import DEFAULT_PACK, get_item_by_name
 

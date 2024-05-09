@@ -4,7 +4,7 @@ from collections import abc
 import anyio
 import attrs
 
-from discord_extensions import InteractionLimits
+from discord_utils import InteractionLimits
 from shared.memo import AsyncMemo, default_key
 from typeshed import AsyncFunc, P, RetT, T
 

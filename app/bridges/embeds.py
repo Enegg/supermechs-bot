@@ -6,7 +6,7 @@ import typing
 import disnake
 
 import i18n
-from discord_extensions.embeds import sanitize_filename
+from discord_utils.embeds import sanitize_filename
 
 if typing.TYPE_CHECKING:
     from PIL.Image import Image
