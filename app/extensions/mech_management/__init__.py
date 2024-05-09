@@ -11,7 +11,8 @@ from assets import SIDED_TYPE, STAT, TYPE
 from bridges import mech_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
 from bridges.ui import get_check
-from discord_extensions import ComponentLimits, command_mention, debug_footer
+from devtools import debug_footer
+from discord_extensions import ComponentLimits, command_mention
 from discord_extensions.ui import ActionButton, wait_for_components
 from discord_extensions.ui.store import ComponentStore
 from models import Player

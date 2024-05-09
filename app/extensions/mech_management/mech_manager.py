@@ -9,7 +9,8 @@ import i18n
 from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
 from bridges.embeds import embed_image
 from bridges.ui import make_empty_option
-from discord_extensions import SPACE, ComponentLimits, EmbedColorType, debug_footer
+from devtools import debug_footer
+from discord_extensions import SPACE, ComponentLimits, EmbedColorType
 from discord_extensions.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
 from discord_extensions.ui.store import ComponentStore
 from models import ItemPack, MechBuild, Player
