@@ -4,7 +4,7 @@ __all__ = ("ComponentLimits", "EmbedLimits", "InteractionLimits", "MessageLimits
 
 
 class EmbedLimits(int, Enum):
-    """Limits related to creating embeds."""
+    """Limits imposed on embeds & their sub-components."""
 
     title = 256
     """Maximum length of an embed's title."""
@@ -25,7 +25,7 @@ class EmbedLimits(int, Enum):
 
 
 class MessageLimits(int, Enum):
-    """Limits related to sending messages."""
+    """Limits imposed on sending messages."""
 
     content = 2000
     """Maximum length of a message's content."""
@@ -38,7 +38,7 @@ class MessageLimits(int, Enum):
 
 
 class ComponentLimits(int, Enum):
-    """Limits related to sending UI components."""
+    """Limits imposed on UI components."""
 
     row_width = 5
     """Maximum total width of components within an action row."""
@@ -65,7 +65,7 @@ class ComponentLimits(int, Enum):
 
 
 class InteractionLimits(int, Enum):
-    """Limits related to interactions."""
+    """Limits imposed on responding to interactions."""
 
     autocomplete_options = 25
     """Maximum number of options an autocomplete can return."""
