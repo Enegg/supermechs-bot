@@ -16,7 +16,7 @@ __all__ = (
 AutocompleteReturnType: typing.TypeAlias = (
     abc.Sequence[str | disnake.Localized[str]] | abc.Mapping[str, str | disnake.Localized[str]]
 )
-EmbedColorType: typing.TypeAlias = disnake.Colour | int
+EmbedColorType: typing.TypeAlias = disnake.Color | int | None
 EmojiType: typing.TypeAlias = str | disnake.Emoji | disnake.PartialEmoji
 
 
