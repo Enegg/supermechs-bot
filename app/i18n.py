@@ -130,6 +130,10 @@ def _load_tips(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
 
 
 def _load_file(path: Path, /) -> None:
+    if not path.is_file():
+        msg = f"Path {path} is not a file"
+        raise FileNotFoundError(msg)
+
     locale = Locale[path.stem]
     _LOGGER.info("Loading locale for %s", locale)
     data = rtoml.loads(path.read_text("utf-8"))
@@ -138,34 +142,8 @@ def _load_file(path: Path, /) -> None:
         loader(data, locale)
 
 
-def _walk_files(directory: Pathish, /, ext: str) -> abc.Iterator[Path]:
-    path = Path(directory)
-
-    if not ext.startswith("."):
-        ext = "." + ext
-
-    if path.is_file():
-        if path.suffix != ext:
-            msg = f"Not a {ext} file"
-            raise ValueError(msg)
-        yield path
-
-    elif path.is_dir():
-        for subpath in path.glob(f"*{ext}"):
-            if subpath.is_file():
-                yield subpath
-
-            else:
-                msg = f"Path {subpath} is not a file"
-                raise FileNotFoundError(msg)
-
-    else:
-        msg = f"Path {path} is not a directory / file"
-        raise RuntimeError(msg)
-
-
 def load(directory: Pathish, /) -> None:
-    for subpath in _walk_files(Path(directory), FILE_EXT):
+    for subpath in Path(directory).glob(f"*{FILE_EXT}"):
         _load_file(subpath)
 
 
@@ -175,18 +153,21 @@ if __name__ == "__main__":
         locale_path = Path.cwd() / "locale"
         load(locale_path)
 
-        for file_path in _walk_files(locale_path, FILE_EXT):
+        for file_path in locale_path.glob(f"*{FILE_EXT}"):
             locale = Locale[file_path.stem]
 
             for stat in Stat:
+                if stat.name.endswith("addon"):
+                    continue
+
                 try:
                     name = stats[stat, locale]
 
                 except KeyError:
-                    print(f"{stat} for {locale=} is missing")
+                    print(f"{stat.name} for {locale} is missing")
 
                 else:
                     if name.in_game == FALLBACK_NAME:
-                        print(f"{stat} for {locale=} is missing in_game name")
+                        print(f"{stat.name} for {locale} is missing in_game name")
 
     test_stat_locales()
