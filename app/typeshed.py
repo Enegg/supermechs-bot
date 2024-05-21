@@ -14,10 +14,6 @@ VT = typing.TypeVar("VT")
 P = typing.ParamSpec("P")
 """Parameter specification of a callable."""
 
-twotuple = tuple[T, T]
-"""Tuple of two elements of same type."""
-XOrTupleXY = T | tuple[T, T2]
-"""Type or tuple of two types."""
 Factory: typing.TypeAlias = abc.Callable[[], RetT]
 """0-argument callable returning an object of given type."""
 LiteralURL: typing.TypeAlias = str
