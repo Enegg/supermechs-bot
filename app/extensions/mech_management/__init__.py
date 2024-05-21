@@ -261,9 +261,8 @@ async def export(
         mechs = (build.as_mech() for build in all_builds)
 
     else:
-        values = component_inter.values
-        assert values is not None
-        mechs = (player.builds[uuid.UUID(str_id)].as_mech() for str_id in values)
+        assert component_inter.values is not None
+        mechs = (player.builds[uuid.UUID(str_id)].as_mech() for str_id in component_inter.values)
 
     fp = io.BytesIO(dump_mechs(mechs, default_pack.data.key))
     file = File(fp, "mechs.json")
