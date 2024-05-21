@@ -5,7 +5,7 @@ from functools import partial
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption, ui
 from disnake.ext import commands, plugins
 
-from assets import CATEGORY
+from assets import ASSETS
 from bridges.ui import get_check
 from discord_utils import SPACE
 from discord_utils.ui import ActionButton, ComponentStore, Paginator, ToggleButton
@@ -133,7 +133,7 @@ class ArenaShopView:
             ),
             style_on=ButtonStyle.blurple,
             label=make_label(self.shop, category),
-            emoji=CATEGORY[category],
+            emoji=ASSETS.categories[category],
         )
         self.store.bind(btn, category.name)(partial(self.buff_button, btn))
         self.all_slot_buttons.append(btn)

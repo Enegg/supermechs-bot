@@ -6,7 +6,7 @@ from disnake.ext import commands, plugins
 from disnake.utils import format_dt, oauth_url
 
 import meta
-from assets import FRANTIC_GIFS
+from assets import ASSETS
 from async_utils import amap, move_on_before_timeout
 from config import CONFIG
 from discord_utils import Markdown as MD, command_mention
@@ -24,7 +24,7 @@ plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="Bot-status"
 @plugin.slash_command()
 async def frantic(inter: CommandInteraction) -> None:
     """Humiliate frantic users."""
-    choice = random.choice(FRANTIC_GIFS)
+    choice = random.choice(ASSETS.gifs["frantics"])
     await inter.response.send_message(choice)
 
 

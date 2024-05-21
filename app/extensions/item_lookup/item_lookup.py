@@ -5,7 +5,7 @@ from itertools import zip_longest
 from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
 
 import i18n
-from assets import STAT
+from assets import ASSETS
 from devtools import debug_footer
 from discord_utils import SPACE
 from discord_utils.ui import ActionButton, ToggleButton
@@ -85,10 +85,10 @@ def default_fields(
             string.write("\n")
             spaced = True
 
-        string.write(f"{STAT[stat]} **{str_value}** {i18n.get_stat_name(locale, stat)}\n")
+        string.write(f"{ASSETS.stats[stat]} **{str_value}** {i18n.get_stat_name(locale, stat)}\n")
 
     if item.tags.require_jump:
-        string.write(f"{STAT[Stat.jump]} **Jumping required**")
+        string.write(f"{ASSETS.stats[Stat.jump]} **Jumping required**")
 
     embed.add_field("Stats:", string.getvalue(), inline=False)
 
@@ -110,10 +110,10 @@ def compact_fields(
         stats = buff_stats(stats, MAX_SHOP)
 
     for stat_key, str_value in iter_formatted_stats(stats, avg, 0):
-        lines.append(f"{STAT[stat_key]} **{str_value}**")
+        lines.append(f"{ASSETS.stats[stat_key]} **{str_value}**")
 
     if item.tags.require_jump:
-        lines.append(f"{STAT[Stat.jump]}❗")
+        lines.append(f"{ASSETS.stats[Stat.jump]}❗")
 
     line_count = len(lines)
     div = get_row_width(line_count, 4)
@@ -164,7 +164,7 @@ def item_compare_view(
             require_jump = True
 
         if require_jump:
-            emoji = STAT[Stat.jump]
+            emoji = ASSETS.stats[Stat.jump]
             name_field.append(f"{emoji} **{gettext('item-compare-jump-required')}**")
 
         modify_field_at = embed.set_field_at if embed._fields else embed.insert_field_at

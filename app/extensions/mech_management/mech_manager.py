@@ -6,7 +6,7 @@ from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption
 from disnake.utils import MISSING
 
 import i18n
-from assets import ELEMENT, SIDED_TYPE, STAT, TYPE, get_weight_emoji
+from assets import ASSETS, get_weight_emoji
 from bridges.embeds import embed_image
 from bridges.ui import make_empty_option
 from devtools import debug_footer
@@ -53,7 +53,7 @@ def format_summary(mech: Mech, locale: Locale, buff_with: ArenaShop | None = Non
 
     return "\n".join(
         "{stat_emoji} **{value}** {stat_name}{extra}".format(
-            stat_emoji=STAT[stat],
+            stat_emoji=ASSETS.stats[stat],
             value=value,
             stat_name=i18n.get_stat_name(locale, stat).default,
             extra=" " + get_weight_emoji(value) if stat is Stat.weight else "",
@@ -70,10 +70,10 @@ def slot_emoji(slot: SlotType, /) -> str:
         slot, n = slot
 
         if slot is not Type.MODULE:
-            asset = SIDED_TYPE[slot]
+            asset = ASSETS.sided_types[slot]
             return (asset.right if n % 2 else asset.left).emoji
 
-    return TYPE[slot].emoji
+    return ASSETS.types[slot].emoji
 
 
 def sorted_options(
@@ -89,7 +89,7 @@ def sorted_options(
         it = options.values()
 
     else:
-        element_order = list(ELEMENT)
+        element_order = list(ASSETS.elements)
 
         if primary_element is not None:
             element_order.remove(primary_element)
@@ -105,12 +105,15 @@ def sorted_options(
 
 def color_from_mech(mech: Mech, /) -> EmbedColorType:
     if (dominant := dominant_element(mech)) is not None:
-        return ELEMENT[dominant].color
+        key = dominant
 
-    if mech.torso is not None:
-        return ELEMENT[mech.torso.element].color
+    elif mech.torso is not None:
+        key = mech.torso.element
 
-    return ELEMENT[Element.UNKNOWN].color
+    else:
+        key = Element.UNKNOWN
+
+    return ASSETS.elements[key].color
 
 
 def parse_slot(metadata: abc.Sequence[str], /) -> SlotType:
@@ -135,7 +138,9 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption
     return {
         type_: {
             element: [
-                SelectOption(label=item.name, value=str(item.id), emoji=ELEMENT[item.element].emoji)
+                SelectOption(
+                    label=item.name, value=str(item.id), emoji=ASSETS.elements[item.element].emoji
+                )
                 for item in items
             ]
             for element, items in element_dict.items()
@@ -173,7 +178,7 @@ class MechView:
     DUMMY_BUTTONS = tuple(
         ActionButton(label=SPACE, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
     )
-    PAGE_EMOJI = (TYPE[Type.MODULE].emoji, TYPE[Type.TORSO].emoji)
+    PAGE_EMOJI = (ASSETS.types[Type.MODULE].emoji, ASSETS.types[Type.TORSO].emoji)
 
     def __init__(
         self,

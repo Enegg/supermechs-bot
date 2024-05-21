@@ -5,7 +5,7 @@ from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
-from assets import ELEMENT, SIDED_TYPE, TYPE
+from assets import ASSETS
 from bridges import item_name_autocomplete
 from bridges.embeds import sikrit_footer
 from bridges.ui import get_check
@@ -61,13 +61,13 @@ async def item(
         # url, file = embed_image(sprite.image, item.name)
     url, file = CONFIG.missing_image_url, MISSING  # FIXME
 
-    embed_color = ELEMENT[item.element].color
+    embed_color = ASSETS.elements[item.element].color
 
     if item.type is Type.SIDE_WEAPON or item.type is Type.TOP_WEAPON:
-        icon_url = SIDED_TYPE[item.type].right.image_url
+        icon_url = ASSETS.sided_types[item.type].right.image_url
 
     else:
-        icon_url = TYPE[item.type].image_url
+        icon_url = ASSETS.types[item.type].image_url
 
     if compact:
         embed = (
@@ -159,7 +159,7 @@ async def compare(
             desc_builder.write(f" {str_type(item_a.type)} / {str_type(item_b.type)}")
 
         desc = desc_builder.getvalue()
-        color = ELEMENT[item_a.element].color
+        color = ASSETS.elements[item_a.element].color
 
     else:
         desc = (

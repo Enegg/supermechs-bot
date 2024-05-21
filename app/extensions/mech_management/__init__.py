@@ -7,7 +7,7 @@ from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
 import i18n
-from assets import SIDED_TYPE, STAT, TYPE
+from assets import ASSETS
 from bridges import mech_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
 from bridges.ui import get_check
@@ -47,11 +47,11 @@ async def mech(inter: CommandInteraction) -> None:
 
 # TODO: localize this
 MECH_SUMMARY_TEMPLATE = f"""\
-- {TYPE[Type.TORSO].emoji} {{TORSO}}
-- {TYPE[Type.LEGS].emoji} {{LEGS}}
-- {SIDED_TYPE[Type.SIDE_WEAPON].right.emoji} `{{WEAPONS}}` weapon(s)
-- {TYPE[Type.MODULE].emoji} `{{MODULES}}` module(s)
-- {STAT[Stat.weight]} `{{WEIGHT}}`kg\
+- {ASSETS.types[Type.TORSO].emoji} {{TORSO}}
+- {ASSETS.types[Type.LEGS].emoji} {{LEGS}}
+- {ASSETS.sided_types[Type.SIDE_WEAPON].right.emoji} `{{WEAPONS}}` weapon(s)
+- {ASSETS.types[Type.MODULE].emoji} `{{MODULES}}` module(s)
+- {ASSETS.stats[Stat.weight]} `{{WEIGHT}}`kg\
 """
 
 

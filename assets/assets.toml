@@ -1,0 +1,98 @@
+[stats]
+weight =                      { emoji =     "<:weight:725870760484143174>" }
+hit_points =                  { emoji =     "<:health:725870887588462652>" }
+energy_capacity =             { emoji =     "<:energy:725870941883859054>" }
+regeneration =                { emoji =      "<:regen:725871003665825822>" }
+heat_capacity =               { emoji =       "<:heat:725871043767435336>" }
+cooling =                     { emoji =    "<:cooling:725871075778363422>" }
+bullets_capacity =            { emoji = "🧰" }
+rockets_capacity =            { emoji = "🧰" }
+physical_resistance =         { emoji =     "<:phyres:725871121051811931>" }
+explosive_resistance =        { emoji =     "<:expres:725871136935772294>" }
+electric_resistance =         { emoji =    "<:elecres:725871146716758077>" }
+physical_damage =             { emoji =     "<:phydmg:725871208830074929>" }
+physical_resistance_damage =  { emoji =  "<:phyresdmg:725871259635679263>" }
+electric_damage =             { emoji =     "<:eledmg:725871233614479443>" }
+energy_damage =               { emoji =     "<:enedmg:725871599517171719>" }
+energy_capacity_damage =      { emoji =  "<:enecapdmg:725871420126789642>" }
+regeneration_damage =         { emoji =   "<:regendmg:725871443815956510>" }
+electric_resistance_damage =  { emoji =  "<:eleresdmg:725871296381976629>" }
+explosive_damage =            { emoji =     "<:expdmg:725871223338172448>" }
+heat_damage =                 { emoji =     "<:headmg:725871613639393290>" }
+heat_capacity_damage =        { emoji = "<:heatcapdmg:725871478083551272>" }
+cooling_damage =              { emoji = "<:coolingdmg:725871499281563728>" }
+explosive_resistance_damage = { emoji =  "<:expresdmg:725871281311842314>" }
+walk =                        { emoji =       "<:walk:725871844581834774>" }
+jump =                        { emoji =       "<:jump:725871869793796116>" }
+range =                       { emoji =      "<:range:725871752072134736>" }
+push =                        { emoji =       "<:push:725871716613488843>" }
+pull =                        { emoji =       "<:pull:725871734141616219>" }
+recoil =                      { emoji =     "<:recoil:725871778282340384>" }
+advance =                     { emoji =    "<:advance:725871818115907715>" }
+retreat =                     { emoji =    "<:retreat:725871804236955668>" }
+uses =                        { emoji =       "<:uses:725871917923303688>" }
+backfire =                    { emoji =   "<:backfire:725871901062201404>" }
+heat_generation =             { emoji =    "<:heatgen:725871674007879740>" }
+energy_cost =                 { emoji =   "<:eneusage:725871660237979759>" }
+bullets_cost =                { }
+rockets_cost =                { }
+
+[tiers]
+COMMON =    { color = 0xB1B1B1, emoji = "⚪" }
+RARE =      { color = 0x55ACEE, emoji = "🔵" }
+EPIC =      { color = 0xCC41CC, emoji = "🟣" }
+LEGENDARY = { color = 0xE0A23C, emoji = "🟠" }
+MYTHICAL =  { color = 0xFE6333, emoji = "🟤" }
+DIVINE =    { color = 0xFFFFFF, emoji = "⚪" }
+PERK =      { color = 0xFFFF33, emoji = "🟡" }
+
+[elements]
+PHYSICAL =  { color = 0xFFB800, emoji = "<:phydmg:725871208830074929>" }
+EXPLOSIVE = { color = 0xB71010, emoji = "<:expdmg:725871223338172448>" }
+ELECTRIC =  { color = 0x106ED8, emoji = "<:eledmg:725871233614479443>" }
+COMBINED =  { color = 0x211D1D, emoji = "<:combined:1026853188940349490>" }
+UNKNOWN =   { color = 0x000000, emoji = "❔" }
+
+[types]
+TORSO =    { image_url = "https://i.imgur.com/iNtSziV.png", emoji =  "<:torso:730115680363347968>" }
+LEGS =     { image_url = "https://i.imgur.com/6NBLOhU.png", emoji =   "<:legs:730115699397361827>" }
+DRONE =    { image_url = "https://i.imgur.com/oqQmXTF.png", emoji =  "<:drone:730115574763618394>" }
+TELEPORT = { image_url = "https://i.imgur.com/Fnq035A.png", emoji =   "<:tele:730115603683213423>" }
+CHARGE =   { image_url = "https://i.imgur.com/UnDqJx8.png", emoji = "<:charge:730115557239685281>" }
+HOOK =     { image_url = "https://i.imgur.com/8oAoPcJ.png", emoji =   "<:hook:730115622347735071>" }
+MODULE =   { image_url = "https://i.imgur.com/dQR8UgN.png", emoji =    "<:mod:730115649866694686>" }
+
+[sided_types]
+[sided_types.SIDE_WEAPON]
+right = { image_url = "https://i.imgur.com/CBbvOnQ.png", emoji = "<:sider:730115747799629940>" }
+left  = { image_url = "https://i.imgur.com/UuyYCrw.png", emoji = "<:sidel:730115729365663884>" }
+
+[sided_types.TOP_WEAPON]
+right = { image_url = "https://i.imgur.com/LW7ZCGZ.png", emoji = "<:topr:730115786735091762>" }
+left  = { image_url = "https://i.imgur.com/1xlnVgK.png", emoji = "<:topl:730115768431280238>" }
+
+[extra_stats]
+spread =     { emoji = "🎲" }
+any_damage = { emoji = "<:combined:1026853188940349490>" }
+
+[categories]
+energy_capacity =      { emoji =   "<:energy:725870941883859054>" }
+energy_regeneration =  { emoji =    "<:regen:725871003665825822>" }
+energy_damage =        { emoji =   "<:enedmg:725871599517171719>" }
+heat_capacity =        { emoji =     "<:heat:725871043767435336>" }
+heat_cooling =         { emoji =  "<:cooling:725871075778363422>" }
+heat_damage =          { emoji =   "<:headmg:725871613639393290>" }
+physical_damage =      { emoji =   "<:phydmg:725871208830074929>" }
+explosive_damage =     { emoji =   "<:expdmg:725871223338172448>" }
+electric_damage =      { emoji =   "<:eledmg:725871233614479443>" }
+physical_resistance =  { emoji =   "<:phyres:725871121051811931>" }
+explosive_resistance = { emoji =   "<:expres:725871136935772294>" }
+electric_resistance =  { emoji =  "<:elecres:725871146716758077>" }
+total_hp =             { emoji =   "<:health:725870887588462652>" }
+backfire_reduction =   { emoji = "<:backfire:725871901062201404>" }
+
+[gifs]
+frantics = [
+    "https://i.imgur.com/Bbbf4AH.mp4",
+    "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
+]
