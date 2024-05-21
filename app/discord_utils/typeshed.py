@@ -5,11 +5,18 @@ import disnake
 
 from typeshed import CoroFunc
 
-__all__ = ("AutocompleteReturnType", "ListenerRegistry", "SenderKeywords")
+__all__ = (
+    "AutocompleteReturnType",
+    "EmbedColorType",
+    "EmojiType",
+    "ListenerRegistry",
+    "SenderKeywords",
+)
 
 AutocompleteReturnType: typing.TypeAlias = (
     abc.Sequence[str | disnake.Localized[str]] | abc.Mapping[str, str | disnake.Localized[str]]
 )
+EmbedColorType: typing.TypeAlias = disnake.Colour | int
 EmojiType: typing.TypeAlias = str | disnake.Emoji | disnake.PartialEmoji
 
 
