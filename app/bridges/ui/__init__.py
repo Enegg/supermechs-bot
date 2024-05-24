@@ -1,17 +1,8 @@
 import disnake
-from disnake import Locale, MessageInteraction, SelectOption
+from disnake import MessageInteraction
 
 import i18n
 from discord_utils.ui.store import InteractionCallback
-
-
-def make_empty_option(locale: Locale, /) -> SelectOption:
-    return SelectOption(
-        label=i18n.get_message(locale, "ui-empty-option-label"),
-        description=i18n.get_message(locale, "ui-empty-option-desc"),
-        value="$empty",
-        emoji="🗑️",
-    )
 
 
 def get_check(user: disnake.abc.User, /) -> InteractionCallback[bool]:

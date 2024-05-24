@@ -8,7 +8,6 @@ from disnake.utils import MISSING
 import i18n
 from assets import ASSETS, get_weight_emoji
 from bridges.embeds import embed_image
-from bridges.ui import make_empty_option
 from devtools import debug_footer
 from discord_utils import SPACE, ComponentLimits, EmbedColorType
 from discord_utils.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
@@ -147,6 +146,15 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption
         }
         for type_, element_dict in item_groups.items()
     }
+
+
+def make_empty_option(locale: Locale, /) -> SelectOption:
+    return SelectOption(
+        label=i18n.get_message(locale, "ui-empty-option-label"),
+        description=i18n.get_message(locale, "ui-empty-option-desc"),
+        value="$empty",
+        emoji="⏏",
+    )
 
 
 class MechView:
