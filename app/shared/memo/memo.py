@@ -4,7 +4,7 @@ from types import MappingProxyType
 
 from attrs import define, field
 
-from class_utlis import callable_repr, limited_repr
+from class_utils import callable_repr, limited_repr
 from typeshed import KT, VT, P
 
 __all__ = ("Memo", "default_key")

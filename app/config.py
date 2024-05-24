@@ -4,7 +4,7 @@ from pathlib import Path
 import attrs
 import rtoml
 
-from class_utlis import attrs_from_path
+from class_utils import attrs_from_path
 
 from supermechs.gamerules import GameRules
 

@@ -6,7 +6,7 @@ from types import MappingProxyType
 import anyio
 from attrs import define, field
 
-from class_utlis import callable_repr, limited_repr
+from class_utils import callable_repr, limited_repr
 from typeshed import KT, VT, P
 
 __all__ = ("AsyncMemo",)

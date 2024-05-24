@@ -8,7 +8,7 @@ import attrs
 import cattrs
 from disnake import Color
 
-from class_utlis import attrs_from_path
+from class_utils import attrs_from_path
 from config import CONFIG
 from typeshed import T
 
