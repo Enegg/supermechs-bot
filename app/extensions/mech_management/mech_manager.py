@@ -110,7 +110,7 @@ def color_from_mech(mech: Mech, /) -> EmbedColorType:
         key = mech.torso.element
 
     else:
-        key = Element.UNKNOWN
+        return None
 
     return ASSETS.elements[key].color
 
@@ -245,18 +245,18 @@ class MechView:
             PaginatedSelect(
                 up=SelectOption(
                     label=gettext("mech-build-ui-select-up-label"),
-                    value="option:up",
+                    value="$up",
                     emoji="🔺",
                     description=gettext("mech-build-ui-select-up-desc"),
                 ),
                 down=SelectOption(
                     label=gettext("mech-build-ui-select-down-label"),
-                    value="option:down",
+                    value="$down",
                     emoji="🔻",
                     description=gettext("mech-build-ui-select-down-desc"),
                 ),
                 placeholder=gettext("mech-build-ui-select-placeholder"),
-                all_options=[SelectOption(label=".")],  # 1 option required even when disabled
+                all_options=[SelectOption(label="$")],  # 1 option required even when disabled
                 disabled=True,
             )
         )
