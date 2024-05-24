@@ -6,6 +6,8 @@ import attrs
 import cattrs
 import rtoml
 
+from class_utlis import attrs_from_path
+
 from supermechs.gamerules import GameRules
 
 if typing.TYPE_CHECKING:
@@ -24,12 +26,8 @@ class _Config:
     game_rules: GameRules = attrs.field(factory=GameRules, init=False)
     """Set of rules the game shall obey."""
 
-    @classmethod
-    def from_path(cls, path: "Pathish", /) -> typing_.Self:
-        return cattrs.structure_attrs_fromdict(rtoml.load(Path(path)), cls)
 
-
-CONFIG = _Config.from_path("config.toml")
+CONFIG = attrs_from_path("config.toml", _Config)
 
 
 def logging_config(path: "Pathish" = "config.toml", /) -> dict[str, typing.Any]:

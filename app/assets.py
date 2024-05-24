@@ -1,18 +1,16 @@
 """Various assets existing on discord side."""
 
 import math
-import pathlib
 import typing
-import typing_extensions as typing_
 from collections import abc
 
 import attrs
 import cattrs
-import rtoml
 from disnake import Color
 
+from class_utlis import attrs_from_path
 from config import CONFIG
-from typeshed import Pathish, T
+from typeshed import T
 
 from supermechs.api import BuildRules, Category, Element, Stat, Tier, Type
 
@@ -58,13 +56,8 @@ class Assets:
     categories: abc.Mapping[Category, Asset]
     gifs: abc.Mapping[str, abc.Sequence[str]]
 
-    @classmethod
-    def from_path(cls, path: Pathish, /) -> typing_.Self:
-        path = pathlib.Path(path)
-        return _converter.structure_attrs_fromdict(rtoml.load(path), cls)
 
-
-ASSETS = Assets.from_path("./assets/assets.toml")
+ASSETS = attrs_from_path("./assets/assets.toml", Assets, _converter)
 
 
 def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.game_rules.builds) -> str:

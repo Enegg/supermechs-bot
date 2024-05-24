@@ -6,11 +6,8 @@ from types import MappingProxyType
 import anyio
 from attrs import define, field
 
+from class_utlis import callable_repr, limited_repr
 from typeshed import KT, VT, P
-
-from .memo import callable_repr
-
-from supermechs.utils import large_mapping_repr
 
 __all__ = ("AsyncMemo",)
 
@@ -34,8 +31,8 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
     key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: dict[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
-    _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False, repr=large_mapping_repr)
+    _store: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
+    _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False, repr=limited_repr.repr)
 
     @property
     def mapping(self) -> abc.Mapping[KT, VT]:

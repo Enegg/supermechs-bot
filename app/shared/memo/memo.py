@@ -1,21 +1,13 @@
-import inspect
 import typing
 from collections import abc
 from types import MappingProxyType
 
 from attrs import define, field
 
+from class_utlis import callable_repr, limited_repr
 from typeshed import KT, VT, P
 
-from supermechs.utils import large_mapping_repr
-
 __all__ = ("Memo", "default_key")
-
-
-def callable_repr(func: abc.Callable[..., object], /) -> str:
-    """Returns the signature of a callable."""
-    signature = inspect.signature(func)
-    return f"{func.__name__}{signature}"
 
 
 def default_key(*args: abc.Hashable, **kwargs: abc.Hashable) -> abc.Hashable:
@@ -50,7 +42,7 @@ class Memo(typing.Generic[P, VT, KT]):
     key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: dict[KT, VT] = field(factory=dict, init=False, repr=large_mapping_repr)
+    _store: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
 
     @property
     def mapping(self) -> abc.Mapping[KT, VT]:
