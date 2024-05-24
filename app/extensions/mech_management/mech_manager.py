@@ -52,7 +52,7 @@ def format_summary(mech: Mech, locale: Locale, buff_with: ArenaShop | None = Non
 
     return "\n".join(
         "{stat_emoji} **{value}** {stat_name}{extra}".format(
-            stat_emoji=ASSETS.stats[stat],
+            stat_emoji=ASSETS.stats[stat].emoji,
             value=value,
             stat_name=i18n.get_stat_name(locale, stat).default,
             extra=" " + get_weight_emoji(value) if stat is Stat.weight else "",

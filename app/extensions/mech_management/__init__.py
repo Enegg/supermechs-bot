@@ -51,7 +51,7 @@ MECH_SUMMARY_TEMPLATE = f"""\
 - {ASSETS.types[Type.LEGS].emoji} {{LEGS}}
 - {ASSETS.sided_types[Type.SIDE_WEAPON].right.emoji} `{{WEAPONS}}` weapon(s)
 - {ASSETS.types[Type.MODULE].emoji} `{{MODULES}}` module(s)
-- {ASSETS.stats[Stat.weight]} `{{WEIGHT}}`kg\
+- {ASSETS.stats[Stat.weight].emoji} `{{WEIGHT}}`kg\
 """
 
 
