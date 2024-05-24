@@ -2,7 +2,7 @@ import io
 import uuid
 from json import JSONDecodeError
 
-from disnake import Attachment, CommandInteraction, Embed, File, ui
+from disnake import Attachment, CommandInteraction, Embed, File, Locale, ui
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
@@ -93,6 +93,7 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
 @commands.max_concurrency(1, commands.BucketType.user)
 async def build(
     inter: CommandInteraction,
+    locale: Locale,
     player: Player,
     name: commands.String[str, 1, StringLimits.names] | None = None,
 ) -> None:
@@ -111,7 +112,7 @@ async def build(
         build = player.get_or_create_build(sanitize_string(name))
 
     store = ComponentStore(interaction_check=get_check(inter.author))
-    view = MechView(store, build, item_pack, player, inter.locale)
+    view = MechView(store, build, item_pack, player, locale)
     file = MISSING
 
     if False:  # FIXME
@@ -122,7 +123,7 @@ async def build(
             url, file = embed_image(image, view.mech_config)
             view.embed.set_image(url)
 
-    sikrit_footer(view.embed, inter.locale)
+    sikrit_footer(view.embed, locale)
 
     if __debug__:
         debug_footer(view.embed)

@@ -1,6 +1,7 @@
 import os
 from collections import abc
 
+import disnake
 import dotenv
 
 dotenv.load_dotenv()
@@ -21,6 +22,26 @@ class _Env:
     def test_guild_ids(self) -> abc.Sequence[int]:
         """The IDs of only guilds the bot will register commands in while in dev mode."""
         return (self.home_guild_id,)
+
+    @property
+    def locale_override(self) -> disnake.Locale | None:
+        """Override of current locale."""
+        value = os.getenv("LOCALE_OVERRIDE")
+        if value is None:
+            return None
+
+        return disnake.Locale[value]
+
+    @locale_override.setter
+    def locale_override(self, locale: disnake.Locale | str) -> None:
+        if isinstance(locale, disnake.Locale):
+            locale = locale.value
+
+        os.environ["LOCALE_OVERRIDE"] = locale
+
+    @locale_override.deleter
+    def locale_override(self) -> None:
+        os.environ.pop("LOCALE_OVERRIDE", None)
 
     @property
     def token(self) -> str:

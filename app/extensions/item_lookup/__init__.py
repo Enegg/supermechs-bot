@@ -1,7 +1,7 @@
 import io
 import typing
 
-from disnake import CommandInteraction, Embed
+from disnake import CommandInteraction, Embed, Locale
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
@@ -35,6 +35,7 @@ plugin = plugins.Plugin[commands.InteractionBot](name="Item-lookup", logger=__na
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
+    locale: Locale,
     item: ItemData,
     type: LiteralTypeOrAny = "ANY",  # noqa: A002
     element: LiteralElementOrAny = "ANY",
@@ -88,10 +89,10 @@ async def item(
             .set_image(url)
         )  # fmt: skip
 
-    sikrit_footer(embed, inter.locale)
+    sikrit_footer(embed, locale)
 
     store = ComponentStore(interaction_check=get_check(inter.author))
-    layout = item_view(store, embed, item, inter.locale, compact)
+    layout = item_view(store, embed, item, locale, compact)
     await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
     await store.listen(plugin.bot)
     await inter.edit_original_response(components=None)
@@ -126,6 +127,7 @@ def str_elem(element: Element) -> str:
 @plugin.slash_command()
 async def compare(
     inter: CommandInteraction,
+    locale: Locale,
     item1_name: str = commands.Param(name="item1"),
     item2_name: str = commands.Param(name="item2"),
 ) -> None:
@@ -170,10 +172,10 @@ async def compare(
 
     embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
 
-    sikrit_footer(embed, inter.locale)
+    sikrit_footer(embed, locale)
 
     store = ComponentStore(interaction_check=get_check(inter.author))
-    layout = item_compare_view(store, embed, item_a, item_b, inter.locale)
+    layout = item_compare_view(store, embed, item_a, item_b, locale)
     await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
     await store.listen(plugin.bot)
     await inter.edit_original_response(components=None)

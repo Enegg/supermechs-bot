@@ -1,9 +1,11 @@
 from functools import partial
 
+import disnake
 from disnake import CommandInteraction
 from disnake.ext import commands
 
 import i18n
+from env import ENV
 from models import Player
 from shared.item_packs import get_item_by_name, get_item_pack_for
 from stored import players
@@ -23,7 +25,7 @@ def register_injections() -> None:
     # somewhere in the main.py we'd need a blank import which isn't used anywhere)
 
     @commands.register_injection
-    def item_injector(inter: CommandInteraction, name: Name) -> ItemData:
+    def inject_item(inter: CommandInteraction, name: Name, locale: disnake.Locale) -> ItemData:
         """Injection taking Item name and returning ItemData.
 
         Parameters
@@ -35,18 +37,23 @@ def register_injections() -> None:
         if item is not None:
             return item
 
-        msg = i18n.get_message(inter.locale, "unknown-item-name")
+        msg = i18n.get_message(locale, "unknown-item-name").format(name=name)
         raise commands.UserInputError(msg)
 
     @commands.register_injection
-    def player_injector(inter: CommandInteraction) -> Player:
+    def inject_player(inter: CommandInteraction) -> Player:
         """Injection creating a player from interaction."""
         return players(inter.author)
 
     @commands.register_injection
-    def l10n_injector(inter: CommandInteraction) -> i18n.GetText:
-        """Injection returning a callable which returns localized messages."""
-        return partial(i18n.get_message, inter.locale)
+    def inject_locale(inter: CommandInteraction) -> disnake.Locale:
+        """Injection returning context aware locale."""
+        return ENV.locale_override or inter.locale
 
-    item_injector.autocomplete("name")(item_name_autocomplete)
-    del player_injector, l10n_injector
+    @commands.register_injection
+    def inject_gettext(inter: CommandInteraction) -> i18n.GetText:
+        """Injection returning a callable which returns localized messages."""
+        return partial(i18n.get_message, ENV.locale_override or inter.locale)
+
+    inject_item.autocomplete("name")(item_name_autocomplete)
+    del inject_player, inject_gettext, inject_locale

@@ -1,6 +1,7 @@
 import typing
 from collections import abc
 
+import disnake
 from disnake import CommandInteraction
 from disnake.ext import commands, plugins
 
@@ -130,6 +131,45 @@ def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteRe
     for exc in KNOWN_EXCEPTION_NAMES:
         if input in exc.lower():
             matching.append(exc)
+
+            if len(matching) == InteractionLimits.autocomplete_options:
+                break
+
+    return matching
+
+
+@plugin.slash_command()
+@commands.default_member_permissions(administrator=True)
+@commands.is_owner()
+async def set_locale(inter: CommandInteraction, locale: str | None = None) -> None:
+    """Override commands' locale.
+
+    Parameters
+    ----------
+    locale: Locale code to override with.
+    """
+    if locale is None:
+        del ENV.locale_override
+        msg = "Locale reset"
+
+    else:
+        ENV.locale_override = locale
+        msg = f"Locale set to {locale}"
+
+    plugin.logger.info(msg)
+    await inter.response.send_message(msg)
+
+
+@set_locale.autocomplete("locale")
+async def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:
+    matching: list[str] = []
+
+    if len(input) < 2:  # noqa: PLR2004
+        return matching
+
+    for locale in disnake.Locale:
+        if input in locale.value:
+            matching.append(locale.value)
 
             if len(matching) == InteractionLimits.autocomplete_options:
                 break
