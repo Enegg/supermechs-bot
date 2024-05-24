@@ -13,6 +13,7 @@ plugin: typing.Final = plugins.Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
+# the lib wants a list which is invariant
 KNOWN_PLUGIN_PATHS = list[str | int | float](walk_extensions("extensions"))
 
 recently_loaded_plugin: str | None = None
