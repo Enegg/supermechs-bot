@@ -6,7 +6,7 @@ import rtoml
 
 from class_utlis import attrs_from_path
 
-from supermechs.gamerules import GameRules
+from supermechs.gamerules import DEFAULT_GAME_RULES, GameRules
 
 if typing.TYPE_CHECKING:
     from typeshed import Pathish
@@ -21,7 +21,7 @@ class _Config:
     default_pack_url: str
     """The URL of the default item pack."""
     missing_image_url: str
-    game_rules: GameRules = attrs.field(factory=GameRules, init=False)
+    game_rules: GameRules = attrs.field(default=DEFAULT_GAME_RULES, init=False)
     """Set of rules the game shall obey."""
 
 
