@@ -1,9 +1,9 @@
-import asyncio
 import os
 import typing
 import typing_extensions as typing_
 from collections import abc
 
+import anyio
 from attrs import define, field
 from disnake import Client, Event, MessageInteraction, ModalInteraction
 from disnake.ui import Modal
@@ -62,13 +62,10 @@ async def wait_for_components(
         def check(inter: MessageInteraction, /) -> bool:
             return inter.author.id == user_id and inter.data.custom_id in ids_to_components
 
-    try:
+    with anyio.fail_after(timeout):
         component_inter: MessageInteraction = await client.wait_for(
-            Event.message_interaction, check=check, timeout=timeout
+            Event.message_interaction, check=check
         )
-
-    except asyncio.TimeoutError:
-        raise TimeoutError from None
 
     return (component_inter, ids_to_components[component_inter.data.custom_id])
 
@@ -93,11 +90,8 @@ async def wait_for_modal(
         def check(inter: ModalInteraction, /) -> bool:
             return inter.author.id == user_id and inter.data.custom_id == modal_or_id
 
-    try:
-        return await client.wait_for(Event.modal_submit, check=check, timeout=timeout)
-
-    except asyncio.TimeoutError:
-        raise TimeoutError from None
+    with anyio.fail_after(timeout):
+        return await client.wait_for(Event.modal_submit, check=check)
 
 
 @define
