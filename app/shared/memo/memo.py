@@ -1,6 +1,5 @@
 import typing
 from collections import abc
-from types import MappingProxyType
 
 from attrs import define, field
 
@@ -42,12 +41,7 @@ class Memo(typing.Generic[P, VT, KT]):
     key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
-
-    @property
-    def mapping(self) -> abc.Mapping[KT, VT]:
-        """Read-only proxy of the underlying mapping."""
-        return MappingProxyType(self._store)
+    mapping: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return self.get_or_create(*args, **kwargs)
@@ -55,22 +49,22 @@ class Memo(typing.Generic[P, VT, KT]):
     def get(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve object stored under a key computed from arguments."""
         key = self.key(*args, **kwargs)
-        return self._store[key]
+        return self.mapping[key]
 
     def get_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve or create an object under a key computed from arguments."""
         key = self.key(*args, **kwargs)
         try:
-            return self._store[key]
+            return self.mapping[key]
 
         except KeyError:
             obj = self.factory(*args, **kwargs)
-            self._store[key] = obj
+            self.mapping[key] = obj
             return obj
 
     def create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Create and store an object under a key computed from arguments."""
         key = self.key(*args, **kwargs)
         obj = self.factory(*args, **kwargs)
-        self._store[key] = obj
+        self.mapping[key] = obj
         return obj

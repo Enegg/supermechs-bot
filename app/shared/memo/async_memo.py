@@ -1,7 +1,6 @@
 import typing
 from collections import abc
 from contextlib import asynccontextmanager
-from types import MappingProxyType
 
 import anyio
 from attrs import define, field
@@ -31,13 +30,8 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
     key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    _store: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
+    mapping: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
     _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False, repr=limited_repr.repr)
-
-    @property
-    def mapping(self) -> abc.Mapping[KT, VT]:
-        """Read-only proxy of the underlying mapping."""
-        return MappingProxyType(self._store)
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return await self.get_or_create(*args, **kwargs)
@@ -45,7 +39,7 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
     def get(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve stored object by computing key from arguments."""
         key = self.key(*args, **kwargs)
-        return self._store[key]
+        return self.mapping[key]
 
     async def get_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Retrieve or create an object under a key computed from arguments."""
@@ -57,18 +51,18 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
         # XXX: what if we don't acquire on first access?
         async with self._acquire_lock(key):
             try:
-                return self._store[key]
+                return self.mapping[key]
 
             except KeyError:
                 obj = await self.factory(*args, **kwargs)
-                self._store[key] = obj
+                self.mapping[key] = obj
                 return obj
 
     async def create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         """Create and store an object under a key computed from arguments."""
         key = self.key(*args, **kwargs)
         obj = await self.factory(*args, **kwargs)
-        self._store[key] = obj
+        self.mapping[key] = obj
         return obj
 
     @asynccontextmanager
