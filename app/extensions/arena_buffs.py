@@ -17,10 +17,9 @@ plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="ArenaBuffs"
 
 
 def format_value(category: Category, level: int, /) -> str:
-    string = f"{category.data.progression[level]:+}"
-    if not category.data.is_absolute:
-        string += "%"
-    return string
+    suffix = "" if category.data.is_absolute else "%"
+    value = category.data.progression[level]
+    return f"{value:+}{suffix}"
 
 
 def iter_category(category: Category, /) -> abc.Iterator[str]:
