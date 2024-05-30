@@ -23,7 +23,7 @@ from supermechs.tools.stats import buff_stats, mech_summary
 
 def embed_mech(mech: Mech, locale: Locale, name: str) -> Embed:
     embed = Embed(
-        title=i18n.get_message(locale, "mech-summary-title").format(name=name),
+        title=i18n.get_message(locale, "mech-summary-title", name=name),
         color=color_from_mech(mech),
     ).add_field(i18n.get_message(locale, "mech-summary-field"), format_summary(mech, locale))
     return embed
@@ -211,7 +211,7 @@ class MechView:
         self.item_groups = group_items(pack)
 
     def init_pages(self) -> None:  # noqa: PLR0915
-        gettext = partial(i18n.get_message, self.locale)
+        gettext = i18n.get_gettext(self.locale)
 
         @self.store.bind(ActionButton(emoji=self.PAGE_EMOJI[0]))
         async def modules_button(inter: MessageInteraction) -> None:
@@ -225,7 +225,7 @@ class MechView:
             """Button toggling arena buffs being applied to mech's stats."""
             if is_shop_empty(self.player.arena_shop):
                 return await inter.response.send_message(
-                    gettext("mech-build-no-buffs").format(command_mention=self.command_mention),
+                    gettext("mech-build-no-buffs", command_mention=self.command_mention),
                     ephemeral=True,
                 )
 

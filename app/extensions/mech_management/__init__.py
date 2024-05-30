@@ -151,7 +151,7 @@ async def import_(
 
     if file.size > MAX_SIZE:
         max_size, prefix = fold_binary_prefix(MAX_SIZE)
-        msg = gettext("import-size-error").format(size=max_size, unit=prefix + "B")
+        msg = gettext("import-size-error", size=max_size, unit=prefix + "B")
         raise commands.UserInputError(msg)
     # the content type should be application/json,
     # but we may as well just rely on the loader to fail
@@ -237,8 +237,10 @@ async def export(
     content = (
         None
         if build_count <= ComponentLimits.select_options
-        else gettext("export-items-warning").format(
-            build_count=build_count, display_limit=ComponentLimits.select_options
+        else gettext(
+            "export-items-warning",
+            build_count=build_count,
+            display_limit=ComponentLimits.select_options,
         )
     )
     await inter.response.send_message(

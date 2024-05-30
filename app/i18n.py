@@ -2,6 +2,7 @@ import logging
 import typing
 import typing_extensions as typing_
 from collections import abc
+from functools import partial
 from pathlib import Path
 
 import rtoml
@@ -11,10 +12,14 @@ from typeshed import KT, VT, Pathish
 
 from supermechs.enums.stats import Stat
 
-__all__ = ("GetText", "get_embed_tips", "get_message", "get_stat_name", "load")
+__all__ = ("GetText", "get_embed_tips", "get_gettext", "get_message", "get_stat_name", "load")
 
 LocalePair: typing.TypeAlias = tuple[KT, Locale]
-GetText: typing.TypeAlias = abc.Callable[[str], str]
+
+
+class GetText(typing.Protocol):
+    def __call__(self, key: str, /, **format_kwargs: object) -> str: ...
+
 
 _LOGGER = logging.getLogger(__name__)
 FALLBACK_LOCALE = Locale.en_US
@@ -52,8 +57,17 @@ def get_stat_name(locale: Locale, stat: Stat) -> "StatName":
     return get(stats, (stat, locale), default=_MISSING_STAT)
 
 
-def get_message(locale: Locale, key: str) -> str:
-    return get(messages, (key, locale))
+def get_message(locale: Locale, key: str, **format_kwargs: object) -> str:
+    msg = get(messages, (key, locale))
+
+    if format_kwargs:
+        return msg.format_map(format_kwargs)
+
+    return msg
+
+
+def get_gettext(locale: Locale, /) -> GetText:
+    return partial(get_message, locale)
 
 
 def get_embed_tips(locale: Locale, /) -> abc.Sequence[str]:
