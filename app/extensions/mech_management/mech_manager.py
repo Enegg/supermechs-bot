@@ -269,7 +269,7 @@ class MechView:
             if select.update_on_own_option(value):
                 return await inter.response.edit_message(components=self.paginator.page)
 
-            slot = parse_slot(self.store.strip_id(self.active.custom_id).split(":"))
+            slot = parse_slot(self.store.strip_id(self.active).split(":"))
 
             if value == self.empty_option.value:
                 item = None
@@ -364,7 +364,7 @@ class MechView:
         self.update_dropdown(button)
 
     def update_dropdown(self, button: ToggleButton, /) -> None:
-        metadata = self.store.strip_id(button.custom_id).split(":")
+        metadata = self.store.strip_id(button).split(":")
         options = self.item_groups[Type.of_name(metadata[0])]
         element = dominant_element(self.mech)
         self.select.all_options = [self.empty_option, *sorted_options(options, element)]

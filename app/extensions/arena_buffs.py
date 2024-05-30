@@ -154,7 +154,7 @@ class ArenaShopView:
 
         self.active = button
         self.select.placeholder = button.label
-        category = Category.of_name(self.store.strip_id(button.custom_id))
+        category = Category.of_name(self.store.strip_id(button))
         self.select.options = [
             SelectOption(label=f"{level}: {buff}", value=str(level))
             for level, buff in enumerate(iter_category(category))
@@ -162,7 +162,7 @@ class ArenaShopView:
         await inter.response.edit_message(components=self.paginator.page)
 
     def modify_buff(self, button: ToggleButton, level: int = -1) -> None:
-        category = Category.of_name(self.store.strip_id(button.custom_id))
+        category = Category.of_name(self.store.strip_id(button))
         max_level = category.data.max_level
 
         if level == -1:
