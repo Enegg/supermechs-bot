@@ -2,7 +2,7 @@ import io
 import uuid
 from json import JSONDecodeError
 
-from disnake import Attachment, CommandInteraction, Embed, File, Locale, ui
+from disnake import Attachment, CommandInteraction, Embed, Locale, ui
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
@@ -12,7 +12,7 @@ from bridges import mech_name_autocomplete
 from bridges.embeds import embed_image, sikrit_footer
 from bridges.ui import get_check
 from devtools import debug_footer
-from discord_utils import ComponentLimits, command_mention
+from discord_utils import ComponentLimits, bytes_to_file, command_mention
 from discord_utils.ui import ActionButton, wait_for_components
 from discord_utils.ui.store import ComponentStore
 from models import Player
@@ -219,8 +219,7 @@ async def export(
 
     if build_count == 1:
         mechs = [all_builds[0].as_mech()]
-        fp = io.BytesIO(dump_mechs(mechs, default_pack.data.key))
-        file = File(fp, "mechs.json")
+        file = bytes_to_file(dump_mechs(mechs, default_pack.data.key), "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
     options = [(build.name, str(build.id)) for build in all_builds]
@@ -265,8 +264,7 @@ async def export(
         assert component_inter.values is not None
         mechs = (player.builds[uuid.UUID(str_id)].as_mech() for str_id in component_inter.values)
 
-    fp = io.BytesIO(dump_mechs(mechs, default_pack.data.key))
-    file = File(fp, "mechs.json")
+    file = bytes_to_file(dump_mechs(mechs, default_pack.data.key), "mechs.json")
     await component_inter.response.edit_message(file=file, components=None)
 
 
