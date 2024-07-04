@@ -46,24 +46,24 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Se
 
 
 async def handle_user_exception(inter: CommandInteraction, exc: commands.CommandError) -> bool:
-    localize = partial(i18n.get_message, inter.locale)
+    gettext = i18n.get_gettext(inter.locale)
 
     if isinstance(exc, commands.NotOwner):
-        info = localize("command-dev")
+        info = gettext("command-dev")
 
     elif isinstance(exc, commands.UserInputError | commands.CheckFailure):
         info = str(exc)  # TODO: localize (some UserInputErrors are localized)
 
     elif isinstance(exc, commands.MaxConcurrencyReached):
         if exc.number == 1 and exc.per is commands.BucketType.user:
-            info = localize("command-running")
+            info = gettext("command-running")
 
         else:
             info = str(exc)  # TODO: localize
 
     elif isinstance(exc, commands.CommandInvokeError) and isinstance(exc.original, TimeoutError):
         _LOGGER.warning("Command %s timed out", inter.application_command.qualified_name)
-        info = localize("command-timeout")
+        info = gettext("command-timeout")
 
     else:
         return False

@@ -10,7 +10,7 @@ from disnake import MessageInteraction, ui
 
 from typeshed import T
 
-from .helpers import random_str
+from .helpers import HasCustomID, random_str
 
 __all__ = ("ComponentStore",)
 
@@ -81,6 +81,6 @@ class ComponentStore:
 
         return catch_callback
 
-    def strip_id(self, custom_id: str, /) -> str:
+    def strip_id(self, component: HasCustomID, /) -> str:
         """Remove the part added by the store from a component's custom ID."""
-        return custom_id.removeprefix(self.id + ":")
+        return component.custom_id.removeprefix(self.id + ":")

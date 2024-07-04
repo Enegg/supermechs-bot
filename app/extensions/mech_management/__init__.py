@@ -63,8 +63,8 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
 
     embed = Embed(title="Your builds", color=inter.author.color)
 
-    if player.active_build is not None:
-        embed.description = f"Currently active: **{player.active_build.name}**"
+    if player.recent_build is not None:
+        embed.description = f"Currently active: **{player.recent_build.name}**"
 
     fields: list[tuple[str, str]] = []
 
@@ -106,7 +106,7 @@ async def build(
     item_pack = DEFAULT_PACK.get_nowait()
 
     if name is None:
-        build = player.get_active_or_create_build()
+        build = player.get_recent_or_create_build()
 
     else:
         build = player.get_or_create_build(sanitize_string(name))
@@ -151,7 +151,7 @@ async def import_(
 
     if file.size > MAX_SIZE:
         max_size, prefix = fold_binary_prefix(MAX_SIZE)
-        msg = gettext("import-size-error").format(size=max_size, unit=prefix + "B")
+        msg = gettext("import-size-error", size=max_size, unit=prefix + "B")
         raise commands.UserInputError(msg)
     # the content type should be application/json,
     # but we may as well just rely on the loader to fail
@@ -185,7 +185,7 @@ async def import_(
     if mechs:
         # TODO: warn about overwriting
         for mech, name in mechs:
-            player.create_build(name, mech)
+            player.load_build(name, mech)
         string_builder.write(gettext("import-loaded"))
         string_builder.write(" ")
         string_builder.write(", ".join(f"`{name}`" for _, name in mechs))
@@ -236,8 +236,10 @@ async def export(
     content = (
         None
         if build_count <= ComponentLimits.select_options
-        else gettext("export-items-warning").format(
-            build_count=build_count, display_limit=ComponentLimits.select_options
+        else gettext(
+            "export-items-warning",
+            build_count=build_count,
+            display_limit=ComponentLimits.select_options,
         )
     )
     await inter.response.send_message(

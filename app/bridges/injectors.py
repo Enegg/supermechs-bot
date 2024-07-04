@@ -1,5 +1,3 @@
-from functools import partial
-
 import disnake
 from disnake import CommandInteraction
 from disnake.ext import commands
@@ -37,7 +35,7 @@ def register_injections() -> None:
         if item is not None:
             return item
 
-        msg = i18n.get_message(locale, "unknown-item-name").format(name=name)
+        msg = i18n.get_message(locale, "unknown-item-name", name=name)
         raise commands.UserInputError(msg)
 
     @commands.register_injection
@@ -53,7 +51,7 @@ def register_injections() -> None:
     @commands.register_injection
     def inject_gettext(inter: CommandInteraction) -> i18n.GetText:
         """Injection returning a callable which returns localized messages."""
-        return partial(i18n.get_message, ENV.locale_override or inter.locale)
+        return i18n.get_gettext(ENV.locale_override or inter.locale)
 
     inject_item.autocomplete("name")(item_name_autocomplete)
     del inject_player, inject_gettext, inject_locale

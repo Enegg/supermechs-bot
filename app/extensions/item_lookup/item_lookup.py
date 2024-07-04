@@ -1,5 +1,4 @@
 import io
-from functools import partial
 from itertools import zip_longest
 
 from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
@@ -28,7 +27,7 @@ def item_view(
 ) -> ui.Components[ui.MessageUIComponent]:
     populate_fields = compact_fields if compact else default_fields
     populate_fields(embed, item, False, False, locale)
-    gettext = partial(i18n.get_message, locale)
+    gettext = i18n.get_gettext(locale)
 
     if __debug__:
         debug_footer(embed)
@@ -132,7 +131,7 @@ def item_compare_view(
     item_b: ItemData,
     locale: Locale,
 ) -> ui.Components[ui.MessageUIComponent]:
-    gettext = partial(i18n.get_message, locale)
+    gettext = i18n.get_gettext(locale)
     max_item_stats = (max_stats(item_a), max_stats(item_b))
 
     @store.bind(ToggleButton(label=gettext("item-compare-ui-buffs")))

@@ -23,7 +23,7 @@ from supermechs.tools.stats import buff_stats, mech_summary
 
 def embed_mech(mech: Mech, locale: Locale, name: str) -> Embed:
     embed = Embed(
-        title=i18n.get_message(locale, "mech-summary-title").format(name=name),
+        title=i18n.get_message(locale, "mech-summary-title", name=name),
         color=color_from_mech(mech),
     ).add_field(i18n.get_message(locale, "mech-summary-field"), format_summary(mech, locale))
     return embed
@@ -115,7 +115,7 @@ def color_from_mech(mech: Mech, /) -> EmbedColorType:
     return ASSETS.elements[key].color
 
 
-def parse_slot(metadata: abc.Sequence[str], /) -> SlotType:
+def slot_to_type(metadata: abc.Sequence[str], /) -> SlotType:
     type_ = Type.of_name(metadata[0])
 
     if type_ is Type.SIDE_WEAPON or type_ is Type.TOP_WEAPON or type_ is Type.MODULE:
@@ -172,15 +172,15 @@ class MechView:
     command_mention: typing.ClassVar[str] = "`/buffs`"
 
     # pages of rows of components
-    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[SlotType]]] = (
+    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[str]]] = (
         (
-            ((Type.TOP_WEAPON,  0), Type.DRONE, (Type.TOP_WEAPON,  1), Type.CHARGE),
-            ((Type.SIDE_WEAPON, 2), Type.TORSO, (Type.SIDE_WEAPON, 3), Type.TELEPORTER),
-            ((Type.SIDE_WEAPON, 0), Type.LEGS,  (Type.SIDE_WEAPON, 1), Type.HOOK),
+            ( "TOP_WEAPON:0", "DRONE",  "TOP_WEAPON:1", "CHARGE"),
+            ("SIDE_WEAPON:2", "TORSO", "SIDE_WEAPON:3", "TELEPORTER"),
+            ("SIDE_WEAPON:0", "LEGS",  "SIDE_WEAPON:1", "HOOK"),
         ),
         (
-            tuple((Type.MODULE, n) for n in range(0, 4)),  # noqa: PIE808
-            tuple((Type.MODULE, n) for n in range(4, 8)),
+            tuple(f"MODULE:{n}" for n in range(0, 4)),  # noqa: PIE808
+            tuple(f"MODULE:{n}" for n in range(4, 8)),
         ),
     )  # fmt: skip
     DUMMY_BUTTONS = tuple(
@@ -211,7 +211,7 @@ class MechView:
         self.item_groups = group_items(pack)
 
     def init_pages(self) -> None:  # noqa: PLR0915
-        gettext = partial(i18n.get_message, self.locale)
+        gettext = i18n.get_gettext(self.locale)
 
         @self.store.bind(ActionButton(emoji=self.PAGE_EMOJI[0]))
         async def modules_button(inter: MessageInteraction) -> None:
@@ -225,7 +225,7 @@ class MechView:
             """Button toggling arena buffs being applied to mech's stats."""
             if is_shop_empty(self.player.arena_shop):
                 return await inter.response.send_message(
-                    gettext("mech-build-no-buffs").format(command_mention=self.command_mention),
+                    gettext("mech-build-no-buffs", command_mention=self.command_mention),
                     ephemeral=True,
                 )
 
@@ -269,7 +269,7 @@ class MechView:
             if select.update_on_own_option(value):
                 return await inter.response.edit_message(components=self.paginator.page)
 
-            slot = parse_slot(self.store.strip_id(self.active.custom_id).split(":"))
+            slot = slot_to_type(self.store.strip_id(self.active).split(":"))
 
             if value == self.empty_option.value:
                 item = None
@@ -364,22 +364,22 @@ class MechView:
         self.update_dropdown(button)
 
     def update_dropdown(self, button: ToggleButton, /) -> None:
-        metadata = self.store.strip_id(button.custom_id).split(":")
+        metadata = self.store.strip_id(button).split(":")
         options = self.item_groups[Type.of_name(metadata[0])]
         element = dominant_element(self.mech)
         self.select.all_options = [self.empty_option, *sorted_options(options, element)]
-        slot = parse_slot(metadata)
+        slot = slot_to_type(metadata)
         item = self.mech[slot]
         self.select.placeholder = self.empty_option.label if item is None else item.name
 
-    def make_button(self, slot: SlotType, /) -> ToggleButton:
-        metadata = f"{slot[0].name}:{slot[1]}" if isinstance(slot, tuple) else slot.name
+    def make_button(self, slot: str, /) -> ToggleButton:
+        sm_slot = slot_to_type(slot)
         btn = ToggleButton(
-            style_off=(ButtonStyle.gray if self.mech[slot] is None else ButtonStyle.green),
+            style_off=(ButtonStyle.gray if self.mech[sm_slot] is None else ButtonStyle.green),
             style_on=ButtonStyle.blurple,
-            emoji=slot_emoji(slot),
+            emoji=slot_emoji(sm_slot),
         )
-        self.store.bind(btn, metadata)(partial(self.slot_button_cb, btn))
+        self.store.bind(btn, slot)(partial(self.slot_button_cb, btn))
         return btn
 
     async def slot_button_cb(self, button: ToggleButton, inter: MessageInteraction) -> None:
