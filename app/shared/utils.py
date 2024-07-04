@@ -39,6 +39,31 @@ def fold_binary_prefix(bytes_: int, /, prefix: BinaryPrefix = "") -> tuple[int, 
     return bytes_, BINARY_PREFIXES[current_exp + exp]
 
 
+def unfold_binary_prefix(value: str, /) -> int:
+    i = len(value)
+
+    for i, char in enumerate(value):
+        if not char.isdecimal():
+            break
+
+    else:
+        i = len(value)
+
+    if unit := value[i : i + 2]:
+        value = value[:i]
+        try:
+            exp = BINARY_PREFIXES.index(unit, 1)
+
+        except ValueError:
+            msg = f"Unknown prefix: {unit!r}"
+            raise ValueError(msg) from None
+
+    else:
+        exp = 0
+
+    return int(value) << (10 * exp)
+
+
 def format_exception(exc: BaseException, /) -> str:
     """Format the exception's traceback into a string.
 

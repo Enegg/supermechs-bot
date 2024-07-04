@@ -1,6 +1,8 @@
 date_format = "%d.%m.%Y %H:%M:%S"
 default_pack_url = "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7dc669d484db89062/raw"
 missing_image_url = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
+max_image_size = "25MiB"
+chunk_size = "64KiB"
 [logging]
 version = 1
 disable_existing_loggers = false
