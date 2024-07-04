@@ -13,16 +13,15 @@ from config import CONFIG
 from typeshed import T
 
 from supermechs.api import BuildRules, Category, Element, Stat, Tier, Type
+from supermechs.enums._base import PartialEnum
 
 __all__ = ("ASSETS", "get_weight_emoji")
 
 
 _converter = cattrs.Converter()
-_converter.register_structure_hook(Category, lambda obj, cls: cls.of_name(obj))
-_converter.register_structure_hook(Element, lambda obj, cls: cls.of_name(obj))
-_converter.register_structure_hook(Stat, lambda obj, cls: cls.of_name(obj))
-_converter.register_structure_hook(Tier, lambda obj, cls: cls.of_name(obj))
-_converter.register_structure_hook(Type, lambda obj, cls: cls.of_name(obj))
+_converter.register_structure_hook_func(
+    lambda cls: issubclass(cls, PartialEnum), lambda obj, cls: cls.of_name(obj)
+)
 _converter.register_structure_hook(Color, lambda obj, cls: cls(obj))
 
 
@@ -35,8 +34,6 @@ class Asset:
 @attrs.define
 class ColoredAsset(Asset):
     color: Color = Color(0)
-    emoji: str = "❔"
-    image_url: str = CONFIG.missing_image_url
 
 
 @attrs.define
