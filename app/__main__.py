@@ -7,12 +7,13 @@ import disnake
 from disnake.ext import commands
 
 import i18n
+import resources
 from bridges import register_injections, setup_channel_logger
 from config import logging_config
 from discord_utils import load_extensions
 from env import ENV
 from shared.item_packs import load_default_pack
-from shared.session import IO_SESSION, client_session
+from shared.session import client_session
 
 
 async def main() -> None:
@@ -42,7 +43,7 @@ async def main() -> None:
     await setup_channel_logger(bot, ENV.logs_channel_id)
 
     async with client_session(bot.http) as session, anyio.create_task_group() as tg:
-        IO_SESSION.set(session)
+        resources.set_session(session)
         tg.start_soon(load_default_pack, session)
         tg.start_soon(sync.sync_commands, bot)
         tg.start_soon(bot.connect)
