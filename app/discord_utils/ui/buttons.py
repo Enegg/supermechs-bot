@@ -1,6 +1,6 @@
 import typing_extensions as typing_
 
-from disnake import ButtonStyle
+from disnake.enums import ButtonStyle
 from disnake.ui.button import Button
 from disnake.utils import MISSING
 

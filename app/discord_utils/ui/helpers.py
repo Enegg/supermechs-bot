@@ -13,7 +13,6 @@ from typeshed import T
 __all__ = (
     "HasCustomID",
     "Paginator",
-    "metadata_of",
     "random_str",
     "wait_for_components",
     "wait_for_modal",
@@ -27,12 +26,7 @@ def random_str() -> str:
 
 class HasCustomID(typing.Protocol):
     @property
-    def custom_id(self) -> str:
-        ...
-
-
-def metadata_of(component: HasCustomID, /, sep: str = ":") -> abc.Sequence[str]:
-    return component.custom_id.split(sep)[1:]
+    def custom_id(self) -> str: ...
 
 
 IDHolderT = typing_.TypeVar("IDHolderT", bound=HasCustomID | str, infer_variance=True)
@@ -63,11 +57,9 @@ async def wait_for_components(
             return inter.author.id == user_id and inter.data.custom_id in ids_to_components
 
     with anyio.fail_after(timeout):
-        component_inter: MessageInteraction = await client.wait_for(
-            Event.message_interaction, check=check
-        )
+        inter: MessageInteraction = await client.wait_for(Event.message_interaction, check=check)
 
-    return (component_inter, ids_to_components[component_inter.data.custom_id])
+    return (inter, ids_to_components[inter.data.custom_id])
 
 
 async def wait_for_modal(
