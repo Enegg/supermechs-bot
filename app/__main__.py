@@ -29,7 +29,10 @@ async def main() -> None:
         allowed_mentions=disnake.AllowedMentions.none(),
         localization_provider=i18n.localization_provider,
         test_guilds=ENV.test_guild_ids if __debug__ else None,
-        command_sync_flags=commands.CommandSyncFlags.none(),  # perform sync myself
+        command_sync_flags=commands.CommandSyncFlags(
+            sync_commands_debug=__debug__,
+            sync_on_cog_actions=False,
+        ),
     )
     if __debug__:
         bot.get_global_command_named = partial(bot.get_guild_command_named, ENV.home_guild_id)
