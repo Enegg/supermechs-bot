@@ -12,7 +12,7 @@
             "name": "Python: Run Bot",
             "type": "debugpy",
             "request": "launch",
-            "program": "app/main.py",
+            "program": "app",
             "justMyCode": true
         }
     ]

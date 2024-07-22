@@ -19,7 +19,7 @@ dependencies = [
     "supermechs @ git+https://github.com/Enegg/supermechs.git",
     "typing-extensions >= 4.9.0",
 ]
-requires-python = "== 3.10.*"
+requires-python = ">= 3.10, < 3.12"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 
