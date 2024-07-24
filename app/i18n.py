@@ -8,7 +8,7 @@ from pathlib import Path
 import rtoml
 from disnake import Locale, LocalizationProtocol
 
-from typeshed import KT, VT, Pathish
+from typeshed import KT, Pathish
 
 from supermechs.enums.stats import Stat
 
@@ -26,7 +26,7 @@ FALLBACK_LOCALE = Locale.en_US
 FALLBACK_NAME = "???"
 FILE_EXT = ".toml"
 
-stats: typing.Final[abc.Mapping[LocalePair[Stat], "StatName"]] = {}
+stats: typing.Final[abc.Mapping[LocalePair[Stat], str]] = {}
 messages: typing.Final[abc.Mapping[LocalePair[str], str]] = {}
 embed_tips: typing.Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
 _command_locale: typing.Final[abc.Mapping[str, dict[str, str]]] = {}
@@ -34,31 +34,37 @@ _command_locale: typing.Final[abc.Mapping[str, dict[str, str]]] = {}
 localization_provider: typing.Final = typing.cast(LocalizationProtocol, _command_locale)
 
 
-def get(
-    store: abc.Mapping[LocalePair[KT], VT], pair: LocalePair[KT], default: VT | None = None
-) -> VT:
+def _get(
+    store: abc.MutableMapping[LocalePair[KT], str],
+    key: KT,
+    locale: Locale,
+    default: str | None = None,
+) -> str:
     try:
-        value = store[pair]
+        return store[key, locale]
 
-    except KeyError as err:
+    except KeyError:
         try:
-            value = store[pair[0], FALLBACK_LOCALE]
+            value = store[key, FALLBACK_LOCALE]
 
         except KeyError:
-            if default is None:
-                raise err from None
+            _LOGGER.error("Key %s does not exist.", key)  # noqa: TRY400
+            value = str(key) if default is None else default
 
-            value = default
+        else:
+            _LOGGER.warning("Key %s does not exist for locale %s.", key, locale)
+            # prevent further logs
+            store[key, locale] = value
 
-    return value
+        return value
 
 
-def get_stat_name(locale: Locale, stat: Stat) -> "StatName":
-    return get(stats, (stat, locale), default=_MISSING_STAT)
+def get_stat_name(locale: Locale, stat: Stat) -> str:
+    return _get(stats, stat, locale, default=FALLBACK_NAME)
 
 
-def get_message(locale: Locale, key: str, **format_kwargs: object) -> str:
-    msg = get(messages, (key, locale))
+def get_message(locale: Locale, key: str, /, **format_kwargs: object) -> str:
+    msg = _get(messages, key, locale)
 
     if format_kwargs:
         return msg.format_map(format_kwargs)
@@ -82,27 +88,6 @@ def get_embed_tips(locale: Locale, /) -> abc.Sequence[str]:
             raise err from None
 
 
-class StatName(typing.NamedTuple):
-    in_game: str
-    default_: str | None
-    short_: str | None
-
-    @property
-    def default(self) -> str:
-        return self.default_ or self.in_game
-
-    @property
-    def short(self) -> str:
-        return self.short_ or min(self.default, self.in_game, key=len)
-
-    @typing_.override
-    def __str__(self) -> str:
-        return self.default
-
-
-_MISSING_STAT = StatName(FALLBACK_NAME, None, None)
-
-
 class _StatEntry(typing.TypedDict):
     in_game: str
     default: typing_.NotRequired[str]
@@ -114,12 +99,8 @@ def _load_stats(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
 
     for key, entry in stats_data.items():
         stat = Stat[key]
-        stat_name = StatName(
-            entry.get("in_game", FALLBACK_NAME),
-            entry.get("default"),
-            entry.get("short"),
-        )
-        stats[stat, locale] = stat_name
+        name = entry.get("default") or entry.get("in_game", FALLBACK_NAME)
+        stats[stat, locale] = name
 
 
 def _load_messages(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
@@ -181,7 +162,7 @@ if __name__ == "__main__":
                     print(f"{stat.name} for {locale} is missing")
 
                 else:
-                    if name.in_game == FALLBACK_NAME:
-                        print(f"{stat.name} for {locale} is missing in_game name")
+                    if name == FALLBACK_NAME:
+                        print(f"{stat.name} for {locale} is {FALLBACK_NAME}")
 
     test_stat_locales()
