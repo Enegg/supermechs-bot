@@ -32,17 +32,19 @@ def item_view(
     if __debug__:
         debug_footer(embed)
 
-    @store.bind(ToggleButton(label="Buffs"))
+    @store.bind(ToggleButton(label="Buffs", custom_id=store.make_id()))
     async def buff_button(inter: MessageInteraction) -> None:
         buff_button.toggle()
         await update(inter)
 
-    @store.bind(ToggleButton(label="Damage average"))
+    @store.bind(ToggleButton(label="Damage average", custom_id=store.make_id()))
     async def avg_button(inter: MessageInteraction) -> None:
         avg_button.toggle()
         await update(inter)
 
-    @store.bind(ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red))
+    @store.bind(
+        ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red, custom_id=store.make_id())
+    )
     async def quit_button(inter: MessageInteraction) -> None:
         store.stop()
         await inter.response.defer()
@@ -134,13 +136,15 @@ def item_compare_view(
     gettext = i18n.get_gettext(locale)
     max_item_stats = (max_stats(item_a), max_stats(item_b))
 
-    @store.bind(ToggleButton(label=gettext("item-compare-ui-buffs")))
+    @store.bind(ToggleButton(label=gettext("item-compare-ui-buffs"), custom_id=store.make_id()))
     async def buffs_button(inter: MessageInteraction) -> None:
         buffs_button.toggle()
         update()
         await inter.response.edit_message(embed=embed, components=layout)
 
-    @store.bind(ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red))
+    @store.bind(
+        ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red, custom_id=store.make_id())
+    )
     async def quit_button(inter: MessageInteraction) -> None:
         await inter.response.defer()
         store.stop()

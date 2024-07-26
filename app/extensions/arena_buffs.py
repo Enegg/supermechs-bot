@@ -50,15 +50,19 @@ class ArenaShopView:
         self.shop = shop
         self.active: ToggleButton | None = None
         self.all_slot_buttons: list[ToggleButton] = []
-        self.init_pages()
+        self.init_pages(store)
 
-    def init_pages(self) -> None:
-        @self.store.bind(ActionButton(label="Quit", style=ButtonStyle.red))
+    def init_pages(self, store: ComponentStore) -> None:
+        @store.bind(ActionButton(label="Quit", style=ButtonStyle.red, custom_id=store.make_id()))
         async def quit_button(inter: MessageInteraction) -> None:
-            self.store.stop()
+            store.stop()
             await inter.response.edit_message(components=self.get_state_stopped())
 
-        @self.store.bind(ActionButton(label="🡸", style=ButtonStyle.blurple, disabled=True))
+        @store.bind(
+            ActionButton(
+                label="🡸", style=ButtonStyle.blurple, disabled=True, custom_id=store.make_id()
+            )
+        )
         async def prev_button(inter: MessageInteraction) -> None:
             self.paginator.prev_page()
             next_button.disabled = False
@@ -68,7 +72,7 @@ class ArenaShopView:
 
             await inter.response.edit_message(components=self.paginator.page)
 
-        @self.store.bind(ActionButton(label="🡺", style=ButtonStyle.blurple))
+        @store.bind(ActionButton(label="🡺", style=ButtonStyle.blurple, custom_id=store.make_id()))
         async def next_button(inter: MessageInteraction) -> None:
             self.paginator.next_page()
             prev_button.disabled = False
@@ -78,7 +82,7 @@ class ArenaShopView:
 
             await inter.response.edit_message(components=self.paginator.page)
 
-        @self.store.bind(ActionButton(label="Max", style=ButtonStyle.green))
+        @store.bind(ActionButton(label="Max", style=ButtonStyle.green, custom_id=store.make_id()))
         async def max_button(inter: MessageInteraction) -> None:
             for btn in self.all_slot_buttons:
                 self.modify_buff(btn)
@@ -88,7 +92,11 @@ class ArenaShopView:
             self.set_state_idle()
             await inter.response.edit_message(components=self.paginator.page)
 
-        @self.store.bind(ui.StringSelect(options=[SelectOption(label=".")], disabled=True))
+        @store.bind(
+            ui.StringSelect(
+                options=[SelectOption(label=".")], disabled=True, custom_id=store.make_id()
+            )
+        )
         async def select(inter: MessageInteraction) -> None:
             assert inter.values is not None
             level = int(inter.values[0])
@@ -133,8 +141,9 @@ class ArenaShopView:
             style_on=ButtonStyle.blurple,
             label=make_label(self.shop, category),
             emoji=ASSETS.categories[category].emoji,
+            custom_id=self.store.make_id(category.name),
         )
-        self.store.bind(btn, category.name)(partial(self.buff_button, btn))
+        self.store.bind(btn)(partial(self.buff_button, btn))
         self.all_slot_buttons.append(btn)
         return btn
 

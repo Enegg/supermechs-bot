@@ -207,20 +207,20 @@ class MechView:
         self.active = None
         self.empty_option = make_empty_option(locale)
         self.mech_config = get_mech_config(build.mech)
-        self.init_pages()
+        self.init_pages(store)
         self.item_groups = group_items(pack)
 
-    def init_pages(self) -> None:  # noqa: PLR0915
+    def init_pages(self, store: ComponentStore) -> None:  # noqa: PLR0915
         gettext = i18n.get_gettext(self.locale)
 
-        @self.store.bind(ActionButton(emoji=self.PAGE_EMOJI[0]))
+        @store.bind(ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))
         async def modules_button(inter: MessageInteraction) -> None:
             """Button swapping mech editor with modules and vice versa."""
             self.paginator.index ^= 1  # toggle between 0 and 1
             modules_button.emoji = self.PAGE_EMOJI[self.paginator.index]
             await inter.response.edit_message(components=self.paginator.page)
 
-        @self.store.bind(ToggleButton(label="🡅"))
+        @store.bind(ToggleButton(label="🡅", custom_id=store.make_id()))
         async def buffs_button(inter: MessageInteraction) -> None:
             """Button toggling arena buffs being applied to mech's stats."""
             if is_shop_empty(self.player.arena_shop):
@@ -236,12 +236,14 @@ class MechView:
             )
             await inter.response.edit_message(embed=self.embed, components=self.paginator.page)
 
-        @self.store.bind(ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red))
+        @store.bind(
+            ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red, custom_id=store.make_id())
+        )
         async def quit_button(inter: MessageInteraction) -> None:
-            self.store.stop()
+            store.stop()
             await inter.response.defer(ephemeral=True)
 
-        @self.store.bind(
+        @store.bind(
             PaginatedSelect(
                 up=SelectOption(
                     label=gettext("mech-build-ui-select-up-label"),
@@ -258,6 +260,7 @@ class MechView:
                 placeholder=gettext("mech-build-ui-select-placeholder"),
                 all_options=[SelectOption(label="$")],  # 1 option required even when disabled
                 disabled=True,
+                custom_id=store.make_id(),
             )
         )
         async def select(inter: MessageInteraction) -> None:
@@ -269,7 +272,7 @@ class MechView:
             if select.update_on_own_option(value):
                 return await inter.response.edit_message(components=self.paginator.page)
 
-            slot = slot_to_type(self.store.strip_id(self.active).split(":"))
+            slot = slot_to_type(store.strip_id(self.active).split(":"))
 
             if value == self.empty_option.value:
                 item = None
@@ -378,8 +381,9 @@ class MechView:
             style_off=(ButtonStyle.gray if self.mech[sm_slot] is None else ButtonStyle.green),
             style_on=ButtonStyle.blurple,
             emoji=slot_emoji(sm_slot),
+            custom_id=self.store.make_id(slot),
         )
-        self.store.bind(btn, slot)(partial(self.slot_button_cb, btn))
+        self.store.bind(btn)(partial(self.slot_button_cb, btn))
         return btn
 
     async def slot_button_cb(self, button: ToggleButton, inter: MessageInteraction) -> None:
