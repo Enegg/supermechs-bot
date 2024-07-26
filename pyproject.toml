@@ -11,6 +11,7 @@ dependencies = [
     "cattrs >= 23.2.3",
     "disnake >= 2.9.1",
     "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
+    "exceptiongroup >= 1.2.2; python_version < 3.11",
     "orjson >= 3.8.10",
     "Pillow == 10.*",
     "psutil >= 5.9.7",
@@ -110,7 +111,7 @@ typeCheckingMode = "strict"
 include = ["app"]
 exclude = ["app/dev"]
 
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 
 reportUnnecessaryTypeIgnoreComment = "warning"
 reportUnnecessaryCast = "warning"
