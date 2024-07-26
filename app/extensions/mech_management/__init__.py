@@ -219,7 +219,7 @@ async def export(
 
     if build_count == 1:
         mechs = [all_builds[0].as_mech()]
-        file = bytes_to_file(dump_mechs(mechs, default_pack.data.key), "mechs.json")
+        file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
     options = [(build.name, str(build.id)) for build in all_builds]
@@ -266,7 +266,7 @@ async def export(
         assert component_inter.values is not None
         mechs = (player.builds[uuid.UUID(str_id)].as_mech() for str_id in component_inter.values)
 
-    file = bytes_to_file(dump_mechs(mechs, default_pack.data.key), "mechs.json")
+    file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
     await component_inter.response.edit_message(file=file, components=None)
 
 

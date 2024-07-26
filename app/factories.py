@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def player_factory(user: disnake.abc.User, /) -> Player:
     _LOGGER.info("Player created: %d (%s)", user.id, user.name)
-    return Player(user=user)
+    return Player(id=user.id)
 
 
 def item_pack_factory(data: AnyItemPack, /) -> ItemPack:
