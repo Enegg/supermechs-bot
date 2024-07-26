@@ -124,7 +124,7 @@ class Paginator(typing.Generic[T]):
     def goto(self, page: int, /) -> None:
         """Go to an absolute page index."""
         if not 0 <= page <= len(self.pages) - 1:
-            raise IndexError
+            raise IndexError(page)
 
         self.index = page
 
@@ -132,6 +132,6 @@ class Paginator(typing.Generic[T]):
         """Jump by n pages."""
 
         if not 0 <= self.index + page <= len(self.pages) - 1:
-            raise IndexError
+            raise IndexError(page)
 
         self.index += page

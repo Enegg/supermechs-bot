@@ -31,7 +31,7 @@ def _load_extensions(loader: abc.Callable[[str], None], plugins: abc.Iterable[st
             problems.append(exc)
 
     if problems:
-        msg = "Exceptions occured during loading:"
+        msg = "Exceptions occurred during loading:"
         raise ExceptionGroup(msg, problems)
 
 

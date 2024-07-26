@@ -7,7 +7,7 @@ from disnake.utils import MISSING
 
 import i18n
 from assets import ASSETS, get_weight_emoji
-from bridges.embeds import embed_image
+from bridges.embeds import embed_image  # noqa: TCH001
 from devtools import debug_footer
 from discord_utils import SPACE, ComponentLimits, EmbedColorType
 from discord_utils.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
@@ -118,7 +118,7 @@ def color_from_mech(mech: Mech, /) -> EmbedColorType:
 def slot_to_type(metadata: abc.Sequence[str], /) -> SlotType:
     type_ = Type.of_name(metadata[0])
 
-    if type_ is Type.SIDE_WEAPON or type_ is Type.TOP_WEAPON or type_ is Type.MODULE:
+    if type_ in (Type.SIDE_WEAPON, Type.TOP_WEAPON, Type.MODULE):
         return type_, int(metadata[1])
 
     return type_
