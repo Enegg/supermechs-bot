@@ -1,14 +1,14 @@
 import io
 import pathlib
 import random
-import typing
+from typing import TYPE_CHECKING
+
+from app import i18n
+from discord_plus import sanitize_filename
 
 import disnake
 
-import i18n
-from discord_utils import sanitize_filename
-
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from PIL.Image import Image
 
 __all__ = ("embed_image", "sikrit_footer")

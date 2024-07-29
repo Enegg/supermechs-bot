@@ -6,9 +6,10 @@ from functools import partial
 from pathlib import Path
 
 import rtoml
-from disnake import Locale, LocalizationProtocol
 
-from typeshed import KT, Pathish
+from app.typeshed import KT, Pathish
+
+from disnake import Locale, LocalizationProtocol
 
 from supermechs.enums.stats import Stat
 

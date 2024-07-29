@@ -1,9 +1,4 @@
-import typing
-
-__all__ = ("SPACE", "Markdown")
-
-SPACE: typing.Final = "\u2800"
-"""Invisible character discord does not truncate."""
+__all__ = ("Markdown",)
 
 
 class Markdown:

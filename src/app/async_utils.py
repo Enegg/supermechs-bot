@@ -3,10 +3,10 @@ from collections import abc
 
 import anyio
 import attrs
-
-from discord_utils import InteractionLimits
-from shared.memo import AsyncMemo, default_key
 from typeshed import AsyncFunc, P, RetT, T
+
+from discord_plus import InteractionLimits
+from memo import AsyncMemo, default_key
 
 
 def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:

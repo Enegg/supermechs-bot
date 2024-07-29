@@ -1,9 +1,8 @@
-import typing
 from collections import abc
+from typing import Any, Protocol, TypeAlias, TypedDict, runtime_checkable
+from typing_extensions import ParamSpec, TypeVar
 
 import disnake
-
-from typeshed import CoroFunc
 
 __all__ = (
     "AutocompleteReturnType",
@@ -13,15 +12,19 @@ __all__ = (
     "SenderKeywords",
 )
 
-AutocompleteReturnType: typing.TypeAlias = (
+T = TypeVar("T")
+P = ParamSpec("P")
+
+CoroFunc = abc.Callable[P, abc.Coroutine[Any, Any, T]]
+AutocompleteReturnType: TypeAlias = (
     abc.Sequence[str | disnake.Localized[str]] | abc.Mapping[str, str | disnake.Localized[str]]
 )
-EmbedColorType: typing.TypeAlias = disnake.Color | int | None
-EmojiType: typing.TypeAlias = str | disnake.Emoji | disnake.PartialEmoji
+EmbedColorType: TypeAlias = disnake.Color | int | None
+EmojiType: TypeAlias = str | disnake.Emoji | disnake.PartialEmoji
 
 
-@typing.runtime_checkable
-class ListenerRegistry(typing.Protocol):
+@runtime_checkable
+class ListenerRegistry(Protocol):
     def add_listener(self, func: CoroFunc[..., None], /, name: str | disnake.Event = ...) -> None:
         ...
 
@@ -31,7 +34,7 @@ class ListenerRegistry(typing.Protocol):
         ...
 
 
-class SenderKeywords(typing.TypedDict, total=False):
+class SenderKeywords(TypedDict, total=False):
     content: str
     embed: disnake.Embed
     file: disnake.File

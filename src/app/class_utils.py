@@ -6,7 +6,7 @@ from collections import abc
 import cattrs
 import rtoml
 
-from typeshed import Pathish, T
+from app.typeshed import Pathish, T
 
 limited_repr = reprlib.Repr()
 limited_repr.maxdict = 20

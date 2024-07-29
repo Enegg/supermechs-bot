@@ -1,27 +1,24 @@
 from collections import abc
-from typing import TYPE_CHECKING
 
 import disnake
+from aiohttp import ClientSession
+from aiohttp.typedefs import StrOrURL
 
-from async_utils import Deferred
-from config import CONFIG
-from factories import item_pack_factory
-from models import ItemPack
-from stored import players
+from app.async_utils import Deferred
+from app.config import CONFIG
+from app.factories import item_pack_factory
+from app.models import ItemPack
+from app.stored import players
 
 from supermechs.abc.item import ItemID, Name
 from supermechs.ext.deserializers.typedefs import AnyItemPack
 from supermechs.ext.platform import json_decoder
 from supermechs.item import ItemData
 
-if TYPE_CHECKING:
-    from aiohttp import ClientSession
-    from aiohttp.typedefs import StrOrURL
-
 DEFAULT_PACK = Deferred[ItemPack]()
 
 
-async def fetch_item_pack_data(session: "ClientSession", url: "StrOrURL", /) -> AnyItemPack:
+async def fetch_item_pack_data(session: ClientSession, url: StrOrURL, /) -> AnyItemPack:
     """Fetch and load item pack data."""
 
     async with session.get(url) as response:
@@ -29,7 +26,7 @@ async def fetch_item_pack_data(session: "ClientSession", url: "StrOrURL", /) -> 
         return await response.json(encoding="utf8", content_type=None, loads=json_decoder)
 
 
-async def load_default_pack(session: "ClientSession", /) -> None:
+async def load_default_pack(session: ClientSession, /) -> None:
     data = await fetch_item_pack_data(session, CONFIG.default_pack_url)
     pack = item_pack_factory(data)
 

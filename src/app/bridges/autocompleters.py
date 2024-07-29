@@ -1,17 +1,16 @@
-import typing
 from collections import abc, defaultdict
+from typing import Any
 
-from discord_utils import AutocompleteReturnType, InteractionLimits
-from shared.item_packs import get_item_pack_for
-from sm.name_utils import acronym_of, search_for
-from stored import players
-from user_input import StringLimits
+from app.shared.item_packs import get_item_pack_for
+from app.sm.name_utils import acronym_of, search_for
+from app.stored import players
+from app.user_input import StringLimits
+from discord_plus import AutocompleteReturnType, InteractionLimits
+
+from disnake import CommandInteraction
 
 from supermechs.abc.item import Name
 from supermechs.api import Element, ItemData, Type
-
-if typing.TYPE_CHECKING:
-    from disnake import CommandInteraction
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
@@ -25,9 +24,7 @@ def _make_acronyms(names: abc.Iterable[Name], /) -> None:
             acronyms[acronym].add(name)
 
 
-def _get_item_filters(
-    options: abc.Mapping[str, typing.Any], /
-) -> list[abc.Callable[[ItemData], bool]]:
+def _get_item_filters(options: abc.Mapping[str, Any], /) -> list[abc.Callable[[ItemData], bool]]:
     filters: list[abc.Callable[[ItemData], bool]] = []
 
     if (type_name := options.get("type", "ANY")) != "ANY":
@@ -85,7 +82,7 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     return matching_item_names
 
 
-async def mech_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteReturnType:
+async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for player builds."""
 
     player = players(inter.author)

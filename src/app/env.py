@@ -1,8 +1,9 @@
 import os
 from collections import abc
 
-import disnake
 import dotenv
+
+from disnake import Locale
 
 dotenv.load_dotenv()
 
@@ -24,17 +25,17 @@ class _Env:
         return (self.home_guild_id,)
 
     @property
-    def locale_override(self) -> disnake.Locale | None:
+    def locale_override(self) -> Locale | None:
         """Override of current locale."""
         value = os.getenv("LOCALE_OVERRIDE")
         if value is None:
             return None
 
-        return disnake.Locale[value]
+        return Locale[value]
 
     @locale_override.setter
-    def locale_override(self, locale: disnake.Locale | str) -> None:
-        if isinstance(locale, disnake.Locale):
+    def locale_override(self, locale: Locale | str) -> None:
+        if isinstance(locale, Locale):
             locale = locale.value
 
         os.environ["LOCALE_OVERRIDE"] = locale

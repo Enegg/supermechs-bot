@@ -4,9 +4,8 @@ from contextlib import asynccontextmanager
 
 import anyio
 from attrs import define, field
-
-from class_utils import callable_repr, limited_repr
 from typeshed import KT, VT, P
+from utils import callable_repr
 
 __all__ = ("AsyncMemo",)
 
@@ -30,8 +29,8 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
     key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    mapping: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
-    _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False, repr=limited_repr.repr)
+    mapping: dict[KT, VT] = field(factory=dict, init=False)
+    _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False)
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return await self.get_or_create(*args, **kwargs)

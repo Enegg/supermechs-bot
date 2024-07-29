@@ -6,8 +6,8 @@ import anyio
 import anyio.to_thread
 import psutil
 
-from async_utils import async_memoize
-from typeshed import Pathish
+from app.async_utils import async_memoize
+from app.typeshed import Pathish
 
 
 def _file_sloc(path: Pathish, /) -> int:
@@ -36,7 +36,7 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
 
     async with anyio.create_task_group() as tg:
         async for path in anyio.Path(directory).glob("**/*.py"):
-            tg.start_soon(anyio.to_thread.run_sync, runner, path)  # pyright: ignore[reportArgumentType]
+            tg.start_soon(anyio.to_thread.run_sync, runner, path)
 
     return total
 

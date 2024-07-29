@@ -2,26 +2,10 @@ import typing
 from collections import abc
 
 from attrs import define, field
-
-from class_utils import callable_repr, limited_repr
 from typeshed import KT, VT, P
+from utils import callable_repr
 
-__all__ = ("Memo", "default_key")
-
-
-def default_key(*args: abc.Hashable, **kwargs: abc.Hashable) -> abc.Hashable:
-    """Computes a key from all args and kwargs by creating a single large tuple.
-    Requires all members to be hashable.
-    """
-    if not kwargs:
-        return args
-
-    args_list = list(args)
-
-    for key_val_tuple in kwargs.items():
-        args_list += key_val_tuple
-
-    return tuple(args_list)
+__all__ = ("Memo",)
 
 
 @define
@@ -41,7 +25,7 @@ class Memo(typing.Generic[P, VT, KT]):
     key: abc.Callable[P, KT] = field(repr=callable_repr)
     """Retrieves a key used to store a given object under."""
 
-    mapping: dict[KT, VT] = field(factory=dict, init=False, repr=limited_repr.repr)
+    mapping: dict[KT, VT] = field(factory=dict, init=False)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return self.get_or_create(*args, **kwargs)

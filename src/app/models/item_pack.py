@@ -3,7 +3,7 @@ from collections import abc
 
 import attrs
 
-from class_utils import limited_repr
+from app.class_utils import limited_repr
 
 from .graphics import AbstractSprite
 

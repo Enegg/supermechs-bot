@@ -5,8 +5,8 @@ import anyio.lowlevel
 import attrs
 from PIL import Image
 
-from async_utils import async_memoize
-from config import CONFIG
+from app.async_utils import async_memoize
+from app.config import CONFIG
 from resources import HttpResource, Resource
 
 from supermechs.graphics.joints import Joints

@@ -1,5 +1,6 @@
 from factories import player_factory
-from shared.memo import Memo
+
+from memo import Memo
 
 __all__ = ("players",)
 

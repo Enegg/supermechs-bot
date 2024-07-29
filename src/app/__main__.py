@@ -3,17 +3,18 @@ import logging.config
 from functools import partial
 
 import anyio
+
+import resources
+from app import i18n
+from app.bridges import register_injections, setup_channel_logger
+from app.config import logging_config
+from app.env import ENV
+from app.shared.item_packs import load_default_pack
+from app.shared.session import client_session
+from discord_plus import load_extensions
+
 import disnake
 from disnake.ext import commands
-
-import i18n
-import resources
-from bridges import register_injections, setup_channel_logger
-from config import logging_config
-from discord_utils import load_extensions
-from env import ENV
-from shared.item_packs import load_default_pack
-from shared.session import client_session
 
 
 async def main() -> None:

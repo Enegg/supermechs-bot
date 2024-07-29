@@ -11,7 +11,7 @@ dependencies = [
     "cattrs >= 23.2.3",
     "disnake >= 2.9.1",
     "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
-    "exceptiongroup >= 1.2.2; python_version < 3.11",
+    "exceptiongroup >= 1.2.2; python_version < '3.11'",
     "orjson >= 3.8.10",
     "Pillow == 10.*",
     "psutil >= 5.9.7",
@@ -35,7 +35,7 @@ lint = [
 
 
 [tool.ruff]
-src = ["app"]
+src = ["src"]
 line-length = 100
 target-version = "py310"
 
@@ -89,7 +89,7 @@ max-line-length = 105
 combine-as-imports = true
 split-on-trailing-comma = false
 extra-standard-library = ["typing_extensions"]
-forced-separate = ["supermechs"]
+forced-separate = ["disnake", "supermechs"]
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]
@@ -108,8 +108,8 @@ allow-dunder-method-names = [
 
 [tool.pyright]
 typeCheckingMode = "strict"
-include = ["app"]
-exclude = ["app/dev"]
+include = ["src"]
+exclude = ["src/app/dev"]
 
 pythonVersion = "3.11"
 

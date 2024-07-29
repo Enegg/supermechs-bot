@@ -2,25 +2,24 @@ import io
 import uuid
 from json import JSONDecodeError
 
+from app import i18n
+from app.assets import ASSETS
+from app.bridges import mech_name_autocomplete
+from app.bridges.embeds import embed_image, sikrit_footer
+from app.bridges.ui import get_check
+from app.devtools import debug_footer
+from app.models import Player
+from app.shared.item_packs import DEFAULT_PACK
+from app.shared.utils import fold_binary_prefix
+from app.user_input import StringLimits, sanitize_string
+from discord_plus import ComponentLimits, bytes_to_file, command_mention
+from discord_plus.ui import ActionButton, ComponentStore, wait_for_components
+
+from .mech_manager import MechView
+
 from disnake import Attachment, CommandInteraction, Embed, Locale, ui
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
-
-import i18n
-from assets import ASSETS
-from bridges import mech_name_autocomplete
-from bridges.embeds import embed_image, sikrit_footer
-from bridges.ui import get_check
-from devtools import debug_footer
-from discord_utils import ComponentLimits, bytes_to_file, command_mention
-from discord_utils.ui import ActionButton, wait_for_components
-from discord_utils.ui.store import ComponentStore
-from models import Player
-from shared.item_packs import DEFAULT_PACK
-from shared.utils import fold_binary_prefix
-from user_input import StringLimits, sanitize_string
-
-from .mech_manager import MechView
 
 from supermechs.api import Stat, Type, mech_weight
 from supermechs.ext.deserializers.exceptions import DataError
