@@ -8,7 +8,7 @@ import attrs
 import cattrs
 
 from app.class_utils import attrs_from_path
-from app.config import CONFIG
+from app.core import CONFIG
 from app.typeshed import T
 
 from disnake import Color

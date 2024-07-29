@@ -1,7 +1,7 @@
 import typing
 from collections import abc
 
-from app.env import ENV
+from app.core import ENV
 from app.shared.utils import format_exception
 from discord_plus import AutocompleteReturnType, InteractionLimits
 from discord_plus.extensions import walk_extensions

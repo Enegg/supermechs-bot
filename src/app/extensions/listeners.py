@@ -1,6 +1,6 @@
 import logging
 
-from app.config import CONFIG
+from app.core import CONFIG
 from app.shared.metrics import add_invocation
 
 from disnake import CommandInteraction

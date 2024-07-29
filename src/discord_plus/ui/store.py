@@ -1,22 +1,22 @@
-import typing
-import typing_extensions as typing_
 from collections import abc
+from typing import Final, TypeAlias
+from typing_extensions import TypeVar
 
 import anyio
 import anyio.lowlevel
 import attrs
-import disnake
-from disnake import MessageInteraction
-
 from typeshed import T
 
 from .helpers import HasCustomID, random_str
 
+import disnake
+from disnake import MessageInteraction
+
 __all__ = ("ComponentStore",)
 
-ItemT = typing_.TypeVar("ItemT", bound=HasCustomID, infer_variance=True)
-InteractionCallback: typing.TypeAlias = abc.Callable[[MessageInteraction], abc.Awaitable[T]]
-DecoRetType: typing.TypeAlias = abc.Callable[[InteractionCallback[None]], ItemT]
+ItemT = TypeVar("ItemT", bound=HasCustomID, infer_variance=True)
+InteractionCallback: TypeAlias = abc.Callable[[MessageInteraction], abc.Awaitable[T]]
+DecoRetType: TypeAlias = abc.Callable[[InteractionCallback[None]], ItemT]
 
 
 async def default_check(inter: MessageInteraction, /) -> bool:
@@ -26,7 +26,7 @@ async def default_check(inter: MessageInteraction, /) -> bool:
 
 @attrs.define
 class ComponentStore:
-    id: typing.Final[str] = attrs.field(factory=random_str)
+    id: Final[str] = attrs.field(factory=random_str)
     """Unique ID of this store."""
     interaction_check: InteractionCallback[bool] = attrs.field(default=default_check)
     """A callback to determine whether an interaction should be propagated to the components."""

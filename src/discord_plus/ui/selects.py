@@ -1,9 +1,9 @@
 from collections import abc
 
+from .. import ComponentLimits
+
 from disnake import SelectOption, ui
 from disnake.utils import MISSING
-
-from .. import ComponentLimits
 
 __all__ = ("PaginatedSelect",)
 

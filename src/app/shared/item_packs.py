@@ -1,14 +1,15 @@
 from collections import abc
 
-import disnake
 from aiohttp import ClientSession
 from aiohttp.typedefs import StrOrURL
 
 from app.async_utils import Deferred
-from app.config import CONFIG
+from app.core import CONFIG
 from app.factories import item_pack_factory
 from app.models import ItemPack
 from app.stored import players
+
+import disnake
 
 from supermechs.abc.item import ItemID, Name
 from supermechs.ext.deserializers.typedefs import AnyItemPack

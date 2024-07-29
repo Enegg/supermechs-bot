@@ -1,12 +1,12 @@
 import io
 import typing
+from typing import TYPE_CHECKING, Literal
 
 from app.assets import ASSETS
 from app.bridges import item_name_autocomplete
 from app.bridges.embeds import sikrit_footer
 from app.bridges.ui import get_check
-from app.config import CONFIG
-from app.env import ENV
+from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK, get_item_by_name
 from discord_plus import MessageLimits
 from discord_plus.ui.store import ComponentStore
@@ -20,14 +20,14 @@ from disnake.utils import MISSING
 from supermechs.api import Element, ItemData, Type
 from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
 
-if typing.TYPE_CHECKING:
-    LiteralTypeOrAny = LiteralType | typing.Literal["ANY"]
-    LiteralElementOrAny = LiteralElement | typing.Literal["ANY"]
+if TYPE_CHECKING:
+    LiteralTypeOrAny = LiteralType | Literal["ANY"]
+    LiteralElementOrAny = LiteralElement | Literal["ANY"]
 
 else:
     # disnake cannot parse unions of literals
-    LiteralTypeOrAny = typing.Literal[(*typing.get_args(LiteralType), "ANY")]
-    LiteralElementOrAny = typing.Literal[(*typing.get_args(LiteralElement), "ANY")]
+    LiteralTypeOrAny = Literal[(*typing.get_args(LiteralType), "ANY")]
+    LiteralElementOrAny = Literal[(*typing.get_args(LiteralElement), "ANY")]
 
 plugin = plugins.Plugin[commands.InteractionBot](name="Item-lookup", logger=__name__)
 

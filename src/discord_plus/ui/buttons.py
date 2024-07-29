@@ -1,10 +1,11 @@
-import typing_extensions as typing_
+from typing_extensions import override
+
+from typeshed import EmojiType
+
+from .helpers import random_str
 
 from disnake import ButtonStyle, ui
 from disnake.utils import MISSING
-
-from ..typeshed import EmojiType
-from .helpers import random_str
 
 __all__ = ("ActionButton", "ToggleButton", "UrlButton")
 
@@ -28,7 +29,7 @@ class ActionButton(ui.Button[None]):
         )
 
     @property
-    @typing_.override
+    @override
     def custom_id(self) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
         """Component's unique identifier."""
         custom_id = super().custom_id
@@ -50,7 +51,7 @@ class UrlButton(ui.Button[None]):
         super().__init__(label=label, disabled=disabled, url=url, emoji=emoji)
 
     @property
-    @typing_.override
+    @override
     def url(self) -> str:
         """The URL this button sends you to."""
         url = super().url

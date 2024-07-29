@@ -4,8 +4,7 @@ import typing
 from app import meta
 from app.assets import ASSETS
 from app.async_utils import amap, move_on_before_timeout
-from app.config import CONFIG
-from app.env import ENV
+from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK
 from app.shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from app.shared.utils import fold_binary_prefix

@@ -1,5 +1,5 @@
 from app import i18n
-from app.env import ENV
+from app.core import ENV
 from app.models import Player
 from app.shared.item_packs import get_item_by_name, get_item_pack_for
 from app.stored import players

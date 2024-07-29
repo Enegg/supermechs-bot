@@ -4,20 +4,20 @@ import io
 import linecache
 import traceback
 import types
-import typing
 from contextlib import redirect_stderr, redirect_stdout
+from typing import Final
 
 import anyio
 import anyio.to_thread
 
-from app.env import ENV
+from app.core import ENV
 from discord_plus import InteractionLimits, Markdown, MessageLimits, text_to_file
 from discord_plus.ui import random_str, wait_for_modal
 
 from disnake import CommandInteraction, TextInputStyle, ui
 from disnake.ext import commands, plugins
 
-plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
+plugin: Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
 
 
 @plugin.slash_command(name="eval", guild_ids=ENV.test_guild_ids)

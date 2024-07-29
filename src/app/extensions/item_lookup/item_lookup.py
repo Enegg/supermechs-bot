@@ -6,8 +6,7 @@ from app.assets import ASSETS
 from app.devtools import debug_footer
 from app.shared.utils import SPACE
 from app.sm.asset_utils import item_transform_range
-from discord_plus.ui import ActionButton, ToggleButton
-from discord_plus.ui.store import ComponentStore
+from discord_plus.ui import ActionButton, ComponentStore, ToggleButton
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten
 

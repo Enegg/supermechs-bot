@@ -1,14 +1,13 @@
 import os
-import typing
-import typing_extensions as typing_
 from collections import abc
+from typing import Final, Generic, Protocol
+from typing_extensions import TypeVar
 
 import anyio
 from attrs import define, field
-from disnake import Client, Event, MessageInteraction, ModalInteraction
-from disnake.ui import Modal
-
 from typeshed import T
+
+from disnake import Client, Event, MessageInteraction, ModalInteraction, ui
 
 __all__ = (
     "HasCustomID",
@@ -24,12 +23,12 @@ def random_str() -> str:
     return os.urandom(8).hex()
 
 
-class HasCustomID(typing.Protocol):
+class HasCustomID(Protocol):
     @property
     def custom_id(self) -> str: ...
 
 
-IDHolderT = typing_.TypeVar("IDHolderT", bound=HasCustomID | str, infer_variance=True)
+IDHolderT = TypeVar("IDHolderT", bound=HasCustomID | str, infer_variance=True)
 
 
 async def wait_for_components(
@@ -63,7 +62,7 @@ async def wait_for_components(
 
 
 async def wait_for_modal(
-    modal_or_id: Modal | str, client: Client, *, user_id: int | None = None, timeout: float = 600
+    modal_or_id: ui.Modal | str, client: Client, *, user_id: int | None = None, timeout: float = 600
 ) -> ModalInteraction:
     """Waits for a modal submission.
 
@@ -87,10 +86,10 @@ async def wait_for_modal(
 
 
 @define
-class Paginator(typing.Generic[T]):
+class Paginator(Generic[T]):
     """State machine proxying a value at a specific index of a sequence."""
 
-    pages: typing.Final[abc.Sequence[T]] = field()
+    pages: Final[abc.Sequence[T]] = field()
     index: int = field(default=0)
 
     @property

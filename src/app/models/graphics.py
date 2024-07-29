@@ -6,7 +6,7 @@ import attrs
 from PIL import Image
 
 from app.async_utils import async_memoize
-from app.config import CONFIG
+from app.core import CONFIG
 from resources import HttpResource, Resource
 
 from supermechs.graphics.joints import Joints
