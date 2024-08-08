@@ -1,5 +1,6 @@
+from discord.ui.store import InteractionCallback
+
 from app import i18n
-from discord_plus.ui.store import InteractionCallback
 
 import disnake
 from disnake import MessageInteraction

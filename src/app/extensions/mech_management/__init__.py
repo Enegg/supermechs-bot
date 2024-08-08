@@ -2,6 +2,9 @@ import io
 import uuid
 from json import JSONDecodeError
 
+from discord import ComponentLimits, bytes_to_file, command_mention
+from discord.ui import ActionButton, ComponentStore, wait_for_components
+
 from app import i18n
 from app.assets import ASSETS
 from app.bridges import mech_name_autocomplete
@@ -12,8 +15,6 @@ from app.models import Player
 from app.shared.item_packs import DEFAULT_PACK
 from app.shared.utils import fold_binary_prefix
 from app.user_input import StringLimits, sanitize_string
-from discord_plus import ComponentLimits, bytes_to_file, command_mention
-from discord_plus.ui import ActionButton, ComponentStore, wait_for_components
 
 from .mech_manager import MechView
 

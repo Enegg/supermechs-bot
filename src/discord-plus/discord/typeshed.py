@@ -15,7 +15,7 @@ __all__ = (
 T = TypeVar("T")
 P = ParamSpec("P")
 
-CoroFunc = abc.Callable[P, abc.Coroutine[Any, Any, T]]
+CoroFunc: TypeAlias = abc.Callable[P, abc.Coroutine[Any, Any, T]]
 AutocompleteReturnType: TypeAlias = (
     abc.Sequence[str | disnake.Localized[str]] | abc.Mapping[str, str | disnake.Localized[str]]
 )
@@ -25,13 +25,13 @@ EmojiType: TypeAlias = str | disnake.Emoji | disnake.PartialEmoji
 
 @runtime_checkable
 class ListenerRegistry(Protocol):
-    def add_listener(self, func: CoroFunc[..., None], /, name: str | disnake.Event = ...) -> None:
-        ...
+    def add_listener(
+        self, func: CoroFunc[..., None], /, name: str | disnake.Event = ...
+    ) -> None: ...
 
     def remove_listener(
         self, func: CoroFunc[..., None], /, name: str | disnake.Event = ...
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class SenderKeywords(TypedDict, total=False):

@@ -3,6 +3,7 @@ import logging.config
 from functools import partial
 
 import anyio
+from discord import load_extensions
 
 import resources
 from app import i18n
@@ -10,7 +11,6 @@ from app.bridges import register_injections, setup_channel_logger
 from app.core import ENV, logging_config
 from app.shared.item_packs import load_default_pack
 from app.shared.session import client_session
-from discord_plus import load_extensions
 
 import disnake
 from disnake.ext import commands

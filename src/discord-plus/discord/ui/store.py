@@ -5,7 +5,8 @@ from typing_extensions import TypeVar
 import anyio
 import anyio.lowlevel
 import attrs
-from typeshed import T
+
+from discord.typeshed import T
 
 from .helpers import HasCustomID, random_str
 
@@ -39,8 +40,8 @@ class ComponentStore:
     """Counter used to generate IDs for components."""
 
     async def listen(self, client: disnake.Client, timeout: float = 600) -> bool:
-        """Run the main loop of the store, until it times out or `.stop` is called.
-        Returns True in the former case, and False in the latter.
+        """Run the main loop until cancelled.
+        Returns `True` on timeout and `False` if stopped by `.stop`.
         """
 
         def check(inter: MessageInteraction) -> bool:
@@ -63,11 +64,11 @@ class ComponentStore:
             await self._callbacks[inter.data.custom_id](inter)
 
     def stop(self) -> None:
-        """Stops the loop and causes the `.listen` method to return."""
+        """Stop the loop and signal to `.listen` method to return."""
         self._cancel_scope.cancel()
 
     def bind(self, component: ItemT, /) -> DecoRetType[ItemT]:
-        """Register a component as a part of the store."""
+        """Register a callback as a part of the store."""
 
         def catch_callback(func: InteractionCallback[None]) -> ItemT:
             self._callbacks[component.custom_id] = func
@@ -76,7 +77,7 @@ class ComponentStore:
         return catch_callback
 
     def make_id(self, *parts: str) -> str:
-        """Create a custom ID bound to the store."""
+        """Create a custom ID with a header, binding it to the store."""
         if not parts:
             id = f"{self.id}:{self._id_counter}"
             self._id_counter += 1
@@ -85,5 +86,5 @@ class ComponentStore:
         return ":".join((self.id, *parts))
 
     def strip_id(self, component: HasCustomID, /) -> str:
-        """Remove the part added by the store from a component's custom ID."""
+        """Remove the header from a component's custom ID."""
         return component.custom_id.removeprefix(self.id + ":")

@@ -55,6 +55,7 @@ def set_session(session: aiohttp.ClientSession, /) -> None:
 @attrs.define(hash=True)
 class HttpResource(Resource):
     """Web resource from the `http(s)://` protocol."""
+
     url: typing.Final[str]
 
     session: typing.ClassVar[aiohttp.ClientSession]
@@ -84,6 +85,7 @@ class HttpResource(Resource):
 @attrs.define(hash=True)
 class FileResource(Resource):
     """Local resource from the `file://` protocol."""
+
     path: typing.Final[anyio.Path]
 
     @property

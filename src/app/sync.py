@@ -8,6 +8,7 @@ _LOGGER = logging.getLogger(__name__)
 _SYNC_GUARD = anyio.ResourceGuard("syncing")
 SYNC_FINISHED = anyio.Event()
 
+
 def patch_delayed_sync(bot: commands.InteractionBot, /) -> None:
     """Patches delayed sync not to fire."""
     # this patch has to be done mostly because plugins call this method with no opt-out

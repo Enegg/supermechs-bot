@@ -1,6 +1,8 @@
 import random
 import typing
 
+from discord import Markdown as MD, command_mention
+
 from app import meta
 from app.assets import ASSETS
 from app.async_utils import amap, move_on_before_timeout
@@ -9,7 +11,6 @@ from app.shared.item_packs import DEFAULT_PACK
 from app.shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from app.shared.utils import fold_binary_prefix
 from app.stored import players
-from discord_plus import Markdown as MD, command_mention
 
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins

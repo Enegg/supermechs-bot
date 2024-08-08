@@ -1,12 +1,13 @@
 import io
 from itertools import zip_longest
 
+from discord.ui import ActionButton, ComponentStore, ToggleButton
+
 from app import i18n
 from app.assets import ASSETS
 from app.devtools import debug_footer
 from app.shared.utils import SPACE
 from app.sm.asset_utils import item_transform_range
-from discord_plus.ui import ActionButton, ComponentStore, ToggleButton
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten
 
@@ -91,7 +92,9 @@ def default_fields(
             string.write("\n")
             spaced = True
 
-        string.write(f"{ASSETS.stats[stat].emoji} **{str_value}** {i18n.get_stat_name(locale, stat)}\n")
+        string.write(
+            f"{ASSETS.stats[stat].emoji} **{str_value}** {i18n.get_stat_name(locale, stat)}\n"
+        )
 
     if item.tags.require_jump:
         string.write(f"{ASSETS.stats[Stat.jump].emoji} **Jumping required**")

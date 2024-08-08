@@ -1,6 +1,6 @@
 from typing_extensions import override
 
-from typeshed import EmojiType
+from discord.typeshed import EmojiType
 
 from .helpers import random_str
 

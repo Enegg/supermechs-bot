@@ -6,12 +6,10 @@ __all__ = ("command_mention",)
 @typing.runtime_checkable
 class Commandish(typing.Protocol):
     @property
-    def id(self) -> int:
-        ...
+    def id(self) -> int: ...
 
     @property
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
 
 def command_mention(command: Commandish, /) -> str:

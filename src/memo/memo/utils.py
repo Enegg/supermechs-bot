@@ -3,7 +3,7 @@ from collections import abc
 
 
 def default_key(*args: abc.Hashable, **kwargs: abc.Hashable) -> abc.Hashable:
-    """Computes a key from all args and kwargs by creating a single large tuple.
+    """Compute a key by combining args and kwargs into a tuple.
     Requires all members to be hashable.
     """
     if not kwargs:
@@ -18,6 +18,6 @@ def default_key(*args: abc.Hashable, **kwargs: abc.Hashable) -> abc.Hashable:
 
 
 def callable_repr(func: abc.Callable[..., object], /) -> str:
-    """Returns the signature of a callable."""
+    """Return the signature of a callable."""
     signature = inspect.signature(func)
     return f"{func.__name__}{signature}"

@@ -3,8 +3,9 @@ import pathlib
 import random
 from typing import TYPE_CHECKING
 
+from discord import sanitize_filename
+
 from app import i18n
-from discord_plus import sanitize_filename
 
 import disnake
 

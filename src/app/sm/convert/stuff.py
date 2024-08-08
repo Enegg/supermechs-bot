@@ -3,9 +3,9 @@ from collections import abc
 
 import attrs
 
-from models import ItemPack
-from models.graphics import AbstractSprite, ImageLoader, SheetSprite, SingleSprite
-from models.item_pack import SpriteKey
+from app.models import ItemPack
+from app.models.graphics import AbstractSprite, ImageLoader, SheetSprite, SingleSprite
+from app.models.item_pack import SpriteKey
 from resources import resource
 from sm.parse import ItemWithStats, ItemWithTiers, PackData, Rectangle, parse_item_pack
 from sm.parse.items import Point2D, TorsoAttachment

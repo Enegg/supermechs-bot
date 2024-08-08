@@ -5,7 +5,8 @@ from typing_extensions import TypeVar
 
 import anyio
 from attrs import define, field
-from typeshed import T
+
+from discord.typeshed import T
 
 from disnake import Client, Event, MessageInteraction, ModalInteraction, ui
 

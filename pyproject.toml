@@ -6,14 +6,14 @@ authors = [
     {name = "Eneg", email = "42005170+Enegg@users.noreply.github.com"},
 ]
 dependencies = [
+    "aiohttp == 3.9.5",
     "anyio == 4.*",
     "attrs >= 23.2.0",
     "cattrs >= 23.2.3",
     "disnake >= 2.9.1",
     "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
-    "exceptiongroup >= 1.2.2; python_version < '3.11'",
     "orjson >= 3.8.10",
-    "Pillow == 10.*",
+    "pillow == 10.*",
     "psutil >= 5.9.7",
     "python-dotenv >= 1.0.0",
     "rtoml >= 0.9.0",
@@ -29,6 +29,11 @@ license = {text = "GPL-3.0-or-later"}
 distribution = false
 
 [tool.pdm.dev-dependencies]
+dev = [
+    "-e resources @ file:///${PROJECT_ROOT}/src/resources",
+    "-e memo @ file:///${PROJECT_ROOT}/src/memo",
+    "-e discord-plus @ file:///${PROJECT_ROOT}/src/discord-plus",
+]
 lint = [
     "ruff >= 0.4.2",
 ]
@@ -66,7 +71,6 @@ select = [
 
     "ANN",   # annotations
     "ASYNC", # blocking calls in async context
-    "TRIO",  # anyio stuff
     "TCH",   # type-checking-only imports
     "FURB",
     "PTH",   # pathlib > os.path / open
@@ -108,8 +112,12 @@ allow-dunder-method-names = [
 
 [tool.pyright]
 typeCheckingMode = "strict"
-include = ["src"]
-exclude = ["src/app/dev"]
+include = [
+    "src/app",
+    "src/discord-plus",
+    "src/memo",
+    "src/resources",
+]
 
 pythonVersion = "3.11"
 

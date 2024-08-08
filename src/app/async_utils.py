@@ -3,9 +3,9 @@ from collections import abc
 
 import anyio
 import attrs
-from typeshed import AsyncFunc, P, RetT, T
+from discord import InteractionLimits
 
-from discord_plus import InteractionLimits
+from app.typeshed import AsyncFunc, P, RetT, T
 from memo import AsyncMemo, default_key
 
 

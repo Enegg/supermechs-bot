@@ -9,10 +9,10 @@ from typing import Final
 
 import anyio
 import anyio.to_thread
+from discord import InteractionLimits, Markdown, MessageLimits, text_to_file
+from discord.ui import random_str, wait_for_modal
 
 from app.core import ENV
-from discord_plus import InteractionLimits, Markdown, MessageLimits, text_to_file
-from discord_plus.ui import random_str, wait_for_modal
 
 from disnake import CommandInteraction, TextInputStyle, ui
 from disnake.ext import commands, plugins
@@ -61,7 +61,7 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         len(code),
         None,
         code.splitlines(keepends=True),
-        compiled_code.co_filename
+        compiled_code.co_filename,
     )
     del inter, code
     sio = io.StringIO()

@@ -4,30 +4,34 @@ from contextlib import asynccontextmanager
 
 import anyio
 from attrs import define, field
-from typeshed import KT, VT, P
-from utils import callable_repr
+
+from .typeshed import KT, VT, P
+from .utils import callable_repr
 
 __all__ = ("AsyncMemo",)
 
 
 @define
 class AsyncMemo(typing.Generic[P, VT, KT]):
-    """Proxy for asynchronously creating objects via a callable.
-    Memoizes results under computed key.
+    """Unbound cache of an async factory function.
 
-    Note: concurrent calls with same arguments will run the factory only once.
+    - to bypass caching, use the `.factory` callable directly.
+    - to bypass computing a key, use the `.mapping` directly.
+    - safe for async concurrency.
 
     Parameters
     ----------
-    factory: async callable creating objects from arguments P.
-    key: callable computing keys to store objects under.
+    factory:
+        async callable creating objects from arguments P.
+    key:
+        callable computing keys to store objects under.
     """
 
     factory: abc.Callable[P, abc.Awaitable[VT]] = field(repr=callable_repr)
-    """Creates an object from given value."""
+    """The underlying cached function."""
 
     key: abc.Callable[P, KT] = field(repr=callable_repr)
-    """Retrieves a key used to store a given object under."""
+    """Compute a key for a factory product."""
 
     mapping: dict[KT, VT] = field(factory=dict, init=False)
     _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False)
@@ -36,18 +40,15 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
         return await self.get_or_create(*args, **kwargs)
 
     def get(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        """Retrieve stored object by computing key from arguments."""
+        """Return the object stored under `key(*args, **kwargs)`."""
         key = self.key(*args, **kwargs)
         return self.mapping[key]
 
     async def get_or_create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        """Retrieve or create an object under a key computed from arguments."""
+        """Return the object stored under `key(*args, **kwargs)`, or create & store a new one."""
         key = self.key(*args, **kwargs)
 
-        # acquire a lock *before* accessing the value; if key not present
-        # this ensures subsequent access will have the value available once
-        # the lock is released
-        # XXX: what if we don't acquire on first access?
+        # except for the very first caller, the lock ensures the value is inserted into the mapping
         async with self._acquire_lock(key):
             try:
                 return self.mapping[key]
@@ -58,7 +59,7 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
                 return obj
 
     async def create(self, *args: P.args, **kwargs: P.kwargs) -> VT:
-        """Create and store an object under a key computed from arguments."""
+        """Create & store an object under `key(*args, **kwargs)`, then return it."""
         key = self.key(*args, **kwargs)
         obj = await self.factory(*args, **kwargs)
         self.mapping[key] = obj
@@ -66,6 +67,7 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
 
     @asynccontextmanager
     async def _acquire_lock(self, key: KT, /) -> abc.AsyncIterator[None]:
+        """Acquire a lock under key, such that concurrent calls run the factory only once."""
         lock = self._locks.get(key)
 
         if owner := lock is None:

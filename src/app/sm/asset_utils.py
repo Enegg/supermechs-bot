@@ -1,4 +1,4 @@
-from assets import ASSETS
+from app.assets import ASSETS
 
 from supermechs.api import ItemData, Tier
 from supermechs.tools.item import transform_range

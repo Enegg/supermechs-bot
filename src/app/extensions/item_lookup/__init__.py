@@ -2,14 +2,15 @@ import io
 import typing
 from typing import TYPE_CHECKING, Literal
 
+from discord import MessageLimits
+from discord.ui.store import ComponentStore
+
 from app.assets import ASSETS
 from app.bridges import item_name_autocomplete
 from app.bridges.embeds import sikrit_footer
 from app.bridges.ui import get_check
 from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK, get_item_by_name
-from discord_plus import MessageLimits
-from discord_plus.ui.store import ComponentStore
 
 from .item_lookup import item_compare_view, item_view
 

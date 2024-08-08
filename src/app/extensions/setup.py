@@ -1,10 +1,11 @@
 import typing
 from collections import abc
 
+from discord import AutocompleteReturnType, InteractionLimits
+from discord.extensions import walk_extensions
+
 from app.core import ENV
 from app.shared.utils import format_exception
-from discord_plus import AutocompleteReturnType, InteractionLimits
-from discord_plus.extensions import walk_extensions
 
 import disnake
 from disnake import CommandInteraction

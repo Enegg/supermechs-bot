@@ -2,9 +2,10 @@ import logging
 from contextlib import suppress
 from functools import partial
 
+from discord import EmbedLimits, ListenerRegistry, Markdown, SenderKeywords, text_to_file
+
 from app import i18n
 from app.shared.utils import SPACE, format_exception
-from discord_plus import EmbedLimits, ListenerRegistry, Markdown, SenderKeywords, text_to_file
 
 from disnake import Client, Colour, CommandInteraction, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
@@ -67,9 +68,7 @@ async def handle_user_exception(inter: CommandInteraction, exc: commands.Command
     return True
 
 
-async def handle_dev_error(
-    inter: CommandInteraction, exc: Exception, channel: Messageable
-) -> None:
+async def handle_dev_error(inter: CommandInteraction, exc: Exception, channel: Messageable) -> None:
     _LOGGER.warning("Exception occurred in %s", inter.application_command.qualified_name)
     log_params = exception_to_message(exc, inter)
 

@@ -1,11 +1,12 @@
 from collections import abc, defaultdict
 from typing import Any
 
+from discord import AutocompleteReturnType, InteractionLimits
+
 from app.shared.item_packs import get_item_pack_for
 from app.sm.name_utils import acronym_of, search_for
 from app.stored import players
 from app.user_input import StringLimits
-from discord_plus import AutocompleteReturnType, InteractionLimits
 
 from disnake import CommandInteraction
 
@@ -93,6 +94,6 @@ async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
     ]
 
     if not matching and input:
-        return [input[:StringLimits.names]]
+        return [input[: StringLimits.names]]
 
     return matching

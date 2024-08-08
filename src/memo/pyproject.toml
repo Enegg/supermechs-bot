@@ -1,0 +1,18 @@
+[project]
+name = "memo"
+version = "0.1.0"
+authors = [
+    {name = "Eneg", email = "42005170+Enegg@users.noreply.github.com"},
+]
+dependencies = [
+    "anyio == 4.*",
+    "attrs >= 23.2.0",
+    "typing-extensions >= 4.9.0",
+]
+requires-python = ">= 3.10"
+license = {text = "GPL-3.0-or-later"}
+
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
