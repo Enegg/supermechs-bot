@@ -4,7 +4,8 @@ from collections import abc
 
 def default_key(*args: abc.Hashable, **kwargs: abc.Hashable) -> abc.Hashable:
     """Compute a key by combining args and kwargs into a tuple.
-    Requires all members to be hashable.
+
+    All values must be hashable.
     """
     if not kwargs:
         return args

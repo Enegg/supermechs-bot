@@ -6,12 +6,11 @@ import anyio
 import anyio.lowlevel
 import attrs
 
+import disnake
 from discord.typeshed import T
+from disnake import MessageInteraction
 
 from .helpers import HasCustomID, random_str
-
-import disnake
-from disnake import MessageInteraction
 
 __all__ = ("ComponentStore",)
 
@@ -41,9 +40,9 @@ class ComponentStore:
 
     async def listen(self, client: disnake.Client, timeout: float = 600) -> bool:
         """Run the main loop until cancelled.
-        Returns `True` on timeout and `False` if stopped by `.stop`.
-        """
 
+        Return `True` on timeout and `False` if stopped by `.stop`.
+        """
         def check(inter: MessageInteraction) -> bool:
             return inter.data.custom_id in self._callbacks
 

@@ -5,9 +5,9 @@ from datetime import datetime
 
 from attrs import define, field
 
-from .mech_build import MechBuild
-
 from disnake.utils import get as get_matching, utcnow
+
+from .mech_build import MechBuild
 
 from supermechs.arenashop import ArenaShop, arena_shop
 from supermechs.mech import Mech
@@ -54,11 +54,12 @@ class Player:
         return self.create_build(possible_name)
 
     def get_or_create_build(self, name: str, /) -> MechBuild:
-        """Retrieves existing build under given name, otherwise creates a new one.
+        """Retrieve existing build under given name, otherwise create a new one.
 
         Parameters
         ----------
-        name: The name of the mech to get or create.
+        name:
+            The name of the mech to get or create.
         """
         build = self.get_build_by_name(name)
 
@@ -72,11 +73,12 @@ class Player:
         self.builds[build.id] = build
 
     def create_build(self, name: str | None = None, /) -> MechBuild:
-        """Creates a new build, sets it as recent and returns it.
+        """Create, set as recent, and return a new build.
 
         Parameters
         ----------
-        name: The name to assign to the build. Defaults to `"Unnamed Mech"`.
+        name:
+            The name to assign to the build. Defaults to `"Unnamed Mech"`.
         """
         build = MechBuild() if name is None else MechBuild(name=name)
         self.builds[build.id] = build
@@ -84,7 +86,7 @@ class Player:
         return build
 
     def rename_build(self, uuid: uuid.UUID, name: str) -> None:
-        """Changes the name a build is assigned to.
+        """Change the name a build is assigned to.
 
         Parameters
         ----------
@@ -93,11 +95,12 @@ class Player:
         self.builds[uuid].name = name
 
     def delete_build(self, uuid: uuid.UUID, /) -> None:
-        """Deletes a build from player's builds.
+        """Delete a build from player's builds.
 
         Parameters
         ----------
-        uuid: The uuid of the build to delete.
+        uuid:
+            The uuid of the build to delete.
         """
         try:
             del self.builds[uuid]

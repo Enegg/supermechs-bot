@@ -3,13 +3,12 @@ from contextlib import suppress
 from functools import partial
 
 from discord import EmbedLimits, ListenerRegistry, Markdown, SenderKeywords, text_to_file
-
-from app import i18n
-from app.shared.utils import SPACE, format_exception
-
 from disnake import Client, Colour, CommandInteraction, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
+
+from app import i18n
+from app.shared.utils import SPACE, format_exception
 
 __all__ = ("setup_channel_logger",)
 
@@ -105,7 +104,7 @@ async def exception_handler(
 
 
 async def setup_channel_logger(client: Client, channel_id: int) -> None:
-    """Creates an `on_slash_command_error` listener which sends tracebacks to selected channel."""
+    """Create an `on_slash_command_error` listener which sends tracebacks to selected channel."""
     assert isinstance(client, ListenerRegistry)
     channel = await client.fetch_channel(channel_id)
 

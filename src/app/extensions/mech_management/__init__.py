@@ -4,6 +4,9 @@ from json import JSONDecodeError
 
 from discord import ComponentLimits, bytes_to_file, command_mention
 from discord.ui import ActionButton, ComponentStore, wait_for_components
+from disnake import Attachment, CommandInteraction, Embed, Locale, ui
+from disnake.ext import commands, plugins
+from disnake.utils import MISSING
 
 from app import i18n
 from app.assets import ASSETS
@@ -17,10 +20,6 @@ from app.shared.utils import fold_binary_prefix
 from app.user_input import StringLimits, sanitize_string
 
 from .mech_manager import MechView
-
-from disnake import Attachment, CommandInteraction, Embed, Locale, ui
-from disnake.ext import commands, plugins
-from disnake.utils import MISSING
 
 from supermechs.api import Stat, Type, mech_weight
 from supermechs.ext.deserializers.exceptions import DataError
@@ -57,7 +56,7 @@ MECH_SUMMARY_TEMPLATE = f"""\
 
 @mech.sub_command()
 async def catalog(inter: CommandInteraction, player: Player) -> None:
-    """Catalog of your builds. {{ MECH_BROWSE }}"""
+    """Catalog of your builds. {{ MECH_BROWSE }}"""  # noqa: D400
     if not player.builds:
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
@@ -101,8 +100,9 @@ async def build(
 
     Parameters
     ----------
-    name: The name of an existing build or of one to create. {{ MECH_BUILD_NAME }}
-    """
+    name:
+        The name of an existing build or of one to create. {{ MECH_BUILD_NAME }}
+    """  # noqa: D400
     item_pack = DEFAULT_PACK.get_nowait()
 
     if name is None:
@@ -144,8 +144,9 @@ async def import_(
 
     Parameters
     ----------
-    file: A .JSON file as exported from WU. {{ MECH_IMPORT_FILE }}
-    """
+    file:
+        A .JSON file as exported from WU. {{ MECH_IMPORT_FILE }}
+    """  # noqa: D400
     # file size of 64KiB sounds like a pretty beefy amount of mechs
     MAX_SIZE = 1 << 16
 
@@ -206,9 +207,10 @@ async def export(
 
     Parameters
     ----------
-    format: The file format to output data in.\
-            Formats other than .json are not supported by WU. {{ MECH_EXPORT_FORMAT }}
-    """
+    format:
+        The file format to output data in.\
+        Formats other than .json are not supported by WU. {{ MECH_EXPORT_FORMAT }}
+    """  # noqa: D400
     build_count = len(player.builds)
 
     if build_count == 0:

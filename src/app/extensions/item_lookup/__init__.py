@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Literal
 
 from discord import MessageLimits
 from discord.ui.store import ComponentStore
+from disnake import CommandInteraction, Embed, Locale
+from disnake.ext import commands, plugins
+from disnake.utils import MISSING
 
 from app.assets import ASSETS
 from app.bridges import item_name_autocomplete
@@ -13,10 +16,6 @@ from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK, get_item_by_name
 
 from .item_lookup import item_compare_view, item_view
-
-from disnake import CommandInteraction, Embed, Locale
-from disnake.ext import commands, plugins
-from disnake.utils import MISSING
 
 from supermechs.api import Element, ItemData, Type
 from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
@@ -46,10 +45,13 @@ async def item(
 
     Parameters
     ----------
-    type: Limits suggestions to chosen type. {{ ITEM_TYPE }}
-    element: Limits suggestions to chosen element. {{ ITEM_ELEMENT }}
-    compact: Compact layout. (broken on mobile) {{ ITEM_COMPACT }}
-    """
+    type:
+        Limits suggestions to chosen type. {{ ITEM_TYPE }}
+    element:
+        Limits suggestions to chosen element. {{ ITEM_ELEMENT }}
+    compact:
+        Compact layout. (broken on mobile) {{ ITEM_COMPACT }}
+    """  # noqa: D400
     del type, element  # used for autocomplete only
 
     # _, renderer = get_default_pack()
@@ -106,13 +108,15 @@ async def item_raw(
     type: LiteralTypeOrAny = "ANY",  # noqa: A002
     element: LiteralElementOrAny = "ANY",
 ) -> None:
-    """Finds an item and returns its raw stats. {{ ITEM }}
+    """Lookup raw item stats. {{ ITEM }}
 
     Parameters
     ----------
-    type: If provided, filters suggested names to given type. {{ ITEM_TYPE }}
-    element: If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
-    """
+    type:
+        If provided, filters suggested names to given type. {{ ITEM_TYPE }}
+    element:
+        If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
+    """  # noqa: D400
     del type, element  # used for autocomplete only
     await inter.response.send_message(f"`{item!r:.{MessageLimits.content - 2}}`", ephemeral=True)
 
@@ -136,9 +140,11 @@ async def compare(
 
     Parameters
     ----------
-    item1: First item to compare. {{ COMPARE_FIRST }}
-    item2: Second item to compare. {{ COMPARE_SECOND }}
-    """
+    item1_name:
+        First item to compare. {{ COMPARE_FIRST }}
+    item2_name:
+        Second item to compare. {{ COMPARE_SECOND }}
+    """  # noqa: D400
     pack = DEFAULT_PACK.get_nowait()
     item_a = get_item_by_name(pack.items, item1_name)
     item_b = get_item_by_name(pack.items, item2_name)

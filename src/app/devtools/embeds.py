@@ -4,8 +4,7 @@ __all__ = ("debug_footer",)
 
 
 def debug_footer(embed: disnake.Embed, /, *, replace: bool = False) -> None:
-    """Adds a footer with raw urls of various embed fields, and total characters."""
-
+    """Add a footer to the embed with the character total and values of url fields."""
     if replace:
         embed.remove_footer()
 

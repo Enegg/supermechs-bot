@@ -3,11 +3,10 @@ import pathlib
 import random
 from typing import TYPE_CHECKING
 
+import disnake
 from discord import sanitize_filename
 
 from app import i18n
-
-import disnake
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -16,8 +15,7 @@ __all__ = ("embed_image", "sikrit_footer")
 
 
 def embed_image(image: "Image", filename: str, format: str = "png") -> tuple[str, disnake.File]:
-    """Creates a File and returns it with an attachment url."""
-
+    """Create and return a File with an attachment url."""
     filename = sanitize_filename(filename)
     filename = str(pathlib.PurePath(filename).with_suffix(f".{format}"))
     fp = io.BytesIO()

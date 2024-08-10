@@ -58,6 +58,8 @@ select = [
     "FLY",   # static joins
     "ISC",   # string concatenation
 
+    "D",     # pydocstyle
+
     "SIM",   # simplifiable logic
     "C4",    # simplifiable comprehensions
     "PIE",   # misc
@@ -80,8 +82,12 @@ ignore = [
     "ANN101", # type of self
     "ANN102", # type of cls
     "PIE796", # non-unique enums (that's a job for @unique)
+    "D1",     # don't enforce docstrings for public API
     # "E501",   # line too long; handled by formatter
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 105
@@ -93,7 +99,18 @@ max-line-length = 105
 combine-as-imports = true
 split-on-trailing-comma = false
 extra-standard-library = ["typing_extensions"]
-forced-separate = ["disnake", "supermechs"]
+forced-separate = ["supermechs"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "discord",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+discord = ["disnake", "discord"]
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]

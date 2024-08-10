@@ -7,11 +7,11 @@ from collections import abc
 import attrs
 import cattrs
 
+from disnake import Color
+
 from app.class_utils import attrs_from_path
 from app.core import CONFIG
 from app.typeshed import T
-
-from disnake import Color
 
 from supermechs.api import BuildRules, Category, Element, Stat, Tier, Type
 from supermechs.enums._base import PartialEnum

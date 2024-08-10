@@ -20,6 +20,6 @@ def attrs_from_path(
 
 
 def callable_repr(func: abc.Callable[..., object], /) -> str:
-    """Returns the signature of a callable."""
+    """Return the signature of a callable."""
     signature = inspect.signature(func)
     return f"{func.__name__}{signature}"

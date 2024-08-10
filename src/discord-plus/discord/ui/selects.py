@@ -1,7 +1,6 @@
 from collections import abc
 
 from discord.limits import ComponentLimits
-
 from disnake import SelectOption, ui
 from disnake.utils import MISSING
 
@@ -9,8 +8,10 @@ __all__ = ("PaginatedSelect",)
 
 
 class PaginatedSelect(ui.StringSelect[None]):
-    """Select menu which paginates options into chunks and uses two\
-    `SelectOption`s to move between chunks."""
+    """Select menu which paginates options into chunks.
+
+    Uses two `SelectOption`s to move between chunks.
+    """
 
     option_up: SelectOption
     option_down: SelectOption

@@ -1,6 +1,4 @@
-"""
-Things that have pending PRs and/or will eventually be found in future library releases.
-"""
+"""Backport of pending PRs and/or things eventually to be found in future library releases."""
 
 import importlib
 import importlib.util

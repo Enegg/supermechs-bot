@@ -6,9 +6,9 @@ import attrs
 from app.models import ItemPack
 from app.models.graphics import AbstractSprite, ImageLoader, SheetSprite, SingleSprite
 from app.models.item_pack import SpriteKey
+from app.sm.parse import ItemWithStats, ItemWithTiers, PackData, Rectangle, parse_item_pack
+from app.sm.parse.items import Point2D, TorsoAttachment
 from resources import resource
-from sm.parse import ItemWithStats, ItemWithTiers, PackData, Rectangle, parse_item_pack
-from sm.parse.items import Point2D, TorsoAttachment
 
 from supermechs.abc.item import ItemID
 from supermechs.abc.item_pack import PackKey

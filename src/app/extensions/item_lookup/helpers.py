@@ -33,7 +33,7 @@ def compare_numbers(
 
 
 def get_row_width(size: int, max_length: int) -> int:
-    """Returns the length `l` of slices a sequence of given `size` can be partitioned into.
+    """Return the length `l` of slices a sequence of given `size` can be partitioned into.
 
     `max_length` determines the upper bound for `l`, however `l` is determined in a way
     such that the final slice has at least `l // 2 + 1` length.

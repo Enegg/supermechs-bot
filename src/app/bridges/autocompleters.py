@@ -2,13 +2,12 @@ from collections import abc, defaultdict
 from typing import Any
 
 from discord import AutocompleteReturnType, InteractionLimits
+from disnake import CommandInteraction
 
 from app.shared.item_packs import get_item_pack_for
 from app.sm.name_utils import acronym_of, search_for
 from app.stored import players
 from app.user_input import StringLimits
-
-from disnake import CommandInteraction
 
 from supermechs.abc.item import Name
 from supermechs.api import Element, ItemData, Type
@@ -41,7 +40,6 @@ def _get_item_filters(options: abc.Mapping[str, Any], /) -> list[abc.Callable[[I
 
 async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for type & element."""
-
     pack = get_item_pack_for(inter)
     filters = _get_item_filters(inter.filled_options)
 
@@ -85,7 +83,6 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
 
 async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for player builds."""
-
     player = players(inter.author)
     lowercase = input.lower()
 

@@ -7,7 +7,6 @@ import anyio
 from attrs import define, field
 
 from discord.typeshed import T
-
 from disnake import Client, Event, MessageInteraction, ModalInteraction, ui
 
 __all__ = (
@@ -20,7 +19,7 @@ __all__ = (
 
 
 def random_str() -> str:
-    """Generates a random string."""
+    """Generate a random string."""
     return os.urandom(8).hex()
 
 
@@ -38,9 +37,9 @@ async def wait_for_components(
     user_id: int | None = None,
     timeout: float = 600,
 ) -> tuple[MessageInteraction, IDHolderT]:
-    """Waits for an interaction with any of given components.
+    """Wait for an interaction with any of given components.
 
-    If `user_id` is provided, ignores interactions from anyone but the specified user.
+    If `user_id` is provided, ignore interactions from anyone but the specified user.
     """
     ids_to_components = {
         comp if isinstance(comp, str) else comp.custom_id: comp for comp in components_or_ids
@@ -65,10 +64,11 @@ async def wait_for_components(
 async def wait_for_modal(
     modal_or_id: ui.Modal | str, client: Client, *, user_id: int | None = None, timeout: float = 600
 ) -> ModalInteraction:
-    """Waits for a modal submission.
+    """Wait for a modal submission.
 
-    If `user_id` is provided, ignores interactions from anyone but the specified user.
+    If `user_id` is provided, ignore interactions from anyone but the specified user.
     """
+    # XXX: does filtering by user make sense in modal context?
     if not isinstance(modal_or_id, str):
         modal_or_id = modal_or_id.custom_id
 
@@ -130,7 +130,6 @@ class Paginator(Generic[T]):
 
     def jump_by(self, page: int, /) -> None:
         """Jump by n pages."""
-
         if not 0 <= self.index + page <= len(self.pages) - 1:
             raise IndexError(page)
 

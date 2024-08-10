@@ -27,7 +27,6 @@ quasi aliquam eligendi, placeat qui corporis!\
 
 def lorem_ipsum(length: int, /) -> str:
     """Generate placeholder text of given length."""
-
     if length < len(LOREM_IPSUM):
         return LOREM_IPSUM[:length]
 

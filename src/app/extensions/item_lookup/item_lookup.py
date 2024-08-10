@@ -2,6 +2,7 @@ import io
 from itertools import zip_longest
 
 from discord.ui import ActionButton, ComponentStore, ToggleButton
+from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
 
 from app import i18n
 from app.assets import ASSETS
@@ -10,8 +11,6 @@ from app.shared.utils import SPACE
 from app.sm.asset_utils import item_transform_range
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten
-
-from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
 
 from supermechs.api import MAX_SHOP, ItemData, Stat
 from supermechs.tools.stats import buff_stats, max_stats
@@ -74,7 +73,7 @@ def item_view(
 def default_fields(
     embed: Embed, item: ItemData, buffs_enabled: bool, avg: bool, locale: Locale
 ) -> None:
-    """Fills embed with detailed info about an item."""
+    """Fill the embed with detailed info about an item."""
     embed.add_field("Transform range:", item_transform_range(item), inline=False)
 
     spaced = False
@@ -109,7 +108,7 @@ def compact_fields(
     avg: bool,
     locale: Locale,
 ) -> None:
-    """Fills embed with reduced info about an item."""
+    """Fill the embed with reduced info about an item."""
     del locale
     lines: list[str] = []
 

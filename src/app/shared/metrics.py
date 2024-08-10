@@ -42,7 +42,7 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
 
 
 def get_ram_utilization(pid: int | None = None, /) -> int:
-    """Returns the current process RAM utilization, in bytes."""
+    """Return the current process RAM utilization, in bytes."""
     return psutil.Process(pid).memory_info().rss
 
 

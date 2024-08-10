@@ -1,9 +1,8 @@
+import disnake
 from discord.ui.store import InteractionCallback
+from disnake import MessageInteraction
 
 from app import i18n
-
-import disnake
-from disnake import MessageInteraction
 
 
 def get_check(user: disnake.abc.User, /) -> InteractionCallback[bool]:

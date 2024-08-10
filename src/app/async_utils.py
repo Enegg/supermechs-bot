@@ -1,8 +1,10 @@
 import typing
 from collections import abc
+from typing import Any, ClassVar, Generic
 
 import anyio
 import attrs
+
 from discord import InteractionLimits
 
 from app.typeshed import AsyncFunc, P, RetT, T
@@ -21,7 +23,7 @@ def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:
 
 async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
     """Asynchronously map coroutine function over arguments."""
-    sentinel: typing.Any = object()
+    sentinel: Any = object()
     values: list[RetT] = [sentinel] * len(args)
 
     async def worker(arg: T, index: int) -> None:
@@ -40,10 +42,10 @@ def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
 
 
 @attrs.define
-class Deferred(typing.Generic[T]):
-    """Future-like object"""
+class Deferred(Generic[T]):
+    """Future-like object."""
 
-    _sentinel: typing.ClassVar[typing.Any] = object()
+    _sentinel: ClassVar[Any] = object()
 
     _value: T = attrs.field(default=_sentinel, init=False)
     _event: anyio.Event = attrs.field(factory=anyio.Event, init=False)

@@ -6,17 +6,17 @@ class Markdown:
 
     @staticmethod
     def hyperlink(text: str, url: str) -> str:
-        """Returns a hyperlink to a URL."""
+        """Return a hyperlink to a URL."""
         return f"[{text}]({url})"
 
     @staticmethod
     def codeblock(text: str, lang: str = "") -> str:
-        """Returns text formatted with a codeblock."""
+        """Return text formatted with a codeblock."""
         return f"```{lang}\n{text}```"
 
     @staticmethod
     def strip_codeblock(text: str, /) -> str:
-        """Returns text stripped from codeblock syntax."""
+        """Return text stripped from codeblock syntax."""
         text = text.removeprefix("```").removesuffix("```")
         lang, sep, stripped = text.partition("\n")
 

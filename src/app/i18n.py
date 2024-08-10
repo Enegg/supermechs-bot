@@ -7,9 +7,9 @@ from pathlib import Path
 
 import rtoml
 
-from app.typeshed import KT, Pathish
-
 from disnake import Locale, LocalizationProtocol
+
+from app.typeshed import KT, Pathish
 
 from supermechs.enums.stats import Stat
 

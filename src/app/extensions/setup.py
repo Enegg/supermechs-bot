@@ -1,15 +1,14 @@
 import typing
 from collections import abc
 
+import disnake
 from discord import AutocompleteReturnType, InteractionLimits
 from discord.extensions import walk_extensions
+from disnake import CommandInteraction
+from disnake.ext import commands, plugins
 
 from app.core import ENV
 from app.shared.utils import format_exception
-
-import disnake
-from disnake import CommandInteraction
-from disnake.ext import commands, plugins
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__

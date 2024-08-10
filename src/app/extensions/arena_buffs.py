@@ -3,14 +3,13 @@ from collections import abc
 from functools import partial
 
 from discord.ui import ActionButton, ComponentStore, Paginator, ToggleButton
+from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption, ui
+from disnake.ext import commands, plugins
 
 from app.assets import ASSETS
 from app.bridges.ui import get_check
 from app.models import Player
 from app.shared.utils import SPACE
-
-from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption, ui
-from disnake.ext import commands, plugins
 
 from supermechs.api import ArenaShop, Category
 
@@ -209,7 +208,7 @@ class ArenaShopView:
 @plugin.slash_command()
 @commands.max_concurrency(1, commands.BucketType.user)
 async def buffs(inter: CommandInteraction, player: Player) -> None:
-    """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""
+    """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""  # noqa: D400
     store = ComponentStore(interaction_check=get_check(inter.author))
     view = ArenaShopView(store, player.arena_shop)
 

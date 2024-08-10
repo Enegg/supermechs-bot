@@ -9,13 +9,13 @@ from typing import Final
 
 import anyio
 import anyio.to_thread
+
 from discord import InteractionLimits, Markdown, MessageLimits, text_to_file
 from discord.ui import random_str, wait_for_modal
-
-from app.core import ENV
-
 from disnake import CommandInteraction, TextInputStyle, ui
 from disnake.ext import commands, plugins
+
+from app.core import ENV
 
 plugin: Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
 
@@ -24,11 +24,12 @@ plugin: Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
 async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
-    """Evaluates the given input as code.
+    """Evaluate the given input as code.
 
     Parameters
     ----------
-    code: code to execute.
+    code:
+        code to execute.
     """
     last_inter = inter
 

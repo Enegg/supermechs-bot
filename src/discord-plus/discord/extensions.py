@@ -1,6 +1,4 @@
-"""
-Utilities related to handling bot extensions.
-"""
+"""Utilities related to handling bot extensions."""
 
 import sys
 from collections import abc

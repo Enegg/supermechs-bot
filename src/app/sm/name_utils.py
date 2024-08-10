@@ -4,7 +4,7 @@ from collections import abc
 def search_for(
     phrase: str, strings: abc.Iterable[str], *, ignore_case: bool = True
 ) -> abc.Iterator[str]:
-    """Finds strings matching a phrase.
+    """Find strings matching a phrase.
 
     It is considered a match if for every word in the phrase there is a word
     in a string that begins with it and it appears after all previous matches.
@@ -32,7 +32,7 @@ def search_for(
 
 # the urge to name this function in pascal case
 def is_pascal(string: str, /) -> bool:
-    """Returns True if the string is pascal-cased, False otherwise.
+    """Return True if the string is pascal-cased, False otherwise.
 
     A string is pascal-cased if it contains no whitespace, begins with an uppercase letter,
     and all following uppercase letters are separated by at least a single lowercase letter.
@@ -62,7 +62,7 @@ def is_pascal(string: str, /) -> bool:
 
 
 def acronym_of(name: str, /) -> str | None:
-    """Returns an acronym of the name, or None if one cannot (shouldn't) be made.
+    """Return an acronym of the name, or None if one cannot (shouldn't) be made.
 
     The acronym consists of capital letters in item's name;
     it will not be made for non-PascalCase single-word names, or names which themselves

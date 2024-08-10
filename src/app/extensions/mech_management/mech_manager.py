@@ -4,6 +4,8 @@ from functools import partial
 
 from discord import ComponentLimits, EmbedColorType
 from discord.ui import ActionButton, ComponentStore, PaginatedSelect, Paginator, ToggleButton
+from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption, ui
+from disnake.utils import MISSING
 
 from app import i18n
 from app.assets import ASSETS, get_weight_emoji
@@ -11,9 +13,6 @@ from app.bridges.embeds import embed_image  # noqa: TCH001
 from app.devtools import debug_footer
 from app.models import ItemPack, MechBuild, Player
 from app.shared.utils import SPACE
-
-from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption, ui
-from disnake.utils import MISSING
 
 from supermechs.abc.item import ItemID
 from supermechs.api import ArenaShop, Element, Item, ItemData, Mech, Stat, Type, is_shop_empty
@@ -31,20 +30,23 @@ def embed_mech(mech: Mech, locale: Locale, name: str) -> Embed:
 
 
 def get_mech_config(mech: Mech, /) -> str:
-    """Returns a string of item IDs that are visible on image."""
+    """Return a string of IDs of items visible on image."""
     return "_".join(
         "0" if item is None else str(item.data.id) for item in mech.iter_items("body", "weapons")
     )
 
 
 def format_summary(mech: Mech, locale: Locale, buff_with: ArenaShop | None = None) -> str:
-    """Returns a string of lines formatted with mech stats.
+    """Return a string of lines formatted with mech stats.
 
     Parameters
     ----------
-    mech: `Mech` to format stats of.
-    locale: `Locale` to use for i18n of stat names.
-    buff_with: optional `ArenaShop` to apply buffs from.
+    mech:
+        `Mech` to format stats of.
+    locale:
+        `Locale` to use for i18n of stat names.
+    buff_with: optional
+        `ArenaShop` to apply buffs from.
     """
     summary = mech_summary(mech)
 
@@ -64,8 +66,7 @@ def format_summary(mech: Mech, locale: Locale, buff_with: ArenaShop | None = Non
 
 
 def slot_emoji(slot: SlotType, /) -> str:
-    """Returns the emoji representing a slot, with respect to the right & left variants."""
-
+    """Return the emoji representing a slot, with respect to the right & left variants."""
     if isinstance(slot, tuple):
         slot, n = slot
 
@@ -79,9 +80,9 @@ def slot_emoji(slot: SlotType, /) -> str:
 def sorted_options(
     options: abc.Mapping[Element, list[SelectOption]], primary_element: Element | None, /
 ) -> list[SelectOption]:
-    """Returns a list of `SelectOption`s sorted by element.
+    """Return a list of `SelectOption`s sorted by element.
 
-    Note: this ignores the option limit.
+    #### Note: this ignores the option limit.
     """
     all_options: list[SelectOption] = []
 
@@ -388,7 +389,6 @@ class MechView:
         return btn
 
     async def slot_button_cb(self, button: ToggleButton, inter: MessageInteraction) -> None:
-        """Callback shared by all of the item slot buttons."""
         if button.on:
             self.set_state_idle()
 

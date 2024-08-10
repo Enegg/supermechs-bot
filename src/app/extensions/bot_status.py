@@ -2,6 +2,9 @@ import random
 import typing
 
 from discord import Markdown as MD, command_mention
+from disnake import CommandInteraction, Embed
+from disnake.ext import commands, plugins
+from disnake.utils import format_dt, oauth_url
 
 from app import meta
 from app.assets import ASSETS
@@ -11,10 +14,6 @@ from app.shared.item_packs import DEFAULT_PACK
 from app.shared.metrics import command_invocations, get_ram_utilization, get_sloc
 from app.shared.utils import fold_binary_prefix
 from app.stored import players
-
-from disnake import CommandInteraction, Embed
-from disnake.ext import commands, plugins
-from disnake.utils import format_dt, oauth_url
 
 import supermechs
 
@@ -30,8 +29,7 @@ async def frantic(inter: CommandInteraction) -> None:
 
 @plugin.slash_command()
 async def info(inter: CommandInteraction) -> None:
-    """Displays information about the bot."""
-
+    """Display information about the bot."""
     bot = plugin.bot
     app_info = await bot.application_info()
 
@@ -81,7 +79,7 @@ async def info(inter: CommandInteraction) -> None:
 
 @plugin.slash_command(guild_ids=ENV.test_guild_ids)
 async def activity(inter: CommandInteraction) -> None:
-    """Displays command invocation activity."""
+    """Display command invocation activity."""
     desc = (
         "\n".join(
             f"{command_mention(command)}: {invocations}"

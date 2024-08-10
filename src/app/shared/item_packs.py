@@ -3,13 +3,13 @@ from collections import abc
 from aiohttp import ClientSession
 from aiohttp.typedefs import StrOrURL
 
+import disnake
+
 from app.async_utils import Deferred
 from app.core import CONFIG
 from app.factories import item_pack_factory
 from app.models import ItemPack
 from app.stored import players
-
-import disnake
 
 from supermechs.abc.item import ItemID, Name
 from supermechs.ext.deserializers.typedefs import AnyItemPack
@@ -21,7 +21,6 @@ DEFAULT_PACK = Deferred[ItemPack]()
 
 async def fetch_item_pack_data(session: ClientSession, url: StrOrURL, /) -> AnyItemPack:
     """Fetch and load item pack data."""
-
     async with session.get(url) as response:
         response.raise_for_status()
         return await response.json(encoding="utf8", content_type=None, loads=json_decoder)
