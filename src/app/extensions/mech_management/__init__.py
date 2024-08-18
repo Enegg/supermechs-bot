@@ -3,7 +3,7 @@ import uuid
 from json import JSONDecodeError
 
 from discord import ComponentLimits, bytes_to_file, command_mention
-from discord.ui import ActionButton, wait_for_components
+from discord.ui import wait_for_components
 from disnake import Attachment, CommandInteraction, Embed, Locale, MessageInteraction, ui
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
@@ -13,7 +13,7 @@ from app import i18n
 from app.assets import ASSETS
 from app.bridges import mech_name_autocomplete
 from app.bridges.embeds import embed_image, sikrit_footer
-from app.bridges.ui import get_check
+from app.bridges.ui import ActionButton, get_check
 from app.devtools import debug_footer
 from app.models import Player
 from app.shared.item_packs import DEFAULT_PACK

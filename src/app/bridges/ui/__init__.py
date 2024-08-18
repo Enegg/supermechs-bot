@@ -1,9 +1,15 @@
+"""Module extending the library provided UI kit."""
+
 from collections import abc
 
 import disnake
 from disnake import MessageInteraction
 
 from app import i18n
+
+from .buttons import *
+from .helpers import *
+from .selects import *
 
 
 def get_check(user: disnake.abc.User, /) -> abc.Callable[[MessageInteraction], abc.Awaitable[bool]]:

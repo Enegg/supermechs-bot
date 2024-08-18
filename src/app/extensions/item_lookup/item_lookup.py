@@ -1,12 +1,12 @@
 import io
 from itertools import zip_longest
 
-from discord.ui import ActionButton, ToggleButton
 from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
 from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS
+from app.bridges.ui import ActionButton, ToggleButton
 from app.devtools import debug_footer
 from app.shared.utils import SPACE
 from app.sm.asset_utils import item_transform_range
