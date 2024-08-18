@@ -9,9 +9,8 @@ from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS, get_weight_emoji
-from app.bridges.embeds import embed_image  # noqa: TCH001
+from app.bridges import INVISIBLE_CHAR, embed_image
 from app.bridges.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
-from app.bridges.utils import INVISIBLE_CHAR
 from app.devtools import debug_footer
 from app.models import ItemPack, MechBuild, Player
 

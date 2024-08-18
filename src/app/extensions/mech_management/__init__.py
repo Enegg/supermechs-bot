@@ -11,11 +11,15 @@ from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS
-from app.bridges import mech_name_autocomplete
-from app.bridges.embeds import embed_image, sikrit_footer
+from app.bridges import (
+    StringLimits,
+    embed_image,
+    fold_binary_prefix,
+    mech_name_autocomplete,
+    sanitize_string,
+    sikrit_footer,
+)
 from app.bridges.ui import ActionButton, get_check
-from app.bridges.user_input import StringLimits, sanitize_string
-from app.bridges.utils import fold_binary_prefix
 from app.devtools import debug_footer
 from app.models import Player
 from app.shared.item_packs import DEFAULT_PACK

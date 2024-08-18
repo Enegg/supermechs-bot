@@ -9,8 +9,7 @@ from disnake.utils import MISSING
 from ui_store import CallbackStore
 
 from app.assets import ASSETS
-from app.bridges import item_name_autocomplete
-from app.bridges.embeds import sikrit_footer
+from app.bridges import item_name_autocomplete, sikrit_footer
 from app.bridges.ui import get_check
 from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK, get_item_by_name

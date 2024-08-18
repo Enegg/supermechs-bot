@@ -7,7 +7,7 @@ from discord.extensions import walk_extensions
 from disnake import CommandInteraction
 from disnake.ext import commands, plugins
 
-from app.bridges.utils import format_exception
+from app.bridges import format_exception
 from app.core import ENV
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](

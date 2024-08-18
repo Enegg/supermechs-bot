@@ -5,6 +5,8 @@ import dotenv
 
 from disnake import Locale
 
+__all__ = ("ENV",)
+
 dotenv.load_dotenv()
 
 

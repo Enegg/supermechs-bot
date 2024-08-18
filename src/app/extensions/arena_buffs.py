@@ -7,8 +7,8 @@ from disnake.ext import commands, plugins
 from ui_store import CallbackStore
 
 from app.assets import ASSETS
+from app.bridges import INVISIBLE_CHAR
 from app.bridges.ui import ActionButton, Paginator, ToggleButton, get_check
-from app.bridges.utils import INVISIBLE_CHAR
 from app.models import Player
 
 from supermechs.api import ArenaShop, Category

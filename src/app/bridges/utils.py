@@ -4,7 +4,7 @@ import typing
 from collections import abc
 from typing import Final, Literal, TypeAlias
 
-__all__ = ("INVISIBLE_CHAR", "fold_binary_prefix", "format_exception")
+__all__ = ("INVISIBLE_CHAR", "fold_binary_prefix", "unfold_binary_prefix", "format_exception")
 
 INVISIBLE_CHAR: Final = "\u2800"
 """Invisible character discord does not truncate."""

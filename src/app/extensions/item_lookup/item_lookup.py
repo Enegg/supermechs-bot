@@ -6,8 +6,8 @@ from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS
+from app.bridges import INVISIBLE_CHAR
 from app.bridges.ui import ActionButton, ToggleButton
-from app.bridges.utils import INVISIBLE_CHAR
 from app.devtools import debug_footer
 from app.sm.asset_utils import item_transform_range
 

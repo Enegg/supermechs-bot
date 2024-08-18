@@ -9,8 +9,7 @@ from disnake.utils import format_dt, oauth_url
 from app import meta
 from app.assets import ASSETS
 from app.async_utils import amap, move_on_before_timeout
-from app.bridges import command_invocations, get_ram_utilization, get_sloc
-from app.bridges.utils import fold_binary_prefix
+from app.bridges import command_invocations, fold_binary_prefix, get_ram_utilization, get_sloc
 from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK
 from app.stored import players
