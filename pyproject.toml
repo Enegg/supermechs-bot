@@ -110,7 +110,7 @@ section-order = [
 ]
 
 [tool.ruff.lint.isort.sections]
-discord = ["disnake", "discord"]
+discord = ["disnake", "discord", "ui_store"]
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]

@@ -2,9 +2,10 @@ import typing
 from collections import abc
 from functools import partial
 
-from discord.ui import ActionButton, ComponentStore, Paginator, ToggleButton
+from discord.ui import ActionButton, Paginator, ToggleButton
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption, ui
 from disnake.ext import commands, plugins
+from ui_store import CallbackStore
 
 from app.assets import ASSETS
 from app.bridges.ui import get_check
@@ -45,14 +46,14 @@ class ArenaShopView:
         ),
     )  # fmt: skip
 
-    def __init__(self, store: ComponentStore, shop: ArenaShop) -> None:
+    def __init__(self, store: CallbackStore[MessageInteraction], shop: ArenaShop) -> None:
         self.store = store
         self.shop = shop
         self.active: ToggleButton | None = None
         self.all_slot_buttons: list[ToggleButton] = []
         self.init_pages(store)
 
-    def init_pages(self, store: ComponentStore) -> None:
+    def init_pages(self, store: CallbackStore[MessageInteraction]) -> None:
         @store.bind(ActionButton(label="Quit", style=ButtonStyle.red, custom_id=store.make_id()))
         async def quit_button(inter: MessageInteraction) -> None:
             store.stop()
@@ -209,14 +210,14 @@ class ArenaShopView:
 @commands.max_concurrency(1, commands.BucketType.user)
 async def buffs(inter: CommandInteraction, player: Player) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""  # noqa: D400
-    store = ComponentStore(interaction_check=get_check(inter.author))
+    store = CallbackStore[MessageInteraction]()
     view = ArenaShopView(store, player.arena_shop)
 
     await inter.response.send_message(
         "**Arena Shop**", components=view.paginator.page, ephemeral=True
     )
 
-    if await store.listen(plugin.bot, 180):
+    if await store.listen(plugin.bot.wait_for, check=get_check(inter.author), timeout=180):
         await inter.edit_original_response(components=view.get_state_stopped())
 
 

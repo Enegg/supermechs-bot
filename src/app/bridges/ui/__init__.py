@@ -1,11 +1,12 @@
+from collections import abc
+
 import disnake
-from discord.ui.store import InteractionCallback
 from disnake import MessageInteraction
 
 from app import i18n
 
 
-def get_check(user: disnake.abc.User, /) -> InteractionCallback[bool]:
+def get_check(user: disnake.abc.User, /) -> abc.Callable[[MessageInteraction], abc.Awaitable[bool]]:
     async def interaction_check(inter: MessageInteraction, /) -> bool:
         if inter.author.id == user.id:
             return True

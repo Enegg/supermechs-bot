@@ -3,9 +3,10 @@ from collections import abc
 from functools import partial
 
 from discord import ComponentLimits, EmbedColorType
-from discord.ui import ActionButton, ComponentStore, PaginatedSelect, Paginator, ToggleButton
+from discord.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
 from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption, ui
 from disnake.utils import MISSING
+from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS, get_weight_emoji
@@ -160,7 +161,7 @@ def make_empty_option(locale: Locale, /) -> SelectOption:
 
 
 class MechView:
-    store: ComponentStore
+    store: CallbackStore[MessageInteraction]
     mech: Mech
     pack: ItemPack
     player: Player
@@ -192,7 +193,7 @@ class MechView:
 
     def __init__(
         self,
-        store: ComponentStore,
+        store: CallbackStore[MessageInteraction],
         build: MechBuild,
         pack: ItemPack,
         # renderer: PackRenderer,
@@ -212,7 +213,7 @@ class MechView:
         self.init_pages(store)
         self.item_groups = group_items(pack)
 
-    def init_pages(self, store: ComponentStore) -> None:  # noqa: PLR0915
+    def init_pages(self, store: CallbackStore[MessageInteraction]) -> None:  # noqa: PLR0915
         gettext = i18n.get_gettext(self.locale)
 
         @store.bind(ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))

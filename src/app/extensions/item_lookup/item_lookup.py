@@ -1,8 +1,9 @@
 import io
 from itertools import zip_longest
 
-from discord.ui import ActionButton, ComponentStore, ToggleButton
+from discord.ui import ActionButton, ToggleButton
 from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
+from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS
@@ -18,7 +19,7 @@ from supermechs.utils import contains_any_of
 
 
 def item_view(
-    store: ComponentStore,
+    store: CallbackStore[MessageInteraction],
     embed: Embed,
     item: ItemData,
     locale: Locale,
@@ -134,7 +135,7 @@ def compact_fields(
 
 
 def item_compare_view(
-    store: ComponentStore,
+    store: CallbackStore[MessageInteraction],
     embed: Embed,
     item_a: ItemData,
     item_b: ItemData,

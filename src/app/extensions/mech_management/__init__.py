@@ -3,10 +3,11 @@ import uuid
 from json import JSONDecodeError
 
 from discord import ComponentLimits, bytes_to_file, command_mention
-from discord.ui import ActionButton, ComponentStore, wait_for_components
-from disnake import Attachment, CommandInteraction, Embed, Locale, ui
+from discord.ui import ActionButton, wait_for_components
+from disnake import Attachment, CommandInteraction, Embed, Locale, MessageInteraction, ui
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
+from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS
@@ -111,7 +112,7 @@ async def build(
     else:
         build = player.get_or_create_build(sanitize_string(name))
 
-    store = ComponentStore(interaction_check=get_check(inter.author))
+    store = CallbackStore[MessageInteraction]()
     view = MechView(store, build, item_pack, player, locale)
     file = MISSING
 
@@ -131,7 +132,7 @@ async def build(
     await inter.response.send_message(
         embed=view.embed, file=file, components=view.paginator.page, ephemeral=True
     )
-    await store.listen(plugin.bot, timeout=180)
+    await store.listen(plugin.bot.wait_for, check=get_check(inter.author), timeout=180)
     await inter.edit_original_response(components=None)
 
 
