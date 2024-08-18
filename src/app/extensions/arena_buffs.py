@@ -2,13 +2,12 @@ import typing
 from collections import abc
 from functools import partial
 
-from discord.ui import ActionButton, Paginator, ToggleButton
 from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption, ui
 from disnake.ext import commands, plugins
 from ui_store import CallbackStore
 
 from app.assets import ASSETS
-from app.bridges.ui import get_check
+from app.bridges.ui import ActionButton, Paginator, ToggleButton, get_check
 from app.bridges.utils import INVISIBLE_CHAR
 from app.models import Player
 

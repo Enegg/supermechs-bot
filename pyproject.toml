@@ -10,6 +10,7 @@ dependencies = [
     "anyio == 4.*",
     "attrs >= 23.2.0",
     "cattrs >= 23.2.3",
+    "discord-ui-store @ git+https://github.com/Enegg/discord-ui-store",
     "disnake >= 2.9.1",
     "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
     "orjson >= 3.8.10",
