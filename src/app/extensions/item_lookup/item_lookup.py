@@ -7,8 +7,8 @@ from ui_store import CallbackStore
 from app import i18n
 from app.assets import ASSETS
 from app.bridges.ui import ActionButton, ToggleButton
+from app.bridges.utils import INVISIBLE_CHAR
 from app.devtools import debug_footer
-from app.shared.utils import SPACE
 from app.sm.asset_utils import item_transform_range
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten
@@ -130,7 +130,7 @@ def compact_fields(
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
     transform_range = item_transform_range(item)
 
-    for name, field in zip_longest((transform_range,), field_text, fillvalue=SPACE):
+    for name, field in zip_longest((transform_range,), field_text, fillvalue=INVISIBLE_CHAR):
         embed.add_field(name, field)
 
 

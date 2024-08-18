@@ -3,8 +3,8 @@ import logging
 from disnake import CommandInteraction
 from disnake.ext import plugins
 
+from app.bridges import add_invocation
 from app.core import CONFIG
-from app.shared.metrics import add_invocation
 
 plugin = plugins.Plugin(name="listeners", logger=__name__)
 _LOG_READY = logging.getLogger("event.ready")

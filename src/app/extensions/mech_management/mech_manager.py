@@ -11,9 +11,9 @@ from app import i18n
 from app.assets import ASSETS, get_weight_emoji
 from app.bridges.embeds import embed_image  # noqa: TCH001
 from app.bridges.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
+from app.bridges.utils import INVISIBLE_CHAR
 from app.devtools import debug_footer
 from app.models import ItemPack, MechBuild, Player
-from app.shared.utils import SPACE
 
 from supermechs.abc.item import ItemID
 from supermechs.api import ArenaShop, Element, Item, ItemData, Mech, Stat, Type, is_shop_empty
@@ -187,7 +187,7 @@ class MechView:
         ),
     )  # fmt: skip
     DUMMY_BUTTONS = tuple(
-        ActionButton(label=SPACE, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
+        ActionButton(label=INVISIBLE_CHAR, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
     )
     PAGE_EMOJI = (ASSETS.types[Type.MODULE].emoji, ASSETS.types[Type.TORSO].emoji)
 

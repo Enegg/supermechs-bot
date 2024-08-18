@@ -14,11 +14,11 @@ from app.assets import ASSETS
 from app.bridges import mech_name_autocomplete
 from app.bridges.embeds import embed_image, sikrit_footer
 from app.bridges.ui import ActionButton, get_check
+from app.bridges.user_input import StringLimits, sanitize_string
+from app.bridges.utils import fold_binary_prefix
 from app.devtools import debug_footer
 from app.models import Player
 from app.shared.item_packs import DEFAULT_PACK
-from app.shared.utils import fold_binary_prefix
-from app.user_input import StringLimits, sanitize_string
 
 from .mech_manager import MechView
 

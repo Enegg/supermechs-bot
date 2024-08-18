@@ -7,8 +7,8 @@ from discord.extensions import walk_extensions
 from disnake import CommandInteraction
 from disnake.ext import commands, plugins
 
+from app.bridges.utils import format_exception
 from app.core import ENV
-from app.shared.utils import format_exception
 
 plugin: typing.Final = plugins.Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__

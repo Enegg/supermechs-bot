@@ -9,6 +9,8 @@ import psutil
 from app.async_utils import async_memoize
 from app.typeshed import Pathish
 
+__all__ = ("get_sloc", "get_ram_utilization", "add_invocation", "command_invocations")
+
 
 def _file_sloc(path: Pathish, /) -> int:
     sloc = 0
@@ -25,7 +27,7 @@ def _file_sloc(path: Pathish, /) -> int:
 
 @async_memoize
 async def get_sloc(directory: Pathish = ".", /) -> int:
-    """Get the number of source lines of code of python files within the directory."""
+    """Get the number of significant lines of code of python files within the directory."""
     total: int = 0
     write_lock = Lock()
 

@@ -1,8 +1,8 @@
 import attrs
 import cattrs
 
+from app.bridges.utils import unfold_binary_prefix
 from app.class_utils import attrs_from_path
-from app.shared.utils import unfold_binary_prefix
 
 from supermechs.gamerules import DEFAULT_GAME_RULES, GameRules
 

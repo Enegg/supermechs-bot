@@ -9,8 +9,8 @@ from ui_store import CallbackStore
 
 from app.assets import ASSETS
 from app.bridges.ui import get_check
+from app.bridges.utils import INVISIBLE_CHAR
 from app.models import Player
-from app.shared.utils import SPACE
 
 from supermechs.api import ArenaShop, Category
 
@@ -29,7 +29,7 @@ def iter_category(category: Category, /) -> abc.Iterator[str]:
 
 
 def make_label(shop: ArenaShop, category: Category, /) -> str:
-    return format_value(category, shop[category]).rjust(4, SPACE)
+    return format_value(category, shop[category]).rjust(4, INVISIBLE_CHAR)
 
 
 class ArenaShopView:

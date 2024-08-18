@@ -4,9 +4,9 @@ import typing
 from collections import abc
 from typing import Final, Literal, TypeAlias
 
-__all__ = ("SPACE", "fold_binary_prefix", "format_exception")
+__all__ = ("INVISIBLE_CHAR", "fold_binary_prefix", "format_exception")
 
-SPACE: Final = "\u2800"
+INVISIBLE_CHAR: Final = "\u2800"
 """Invisible character discord does not truncate."""
 
 # https://en.wikipedia.org/wiki/Binary_prefix

@@ -4,10 +4,10 @@ from typing import Any
 from discord import AutocompleteReturnType, InteractionLimits
 from disnake import CommandInteraction
 
+from app.bridges.user_input import StringLimits
 from app.shared.item_packs import get_item_pack_for
 from app.sm.name_utils import acronym_of, search_for
 from app.stored import players
-from app.user_input import StringLimits
 
 from supermechs.abc.item import Name
 from supermechs.api import Element, ItemData, Type
