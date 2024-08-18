@@ -2,7 +2,7 @@ import io
 import uuid
 from json import JSONDecodeError
 
-from discord import ComponentLimits, bytes_to_file, command_mention
+from discord import ComponentLimits, bytes_to_file, markdown as md
 from discord.ui import wait_for_components
 from disnake import Attachment, CommandInteraction, Embed, Locale, MessageInteraction, ui
 from disnake.ext import commands, plugins
@@ -41,7 +41,7 @@ async def on_load() -> None:
     await sync.SYNC_FINISHED.wait()
     buffs_command = plugin.bot.get_global_command_named("buffs")
     assert buffs_command is not None
-    MechView.command_mention = command_mention(buffs_command)
+    MechView.command_mention = md.command_mention(buffs_command)
 
 
 @plugin.slash_command()

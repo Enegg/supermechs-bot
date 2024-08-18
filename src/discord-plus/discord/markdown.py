@@ -1,5 +1,7 @@
 """Collection of functions related to (discord specific) markdown formatting."""
 
+import typing
+
 __all__ = ("hyperlink", "codeblock", "strip_codeblock")
 
 
@@ -23,3 +25,17 @@ def strip_codeblock(text: str, /) -> str:
         return stripped
 
     return text
+
+
+@typing.runtime_checkable
+class Commandish(typing.Protocol):
+    @property
+    def id(self) -> int: ...
+
+    @property
+    def name(self) -> str: ...
+
+
+def command_mention(command: Commandish, /) -> str:
+    """Return a string allowing to mention a slash command."""
+    return f"</{command.name}:{command.id}>"

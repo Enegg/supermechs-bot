@@ -1,7 +1,7 @@
 import random
 import typing
 
-from discord import command_mention, markdown as md
+from discord import markdown as md
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 from disnake.utils import format_dt, oauth_url
@@ -81,7 +81,7 @@ async def activity(inter: CommandInteraction) -> None:
     """Display command invocation activity."""
     desc = (
         "\n".join(
-            f"{command_mention(command)}: {invocations}"
+            f"{md.command_mention(command)}: {invocations}"
             for command, invocations in command_invocations.items()
         )
         or "No invocations since bot started"
