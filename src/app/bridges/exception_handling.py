@@ -2,7 +2,7 @@ import logging
 from contextlib import suppress
 from functools import partial
 
-from discord import EmbedLimits, ListenerRegistry, Markdown, SenderKeywords, text_to_file
+from discord import EmbedLimits, ListenerRegistry, SenderKeywords, markdown, text_to_file
 from disnake import Client, Colour, CommandInteraction, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
@@ -32,7 +32,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Se
         embed.description = header
 
     else:
-        embed.description = Markdown.codeblock(traceback_text, "py")
+        embed.description = markdown.codeblock(traceback_text, "py")
         embed.add_field(SPACE, header, inline=False)
 
     return params

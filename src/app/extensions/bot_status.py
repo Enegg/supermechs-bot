@@ -1,7 +1,7 @@
 import random
 import typing
 
-from discord import Markdown as MD, command_mention
+from discord import command_mention, markdown as md
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
 from disnake.utils import format_dt, oauth_url
@@ -41,11 +41,11 @@ async def info(inter: CommandInteraction) -> None:
     ]
     if app_info.bot_public:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
-        general_fields.append(MD.hyperlink("**Invite link**", invite))
+        general_fields.append(md.hyperlink("**Invite link**", invite))
 
     backend_fields = [
         f"Python version: {meta.python_version}",
-        f"Discord library: {MD.hyperlink('disnake', meta.disnake_url)} {meta.disnake_version}",
+        f"Discord library: {md.hyperlink('disnake', meta.disnake_url)} {meta.disnake_version}",
     ]
     supermechs_fields = [
         f"Registered players: {len(players.mapping)}",
@@ -63,7 +63,7 @@ async def info(inter: CommandInteraction) -> None:
     if DEFAULT_PACK.is_set():
         default_pack = DEFAULT_PACK.get_nowait()
         supermechs_fields += [
-            f"Default item pack: {MD.hyperlink(default_pack.data.key, CONFIG.default_pack_url)}",
+            f"Default item pack: {md.hyperlink(default_pack.data.key, CONFIG.default_pack_url)}",
             f"Total items: {len(default_pack.items)}",
         ]
     embed = (

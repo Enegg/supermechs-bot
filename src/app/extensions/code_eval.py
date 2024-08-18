@@ -10,7 +10,7 @@ from typing import Final
 import anyio
 import anyio.to_thread
 
-from discord import InteractionLimits, Markdown, MessageLimits, text_to_file
+from discord import InteractionLimits, MessageLimits, markdown, text_to_file
 from discord.ui import random_str, wait_for_modal
 from disnake import CommandInteraction, TextInputStyle, ui
 from disnake.ext import commands, plugins
@@ -49,7 +49,7 @@ async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
         code = last_inter.text_values[text_input.custom_id]
         del custom_id, text_input
 
-    code = Markdown.strip_codeblock(code)
+    code = markdown.strip_codeblock(code)
 
     compiled_code: types.CodeType = compile(
         source=code,
