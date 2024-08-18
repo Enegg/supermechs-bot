@@ -1,5 +1,4 @@
 import logging
-import logging.config
 from functools import partial
 
 import anyio
@@ -11,7 +10,7 @@ from disnake.ext import commands
 import resources
 from app import i18n
 from app.bridges import register_injections, setup_channel_logger
-from app.core import ENV, logging_config
+from app.core import ENV, config_logging
 from app.shared.item_packs import load_default_pack
 from app.shared.session import client_session
 
@@ -19,8 +18,7 @@ from app.shared.session import client_session
 async def main() -> None:
     import sync
 
-    logging.captureWarnings(True)
-    logging.config.dictConfig(logging_config())
+    config_logging()
     disnake.VoiceClient.warn_nacl = False
 
     bot = commands.InteractionBot(

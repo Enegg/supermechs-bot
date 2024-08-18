@@ -1,17 +1,12 @@
-from pathlib import Path
-from typing import Any
-
 import attrs
 import cattrs
-import rtoml
 
 from app.class_utils import attrs_from_path
 from app.shared.utils import unfold_binary_prefix
-from app.typeshed import Pathish
 
 from supermechs.gamerules import DEFAULT_GAME_RULES, GameRules
 
-__all__ = ("CONFIG", "logging_config")
+__all__ = ("CONFIG",)
 
 _converter = cattrs.Converter()
 _converter.register_structure_hook(int, lambda val, _: unfold_binary_prefix(val))
@@ -30,13 +25,7 @@ class _Config:
     """Size of chunk for iterative download."""
     game_rules: GameRules = DEFAULT_GAME_RULES
     """Set of rules the game shall obey."""
+    # no need to store logging config here for the app's lifetime
 
 
 CONFIG = attrs_from_path("config.toml", _Config, _converter)
-
-
-def logging_config(path: Pathish = "config.toml", /) -> dict[str, Any]:
-    """Read the configuration for the logging module."""
-    # this is not a part of the _Config object as
-    # it doesn't have to live for the lifetime of the app
-    return rtoml.load(Path(path))["logging"]
