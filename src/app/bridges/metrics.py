@@ -9,7 +9,7 @@ import psutil
 from app.async_utils import async_memoize
 from app.typeshed import Pathish
 
-__all__ = ("get_sloc", "get_ram_utilization", "add_invocation", "command_invocations")
+__all__ = ("get_sloc", "get_ram_utilization", "add_invocation", "invoke_counter")
 
 
 def _file_sloc(path: Pathish, /) -> int:
@@ -53,8 +53,8 @@ class CommandData(typing.NamedTuple):
     name: str
 
 
-command_invocations: typing.Final = Counter[CommandData]()
+invoke_counter: typing.Final = Counter[CommandData]()
 
 
 def add_invocation(id: int, name: str, /) -> None:
-    command_invocations[CommandData(id, name)] += 1
+    invoke_counter[CommandData(id, name)] += 1

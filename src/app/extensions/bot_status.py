@@ -9,7 +9,7 @@ from disnake.utils import format_dt, oauth_url
 from app import meta
 from app.assets import ASSETS
 from app.async_utils import amap, move_on_before_timeout
-from app.bridges import command_invocations, fold_binary_prefix, get_ram_utilization, get_sloc
+from app.bridges import fold_binary_prefix, get_ram_utilization, get_sloc, invoke_counter
 from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK
 from app.stored import players
@@ -36,7 +36,7 @@ async def info(inter: CommandInteraction) -> None:
         f"Developer: {app_info.owner.mention}",
         f"Created: {format_dt(bot.user.created_at, 'R')}",
         f"Servers: {len(bot.guilds)}",
-        f"Invoked commands: {command_invocations.total()}",
+        f"Invoked commands: {invoke_counter.total()}",
     ]
     if app_info.bot_public:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
@@ -56,7 +56,7 @@ async def info(inter: CommandInteraction) -> None:
         f"RAM usage: {bytes_}{prefix}B",
     ]
     with move_on_before_timeout():
-        app_loc, sm_loc = await amap(get_sloc, "app", *supermechs.__path__)
+        app_loc, sm_loc = await amap(get_sloc, "src", *supermechs.__path__)
         backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
     if DEFAULT_PACK.is_set():
@@ -82,7 +82,7 @@ async def activity(inter: CommandInteraction) -> None:
     desc = (
         "\n".join(
             f"{md.command_mention(command)}: {invocations}"
-            for command, invocations in command_invocations.items()
+            for command, invocations in invoke_counter.items()
         )
         or "No invocations since bot started"
     )
