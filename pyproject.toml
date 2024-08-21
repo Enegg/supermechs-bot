@@ -26,18 +26,28 @@ readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 
 
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
 [tool.pdm]
 distribution = false
 
 [tool.pdm.dev-dependencies]
 dev = [
+    "-e app @ file:///${PROJECT_ROOT}",
     "-e resources @ file:///${PROJECT_ROOT}/src/resources",
     "-e memo @ file:///${PROJECT_ROOT}/src/memo",
     "-e discord-plus @ file:///${PROJECT_ROOT}/src/discord-plus",
+    "-e supermechs-parse @ file:///${PROJECT_ROOT}/src/supermechs-parse",
 ]
 lint = [
     "ruff >= 0.4.2",
 ]
+
+[tool.pdm.build]
+includes = ["src/app"]
 
 
 [tool.ruff]
