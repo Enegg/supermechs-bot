@@ -15,7 +15,7 @@ from app.shared.item_packs import load_default_pack
 
 
 async def main() -> None:
-    import sync
+    from app import sync
 
     config_logging()
     disnake.VoiceClient.warn_nacl = False

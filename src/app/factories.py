@@ -3,7 +3,7 @@ import logging
 import disnake
 
 from app.models import ItemPack, Player
-from app.sm.convert import to_item_pack
+# from app.sm.convert import to_item_pack
 
 from supermechs.ext.deserializers.typedefs import AnyItemPack
 

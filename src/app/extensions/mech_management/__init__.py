@@ -35,7 +35,7 @@ plugin = plugins.Plugin[commands.InteractionBot](name="Mech-manager", logger=__n
 
 @plugin.load_hook(post=True)
 async def on_load() -> None:
-    import sync
+    from app import sync
 
     # wait until API command caches are populated
     await sync.SYNC_FINISHED.wait()
