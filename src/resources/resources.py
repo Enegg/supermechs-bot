@@ -71,9 +71,15 @@ class HttpResource(Resource):
             return await response.read()
 
     @override
-    async def iter_chunked(self, chunk_size: int, /) -> abc.AsyncIterator[bytes]:
+    async def iter_chunked(self, chunk_size: int = -1, /) -> abc.AsyncIterator[bytes]:
         async with self.session.get(self.url) as response:
-            async for chunk in response.content.iter_chunked(chunk_size):
+            if chunk_size < 0:
+                iterator = response.content.iter_any()
+
+            else:
+                iterator = response.content.iter_chunked(chunk_size)
+
+            async for chunk in iterator:
                 yield chunk
 
     @classmethod
@@ -98,9 +104,10 @@ class FileResource(Resource):
         return await self.path.read_bytes()
 
     @override
-    async def iter_chunked(self, chunk_size: int, /) -> abc.AsyncIterator[bytes]:
+    async def iter_chunked(self, chunk_size: int = -1, /) -> abc.AsyncIterator[bytes]:
         async with await self.path.open("rb") as file:
-            yield await file.read1(chunk_size)
+            while chunk := await file.read1(chunk_size):
+                yield chunk
 
     async def get_size(self) -> int:
         return (await self.path.stat()).st_size
