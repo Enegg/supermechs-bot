@@ -33,8 +33,9 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
 
     def runner(path: Pathish, /) -> None:
         nonlocal total
+        sloc = _file_sloc(path)
         with write_lock:
-            total += _file_sloc(path)
+            total += sloc
 
     async with anyio.create_task_group() as tg:
         async for path in anyio.Path(directory).glob("**/*.py"):

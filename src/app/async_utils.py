@@ -14,8 +14,7 @@ from memo import AsyncMemo, default_key
 def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:
     """Memoization decorator for async functions.
 
-    It is safe to run the resulting coroutine function concurrently to self using same
-    arguments, in which case the decorated awaitable is ran only once.
+    In concurrent calls with same arguments, the function is ran only once.
     """
     key = typing.cast(abc.Callable[P, abc.Hashable], default_key)
     return AsyncMemo(func, key)
