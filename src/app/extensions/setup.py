@@ -28,7 +28,7 @@ async def plugin_(inter: CommandInteraction) -> None:
 
 
 async def _plugin_helper(
-    inter: CommandInteraction, plugin: str | None, func: abc.Callable[[str], None]
+    inter: CommandInteraction, plugin: str | None, func: abc.Callable[[str], None], action: str
 ) -> None:
     global recently_loaded_plugin  # noqa: PLW0603
     plugin = plugin or recently_loaded_plugin
@@ -45,7 +45,7 @@ async def _plugin_helper(
 
     else:
         recently_loaded_plugin = plugin
-        await inter.response.send_message("Success", ephemeral=True)
+        await inter.response.send_message(f"{action.title()}ed `{plugin}`", ephemeral=True)
 
 
 @plugin_.sub_command()
@@ -58,7 +58,7 @@ async def load(
     ----------
     ext: The name of a plugin to perform action on.
     """
-    await _plugin_helper(inter, ext, plugin.bot.load_extension)
+    await _plugin_helper(inter, ext, plugin.bot.load_extension, "load")
 
 
 @plugin_.sub_command()
@@ -71,7 +71,7 @@ async def reload(
     ----------
     ext: The name of a plugin to perform action on.
     """
-    await _plugin_helper(inter, ext, plugin.bot.reload_extension)
+    await _plugin_helper(inter, ext, plugin.bot.reload_extension, "reload")
 
 
 @plugin_.sub_command()
@@ -84,7 +84,7 @@ async def unload(
     ----------
     ext: The name of a plugin to perform action on.
     """
-    await _plugin_helper(inter, ext, plugin.bot.unload_extension)
+    await _plugin_helper(inter, ext, plugin.bot.unload_extension, "unload")
 
 
 @plugin.slash_command()
@@ -151,6 +151,9 @@ async def set_locale(inter: CommandInteraction, locale: str | None = None) -> No
     if locale is None:
         del ENV.locale_override
         msg = "Locale reset"
+
+    elif locale not in disnake.Locale._value2member_map_:
+        msg = f"Unknown locale: {locale}"
 
     else:
         ENV.locale_override = locale

@@ -7,25 +7,27 @@ from app.bridges import add_invocation
 from app.core import CONFIG
 
 plugin = plugins.Plugin(name="listeners", logger=__name__)
-_LOG_READY = logging.getLogger("event.ready")
+_EVENTS_LOG = logging.getLogger("event")
 
 
 @plugin.listener()
 async def on_ready() -> None:
-    _LOG_READY.info(f"{plugin.bot.user.name} is ready")
+    _EVENTS_LOG.info("%s is ready", plugin.bot.user.name)
 
     if __debug__:
         limit = plugin.bot.session_start_limit
         assert limit is not None
-        _LOG_READY.info(
+        _EVENTS_LOG.info(
             f"Session #{limit.total - limit.remaining}/{limit.total}"
             f" (expires {limit.reset_time:{CONFIG.date_format}})"
         )
 
 
 @plugin.listener()
-async def on_application_command(interaction: CommandInteraction, /) -> None:
-    add_invocation(interaction.data.id, interaction.application_command.qualified_name)
+async def on_application_command(inter: CommandInteraction, /) -> None:
+    command_name = inter.application_command.qualified_name
+    _EVENTS_LOG.debug("Slash command invoked: /%s", command_name)
+    add_invocation(inter.data.id, command_name)
 
 
 setup, teardown = plugin.create_extension_handlers()
