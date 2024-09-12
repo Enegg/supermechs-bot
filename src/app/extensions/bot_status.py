@@ -62,7 +62,7 @@ async def info(inter: CommandInteraction) -> None:
     if DEFAULT_PACK.is_set():
         default_pack = DEFAULT_PACK.get_nowait()
         supermechs_fields += [
-            f"Default item pack: {md.hyperlink(default_pack.data.key, CONFIG.default_pack_url)}",
+            f"Default item pack: {md.hyperlink(default_pack.key, CONFIG.default_pack_url)}",
             f"Total items: {len(default_pack.items)}",
         ]
     embed = (
