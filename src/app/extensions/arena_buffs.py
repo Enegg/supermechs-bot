@@ -140,7 +140,7 @@ class ArenaShopView:
             ),
             style_on=ButtonStyle.blurple,
             label=make_label(self.shop, category),
-            emoji=ASSETS.categories[category].emoji,
+            emoji=ASSETS.categories[category.name].emoji,
             custom_id=self.store.make_id(category.name),
         )
         self.store.bind(btn)(partial(self.buff_button, btn))

@@ -51,11 +51,11 @@ async def mech(inter: CommandInteraction) -> None:
 
 # TODO: localize this
 MECH_SUMMARY_TEMPLATE = f"""\
-- {ASSETS.types[Type.TORSO].emoji} {{TORSO}}
-- {ASSETS.types[Type.LEGS].emoji} {{LEGS}}
-- {ASSETS.sided_types[Type.SIDE_WEAPON].right.emoji} `{{WEAPONS}}` weapon(s)
-- {ASSETS.types[Type.MODULE].emoji} `{{MODULES}}` module(s)
-- {ASSETS.stats[Stat.weight].emoji} `{{WEIGHT}}`kg\
+- {ASSETS.types[Type.TORSO.name].emoji} {{TORSO}}
+- {ASSETS.types[Type.LEGS.name].emoji} {{LEGS}}
+- {ASSETS.sided_types[Type.SIDE_WEAPON.name].right.emoji} `{{WEAPONS}}` weapon(s)
+- {ASSETS.types[Type.MODULE.name].emoji} `{{MODULES}}` module(s)
+- {ASSETS.stats[Stat.weight.name].emoji} `{{WEIGHT}}`kg\
 """
 
 

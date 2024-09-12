@@ -64,13 +64,13 @@ async def item(
         # url, file = embed_image(sprite.image, item.name)
     url, file = CONFIG.missing_image_url, MISSING  # FIXME
 
-    embed_color = ASSETS.elements[item.element].color
+    embed_color = ASSETS.elements[item.element.name].color
 
     if item.type is Type.SIDE_WEAPON or item.type is Type.TOP_WEAPON:
-        icon_url = ASSETS.sided_types[item.type].right.image_url
+        icon_url = ASSETS.sided_types[item.type.name].right.image_url
 
     else:
-        icon_url = ASSETS.types[item.type].image_url
+        icon_url = ASSETS.types[item.type.name].image_url
 
     if compact:
         embed = (
@@ -167,7 +167,7 @@ async def compare(
             desc_builder.write(f" {str_type(item_a.type)} / {str_type(item_b.type)}")
 
         desc = desc_builder.getvalue()
-        color = ASSETS.elements[item_a.element].color
+        color = ASSETS.elements[item_a.element.name].color
 
     else:
         desc = (

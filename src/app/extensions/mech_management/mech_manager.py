@@ -55,7 +55,7 @@ def format_summary(mech: Mech, locale: Locale, buff_with: ArenaShop | None = Non
 
     return "\n".join(
         "{stat_emoji} **{value}** {stat_name}{extra}".format(
-            stat_emoji=ASSETS.stats[stat].emoji,
+            stat_emoji=ASSETS.stats[stat.name].emoji,
             value=value,
             stat_name=i18n.get_stat_name(locale, stat),
             extra=" " + get_weight_emoji(value) if stat is Stat.weight else "",
@@ -71,10 +71,10 @@ def slot_emoji(slot: SlotType, /) -> str:
         slot, n = slot
 
         if slot is not Type.MODULE:
-            asset = ASSETS.sided_types[slot]
+            asset = ASSETS.sided_types[slot.name]
             return (asset.right if n % 2 else asset.left).emoji
 
-    return ASSETS.types[slot].emoji
+    return ASSETS.types[slot.name].emoji
 
 
 def sorted_options(
@@ -90,7 +90,7 @@ def sorted_options(
         it = options.values()
 
     else:
-        element_order = list(ASSETS.elements)
+        element_order = [Element.PHYSICAL, Element.EXPLOSIVE, Element.ELECTRIC, Element.COMBINED]
 
         if primary_element is not None:
             element_order.remove(primary_element)
@@ -114,7 +114,7 @@ def color_from_mech(mech: Mech, /) -> EmbedColorType:
     else:
         return None
 
-    return ASSETS.elements[key].color
+    return ASSETS.elements[key.name].color
 
 
 def slot_to_type(metadata: abc.Sequence[str], /) -> SlotType:
@@ -140,7 +140,7 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption
         type_: {
             element: [
                 SelectOption(
-                    label=item.name, value=str(item.id), emoji=ASSETS.elements[item.element].emoji
+                    label=item.name, value=str(item.id), emoji=ASSETS.elements[item.element.name].emoji
                 )
                 for item in items
             ]
@@ -188,7 +188,7 @@ class MechView:
     DUMMY_BUTTONS = tuple(
         ActionButton(label=INVISIBLE_CHAR, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
     )
-    PAGE_EMOJI = (ASSETS.types[Type.MODULE].emoji, ASSETS.types[Type.TORSO].emoji)
+    PAGE_EMOJI = (ASSETS.types[Type.MODULE.name].emoji, ASSETS.types[Type.TORSO.name].emoji)
 
     def __init__(
         self,

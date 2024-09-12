@@ -93,11 +93,11 @@ def default_fields(
             spaced = True
 
         string.write(
-            f"{ASSETS.stats[stat].emoji} **{str_value}** {i18n.get_stat_name(locale, stat)}\n"
+            f"{ASSETS.stats[stat.name].emoji} **{str_value}** {i18n.get_stat_name(locale, stat)}\n"
         )
 
     if item.tags.require_jump:
-        string.write(f"{ASSETS.stats[Stat.jump].emoji} **Jumping required**")
+        string.write(f"{ASSETS.stats[Stat.jump.name].emoji} **Jumping required**")
 
     embed.add_field("Stats:", string.getvalue(), inline=False)
 
@@ -119,10 +119,10 @@ def compact_fields(
         stats = buff_stats(stats, MAX_SHOP)
 
     for stat_key, str_value in iter_formatted_stats(stats, avg, 0):
-        lines.append(f"{ASSETS.stats[stat_key].emoji} **{str_value}**")
+        lines.append(f"{ASSETS.stats[stat_key.name].emoji} **{str_value}**")
 
     if item.tags.require_jump:
-        lines.append(f"{ASSETS.stats[Stat.jump].emoji}❗")
+        lines.append(f"{ASSETS.stats[Stat.jump.name].emoji}❗")
 
     line_count = len(lines)
     div = get_row_width(line_count, 4)
@@ -175,7 +175,7 @@ def item_compare_view(
             require_jump = True
 
         if require_jump:
-            emoji = ASSETS.stats[Stat.jump].emoji
+            emoji = ASSETS.stats[Stat.jump.name].emoji
             name_field.append(f"{emoji} **{gettext('item-compare-jump-required')}**")
 
         modify_field_at = embed.set_field_at if embed._fields else embed.insert_field_at

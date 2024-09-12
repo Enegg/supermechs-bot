@@ -13,7 +13,7 @@ from app.class_utils import attrs_from_path
 from app.core import CONFIG
 from app.typeshed import T
 
-from supermechs.api import BuildRules, Category, Element, Stat, Tier, Type
+from supermechs.api import BuildRules
 from supermechs.enums._base import PartialEnum
 
 __all__ = ("ASSETS", "get_weight_emoji")
@@ -45,13 +45,13 @@ class Sided(typing.Generic[T]):
 
 @attrs.define(kw_only=True)
 class Assets:
-    stats: abc.Mapping[Stat, Asset]
+    stats: abc.Mapping[str, Asset]
     extra_stats: abc.Mapping[str, Asset]
-    tiers: abc.Mapping[Tier, ColoredAsset]
-    elements: abc.Mapping[Element, ColoredAsset]
-    types: abc.Mapping[Type, Asset]
-    sided_types: abc.Mapping[Type, Sided[Asset]]
-    categories: abc.Mapping[Category, Asset]
+    tiers: abc.Mapping[str, ColoredAsset]
+    elements: abc.Mapping[str, ColoredAsset]
+    types: abc.Mapping[str, Asset]
+    sided_types: abc.Mapping[str, Sided[Asset]]
+    categories: abc.Mapping[str, Asset]
     gifs: abc.Mapping[str, abc.Sequence[str]]
 
 
