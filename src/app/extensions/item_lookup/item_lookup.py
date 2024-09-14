@@ -1,13 +1,11 @@
 import io
 from itertools import zip_longest
 
-from disnake import ButtonStyle, Embed, Locale, MessageInteraction, ui
-from ui_store import CallbackStore
+from disnake import Embed, Locale, MessageInteraction
 
 from app import i18n
 from app.assets import ASSETS
-from app.bridges import INVISIBLE_CHAR
-from app.bridges.ui import ActionButton, ToggleButton
+from app.bridges import INVISIBLE_CHAR, ui
 from app.devtools import debug_footer
 from app.sm.asset_utils import item_transform_range
 
@@ -19,7 +17,7 @@ from supermechs.utils import contains_any_of
 
 
 def item_view(
-    store: CallbackStore[MessageInteraction],
+    store: ui.CallbackStore,
     embed: Embed,
     item: ItemData,
     locale: Locale,
@@ -32,18 +30,20 @@ def item_view(
     if __debug__:
         debug_footer(embed)
 
-    @store.bind(ToggleButton(label="Buffs", custom_id=store.make_id()))
+    @store.bind(ui.ToggleButton(label="Buffs", custom_id=store.make_id()))
     async def buff_button(inter: MessageInteraction) -> None:
         buff_button.toggle()
         await update(inter)
 
-    @store.bind(ToggleButton(label="Damage average", custom_id=store.make_id()))
+    @store.bind(ui.ToggleButton(label="Damage average", custom_id=store.make_id()))
     async def avg_button(inter: MessageInteraction) -> None:
         avg_button.toggle()
         await update(inter)
 
     @store.bind(
-        ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red, custom_id=store.make_id())
+        ui.ActionButton(
+            label=gettext("ui-quit"), style=ui.ButtonStyle.red, custom_id=store.make_id()
+        )
     )
     async def quit_button(inter: MessageInteraction) -> None:
         store.stop()
@@ -133,7 +133,7 @@ def compact_fields(
 
 
 def item_compare_view(
-    store: CallbackStore[MessageInteraction],
+    store: ui.CallbackStore,
     embed: Embed,
     item_a: ItemData,
     item_b: ItemData,
@@ -142,14 +142,16 @@ def item_compare_view(
     gettext = i18n.get_gettext(locale)
     max_item_stats = (max_stats(item_a), max_stats(item_b))
 
-    @store.bind(ToggleButton(label=gettext("item-compare-ui-buffs"), custom_id=store.make_id()))
+    @store.bind(ui.ToggleButton(label=gettext("item-compare-ui-buffs"), custom_id=store.make_id()))
     async def buffs_button(inter: MessageInteraction) -> None:
         buffs_button.toggle()
         update()
         await inter.response.edit_message(embed=embed, components=layout)
 
     @store.bind(
-        ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red, custom_id=store.make_id())
+        ui.ActionButton(
+            label=gettext("ui-quit"), style=ui.ButtonStyle.red, custom_id=store.make_id()
+        )
     )
     async def quit_button(inter: MessageInteraction) -> None:
         await inter.response.defer()

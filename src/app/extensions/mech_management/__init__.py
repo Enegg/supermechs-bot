@@ -4,10 +4,9 @@ from json import JSONDecodeError
 
 from discord import ComponentLimits, bytes_to_file, markdown as md
 from discord.ui import wait_for_components
-from disnake import Attachment, CommandInteraction, Embed, Locale, MessageInteraction, ui
+from disnake import Attachment, CommandInteraction, Embed, Locale
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
-from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS
@@ -18,8 +17,8 @@ from app.bridges import (
     mech_name_autocomplete,
     sanitize_string,
     sikrit_footer,
+    ui,
 )
-from app.bridges.ui import ActionButton, get_check
 from app.devtools import debug_footer
 from app.models import Player
 from app.shared.item_packs import DEFAULT_PACK
@@ -116,7 +115,7 @@ async def build(
     else:
         build = player.get_or_create_build(sanitize_string(name))
 
-    store = CallbackStore[MessageInteraction]()
+    store = ui.CallbackStore()
     view = MechView(store, build, item_pack, player, locale)
     file = MISSING
 
@@ -136,7 +135,7 @@ async def build(
     await inter.response.send_message(
         embed=view.embed, file=file, components=view.paginator.page, ephemeral=True
     )
-    await store.listen(plugin.bot.wait_for, check=get_check(inter.author), timeout=180)
+    await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author), timeout=180)
     await inter.edit_original_response(components=None)
 
 
@@ -237,7 +236,7 @@ async def export(
         max_values=len(options),
         options=dict(options),
     )
-    button_all = ActionButton(label=gettext("export-all"))
+    button_all = ui.ActionButton(label=gettext("export-all"))
 
     content = None
 

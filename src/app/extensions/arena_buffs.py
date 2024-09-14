@@ -2,13 +2,11 @@ import typing
 from collections import abc
 from functools import partial
 
-from disnake import ButtonStyle, CommandInteraction, MessageInteraction, SelectOption, ui
+from disnake import CommandInteraction, MessageInteraction
 from disnake.ext import commands, plugins
-from ui_store import CallbackStore
 
 from app.assets import ASSETS
-from app.bridges import INVISIBLE_CHAR
-from app.bridges.ui import ActionButton, Paginator, ToggleButton, get_check
+from app.bridges import INVISIBLE_CHAR, ui
 from app.models import Player
 
 from supermechs.api import ArenaShop, Category
@@ -45,22 +43,24 @@ class ArenaShopView:
         ),
     )  # fmt: skip
 
-    def __init__(self, store: CallbackStore[MessageInteraction], shop: ArenaShop) -> None:
+    def __init__(self, store: ui.CallbackStore, shop: ArenaShop) -> None:
         self.store = store
         self.shop = shop
-        self.active: ToggleButton | None = None
-        self.all_slot_buttons: list[ToggleButton] = []
+        self.active: ui.ToggleButton | None = None
+        self.all_slot_buttons: list[ui.ToggleButton] = []
         self.init_pages(store)
 
-    def init_pages(self, store: CallbackStore[MessageInteraction]) -> None:
-        @store.bind(ActionButton(label="Quit", style=ButtonStyle.red, custom_id=store.make_id()))
+    def init_pages(self, store: ui.CallbackStore) -> None:
+        @store.bind(
+            ui.ActionButton(label="Quit", style=ui.ButtonStyle.red, custom_id=store.make_id())
+        )
         async def quit_button(inter: MessageInteraction) -> None:
             store.stop()
             await inter.response.edit_message(components=self.get_state_stopped())
 
         @store.bind(
-            ActionButton(
-                label="🡸", style=ButtonStyle.blurple, disabled=True, custom_id=store.make_id()
+            ui.ActionButton(
+                label="🡸", style=ui.ButtonStyle.blurple, disabled=True, custom_id=store.make_id()
             )
         )
         async def prev_button(inter: MessageInteraction) -> None:
@@ -72,7 +72,9 @@ class ArenaShopView:
 
             await inter.response.edit_message(components=self.paginator.page)
 
-        @store.bind(ActionButton(label="🡺", style=ButtonStyle.blurple, custom_id=store.make_id()))
+        @store.bind(
+            ui.ActionButton(label="🡺", style=ui.ButtonStyle.blurple, custom_id=store.make_id())
+        )
         async def next_button(inter: MessageInteraction) -> None:
             self.paginator.next_page()
             prev_button.disabled = False
@@ -82,7 +84,9 @@ class ArenaShopView:
 
             await inter.response.edit_message(components=self.paginator.page)
 
-        @store.bind(ActionButton(label="Max", style=ButtonStyle.green, custom_id=store.make_id()))
+        @store.bind(
+            ui.ActionButton(label="Max", style=ui.ButtonStyle.green, custom_id=store.make_id())
+        )
         async def max_button(inter: MessageInteraction) -> None:
             for btn in self.all_slot_buttons:
                 self.modify_buff(btn)
@@ -94,7 +98,7 @@ class ArenaShopView:
 
         @store.bind(
             ui.StringSelect(
-                options=[SelectOption(label=".")], disabled=True, custom_id=store.make_id()
+                options=[ui.SelectOption(label="$")], disabled=True, custom_id=store.make_id()
             )
         )
         async def select(inter: MessageInteraction) -> None:
@@ -109,7 +113,7 @@ class ArenaShopView:
 
         self.max_button = max_button
         self.select = select
-        self.paginator = Paginator(
+        self.paginator = ui.Paginator(
             [
                 [
                     [*map(self.make_button, self.LAYOUT[0][0])],
@@ -128,17 +132,17 @@ class ArenaShopView:
             ]
         )
         max_button.disabled = all(
-            btn.style_off is ButtonStyle.green for btn in self.all_slot_buttons
+            btn.style_off is ui.ButtonStyle.green for btn in self.all_slot_buttons
         )
 
-    def make_button(self, category: Category, /) -> ToggleButton:
-        btn = ToggleButton(
+    def make_button(self, category: Category, /) -> ui.ToggleButton:
+        btn = ui.ToggleButton(
             style_off=(
-                ButtonStyle.green
+                ui.ButtonStyle.green
                 if self.shop[category] == category.data.max_level
-                else ButtonStyle.gray
+                else ui.ButtonStyle.gray
             ),
-            style_on=ButtonStyle.blurple,
+            style_on=ui.ButtonStyle.blurple,
             label=make_label(self.shop, category),
             emoji=ASSETS.categories[category.name].emoji,
             custom_id=self.store.make_id(category.name),
@@ -147,7 +151,7 @@ class ArenaShopView:
         self.all_slot_buttons.append(btn)
         return btn
 
-    async def buff_button(self, button: ToggleButton, inter: MessageInteraction) -> None:
+    async def buff_button(self, button: ui.ToggleButton, inter: MessageInteraction) -> None:
         if self.active is button:
             self.set_state_idle()
             return
@@ -164,12 +168,12 @@ class ArenaShopView:
         self.select.placeholder = button.label
         category = Category.of_name(self.store.strip_id(button))
         self.select.options = [
-            SelectOption(label=f"{level}: {buff}", value=str(level))
+            ui.SelectOption(label=f"{level}: {buff}", value=str(level))
             for level, buff in enumerate(iter_category(category))
         ]
         await inter.response.edit_message(components=self.paginator.page)
 
-    def modify_buff(self, button: ToggleButton, level: int = -1) -> None:
+    def modify_buff(self, button: ui.ToggleButton, level: int = -1) -> None:
         category = Category.of_name(self.store.strip_id(button))
         max_level = category.data.max_level
 
@@ -179,11 +183,11 @@ class ArenaShopView:
         self.shop[category] = level
 
         if level == max_level:
-            button.style_off = ButtonStyle.green
+            button.style_off = ui.ButtonStyle.green
 
         else:
             self.max_button.disabled = False
-            button.style_off = ButtonStyle.gray
+            button.style_off = ui.ButtonStyle.gray
 
         button.label = make_label(self.shop, category)
 
@@ -209,14 +213,14 @@ class ArenaShopView:
 @commands.max_concurrency(1, commands.BucketType.user)
 async def buffs(inter: CommandInteraction, player: Player) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""  # noqa: D400
-    store = CallbackStore[MessageInteraction]()
+    store = ui.CallbackStore()
     view = ArenaShopView(store, player.arena_shop)
 
     await inter.response.send_message(
         "**Arena Shop**", components=view.paginator.page, ephemeral=True
     )
 
-    if await store.listen(plugin.bot.wait_for, check=get_check(inter.author), timeout=180):
+    if await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author), timeout=180):
         await inter.edit_original_response(components=view.get_state_stopped())
 
 

@@ -3,14 +3,12 @@ import typing
 from typing import TYPE_CHECKING, Literal
 
 from discord import MessageLimits
-from disnake import CommandInteraction, Embed, Locale, MessageInteraction
+from disnake import CommandInteraction, Embed, Locale
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
-from ui_store import CallbackStore
 
 from app.assets import ASSETS
-from app.bridges import item_name_autocomplete, sikrit_footer
-from app.bridges.ui import get_check
+from app.bridges import item_name_autocomplete, sikrit_footer, ui
 from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK, get_item_by_name
 
@@ -96,10 +94,10 @@ async def item(
 
     sikrit_footer(embed, locale)
 
-    store = CallbackStore[MessageInteraction]()
+    store = ui.CallbackStore()
     layout = item_view(store, embed, item, locale, compact)
     await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
-    await store.listen(plugin.bot.wait_for, check=get_check(inter.author))
+    await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author))
     await inter.edit_original_response(components=None)
 
 
@@ -183,10 +181,10 @@ async def compare(
 
     sikrit_footer(embed, locale)
 
-    store = CallbackStore[MessageInteraction]()
+    store = ui.CallbackStore()
     layout = item_compare_view(store, embed, item_a, item_b, locale)
     await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
-    await store.listen(plugin.bot.wait_for, check=get_check(inter.author))
+    await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author))
     await inter.edit_original_response(components=None)
 
 

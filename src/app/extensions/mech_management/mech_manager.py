@@ -3,14 +3,12 @@ from collections import abc
 from functools import partial
 
 from discord import ComponentLimits, EmbedColorType
-from disnake import ButtonStyle, Embed, Locale, MessageInteraction, SelectOption, ui
+from disnake import Embed, Locale, MessageInteraction
 from disnake.utils import MISSING
-from ui_store import CallbackStore
 
 from app import i18n
 from app.assets import ASSETS, get_weight_emoji
-from app.bridges import INVISIBLE_CHAR, embed_image
-from app.bridges.ui import ActionButton, PaginatedSelect, Paginator, ToggleButton
+from app.bridges import INVISIBLE_CHAR, embed_image, ui
 from app.devtools import debug_footer
 from app.models import ItemPack, MechBuild, Player
 
@@ -78,13 +76,13 @@ def slot_emoji(slot: SlotType, /) -> str:
 
 
 def sorted_options(
-    options: abc.Mapping[Element, list[SelectOption]], primary_element: Element | None, /
-) -> list[SelectOption]:
+    options: abc.Mapping[Element, list[ui.SelectOption]], primary_element: Element | None, /
+) -> list[ui.SelectOption]:
     """Return a list of `SelectOption`s sorted by element.
 
     #### Note: this ignores the option limit.
     """
-    all_options: list[SelectOption] = []
+    all_options: list[ui.SelectOption] = []
 
     if sum(map(len, options.values())) + 1 <= ComponentLimits.select_options:
         it = options.values()
@@ -124,7 +122,7 @@ def slot_to_type(metadata: abc.Sequence[str], /) -> SlotType:
     return type_
 
 
-def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption]]]:
+def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[ui.SelectOption]]]:
     item_groups = {type_: {element: list[ItemData]() for element in Element} for type_ in Type}
 
     for item in pack.items.values():
@@ -137,7 +135,7 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption
     return {
         type_: {
             element: [
-                SelectOption(
+                ui.SelectOption(
                     label=item.name, value=str(item.id), emoji=ASSETS.elements[item.element.name].emoji
                 )
                 for item in items
@@ -148,8 +146,8 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[SelectOption
     }
 
 
-def make_empty_option(locale: Locale, /) -> SelectOption:
-    return SelectOption(
+def make_empty_option(locale: Locale, /) -> ui.SelectOption:
+    return ui.SelectOption(
         label=i18n.get_message(locale, "ui-empty-option-label"),
         description=i18n.get_message(locale, "ui-empty-option-desc"),
         value="$empty",
@@ -158,15 +156,15 @@ def make_empty_option(locale: Locale, /) -> SelectOption:
 
 
 class MechView:
-    store: CallbackStore[MessageInteraction]
+    store: ui.CallbackStore
     mech: Mech
     pack: ItemPack
     player: Player
     embed: Embed
     locale: Locale
-    paginator: Paginator[abc.Sequence[abc.Sequence[ui.MessageUIComponent]]]
-    active: ToggleButton | None
-    empty_option: SelectOption
+    paginator: ui.Paginator[abc.Sequence[abc.Sequence[ui.MessageUIComponent]]]
+    active: ui.ToggleButton | None
+    empty_option: ui.SelectOption
     mech_config: str
 
     command_mention: typing.ClassVar[str] = "`/buffs`"
@@ -184,13 +182,14 @@ class MechView:
         ),
     )  # fmt: skip
     DUMMY_BUTTONS = tuple(
-        ActionButton(label=INVISIBLE_CHAR, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
+        ui.ActionButton(label=INVISIBLE_CHAR, disabled=True, custom_id=f"$dummy{n}")
+        for n in range(4)
     )
     PAGE_EMOJI = (ASSETS.types[Type.MODULE.name].emoji, ASSETS.types[Type.TORSO.name].emoji)
 
     def __init__(
         self,
-        store: CallbackStore[MessageInteraction],
+        store: ui.CallbackStore,
         build: MechBuild,
         pack: ItemPack,
         # renderer: PackRenderer,
@@ -210,17 +209,17 @@ class MechView:
         self.init_pages(store)
         self.item_groups = group_items(pack)
 
-    def init_pages(self, store: CallbackStore[MessageInteraction]) -> None:  # noqa: PLR0915
+    def init_pages(self, store: ui.CallbackStore) -> None:  # noqa: PLR0915
         gettext = i18n.get_gettext(self.locale)
 
-        @store.bind(ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))
+        @store.bind(ui.ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))
         async def modules_button(inter: MessageInteraction) -> None:
             """Button swapping mech editor with modules and vice versa."""
             self.paginator.index ^= 1  # toggle between 0 and 1
             modules_button.emoji = self.PAGE_EMOJI[self.paginator.index]
             await inter.response.edit_message(components=self.paginator.page)
 
-        @store.bind(ToggleButton(label="🡅", custom_id=store.make_id()))
+        @store.bind(ui.ToggleButton(label="🡅", custom_id=store.make_id()))
         async def buffs_button(inter: MessageInteraction) -> None:
             """Button toggling arena buffs being applied to mech's stats."""
             if is_shop_empty(self.player.arena_shop):
@@ -237,28 +236,30 @@ class MechView:
             await inter.response.edit_message(embed=self.embed, components=self.paginator.page)
 
         @store.bind(
-            ActionButton(label=gettext("ui-quit"), style=ButtonStyle.red, custom_id=store.make_id())
+            ui.ActionButton(
+                label=gettext("ui-quit"), style=ui.ButtonStyle.red, custom_id=store.make_id()
+            )
         )
         async def quit_button(inter: MessageInteraction) -> None:
             store.stop()
             await inter.response.defer(ephemeral=True)
 
         @store.bind(
-            PaginatedSelect(
-                up=SelectOption(
+            ui.PaginatedSelect(
+                option_up=ui.SelectOption(
                     label=gettext("mech-build-ui-select-up-label"),
                     value="$up",
                     emoji="🔺",
                     description=gettext("mech-build-ui-select-up-desc"),
                 ),
-                down=SelectOption(
+                option_down=ui.SelectOption(
                     label=gettext("mech-build-ui-select-down-label"),
                     value="$down",
                     emoji="🔻",
                     description=gettext("mech-build-ui-select-down-desc"),
                 ),
                 placeholder=gettext("mech-build-ui-select-placeholder"),
-                all_options=[SelectOption(label="$")],  # 1 option required even when disabled
+                all_options=[ui.SelectOption(label="$")],  # 1 option required even when disabled
                 disabled=True,
                 custom_id=store.make_id(),
             )
@@ -277,7 +278,7 @@ class MechView:
             if value == self.empty_option.value:
                 item = None
                 select.placeholder = None
-                self.active.style_off = ButtonStyle.gray
+                self.active.style_off = ui.ButtonStyle.gray
 
             else:
                 item_data = self.pack.get_item(ItemID(int(value)))
@@ -290,7 +291,7 @@ class MechView:
 
                 item = Item.maxed(item_data)
                 select.placeholder = item_data.name
-                self.active.style_off = ButtonStyle.green
+                self.active.style_off = ui.ButtonStyle.green
 
             self.mech[slot] = item
             self.embed.color = color_from_mech(self.mech)
@@ -330,7 +331,7 @@ class MechView:
             )
 
         self.select = select
-        self.paginator = Paginator(
+        self.paginator = ui.Paginator(
             (
                 [
                     [*map(self.make_button, self.LAYOUT[0][0]), modules_button],
@@ -353,20 +354,20 @@ class MechView:
             self.active = None
         self.select.disabled = True
 
-    def set_state_active(self, button: ToggleButton, /) -> None:
+    def set_state_active(self, button: ui.ToggleButton, /) -> None:
         button.on = True
         self.active = button
         self.select.disabled = False
         self.update_dropdown(button)
 
-    def switch_active_button(self, button: ToggleButton, /) -> None:
+    def switch_active_button(self, button: ui.ToggleButton, /) -> None:
         assert self.active is not None
         self.active.on = False
         button.on = True
         self.active = button
         self.update_dropdown(button)
 
-    def update_dropdown(self, button: ToggleButton, /) -> None:
+    def update_dropdown(self, button: ui.ToggleButton, /) -> None:
         metadata = self.store.strip_id(button).split(":")
         options = self.item_groups[Type.of_name(metadata[0])]
         element = dominant_element(self.mech)
@@ -375,18 +376,18 @@ class MechView:
         item = self.mech[slot]
         self.select.placeholder = self.empty_option.label if item is None else item.name
 
-    def make_button(self, slot: str, /) -> ToggleButton:
+    def make_button(self, slot: str, /) -> ui.ToggleButton:
         sm_slot = slot_to_type(slot)
-        btn = ToggleButton(
-            style_off=(ButtonStyle.gray if self.mech[sm_slot] is None else ButtonStyle.green),
-            style_on=ButtonStyle.blurple,
+        btn = ui.ToggleButton(
+            style_off=(ui.ButtonStyle.gray if self.mech[sm_slot] is None else ui.ButtonStyle.green),
+            style_on=ui.ButtonStyle.blurple,
             emoji=slot_emoji(sm_slot),
             custom_id=self.store.make_id(slot),
         )
         self.store.bind(btn)(partial(self.slot_button_cb, btn))
         return btn
 
-    async def slot_button_cb(self, button: ToggleButton, inter: MessageInteraction) -> None:
+    async def slot_button_cb(self, button: ui.ToggleButton, inter: MessageInteraction) -> None:
         if button.on:
             self.set_state_idle()
 
