@@ -1,4 +1,5 @@
 from collections import abc
+from typing import ClassVar
 
 from discord.limits import ComponentLimits
 from disnake import SelectOption, ui
@@ -13,25 +14,35 @@ class PaginatedSelect(ui.StringSelect[None]):
     Uses two `SelectOption`s to move between chunks.
     """
 
+    __repr_attributes__: ClassVar[tuple[str, ...]] = (  # pyright: ignore[reportIncompatibleVariableOverride]
+        *ui.StringSelect.__repr_attributes__,
+        "option_up",
+        "option_down",
+        "page",
+        "all_options",
+    )
+
     option_up: SelectOption
     option_down: SelectOption
     page: int
+    _all_options: abc.Sequence[SelectOption]
 
     def __init__(
         self,
         *,
-        up: SelectOption,
-        down: SelectOption,
+        option_up: SelectOption,
+        option_down: SelectOption,
+        page: int = 0,
+        all_options: abc.Sequence[SelectOption] = (),
         custom_id: str = MISSING,
-        all_options: abc.Iterable[SelectOption] = (),
         placeholder: str | None = None,
         disabled: bool = False,
     ) -> None:
         super().__init__(custom_id=custom_id, placeholder=placeholder, disabled=disabled)
-        self._all_options = list(all_options) or []
-        self.option_up = up
-        self.option_down = down
-        self.page = 0
+        self._all_options = all_options
+        self.option_up = option_up
+        self.option_down = option_down
+        self.page = page
         self._update_page()
 
     @property
@@ -45,14 +56,11 @@ class PaginatedSelect(ui.StringSelect[None]):
         first_and_last_page = (ComponentLimits.select_options - 1) * 2
 
         if total_option_count <= first_and_last_page:
-            # fits on two pages so we only add one of up/down option on each
+            # fits on two pages, add one of up/down option on each
             return 2
 
-        non_extreme_pages, last_page_option_count = divmod(
-            total_option_count - first_and_last_page,
-            ComponentLimits.select_options - 2,
-        )
-        return 2 + non_extreme_pages + (last_page_option_count > 0)
+        size = ComponentLimits.select_options - 2
+        return 2 + (total_option_count - first_and_last_page + size - 1) // size
 
     @property
     def all_options(self) -> abc.Sequence[SelectOption]:
@@ -60,8 +68,8 @@ class PaginatedSelect(ui.StringSelect[None]):
         return self._all_options
 
     @all_options.setter
-    def all_options(self, new: abc.Iterable[SelectOption], /) -> None:
-        self._all_options = list(new)
+    def all_options(self, new: abc.Sequence[SelectOption], /) -> None:
+        self._all_options = new
         self.page = 0
         self._update_page()
 
@@ -87,10 +95,10 @@ class PaginatedSelect(ui.StringSelect[None]):
 
         if total <= 1:
             # fits in the option limit, do not add the up/down options
-            options[:] = self._all_options
+            options += self._all_options
 
         elif page == 0:
-            options[:] = self._all_options[: ComponentLimits.select_options - 1]
+            options += self._all_options[: ComponentLimits.select_options - 1]
             options.append(self.option_down)
 
         elif page == total - 1:
