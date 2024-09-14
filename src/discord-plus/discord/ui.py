@@ -2,8 +2,6 @@ import os
 from typing import Protocol
 from typing_extensions import TypeVar
 
-import anyio
-
 from disnake import Client, Event, MessageInteraction, ModalInteraction, ui
 
 
@@ -20,10 +18,7 @@ def random_str() -> str:
 
 
 async def wait_for_components(
-    *components_or_ids: IDHolderT,
-    client: Client,
-    user_id: int | None = None,
-    timeout: float = 600,
+    *components_or_ids: IDHolderT, client: Client, user_id: int | None = None
 ) -> tuple[MessageInteraction, IDHolderT]:
     """Wait for an interaction with any of given components.
 
@@ -43,14 +38,12 @@ async def wait_for_components(
         def check(inter: MessageInteraction, /) -> bool:
             return inter.author.id == user_id and inter.data.custom_id in ids_to_components
 
-    with anyio.fail_after(timeout):
-        inter: MessageInteraction = await client.wait_for(Event.message_interaction, check=check)
-
+    inter: MessageInteraction = await client.wait_for(Event.message_interaction, check=check)
     return (inter, ids_to_components[inter.data.custom_id])
 
 
 async def wait_for_modal(
-    modal_or_id: ui.Modal | str, client: Client, *, user_id: int | None = None, timeout: float = 600
+    modal_or_id: ui.Modal | str, client: Client, *, user_id: int | None = None
 ) -> ModalInteraction:
     """Wait for a modal submission.
 
@@ -70,5 +63,4 @@ async def wait_for_modal(
         def check(inter: ModalInteraction, /) -> bool:
             return inter.author.id == user_id and inter.data.custom_id == modal_or_id
 
-    with anyio.fail_after(timeout):
-        return await client.wait_for(Event.modal_submit, check=check)
+    return await client.wait_for(Event.modal_submit, check=check)

@@ -2,6 +2,8 @@ import io
 import uuid
 from json import JSONDecodeError
 
+import anyio
+
 from discord import ComponentLimits, bytes_to_file, markdown as md
 from discord.ui import wait_for_components
 from disnake import Attachment, CommandInteraction, Embed, Locale
@@ -253,13 +255,13 @@ async def export(
         ephemeral=True,
     )
     try:
-        component_inter, component = await wait_for_components(
-            mech_select,
-            button_all,
-            client=plugin.bot,
-            user_id=inter.author.id,
-            timeout=600,
-        )
+        with anyio.fail_after(600):
+            component_inter, component = await wait_for_components(
+                mech_select,
+                button_all,
+                client=plugin.bot,
+                user_id=inter.author.id,
+            )
 
     except TimeoutError:
         return await inter.delete_original_response()
