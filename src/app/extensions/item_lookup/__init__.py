@@ -53,16 +53,19 @@ async def item(
     """  # noqa: D400
     del type, element  # used for autocomplete only
 
-    # _, renderer = get_default_pack()
-    # sprite = renderer.get_item_sprite(item, get_final_stage(item.start_stage).tier)
+    if False:  # FIXME: waiting for renderer
+        _, renderer = get_default_pack()
+        sprite = renderer.get_item_sprite(item, get_final_stage(item.start_stage).tier)
 
-    # if sprite.metadata.source == "url" and sprite.metadata.method == "single":
-    #     url, file = sprite.metadata.value, MISSING
+        if sprite.metadata.source == "url" and sprite.metadata.method == "single":
+            url, file = sprite.metadata.value, MISSING
 
-    # else:
-        # await sprite.load()
-        # url, file = embed_image(sprite.image, item.name)
-    url, file = CONFIG.missing_image_url, MISSING  # FIXME
+        else:
+            await sprite.load()
+            url, file = embed_image(sprite.image, item.name)
+
+    else:
+        url, file = CONFIG.missing_image_url, MISSING
 
     embed_color = ASSETS.elements[item.element.name].color
 
@@ -132,8 +135,8 @@ def str_elem(element: Element) -> str:
 async def compare(
     inter: CommandInteraction,
     locale: Locale,
-    item1_name: str = commands.Param(name="item1"),
-    item2_name: str = commands.Param(name="item2"),
+    item1_name: str = commands.Param(name="item1", autocomplete=item_name_autocomplete),
+    item2_name: str = commands.Param(name="item2", autocomplete=item_name_autocomplete),
 ) -> None:
     """Interactive comparison between two items. {{ COMPARE }}
 
@@ -185,10 +188,6 @@ async def compare(
     await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
     await store.listen(plugin.bot.wait_for, check=get_check(inter.author))
     await inter.edit_original_response(components=None)
-
-
-compare.autocomplete("item1")(item_name_autocomplete)
-compare.autocomplete("item2")(item_name_autocomplete)
 
 
 setup, teardown = plugin.create_extension_handlers()

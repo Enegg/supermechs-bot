@@ -46,12 +46,10 @@ def fold_binary_prefix(bytes_: int, /, prefix: BinaryPrefix = "") -> tuple[int, 
 def unfold_binary_prefix(value: str, /) -> int:
     i = len(value)
 
-    for i, char in enumerate(value):
+    for n, char in enumerate(value):
         if not char.isdecimal():
+            i = n
             break
-
-    else:
-        i = len(value)
 
     if unit := value[i : i + 2]:
         value = value[:i]
@@ -71,6 +69,6 @@ def unfold_binary_prefix(value: str, /) -> int:
 def format_exception(exc: BaseException, /) -> str:
     """Format the exception's traceback into a string.
 
-    Replaces absolute paths embedded within the message with paths relative to the cwd.
+    Makes paths embedded within the message relative to the cwd.
     """
     return "".join(traceback.format_exception(exc)).replace(os.getcwd(), ".")  # noqa: PTH109

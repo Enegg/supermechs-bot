@@ -105,17 +105,15 @@ def sorted_options(
 
 
 def color_from_mech(mech: Mech, /) -> EmbedColorType:
-    if (dominant := dominant_element(mech)) is not None:
-        key = dominant
+    element = dominant_element(mech)
 
-    elif mech.torso is not None:
-        key = mech.torso.element
+    if element is None:
+        if mech.torso is None:
+            return None
 
-    else:
-        return None
+        element = mech.torso.element
 
-    return ASSETS.elements[key.name].color
-
+    return ASSETS.elements[element.name].color
 
 def slot_to_type(metadata: abc.Sequence[str], /) -> SlotType:
     type_ = Type.of_name(metadata[0])

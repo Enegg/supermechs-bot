@@ -231,24 +231,23 @@ async def export(
 
     options = [(build.name, str(build.id)) for build in all_builds]
     del options[ComponentLimits.select_options :]
-    options = dict(options)
 
     mech_select = ui.StringSelect(
         placeholder=gettext("export-select"),
         max_values=len(options),
-        options=options,
+        options=dict(options),
     )
     button_all = ActionButton(label=gettext("export-all"))
 
-    content = (
-        None
-        if build_count <= ComponentLimits.select_options
-        else gettext(
+    content = None
+
+    if build_count > ComponentLimits.select_options:
+        content = gettext(
             "export-items-warning",
             build_count=build_count,
             display_limit=ComponentLimits.select_options,
         )
-    )
+
     await inter.response.send_message(
         content=content,
         components=[[mech_select], [button_all]],

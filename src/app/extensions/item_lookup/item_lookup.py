@@ -79,8 +79,6 @@ def default_fields(
 
     spaced = False
     string = io.StringIO()
-    cost_stats = (Stat.backfire, Stat.heat_generation, Stat.energy_cost)
-
     stats = max_stats(item)
 
     if buffs_enabled:
@@ -88,7 +86,7 @@ def default_fields(
         # TODO: differences
 
     for stat, str_value in iter_formatted_stats(stats, avg):
-        if not spaced and stat in cost_stats:
+        if not spaced and stat in (Stat.backfire, Stat.heat_generation, Stat.energy_cost):
             string.write("\n")
             spaced = True
 

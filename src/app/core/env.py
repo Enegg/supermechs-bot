@@ -11,6 +11,8 @@ dotenv.load_dotenv()
 
 
 class _Env:
+    __slots__ = ()
+
     @property
     def logs_channel_id(self) -> int:
         """The ID of a text channel to send logs to."""

@@ -99,9 +99,7 @@ async def eval_code(inter: disnake.Interaction, code: str) -> None:
             run_time = time.perf_counter() - start_time
 
         output = sio.getvalue() or "[No output]"
-        status = (
-            f"cancelled after {run_time:.2f}s" if cancelled else f"finished in {run_time:.2f}s"
-        )
+        status = f"cancelled after {run_time:.2f}s" if cancelled else f"finished in {run_time:.2f}s"
 
     title = f"-# Code {status}"
 
