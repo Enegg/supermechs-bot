@@ -24,7 +24,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Se
         f"Command: `/{inter.application_command.qualified_name}` {arguments}\n"
         f"Exception: `{type(exc).__name__}: {exc}`"
     )
-    embed = Embed(title="⚠️ Unhandled exception", color=Colour(0xFF0000))
+    embed = Embed(title="⚠️ Uncaught exception", color=Colour(0xFF0000))
     params: SenderKeywords = {"embed": embed}
     traceback_text = format_exception(exc)
 
