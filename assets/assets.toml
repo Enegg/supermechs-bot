@@ -54,13 +54,13 @@ COMBINED =  { color = 0x211D1D, emoji = "<:combined:1026853188940349490>" }
 UNKNOWN =   { color = 0x000000, emoji = "❔" }
 
 [types]
-TORSO =    { image_url = "https://i.imgur.com/iNtSziV.png", emoji =  "<:torso:730115680363347968>" }
-LEGS =     { image_url = "https://i.imgur.com/6NBLOhU.png", emoji =   "<:legs:730115699397361827>" }
-DRONE =    { image_url = "https://i.imgur.com/oqQmXTF.png", emoji =  "<:drone:730115574763618394>" }
-TELEPORT = { image_url = "https://i.imgur.com/Fnq035A.png", emoji =   "<:tele:730115603683213423>" }
-CHARGE =   { image_url = "https://i.imgur.com/UnDqJx8.png", emoji = "<:charge:730115557239685281>" }
-HOOK =     { image_url = "https://i.imgur.com/8oAoPcJ.png", emoji =   "<:hook:730115622347735071>" }
-MODULE =   { image_url = "https://i.imgur.com/dQR8UgN.png", emoji =    "<:mod:730115649866694686>" }
+TORSO =      { image_url = "https://i.imgur.com/iNtSziV.png", emoji =  "<:torso:730115680363347968>" }
+LEGS =       { image_url = "https://i.imgur.com/6NBLOhU.png", emoji =   "<:legs:730115699397361827>" }
+DRONE =      { image_url = "https://i.imgur.com/oqQmXTF.png", emoji =  "<:drone:730115574763618394>" }
+TELEPORTER = { image_url = "https://i.imgur.com/Fnq035A.png", emoji =   "<:tele:730115603683213423>" }
+CHARGE =     { image_url = "https://i.imgur.com/UnDqJx8.png", emoji = "<:charge:730115557239685281>" }
+HOOK =       { image_url = "https://i.imgur.com/8oAoPcJ.png", emoji =   "<:hook:730115622347735071>" }
+MODULE =     { image_url = "https://i.imgur.com/dQR8UgN.png", emoji =    "<:mod:730115649866694686>" }
 
 [sided_types]
 [sided_types.SIDE_WEAPON]
