@@ -17,7 +17,7 @@ from app.shared.item_packs import load_default_pack
 async def main() -> None:
     from app import sync
 
-    config_logging()
+    config_logging("config.toml")
     disnake.VoiceClient.warn_nacl = False
 
     bot = commands.InteractionBot(

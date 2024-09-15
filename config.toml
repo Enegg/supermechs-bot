@@ -3,21 +3,45 @@ default_pack_url = "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7
 missing_image_url = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
 max_image_size = "25MiB"
 chunk_size = "64KiB"
+
 [logging]
 version = 1
 disable_existing_loggers = false
+
 [logging.root]
 level = "INFO"
-handlers = ["stdout"]
+handlers = ["stdout", "file"]
+
 [logging.formatters.simple]
-format = "{asctime} [{levelname}] {name} - {message}"
+format = "{asctime} [{levelname:<8}|{pathname}:{lineno}] {name} - {message}"
 style = "{"
-datefmt = "%Y-%m-%dT%H:%M:%S%z"
+datefmt = "%d %H:%M:%S"
+
+[logging.formatters.json]
+"()" = "app.core.logging.JsonFormatter"
+[logging.formatters.json.fmt_keys]
+level = "levelname"
+message = "message"
+timestamp = "timestamp"
+logger = "name"
+module = "module"
+function = "funcName"
+line = "lineno"
+
 [logging.handlers.stdout]
 class = "logging.StreamHandler"
 level = "INFO"
 formatter = "simple"
 stream = "ext://sys.stdout"
+
+[logging.handlers.file]
+class = "logging.handlers.RotatingFileHandler"
+level = "DEBUG"
+formatter = "json"
+filename = "logs/log.jsonl"
+maxBytes = 1_048_576
+backupCount = 5
+
 [logging.loggers]
 disnake = { level = "ERROR" }
 "disnake.client" = { level = "CRITICAL" }
