@@ -9,7 +9,7 @@ import psutil
 from app.async_utils import async_memoize
 from app.typeshed import Pathish
 
-__all__ = ("get_sloc", "get_ram_utilization", "add_invocation", "invoke_counter")
+__all__ = ("add_invocation", "get_ram_utilization", "get_sloc", "invoke_counter")
 
 
 def _file_sloc(path: Pathish, /) -> int:

@@ -8,9 +8,9 @@ import anyio.lowlevel
 import attrs
 
 __all__ = (
-    "Resource",
     "FileResource",
     "HttpResource",
+    "Resource",
     "resource",
     "set_session",
 )
