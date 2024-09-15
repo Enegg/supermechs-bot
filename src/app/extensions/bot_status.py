@@ -4,7 +4,7 @@ import typing
 from discord import markdown as md
 from disnake import CommandInteraction, Embed
 from disnake.ext import commands, plugins
-from disnake.utils import format_dt, oauth_url
+from disnake.utils import oauth_url
 
 from app import meta
 from app.assets import ASSETS
@@ -34,7 +34,7 @@ async def info(inter: CommandInteraction) -> None:
 
     general_fields = [
         f"Developer: {app_info.owner.mention}",
-        f"Created: {format_dt(bot.user.created_at, 'R')}",
+        f"Created: {md.format_dt(bot.user.created_at, 'R')}",
         f"Servers: {len(bot.guilds)}",
         f"Invoked commands: {invoke_counter.total()}",
     ]
@@ -51,7 +51,7 @@ async def info(inter: CommandInteraction) -> None:
     ]
     bytes_, prefix = fold_binary_prefix(get_ram_utilization())
     perf_fields = [
-        f"Started: {format_dt(meta.started_at, 'R')}",
+        f"Started: {md.format_dt(meta.started_at, 'R')}",
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bytes_}{prefix}B",
     ]

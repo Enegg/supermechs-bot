@@ -2,7 +2,9 @@
 
 import typing
 
-__all__ = ("hyperlink", "codeblock", "strip_codeblock")
+from disnake.utils import format_dt
+
+__all__ = ("codeblock", "command_mention", "format_dt", "hyperlink", "strip_codeblock")
 
 
 def hyperlink(text: str, url: str) -> str:
