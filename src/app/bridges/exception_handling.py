@@ -39,33 +39,30 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Se
     return params
 
 
-async def handle_user_exception(inter: CommandInteraction, exc: commands.CommandError) -> bool:
+def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError) -> str | None:
     gettext = i18n.get_gettext(inter.locale)
 
-    if isinstance(exc, commands.NotOwner):
-        info = gettext("command-dev")
+    match exc:
+        case commands.NotOwner():
+            info = gettext("command-dev")
 
-    elif isinstance(exc, commands.UserInputError | commands.CheckFailure):
-        info = str(exc)  # TODO: localize (some UserInputErrors are localized)
+        case commands.UserInputError() | commands.CheckFailure():
+            info = str(exc)  # TODO: localize (some UserInputErrors are localized)
 
-    elif isinstance(exc, commands.MaxConcurrencyReached):
-        if exc.number == 1 and exc.per is commands.BucketType.user:
+        case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
             info = gettext("command-running")
 
-        else:
+        case commands.MaxConcurrencyReached():
             info = str(exc)  # TODO: localize
 
-    elif isinstance(exc, commands.CommandInvokeError) and isinstance(exc.original, TimeoutError):
-        _LOGGER.warning("Command %s timed out", inter.application_command.qualified_name)
-        info = gettext("command-timeout")
+        case commands.CommandInvokeError(original=TimeoutError()):
+            _LOGGER.warning("Command %s timed out", inter.application_command.qualified_name)
+            info = gettext("command-timeout")
 
-    else:
-        return False
+        case _:
+            info = None
 
-    with suppress(InteractionTimedOut):
-        await inter.send(info, ephemeral=True)
-
-    return True
+    return info
 
 
 async def handle_dev_error(inter: CommandInteraction, exc: Exception, channel: Messageable) -> None:
@@ -92,7 +89,9 @@ async def handle_prod_error(
 async def exception_handler(
     channel: Messageable, inter: CommandInteraction, exc: commands.CommandError
 ) -> None:
-    if await handle_user_exception(inter, exc):
+    if (text := get_user_error_message(inter, exc)) is not None:
+        with suppress(InteractionTimedOut):
+            await inter.send(text, ephemeral=True)
         return
 
     error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
