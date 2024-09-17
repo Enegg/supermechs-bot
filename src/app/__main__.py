@@ -8,7 +8,7 @@ from discord import load_extensions
 from disnake.ext import commands
 
 import resources
-from app import i18n
+from app import i18n, paths
 from app.bridges import client_session, register_injections, setup_channel_logger
 from app.core import ENV, config_logging
 from app.shared.item_packs import load_default_pack
@@ -17,7 +17,7 @@ from app.shared.item_packs import load_default_pack
 async def main() -> None:
     from app import sync
 
-    config_logging("config.toml")
+    config_logging(paths.CONFIG)
     disnake.VoiceClient.warn_nacl = False
 
     bot = commands.InteractionBot(
@@ -35,7 +35,7 @@ async def main() -> None:
         bot.get_global_command_named = partial(bot.get_guild_command_named, ENV.home_guild_id)
 
     sync.patch_delayed_sync(bot)
-    i18n.load("locale/")
+    i18n.load(paths.LOCALE)
     register_injections()
     load_extensions(bot.load_extension, "extensions")
     # bypass call to _schedule_app_command_preparation

@@ -146,7 +146,9 @@ def load(directory: Pathish, /) -> None:
 if __name__ == "__main__":
 
     def test_stat_locales() -> None:
-        locale_path = Path.cwd() / "locale"
+        from app import paths
+
+        locale_path = paths.LOCALE
         load(locale_path)
 
         for file_path in locale_path.glob(f"*{FILE_EXT}"):

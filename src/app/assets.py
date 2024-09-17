@@ -9,6 +9,7 @@ import cattrs
 
 from disnake import Color
 
+from app import paths
 from app.class_utils import attrs_from_path
 from app.core import CONFIG
 from app.typeshed import T
@@ -55,7 +56,7 @@ class Assets:
     gifs: abc.Mapping[str, abc.Sequence[str]]
 
 
-ASSETS = attrs_from_path(Assets, "./assets/assets.toml", _converter)
+ASSETS = attrs_from_path(Assets, paths.ASSETS, _converter)
 
 
 def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.game_rules.builds) -> str:

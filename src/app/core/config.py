@@ -1,6 +1,7 @@
 import attrs
 import cattrs
 
+from app import paths
 from app.bridges.utils import unfold_binary_prefix
 from app.class_utils import attrs_from_path
 
@@ -28,4 +29,4 @@ class Config:
     # no need to store logging config here for the app's lifetime
 
 
-CONFIG = attrs_from_path(Config, "config.toml", _converter)
+CONFIG = attrs_from_path(Config, paths.CONFIG, _converter)
