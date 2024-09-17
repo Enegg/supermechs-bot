@@ -13,10 +13,11 @@ limited_repr.maxdict = 20
 
 
 def attrs_from_path(
-    path: Pathish, cls: type[T], conv: cattrs.Converter = cattrs.global_converter
+    cls: type[T], path: Pathish, conv: cattrs.Converter = cattrs.global_converter
 ) -> T:
+    """Read a .toml file under given path and parse it into a dataclass instance."""
     path = pathlib.Path(path)
-    return conv.structure_attrs_fromdict(rtoml.load(path), cls)
+    return conv.structure(rtoml.load(path), cls)
 
 
 def callable_repr(func: abc.Callable[..., object], /) -> str:

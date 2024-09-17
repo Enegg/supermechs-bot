@@ -13,7 +13,7 @@ _converter.register_structure_hook(int, lambda val, _: unfold_binary_prefix(val)
 
 
 @attrs.frozen
-class _Config:
+class Config:
     date_format: str
     """General date format for logging purposes."""
     default_pack_url: str
@@ -28,4 +28,4 @@ class _Config:
     # no need to store logging config here for the app's lifetime
 
 
-CONFIG = attrs_from_path("config.toml", _Config, _converter)
+CONFIG = attrs_from_path(Config, "config.toml", _converter)

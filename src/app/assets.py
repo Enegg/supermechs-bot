@@ -55,7 +55,7 @@ class Assets:
     gifs: abc.Mapping[str, abc.Sequence[str]]
 
 
-ASSETS = attrs_from_path("./assets/assets.toml", Assets, _converter)
+ASSETS = attrs_from_path(Assets, "./assets/assets.toml", _converter)
 
 
 def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.game_rules.builds) -> str:
