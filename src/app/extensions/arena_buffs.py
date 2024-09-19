@@ -58,6 +58,10 @@ class ArenaShopView:
             store.stop()
             await inter.response.edit_message(components=self.get_state_stopped())
 
+        def update_state() -> None:
+            prev_button.disabled = self.paginator.at_first_page
+            next_button.disabled = self.paginator.at_last_page
+
         @store.bind(
             ui.ActionButton(
                 label="🡸", style=ui.ButtonStyle.blurple, disabled=True, custom_id=store.make_id()
@@ -65,11 +69,7 @@ class ArenaShopView:
         )
         async def prev_button(inter: MessageInteraction) -> None:
             self.paginator.prev_page()
-            next_button.disabled = False
-
-            if self.paginator.at_first_page:
-                prev_button.disabled = True
-
+            update_state()
             await inter.response.edit_message(components=self.paginator.page)
 
         @store.bind(
@@ -77,11 +77,7 @@ class ArenaShopView:
         )
         async def next_button(inter: MessageInteraction) -> None:
             self.paginator.next_page()
-            prev_button.disabled = False
-
-            if self.paginator.at_last_page:
-                next_button.disabled = True
-
+            update_state()
             await inter.response.edit_message(components=self.paginator.page)
 
         @store.bind(

@@ -30,7 +30,7 @@ def embed_mech(mech: Mech, locale: Locale, name: str) -> Embed:
 def get_mech_config(mech: Mech, /) -> str:
     """Return a string of IDs of items visible on image."""
     return "_".join(
-        "0" if item is None else str(item.data.id) for item in mech.iter_items("body", "weapons")
+        "0" if item is None else str(item.id) for item in mech.iter_items("body", "weapons")
     )
 
 
@@ -113,14 +113,6 @@ def color_from_mech(mech: Mech, /) -> EmbedColorType:
 
     return ASSETS.elements[element.name].color
 
-def slot_to_type(metadata: abc.Sequence[str], /) -> SlotType:
-    type_ = Type.of_name(metadata[0])
-
-    if type_ in (Type.SIDE_WEAPON, Type.TOP_WEAPON, Type.MODULE):
-        return type_, int(metadata[1])
-
-    return type_
-
 
 def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[ui.SelectOption]]]:
     item_groups = {type_: {element: list[ItemData]() for element in Element} for type_ in Type}
@@ -159,7 +151,7 @@ class MechView:
     store: ui.CallbackStore
     mech: Mech
     pack: ItemPack
-    player: Player
+    arena_shop: ArenaShop
     embed: Embed
     locale: Locale
     paginator: ui.Paginator[abc.Sequence[abc.Sequence[ui.MessageUIComponent]]]
@@ -170,15 +162,15 @@ class MechView:
     command_mention: typing.ClassVar[str] = "`/buffs`"
 
     # pages of rows of components
-    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[str]]] = (
+    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[SlotType]]] = (
         (
-            ( "TOP_WEAPON:0", "DRONE",  "TOP_WEAPON:1", "CHARGE"),
-            ("SIDE_WEAPON:2", "TORSO", "SIDE_WEAPON:3", "TELEPORTER"),
-            ("SIDE_WEAPON:0", "LEGS",  "SIDE_WEAPON:1", "HOOK"),
+            ((Type.TOP_WEAPON,  0), Type.DRONE, (Type.TOP_WEAPON,  1), Type.CHARGE),
+            ((Type.SIDE_WEAPON, 2), Type.TORSO, (Type.SIDE_WEAPON, 3), Type.TELEPORTER),
+            ((Type.SIDE_WEAPON, 0), Type.LEGS,  (Type.SIDE_WEAPON, 1), Type.HOOK),
         ),
         (
-            tuple(f"MODULE:{n}" for n in range(0, 4)),  # noqa: PIE808
-            tuple(f"MODULE:{n}" for n in range(4, 8)),
+            tuple((Type.MODULE, n) for n in range(0, 4)),  # noqa: PIE808
+            tuple((Type.MODULE, n) for n in range(4, 8)),
         ),
     )  # fmt: skip
     DUMMY_BUTTONS = tuple(
@@ -200,29 +192,29 @@ class MechView:
         self.mech = build.mech
         self.pack = pack
         self.renderer: typing.Any = object()  # TODO
-        self.player = player
+        self.arena_shop = player.arena_shop
         self.embed = embed_mech(build.mech, locale, build.name)
         self.locale = locale
         self.active = None
         self.empty_option = make_empty_option(locale)
         self.mech_config = get_mech_config(build.mech)
-        self.init_pages(store)
         self.item_groups = group_items(pack)
+        self.init_pages(store)
 
     def init_pages(self, store: ui.CallbackStore) -> None:  # noqa: PLR0915
         gettext = i18n.get_gettext(self.locale)
 
         @store.bind(ui.ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))
         async def modules_button(inter: MessageInteraction) -> None:
-            """Button swapping mech editor with modules and vice versa."""
-            self.paginator.index ^= 1  # toggle between 0 and 1
+            """Swap mech view with modules viw and back."""
+            self.paginator.index ^= 1  # 0 or 1
             modules_button.emoji = self.PAGE_EMOJI[self.paginator.index]
             await inter.response.edit_message(components=self.paginator.page)
 
         @store.bind(ui.ToggleButton(label="🡅", custom_id=store.make_id()))
         async def buffs_button(inter: MessageInteraction) -> None:
-            """Button toggling arena buffs being applied to mech's stats."""
-            if is_shop_empty(self.player.arena_shop):
+            """Toggle arena buffs to mech's stats."""
+            if is_shop_empty(self.arena_shop):
                 return await inter.response.send_message(
                     gettext("mech-build-no-buffs", command_mention=self.command_mention),
                     ephemeral=True,
@@ -231,7 +223,7 @@ class MechView:
             buffs_button.toggle()
             assert self.embed._fields is not None  # pyright: ignore[reportPrivateUsage]
             self.embed._fields[0]["value"] = format_summary(  # pyright: ignore[reportPrivateUsage]
-                self.mech, self.locale, self.player.arena_shop if buffs_button.on else None
+                self.mech, self.locale, self.arena_shop if buffs_button.on else None
             )
             await inter.response.edit_message(embed=self.embed, components=self.paginator.page)
 
@@ -273,7 +265,7 @@ class MechView:
             if select.update_on_own_option(value):
                 return await inter.response.edit_message(components=self.paginator.page)
 
-            slot = slot_to_type(store.strip_id(self.active).split(":"))
+            slot = self.id_to_slot[self.active.custom_id]
 
             if value == self.empty_option.value:
                 item = None
@@ -303,7 +295,7 @@ class MechView:
                 value=format_summary(
                     self.mech,
                     self.locale,
-                    self.player.arena_shop if buffs_button.on else None,
+                    self.arena_shop if buffs_button.on else None,
                 ),
             )
             new_config = get_mech_config(self.mech)
@@ -331,22 +323,50 @@ class MechView:
             )
 
         self.select = select
+        id_to_slot: dict[str, SlotType] = {}
+
+        async def slot_button_cb(button: ui.ToggleButton, inter: MessageInteraction) -> None:
+            if button.on:
+                self.set_state_idle()
+
+            elif self.active is not None:
+                self.switch_active_button(button)
+
+            else:
+                self.set_state_active(button)
+
+            await inter.response.edit_message(components=self.paginator.page)
+
+        def make_button(slot: SlotType, /) -> ui.ToggleButton:
+            btn = ui.ToggleButton(
+                style_off=(
+                    ui.ButtonStyle.gray if self.mech[slot] is None else ui.ButtonStyle.green
+                ),
+                style_on=ui.ButtonStyle.blurple,
+                emoji=slot_emoji(slot),
+                custom_id=self.store.make_id(),
+            )
+            id_to_slot[btn.custom_id] = slot
+            self.store.bind(btn)(partial(slot_button_cb, btn))
+            return btn
+
         self.paginator = ui.Paginator(
             (
                 [
-                    [*map(self.make_button, self.LAYOUT[0][0]), modules_button],
-                    [*map(self.make_button, self.LAYOUT[0][1]), buffs_button],
-                    [*map(self.make_button, self.LAYOUT[0][2]), quit_button],
+                    [*map(make_button, self.LAYOUT[0][0]), modules_button],
+                    [*map(make_button, self.LAYOUT[0][1]), buffs_button],
+                    [*map(make_button, self.LAYOUT[0][2]), quit_button],
                     [select],
                 ],
                 [
-                    [*map(self.make_button, self.LAYOUT[1][0]), modules_button],
-                    [*map(self.make_button, self.LAYOUT[1][1]), buffs_button],
+                    [*map(make_button, self.LAYOUT[1][0]), modules_button],
+                    [*map(make_button, self.LAYOUT[1][1]), buffs_button],
                     [*self.DUMMY_BUTTONS, quit_button],
                     [select],
                 ],
             )
         )
+        self.id_to_slot = id_to_slot
 
     def set_state_idle(self) -> None:
         if self.active is not None:
@@ -368,33 +388,9 @@ class MechView:
         self.update_dropdown(button)
 
     def update_dropdown(self, button: ui.ToggleButton, /) -> None:
-        metadata = self.store.strip_id(button).split(":")
-        options = self.item_groups[Type.of_name(metadata[0])]
+        slot = self.id_to_slot[button.custom_id]
+        options = self.item_groups[slot[0] if isinstance(slot, tuple) else slot]
         element = dominant_element(self.mech)
         self.select.all_options = [self.empty_option, *sorted_options(options, element)]
-        slot = slot_to_type(metadata)
         item = self.mech[slot]
         self.select.placeholder = self.empty_option.label if item is None else item.name
-
-    def make_button(self, slot: str, /) -> ui.ToggleButton:
-        sm_slot = slot_to_type(slot)
-        btn = ui.ToggleButton(
-            style_off=(ui.ButtonStyle.gray if self.mech[sm_slot] is None else ui.ButtonStyle.green),
-            style_on=ui.ButtonStyle.blurple,
-            emoji=slot_emoji(sm_slot),
-            custom_id=self.store.make_id(slot),
-        )
-        self.store.bind(btn)(partial(self.slot_button_cb, btn))
-        return btn
-
-    async def slot_button_cb(self, button: ui.ToggleButton, inter: MessageInteraction) -> None:
-        if button.on:
-            self.set_state_idle()
-
-        elif self.active is not None:
-            self.switch_active_button(button)
-
-        else:
-            self.set_state_active(button)
-
-        await inter.response.edit_message(components=self.paginator.page)
