@@ -8,8 +8,8 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 
 from app import i18n
-
-from .utils import INVISIBLE_CHAR, format_exception
+from app.assets import INVISIBLE_CHAR
+from app.utils import format_exception
 
 __all__ = ("setup_channel_logger",)
 

@@ -2,8 +2,8 @@ import attrs
 import cattrs
 
 from app import paths
-from app.bridges.utils import unfold_binary_prefix
 from app.class_utils import attrs_from_path
+from app.utils import unfold_binary_prefix
 
 from supermechs.gamerules import DEFAULT_GAME_RULES, GameRules
 
@@ -20,9 +20,10 @@ class Config:
     default_pack_url: str
     """The URL of the default item pack."""
     missing_image_url: str
+    """Placeholder image url."""
     max_image_size: int
     """Maximum allowed image size, in bytes."""
-    chunk_size: int
+    chunk_size: int = 1024**2
     """Size of chunk for iterative download."""
     game_rules: GameRules = DEFAULT_GAME_RULES
     """Set of rules the game shall obey."""

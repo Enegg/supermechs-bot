@@ -2,12 +2,10 @@ import os
 import traceback
 import typing
 from collections import abc
-from typing import Final, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
-__all__ = ("INVISIBLE_CHAR", "fold_binary_prefix", "format_exception", "unfold_binary_prefix")
+__all__ = ("fold_binary_prefix", "format_exception", "unfold_binary_prefix")
 
-INVISIBLE_CHAR: Final = "\u2800"
-"""Invisible character discord does not truncate."""
 
 # https://en.wikipedia.org/wiki/Binary_prefix
 BinaryPrefix: TypeAlias = Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"]

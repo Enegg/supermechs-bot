@@ -4,8 +4,8 @@ from itertools import zip_longest
 from disnake import Embed, Locale, MessageInteraction
 
 from app import i18n
-from app.assets import ASSETS
-from app.bridges import INVISIBLE_CHAR, ui
+from app.assets import ASSETS, INVISIBLE_CHAR
+from app.bridges import ui
 from app.devtools import debug_footer
 from app.sm.asset_utils import item_transform_range
 

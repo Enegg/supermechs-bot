@@ -19,6 +19,8 @@ from supermechs.enums._base import PartialEnum
 
 __all__ = ("ASSETS", "get_weight_emoji")
 
+INVISIBLE_CHAR: Final = "\u2800"
+"""Invisible character discord does not truncate."""
 
 _converter = cattrs.Converter()
 _converter.register_structure_hook_func(

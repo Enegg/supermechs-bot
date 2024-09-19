@@ -5,8 +5,8 @@ from functools import partial
 from disnake import CommandInteraction, MessageInteraction
 from disnake.ext import commands, plugins
 
-from app.assets import ASSETS
-from app.bridges import INVISIBLE_CHAR, ui
+from app.assets import ASSETS, INVISIBLE_CHAR
+from app.bridges import ui
 from app.models import Player
 
 from supermechs.api import ArenaShop, Category

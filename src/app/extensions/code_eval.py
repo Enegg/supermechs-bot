@@ -16,9 +16,9 @@ from discord.ui import random_str, wait_for_components
 from disnake import TextInputStyle, ui
 from disnake.ext import commands, plugins
 
-from app.bridges import format_exception
 from app.bridges.ui import ActionButton
 from app.core import ENV
+from app.utils import format_exception
 
 plugin: Final = plugins.Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
 MODAL_SUFFIX = "code"
