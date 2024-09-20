@@ -3,8 +3,8 @@ from collections import abc
 
 from attrs import define, field
 
-from .typeshed import KT, VT, P
-from .utils import callable_repr
+from memo.typeshed import KT, VT, P
+from memo.utils import callable_repr
 
 __all__ = ("Memo",)
 

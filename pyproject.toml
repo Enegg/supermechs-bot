@@ -13,12 +13,13 @@ dependencies = [
     "discord-ui-store @ git+https://github.com/Enegg/discord-ui-store",
     "disnake >= 2.9.1",
     "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
+    "exceptiongroup >= 1.2.2; python_version < '3.11'",
     "orjson >= 3.8.10",
     "pillow == 10.*",
     "psutil >= 5.9.7",
     "python-dotenv >= 1.0.0",
     "rtoml >= 0.9.0",
-    "supermechs @ git+https://github.com/Enegg/supermechs.git",
+    "supermechs @ git+https://github.com/Enegg/supermechs",
     "typing-extensions >= 4.9.0",
 ]
 requires-python = ">= 3.10, < 3.12"
@@ -35,13 +36,7 @@ build-backend = "pdm.backend"
 distribution = false
 
 [tool.pdm.dev-dependencies]
-dev = [
-    "-e app @ file:///${PROJECT_ROOT}",
-    "-e resources @ file:///${PROJECT_ROOT}/src/resources",
-    "-e memo @ file:///${PROJECT_ROOT}/src/memo",
-    "-e discord-plus @ file:///${PROJECT_ROOT}/src/discord-plus",
-    "-e supermechs-parse @ file:///${PROJECT_ROOT}/src/supermechs-parse",
-]
+dev = [ "-e app @ file:///${PROJECT_ROOT}" ]
 lint = [
     "ruff >= 0.4.2",
 ]
@@ -140,13 +135,6 @@ allow-dunder-method-names = [
 
 [tool.pyright]
 typeCheckingMode = "strict"
-include = [
-    "src/app",
-    "src/discord-plus",
-    "src/memo",
-    "src/resources",
-]
-
 pythonVersion = "3.11"
 
 reportUnnecessaryTypeIgnoreComment = "warning"
