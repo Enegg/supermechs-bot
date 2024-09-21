@@ -7,15 +7,12 @@ from supermechs.abc.stats import StatsMapping, StatType
 from supermechs.api import Stat
 
 
-def truncate_float(num: float, decimals: int) -> tuple[float, int]:
-    num = round(num, decimals)
-    if float(num).is_integer():  # ints don't have .is_integer
-        return num, 0
-    return num, decimals
-
-
 def format_float(num: float, decimals: int) -> str:
-    num, decimals = truncate_float(num, decimals)
+    num = round(float(num), decimals)
+
+    if num.is_integer():
+        return f"{num:.0f}"
+
     return f"{num:.{decimals}f}"
 
 
