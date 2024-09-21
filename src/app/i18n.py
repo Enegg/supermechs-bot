@@ -1,9 +1,9 @@
 import logging
-import typing
-import typing_extensions as typing_
 from collections import abc
 from functools import partial
 from pathlib import Path
+from typing import Any, Final, Protocol, TypeAlias, TypedDict, cast as type_cast
+from typing_extensions import NotRequired
 
 import rtoml
 
@@ -15,10 +15,10 @@ from supermechs.enums.stats import Stat
 
 __all__ = ("GetText", "get_embed_tips", "get_gettext", "get_message", "get_stat_name", "load")
 
-LocalePair: typing.TypeAlias = tuple[KT, Locale]
+LocalePair: TypeAlias = tuple[KT, Locale]
 
 
-class GetText(typing.Protocol):
+class GetText(Protocol):
     def __call__(self, key: str, /, **format_kwargs: object) -> str: ...
 
 
@@ -27,12 +27,12 @@ FALLBACK_LOCALE = Locale.en_US
 FALLBACK_NAME = "???"
 FILE_EXT = ".toml"
 
-stats: typing.Final[abc.Mapping[LocalePair[Stat], str]] = {}
-messages: typing.Final[abc.Mapping[LocalePair[str], str]] = {}
-embed_tips: typing.Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
-_command_locale: typing.Final[abc.Mapping[str, dict[str, str]]] = {}
+stats: Final[abc.Mapping[LocalePair[Stat], str]] = {}
+messages: Final[abc.Mapping[LocalePair[str], str]] = {}
+embed_tips: Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
+_command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
-localization_provider: typing.Final = typing.cast(LocalizationProtocol, _command_locale)
+localization_provider: Final = type_cast(LocalizationProtocol, _command_locale)
 
 
 def _get(
@@ -89,13 +89,13 @@ def get_embed_tips(locale: Locale, /) -> abc.Sequence[str]:
             raise err from None
 
 
-class _StatEntry(typing.TypedDict):
+class _StatEntry(TypedDict):
     in_game: str
-    default: typing_.NotRequired[str]
-    short: typing_.NotRequired[str]
+    default: NotRequired[str]
+    short: NotRequired[str]
 
 
-def _load_stats(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
+def _load_stats(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
     stats_data: abc.Mapping[str, _StatEntry] = data["stats"]
 
     for key, entry in stats_data.items():
@@ -104,21 +104,21 @@ def _load_stats(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
         stats[stat, locale] = name
 
 
-def _load_messages(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
+def _load_messages(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
     messages_data: abc.Mapping[str, str] = data.get("messages") or {}
 
     for key, message in messages_data.items():
         messages[key, locale] = message
 
 
-def _load_commands(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
+def _load_commands(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
     commands_data: dict[str, str] | None = data.get("commands")
 
     if commands_data:
         _command_locale[locale.value] = commands_data
 
 
-def _load_tips(data: abc.Mapping[str, typing.Any], /, locale: Locale) -> None:
+def _load_tips(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
     tips_data: abc.Sequence[str] | None = data.get("embed_tips")
 
     if tips_data is not None:

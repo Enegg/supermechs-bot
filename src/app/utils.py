@@ -1,16 +1,15 @@
 import os
 import traceback
-import typing
 from collections import abc
 from pathlib import PurePath
-from typing import Literal, TypeAlias
+from typing import Literal, TypeAlias, get_args as get_type_args
 
 __all__ = ("fold_binary_prefix", "format_exception", "unfold_binary_prefix")
 
 
 # https://en.wikipedia.org/wiki/Binary_prefix
 BinaryPrefix: TypeAlias = Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"]
-BINARY_PREFIXES: abc.Sequence[BinaryPrefix] = typing.get_args(BinaryPrefix)
+BINARY_PREFIXES: abc.Sequence[BinaryPrefix] = get_type_args(BinaryPrefix)
 
 
 def fold_binary_prefix(bytes_: int, /, prefix: BinaryPrefix = "") -> tuple[int, BinaryPrefix]:

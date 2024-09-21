@@ -1,5 +1,5 @@
-import typing
 from collections import abc
+from typing import Generic
 
 from attrs import define, field
 
@@ -10,7 +10,7 @@ __all__ = ("Memo",)
 
 
 @define
-class Memo(typing.Generic[P, VT, KT]):
+class Memo(Generic[P, VT, KT]):
     """Unbound cache of a factory function.
 
     - to bypass caching, use the `.factory` callable directly.

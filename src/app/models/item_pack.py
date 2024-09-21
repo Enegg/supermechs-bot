@@ -1,5 +1,5 @@
-import typing
 from collections import abc
+from typing import Final, TypeAlias, overload
 
 import attrs
 
@@ -14,21 +14,19 @@ from supermechs.enums.stats import Tier
 
 __all__ = ("ItemPack",)
 
-SpriteKey: typing.TypeAlias = tuple[ItemID, Tier]
+SpriteKey: TypeAlias = tuple[ItemID, Tier]
 
 
 @attrs.define(kw_only=True)
 class ItemPack:
     """Mapping-like container of items and their graphics."""
 
-    key: typing.Final[PackKey] = attrs.field()
+    key: Final[PackKey] = attrs.field()
     name: str = attrs.field(default="<no name>")
     description: str = attrs.field(default="<no description>")
 
-    items: typing.Final[abc.Mapping[ItemID, ItemData]] = attrs.field(repr=limited_repr.repr)
-    sprites: typing.Final[abc.Mapping[SpriteKey, AbstractSprite]] = attrs.field(
-        repr=limited_repr.repr
-    )
+    items: Final[abc.Mapping[ItemID, ItemData]] = attrs.field(repr=limited_repr.repr)
+    sprites: Final[abc.Mapping[SpriteKey, AbstractSprite]] = attrs.field(repr=limited_repr.repr)
 
     def __contains__(self, value: ItemID | ItemData, /) -> bool:
         if isinstance(value, int):
@@ -48,10 +46,10 @@ class ItemPack:
         """
         return self.items[item_id]
 
-    @typing.overload
+    @overload
     def get_sprite(self, item: Item, /) -> AbstractSprite: ...
 
-    @typing.overload
+    @overload
     def get_sprite(self, item: ItemData, /, tier: Tier) -> AbstractSprite: ...
 
     def get_sprite(self, item: ItemData | Item, /, tier: Tier | None = None) -> AbstractSprite:

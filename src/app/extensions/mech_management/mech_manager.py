@@ -1,6 +1,6 @@
-import typing
 from collections import abc
 from functools import partial
+from typing import Any, ClassVar
 
 from discord import ComponentLimits, EmbedColorType
 from disnake import Embed, Locale, MessageInteraction
@@ -159,7 +159,7 @@ class MechView:
     empty_option: ui.SelectOption
     mech_config: str
 
-    command_mention: typing.ClassVar[str] = "`/buffs`"
+    command_mention: ClassVar[str] = "`/buffs`"
 
     # pages of rows of components
     LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[SlotType]]] = (
@@ -191,7 +191,7 @@ class MechView:
         self.store = store
         self.mech = build.mech
         self.pack = pack
-        self.renderer: typing.Any = object()  # TODO
+        self.renderer: Any = object()  # TODO
         self.arena_shop = player.arena_shop
         self.embed = embed_mech(build.mech, locale, build.name)
         self.locale = locale

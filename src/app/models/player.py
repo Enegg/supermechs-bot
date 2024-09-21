@@ -1,7 +1,7 @@
-import typing
 import uuid
 from collections import abc
 from datetime import datetime
+from typing import Final
 
 from attrs import define, field
 
@@ -19,10 +19,10 @@ __all__ = ("Player",)
 class Player:
     """Represents a SuperMechs player."""
 
-    id: typing.Final[int] = field()
-    builds: typing.Final[abc.MutableMapping[uuid.UUID, MechBuild]] = field(factory=dict)
-    arena_shop: typing.Final[ArenaShop] = field(factory=arena_shop)
-    created_at: typing.Final[datetime] = field(factory=utcnow)
+    id: Final[int] = field()
+    builds: Final[abc.MutableMapping[uuid.UUID, MechBuild]] = field(factory=dict)
+    arena_shop: Final[ArenaShop] = field(factory=arena_shop)
+    created_at: Final[datetime] = field(factory=utcnow)
     _recent_uuid: uuid.UUID | None = field(default=None, init=False)
 
     @property

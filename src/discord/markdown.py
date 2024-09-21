@@ -1,6 +1,6 @@
 """Collection of functions related to (discord specific) markdown formatting."""
 
-import typing
+from typing import Protocol, runtime_checkable
 
 from disnake.utils import format_dt
 
@@ -29,8 +29,8 @@ def strip_codeblock(text: str, /) -> str:
     return text
 
 
-@typing.runtime_checkable
-class Commandish(typing.Protocol):
+@runtime_checkable
+class Commandish(Protocol):
     @property
     def id(self) -> int: ...
 

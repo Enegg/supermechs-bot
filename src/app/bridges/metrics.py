@@ -1,6 +1,6 @@
-import typing
 from collections import Counter
 from threading import Lock
+from typing import Final, NamedTuple
 
 import anyio
 import anyio.to_thread
@@ -49,12 +49,12 @@ def get_ram_utilization(pid: int | None = None, /) -> int:
     return psutil.Process(pid).memory_info().rss
 
 
-class CommandData(typing.NamedTuple):
+class CommandData(NamedTuple):
     id: int
     name: str
 
 
-invoke_counter: typing.Final = Counter[CommandData]()
+invoke_counter: Final = Counter[CommandData]()
 
 
 def add_invocation(id: int, name: str, /) -> None:

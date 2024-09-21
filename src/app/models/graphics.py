@@ -1,5 +1,5 @@
 import logging
-import typing
+from typing import Protocol
 
 import anyio.lowlevel
 import attrs
@@ -52,7 +52,7 @@ def resize(image: Image.Image, width: int = 0, height: int = 0) -> Image.Image:
     return image.resize((width, height))
 
 
-class AbstractSprite(typing.Protocol):
+class AbstractSprite(Protocol):
     @property
     def url(self) -> str | None: ...
 

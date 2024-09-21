@@ -1,6 +1,6 @@
-import typing
 from collections import abc, defaultdict
 from contextlib import asynccontextmanager
+from typing import Generic
 
 import anyio
 from attrs import define, field
@@ -12,7 +12,7 @@ __all__ = ("AsyncMemo",)
 
 
 @define
-class AsyncMemo(typing.Generic[P, VT, KT]):
+class AsyncMemo(Generic[P, VT, KT]):
     """Unbound cache of an async factory function.
 
     - to bypass caching, use the `.factory` callable directly.

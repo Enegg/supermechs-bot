@@ -1,6 +1,6 @@
-import typing
 from collections import abc
 from functools import partial
+from typing import Final
 
 from disnake import CommandInteraction, MessageInteraction
 from disnake.ext import commands, plugins
@@ -11,7 +11,7 @@ from app.models import Player
 
 from supermechs.api import ArenaShop, Category
 
-plugin: typing.Final = plugins.Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
+plugin: Final = plugins.Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
 
 
 def format_value(category: Category, level: int, /) -> str:

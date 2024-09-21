@@ -1,5 +1,5 @@
-import typing
 from functools import partial
+from typing import Protocol
 
 import aiohttp
 import orjson
@@ -7,7 +7,7 @@ import orjson
 __all__ = ("client_session",)
 
 
-class HTTPClient(typing.Protocol):
+class HTTPClient(Protocol):
     connector: aiohttp.BaseConnector | None
     proxy: str | None
 

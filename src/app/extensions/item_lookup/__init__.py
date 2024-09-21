@@ -1,6 +1,5 @@
 import io
-import typing
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, get_args as get_type_args
 
 from discord import MessageLimits
 from disnake import CommandInteraction, Embed, Locale
@@ -24,8 +23,8 @@ if TYPE_CHECKING:
 
 else:
     # disnake cannot parse unions of literals
-    LiteralTypeOrAny = Literal[(*typing.get_args(LiteralType), "ANY")]
-    LiteralElementOrAny = Literal[(*typing.get_args(LiteralElement), "ANY")]
+    LiteralTypeOrAny = Literal[(*get_type_args(LiteralType), "ANY")]
+    LiteralElementOrAny = Literal[(*get_type_args(LiteralElement), "ANY")]
 
 plugin = plugins.Plugin[commands.InteractionBot](name="Item-lookup", logger=__name__)
 

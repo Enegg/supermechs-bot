@@ -1,5 +1,5 @@
-import typing
 from collections import abc
+from typing import Final, NoReturn
 
 import disnake
 from discord import AutocompleteReturnType, InteractionLimits
@@ -10,7 +10,7 @@ from disnake.ext import commands, plugins
 from app.core import ENV
 from app.utils import format_exception
 
-plugin: typing.Final = plugins.Plugin[commands.InteractionBot](
+plugin: Final = plugins.Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
@@ -104,7 +104,7 @@ async def force_error(
     inter: CommandInteraction,
     exception: str,
     message: str = "Exception raised via /raise",
-) -> typing.NoReturn:
+) -> NoReturn:
     """Explicitly raises chosen exception.
 
     Parameters
