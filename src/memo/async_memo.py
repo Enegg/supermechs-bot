@@ -1,5 +1,5 @@
 import typing
-from collections import abc
+from collections import abc, defaultdict
 from contextlib import asynccontextmanager
 
 import anyio
@@ -34,7 +34,7 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
     """Compute a key for a factory product."""
 
     mapping: dict[KT, VT] = field(factory=dict, init=False)
-    _locks: dict[KT, anyio.Lock] = field(factory=dict, init=False)
+    _locks: defaultdict[KT, anyio.Lock] = field(factory=lambda: defaultdict(anyio.Lock), init=False)
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> VT:
         return await self.get_or_create(*args, **kwargs)
@@ -68,10 +68,8 @@ class AsyncMemo(typing.Generic[P, VT, KT]):
     @asynccontextmanager
     async def _acquire_lock(self, key: KT, /) -> abc.AsyncIterator[None]:
         """Acquire a lock under key, such that concurrent calls run the factory only once."""
-        lock = self._locks.get(key)
-
-        if owner := lock is None:
-            lock = self._locks[key] = anyio.Lock()
+        lock = self._locks[key]
+        owner = not lock.locked()
 
         try:
             async with lock:
