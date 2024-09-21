@@ -2,6 +2,7 @@ import os
 import traceback
 import typing
 from collections import abc
+from pathlib import PurePath
 from typing import Literal, TypeAlias
 
 __all__ = ("fold_binary_prefix", "format_exception", "unfold_binary_prefix")
@@ -69,4 +70,18 @@ def format_exception(exc: BaseException, /) -> str:
 
     Makes paths embedded within the message relative to the cwd.
     """
-    return "".join(traceback.format_exception(exc)).replace(os.getcwd(), ".")  # noqa: PTH109
+    tb = traceback.TracebackException.from_exception(exc, compact=True)
+    cwd = PurePath(os.getcwd())  # noqa: PTH109
+
+    for frame_summary in tb.stack:
+        file = PurePath(frame_summary.filename)
+
+        try:
+            relative_path = file.relative_to(cwd)
+
+        except ValueError:
+            continue
+
+        frame_summary.filename = f".{os.sep}{relative_path}"
+
+    return "".join(tb.format())
