@@ -12,8 +12,6 @@
         ".ruff_cache": true,
         ".venv": true,
     },
-    "python.analysis.extraPaths": [ "./app" ],
-    "python.analysis.typeCheckingMode": "strict",
     "[python]": {
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit"
@@ -23,4 +21,5 @@
             100
         ]
     },
+    "python.REPL.enableREPLSmartSend": false,
 }

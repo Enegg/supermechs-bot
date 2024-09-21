@@ -37,9 +37,7 @@ distribution = false
 
 [tool.pdm.dev-dependencies]
 dev = [ "-e app @ file:///${PROJECT_ROOT}" ]
-lint = [
-    "ruff >= 0.4.2",
-]
+lint = [ "ruff >= 0.4.2" ]
 
 [tool.pdm.build]
 includes = ["src/app"]
@@ -85,11 +83,12 @@ select = [
     "ERA",   # commented out code
 ]
 ignore = [
-    "ANN101", # type of self
-    "ANN102", # type of cls
-    "PIE796", # non-unique enums (that's a job for @unique)
-    "D1",     # don't enforce docstrings for public API
-    # "E501",   # line too long; handled by formatter
+    "ANN101",  # type of self
+    "ANN102",  # type of cls
+    "PIE796",  # non-unique enums (that's a job for @unique)
+    "D1",      # don't enforce docstrings for public API
+    "PLC0414", # import foo as foo
+    "TCH002",  # move under TYPE_CHECKING
 ]
 
 [tool.ruff.lint.pydocstyle]
