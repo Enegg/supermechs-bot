@@ -1,6 +1,6 @@
-import typing
 from collections import abc
-from typing import Any, ClassVar, Generic
+from typing import Any, ClassVar, cast as type_cast
+from typing_extensions import override
 
 import anyio
 import attrs
@@ -16,7 +16,7 @@ def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:
 
     In concurrent calls with same arguments, the function is ran only once.
     """
-    key = typing.cast(abc.Callable[P, abc.Hashable], default_key)
+    key = type_cast(abc.Callable[P, abc.Hashable], default_key)
     return AsyncMemo(func, key)
 
 
@@ -41,13 +41,18 @@ def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
 
 
 @attrs.define
-class Deferred(Generic[T]):
+class Deferred(abc.Awaitable[T]):
     """Future-like object."""
 
     _sentinel: ClassVar[Any] = object()
 
     _value: T = attrs.field(default=_sentinel, init=False)
     _event: anyio.Event = attrs.field(factory=anyio.Event, init=False)
+
+    @override
+    def __await__(self) -> abc.Generator[Any, Any, T]:
+        yield from self._event.wait().__await__()
+        return self._value
 
     def set(self, value: T, /) -> None:
         """Set the value and awaken waiters."""
@@ -57,11 +62,6 @@ class Deferred(Generic[T]):
     def is_set(self) -> bool:
         """Whether the value has been set."""
         return self._event.is_set()
-
-    async def get(self) -> T:
-        """Wait for value to be set and return it."""
-        await self._event.wait()
-        return self._value
 
     def get_nowait(self) -> T:
         """Get the underlying value without awaiting."""
