@@ -7,9 +7,10 @@ from disnake import CommandInteraction, Embed, Locale
 from disnake.ext import commands, plugins
 from disnake.utils import MISSING
 
+from app import paths
 from app.assets import ASSETS
-from app.bridges import item_name_autocomplete, sikrit_footer, ui
-from app.core import CONFIG, ENV
+from app.bridges import embed_image, item_name_autocomplete, sikrit_footer, ui
+from app.core import ENV
 from app.shared.item_packs import DEFAULT_PACK, get_item_by_name
 
 from .item_lookup import item_compare_view, item_view
@@ -63,7 +64,10 @@ async def item(
             url, file = embed_image(sprite.image, item.name)
 
     else:
-        url, file = CONFIG.missing_image_url, MISSING
+        from PIL import Image
+
+        image = Image.open(paths.SILHOUETTE)
+        url, file = embed_image(image, item.name)
 
     embed_color = ASSETS.elements[item.element.name].color
 
