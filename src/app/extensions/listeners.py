@@ -1,12 +1,12 @@
 import logging
 
 from disnake import CommandInteraction
-from disnake.ext import plugins
+from disnake_plugins import Plugin
 
 from app.bridges import add_invocation
 from app.core import CONFIG
 
-plugin = plugins.Plugin(name="listeners", logger=__name__)
+plugin = Plugin(name="listeners", logger=__name__)
 _EVENTS_LOG = logging.getLogger("event")
 
 

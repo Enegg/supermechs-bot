@@ -5,12 +5,13 @@ import disnake
 from discord import AutocompleteReturnType, InteractionLimits
 from discord.extensions import walk_extensions
 from disnake import CommandInteraction
-from disnake.ext import commands, plugins
+from disnake.ext import commands
+from disnake_plugins import Plugin
 
 from app.core import ENV
 from app.utils import format_exception
 
-plugin: Final = plugins.Plugin[commands.InteractionBot](
+plugin: Final = Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)

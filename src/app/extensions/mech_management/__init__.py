@@ -7,8 +7,9 @@ import anyio
 from discord import ComponentLimits, bytes_to_file, markdown as md
 from discord.ui import wait_for_components
 from disnake import Attachment, CommandInteraction, Embed, Locale
-from disnake.ext import commands, plugins
+from disnake.ext import commands
 from disnake.utils import MISSING
+from disnake_plugins import Plugin
 
 from app import i18n
 from app.assets import ASSETS
@@ -31,7 +32,7 @@ from supermechs.api import Stat, Type, mech_weight
 from supermechs.ext.deserializers.exceptions import DataError
 from supermechs.ext.workshop import dump_mechs, load_mechs
 
-plugin = plugins.Plugin[commands.InteractionBot](name="Mech-manager", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Mech-manager", logger=__name__)
 
 
 @plugin.load_hook(post=True)

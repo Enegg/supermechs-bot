@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING, Literal, get_args as get_type_args
 
 from discord import MessageLimits
 from disnake import CommandInteraction, Embed, Locale
-from disnake.ext import commands, plugins
+from disnake.ext import commands
 from disnake.utils import MISSING
+from disnake_plugins import Plugin
 
 from app import paths
 from app.assets import ASSETS
@@ -26,7 +27,7 @@ else:
     LiteralTypeOrAny = Literal[(*get_type_args(LiteralType), "ANY")]
     LiteralElementOrAny = Literal[(*get_type_args(LiteralElement), "ANY")]
 
-plugin = plugins.Plugin[commands.InteractionBot](name="Item-lookup", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Item-lookup", logger=__name__)
 
 
 @plugin.slash_command()

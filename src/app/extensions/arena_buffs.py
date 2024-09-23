@@ -3,7 +3,8 @@ from functools import partial
 from typing import Final
 
 from disnake import CommandInteraction, MessageInteraction
-from disnake.ext import commands, plugins
+from disnake.ext import commands
+from disnake_plugins import Plugin
 
 from app.assets import ASSETS, INVISIBLE_CHAR
 from app.bridges import ui
@@ -11,7 +12,7 @@ from app.models import Player
 
 from supermechs.api import ArenaShop, Category
 
-plugin: Final = plugins.Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
+plugin: Final = Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
 
 
 def format_value(category: Category, level: int, /) -> str:
