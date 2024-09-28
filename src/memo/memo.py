@@ -4,7 +4,7 @@ from typing import Generic
 from attrs import define, field
 
 from memo.typeshed import KT, VT, P
-from memo.utils import callable_repr
+from memo.utils import callable_repr, default_key
 
 __all__ = ("Memo",)
 
@@ -13,8 +13,8 @@ __all__ = ("Memo",)
 class Memo(Generic[P, VT, KT]):
     """Unbound cache of a factory function.
 
-    - to bypass caching, use the `.factory` callable directly.
-    - to bypass computing a key, use the `.mapping` directly.
+    - bypass caching via `.factory(...)`.
+    - bypass computing a key via `.mapping[...]`.
 
     Parameters
     ----------
@@ -27,7 +27,7 @@ class Memo(Generic[P, VT, KT]):
     factory: abc.Callable[P, VT] = field(repr=callable_repr)
     """The underlying cached function."""
 
-    key: abc.Callable[P, KT] = field(repr=callable_repr)
+    key: abc.Callable[P, KT] = field(default=default_key, repr=callable_repr)
     """Compute a key for a factory product."""
 
     mapping: dict[KT, VT] = field(factory=dict, init=False)

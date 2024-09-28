@@ -1,5 +1,5 @@
 from collections import abc
-from typing import Any, ClassVar, cast as type_cast
+from typing import Any, ClassVar
 from typing_extensions import override
 
 import anyio
@@ -7,17 +7,7 @@ import attrs
 
 from discord import InteractionLimits
 
-from app.typeshed import AsyncFunc, P, RetT, T
-from memo import AsyncMemo, default_key
-
-
-def async_memoize(func: AsyncFunc[P, T], /) -> AsyncFunc[P, T]:
-    """Memoization decorator for async functions.
-
-    In concurrent calls with same arguments, the function is ran only once.
-    """
-    key = type_cast(abc.Callable[P, abc.Hashable], default_key)
-    return AsyncMemo(func, key)
+from app.typeshed import AsyncFunc, RetT, T
 
 
 async def amap(coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:

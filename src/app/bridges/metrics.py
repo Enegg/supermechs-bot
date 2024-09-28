@@ -6,8 +6,8 @@ import anyio
 import anyio.to_thread
 import psutil
 
-from app.async_utils import async_memoize
 from app.typeshed import Pathish
+from memo import AsyncMemo
 
 __all__ = ("add_invocation", "get_ram_utilization", "get_sloc", "invoke_counter")
 
@@ -25,7 +25,7 @@ def _file_sloc(path: Pathish, /) -> int:
     return sloc
 
 
-@async_memoize
+@AsyncMemo
 async def get_sloc(directory: Pathish = ".", /) -> int:
     """Get the number of significant lines of code of python files within the directory."""
     total: int = 0

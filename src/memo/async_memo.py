@@ -6,7 +6,7 @@ import anyio
 from attrs import define, field
 
 from memo.typeshed import KT, VT, P
-from memo.utils import callable_repr
+from memo.utils import callable_repr, default_key
 
 __all__ = ("AsyncMemo",)
 
@@ -15,9 +15,9 @@ __all__ = ("AsyncMemo",)
 class AsyncMemo(Generic[P, VT, KT]):
     """Unbound cache of an async factory function.
 
-    - to bypass caching, use the `.factory` callable directly.
-    - to bypass computing a key, use the `.mapping` directly.
-    - safe for async concurrency.
+    - bypass caching via `.factory(...)`.
+    - bypass computing a key via `.mapping[...]`.
+    - `.get_or_create` is safe in concurrent calls.
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ class AsyncMemo(Generic[P, VT, KT]):
     factory: abc.Callable[P, abc.Awaitable[VT]] = field(repr=callable_repr)
     """The underlying cached function."""
 
-    key: abc.Callable[P, KT] = field(repr=callable_repr)
+    key: abc.Callable[P, KT] = field(default=default_key, repr=callable_repr)
     """Compute a key for a factory product."""
 
     mapping: dict[KT, VT] = field(factory=dict, init=False)
