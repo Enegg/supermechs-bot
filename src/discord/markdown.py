@@ -1,6 +1,6 @@
 """Collection of functions related to (discord specific) markdown formatting."""
 
-from typing import Protocol, runtime_checkable
+from typing import Protocol
 
 from disnake.utils import format_dt
 
@@ -29,7 +29,6 @@ def strip_codeblock(text: str, /) -> str:
     return text
 
 
-@runtime_checkable
 class Commandish(Protocol):
     @property
     def id(self) -> int: ...
@@ -39,5 +38,5 @@ class Commandish(Protocol):
 
 
 def command_mention(command: Commandish, /) -> str:
-    """Return a string allowing to mention a slash command."""
+    """Return a string mentioning a slash command."""
     return f"</{command.name}:{command.id}>"
