@@ -7,11 +7,11 @@ from app import i18n
 from app.assets import ASSETS, INVISIBLE_CHAR
 from app.bridges import ui
 from app.devtools import debug_footer
-from app.sm.asset_utils import item_transform_range
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten
 
-from supermechs.api import MAX_SHOP, ItemData, Stat
+from supermechs.api import MAX_SHOP, ItemData, Stat, Tier
+from supermechs.tools.item import transform_range
 from supermechs.tools.stats import buff_stats, max_stats
 from supermechs.utils import contains_any_of
 
@@ -69,6 +69,18 @@ def item_view(
         layout[0].insert(1, avg_button)
 
     return layout
+
+
+def item_transform_range(item: ItemData, /, at_tier: Tier | None = None) -> str:
+    tiers = transform_range(item)
+
+    if at_tier is None:
+        at_tier = tiers[-1]
+
+    index = at_tier - tiers[0]
+    str_range = [ASSETS.tiers[tier.name].emoji for tier in tiers]
+    str_range[index] = f"({str_range[index]})"
+    return "".join(str_range)
 
 
 def default_fields(
