@@ -1,3 +1,4 @@
+from typing import ClassVar
 from typing_extensions import override
 
 from discord.typeshed import EmojiType
@@ -63,6 +64,10 @@ class UrlButton(ui.Button[None]):
 
 class ToggleButton(ActionButton):
     """A bi-state button."""
+
+    __repr_attributes__: ClassVar[tuple[str, ...]] = (  # pyright: ignore[reportIncompatibleVariableOverride]
+        *ui.Button.__repr_attributes__, "style_on", "style_off", "on"
+    )
 
     def __init__(
         self,

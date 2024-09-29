@@ -1,22 +1,22 @@
 from collections import abc
-from typing import Final, Generic
+from typing import Final, Generic, TypeVar
 
-from attrs import define, field
-
-from discord.typeshed import T
+import attrs
 
 __all__ = ("Paginator",)
 
+T_co = TypeVar("T_co", covariant=True)
 
-@define
-class Paginator(Generic[T]):
+
+@attrs.define
+class Paginator(Generic[T_co]):
     """State machine proxying a value at a specific index of a sequence."""
 
-    pages: Final[abc.Sequence[T]] = field()
-    index: int = field(default=0)
+    pages: Final[abc.Sequence[T_co]]
+    index: int = 0
 
     @property
-    def page(self) -> T:
+    def page(self) -> T_co:
         return self.pages[self.index]
 
     @property
@@ -32,14 +32,16 @@ class Paginator(Generic[T]):
     def next_page(self) -> None:
         """Advance the page index."""
         if self.at_last_page:
-            raise IndexError
+            msg = ".next_page at last page"
+            raise IndexError(msg)
 
         self.index += 1
 
     def prev_page(self) -> None:
         """Reduce the page index."""
         if self.at_first_page:
-            raise IndexError
+            msg = ".prev_page at first page"
+            raise IndexError(msg)
 
         self.index -= 1
 
