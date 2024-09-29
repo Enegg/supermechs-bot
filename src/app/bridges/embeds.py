@@ -14,19 +14,12 @@ if TYPE_CHECKING:
 __all__ = ("embed_image", "sikrit_footer")
 
 
-def embed_image(image: "Image", filename: str, format: str = "png") -> tuple[str, disnake.File]:
+def embed_image(image: "Image", filename: str) -> tuple[str, disnake.File]:
     """Create and return a File with an attachment url."""
     filename = sanitize_filename(filename)
     filename = str(pathlib.PurePath(filename).with_suffix(f".{format}"))
     fp = io.BytesIO()
-    try:
-        image.save(fp, format=format)
-
-    except KeyError:
-        # thrown by PIL's format lookup table
-        msg = f"Invalid image format: {format!r}"
-        raise ValueError(msg) from None
-
+    image.save(fp, format="png")
     fp.seek(0)
     return f"attachment://{filename}", disnake.File(fp, filename)
 
