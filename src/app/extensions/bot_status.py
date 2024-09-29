@@ -1,5 +1,4 @@
 import random
-from typing import Final
 
 from discord import markdown as md
 from disnake import CommandInteraction, Embed
@@ -18,7 +17,7 @@ from app.utils import fold_binary_prefix
 
 import supermechs
 
-plugin: Final = Plugin[commands.InteractionBot](name="Bot-status", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Bot-status", logger=__name__)
 
 
 @plugin.slash_command()

@@ -1,7 +1,7 @@
 import io
 from itertools import zip_longest
 
-from disnake import Embed, Locale, MessageInteraction
+from disnake import Embed, Locale
 
 from app import i18n
 from app.assets import ASSETS, INVISIBLE_CHAR
@@ -22,7 +22,7 @@ def item_view(
     item: ItemData,
     locale: Locale,
     compact: bool,
-) -> ui.Components[ui.MessageUIComponent]:
+) -> ui.MessageComponents:
     populate_fields = compact_fields if compact else default_fields
     populate_fields(embed, item, False, False, locale)
     gettext = i18n.get_gettext(locale)
@@ -31,12 +31,12 @@ def item_view(
         debug_footer(embed)
 
     @store.bind(ui.ToggleButton(label="Buffs", custom_id=store.make_id()))
-    async def buff_button(inter: MessageInteraction) -> None:
+    async def buff_button(inter: ui.MessageInteraction) -> None:
         buff_button.toggle()
         await update(inter)
 
     @store.bind(ui.ToggleButton(label="Damage average", custom_id=store.make_id()))
-    async def avg_button(inter: MessageInteraction) -> None:
+    async def avg_button(inter: ui.MessageInteraction) -> None:
         avg_button.toggle()
         await update(inter)
 
@@ -45,11 +45,11 @@ def item_view(
             label=gettext("ui-quit"), style=ui.ButtonStyle.red, custom_id=store.make_id()
         )
     )
-    async def quit_button(inter: MessageInteraction) -> None:
+    async def quit_button(inter: ui.MessageInteraction) -> None:
         store.stop()
         await inter.response.defer()
 
-    async def update(inter: MessageInteraction) -> None:
+    async def update(inter: ui.MessageInteraction) -> None:
         embed.clear_fields()
         populate_fields(embed, item, buff_button.on, avg_button.on, locale)
 
@@ -138,12 +138,12 @@ def item_compare_view(
     item_a: ItemData,
     item_b: ItemData,
     locale: Locale,
-) -> ui.Components[ui.MessageUIComponent]:
+) -> ui.MessageComponents:
     gettext = i18n.get_gettext(locale)
     max_item_stats = (max_stats(item_a), max_stats(item_b))
 
     @store.bind(ui.ToggleButton(label=gettext("item-compare-ui-buffs"), custom_id=store.make_id()))
-    async def buffs_button(inter: MessageInteraction) -> None:
+    async def buffs_button(inter: ui.MessageInteraction) -> None:
         buffs_button.toggle()
         update()
         await inter.response.edit_message(embed=embed, components=layout)
@@ -153,7 +153,7 @@ def item_compare_view(
             label=gettext("ui-quit"), style=ui.ButtonStyle.red, custom_id=store.make_id()
         )
     )
-    async def quit_button(inter: MessageInteraction) -> None:
+    async def quit_button(inter: ui.MessageInteraction) -> None:
         await inter.response.defer()
         store.stop()
 

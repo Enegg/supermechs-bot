@@ -6,7 +6,6 @@ import time
 import types
 from collections import abc
 from contextlib import redirect_stderr, redirect_stdout
-from typing import Final
 
 import anyio
 
@@ -21,7 +20,7 @@ from app.bridges.ui import ActionButton
 from app.core import ENV
 from app.utils import format_exception
 
-plugin: Final = Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
 MODAL_SUFFIX = "code"
 WAIT_EMOJI = "<a:wait:731884722166431754>"
 CANCEL_DELAY = 3

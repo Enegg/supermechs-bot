@@ -3,7 +3,7 @@ from functools import partial
 from typing import Any, ClassVar
 
 from discord import ComponentLimits, EmbedColorType
-from disnake import Embed, Locale, MessageInteraction
+from disnake import Embed, Locale
 from disnake.utils import MISSING
 
 from app import i18n
@@ -205,14 +205,14 @@ class MechView:
         gettext = i18n.get_gettext(self.locale)
 
         @store.bind(ui.ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))
-        async def modules_button(inter: MessageInteraction) -> None:
+        async def modules_button(inter: ui.MessageInteraction) -> None:
             """Swap mech view with modules viw and back."""
             self.paginator.index ^= 1  # 0 or 1
             modules_button.emoji = self.PAGE_EMOJI[self.paginator.index]
             await inter.response.edit_message(components=self.paginator.page)
 
         @store.bind(ui.ToggleButton(label="🡅", custom_id=store.make_id()))
-        async def buffs_button(inter: MessageInteraction) -> None:
+        async def buffs_button(inter: ui.MessageInteraction) -> None:
             """Toggle arena buffs to mech's stats."""
             if is_shop_empty(self.arena_shop):
                 return await inter.response.send_message(
@@ -232,7 +232,7 @@ class MechView:
                 label=gettext("ui-quit"), style=ui.ButtonStyle.red, custom_id=store.make_id()
             )
         )
-        async def quit_button(inter: MessageInteraction) -> None:
+        async def quit_button(inter: ui.MessageInteraction) -> None:
             store.stop()
             await inter.response.defer(ephemeral=True)
 
@@ -256,7 +256,7 @@ class MechView:
                 custom_id=store.make_id(),
             )
         )
-        async def select(inter: MessageInteraction) -> None:
+        async def select(inter: ui.MessageInteraction) -> None:
             """Item select dropdown."""
             assert self.active is not None
             assert inter.values is not None
@@ -325,7 +325,7 @@ class MechView:
         self.select = select
         id_to_slot: dict[str, SlotType] = {}
 
-        async def slot_button_cb(button: ui.ToggleButton, inter: MessageInteraction) -> None:
+        async def slot_button_cb(button: ui.ToggleButton, inter: ui.MessageInteraction) -> None:
             if button.on:
                 self.set_state_idle()
 

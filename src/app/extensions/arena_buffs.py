@@ -1,8 +1,7 @@
 from collections import abc
 from functools import partial
-from typing import Final
 
-from disnake import CommandInteraction, MessageInteraction
+from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake_plugins import Plugin
 
@@ -12,7 +11,7 @@ from app.models import Player
 
 from supermechs.api import ArenaShop, Category
 
-plugin: Final = Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
 
 
 def format_value(category: Category, level: int, /) -> str:
@@ -55,7 +54,7 @@ class ArenaShopView:
         @store.bind(
             ui.ActionButton(label="Quit", style=ui.ButtonStyle.red, custom_id=store.make_id())
         )
-        async def quit_button(inter: MessageInteraction) -> None:
+        async def quit_button(inter: ui.MessageInteraction) -> None:
             store.stop()
             await inter.response.edit_message(components=self.get_state_stopped())
 
@@ -68,7 +67,7 @@ class ArenaShopView:
                 label="🡸", style=ui.ButtonStyle.blurple, disabled=True, custom_id=store.make_id()
             )
         )
-        async def prev_button(inter: MessageInteraction) -> None:
+        async def prev_button(inter: ui.MessageInteraction) -> None:
             self.paginator.prev_page()
             update_state()
             await inter.response.edit_message(components=self.paginator.page)
@@ -76,7 +75,7 @@ class ArenaShopView:
         @store.bind(
             ui.ActionButton(label="🡺", style=ui.ButtonStyle.blurple, custom_id=store.make_id())
         )
-        async def next_button(inter: MessageInteraction) -> None:
+        async def next_button(inter: ui.MessageInteraction) -> None:
             self.paginator.next_page()
             update_state()
             await inter.response.edit_message(components=self.paginator.page)
@@ -84,7 +83,7 @@ class ArenaShopView:
         @store.bind(
             ui.ActionButton(label="Max", style=ui.ButtonStyle.green, custom_id=store.make_id())
         )
-        async def max_button(inter: MessageInteraction) -> None:
+        async def max_button(inter: ui.MessageInteraction) -> None:
             for btn in self.all_slot_buttons:
                 self.modify_buff(btn)
                 btn.on = False
@@ -98,7 +97,7 @@ class ArenaShopView:
                 options=[ui.SelectOption(label="$")], disabled=True, custom_id=store.make_id()
             )
         )
-        async def select(inter: MessageInteraction) -> None:
+        async def select(inter: ui.MessageInteraction) -> None:
             assert inter.values is not None
             level = int(inter.values[0])
 
@@ -148,7 +147,7 @@ class ArenaShopView:
         self.all_slot_buttons.append(btn)
         return btn
 
-    async def buff_button(self, button: ui.ToggleButton, inter: MessageInteraction) -> None:
+    async def buff_button(self, button: ui.ToggleButton, inter: ui.MessageInteraction) -> None:
         if self.active is button:
             self.set_state_idle()
             return
@@ -196,7 +195,7 @@ class ArenaShopView:
         self.select.placeholder = None
         self.select.disabled = True
 
-    def get_state_stopped(self) -> ui.Components[ui.MessageUIComponent]:
+    def get_state_stopped(self) -> ui.MessageComponents:
         page = self.paginator.page
         del page[3:]
         for row in page:

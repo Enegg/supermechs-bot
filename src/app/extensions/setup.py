@@ -1,5 +1,5 @@
 from collections import abc
-from typing import Final, NoReturn
+from typing import NoReturn
 
 import disnake
 from discord import AutocompleteReturnType, InteractionLimits
@@ -11,7 +11,7 @@ from disnake_plugins import Plugin
 from app.core import ENV
 from app.utils import format_exception
 
-plugin: Final = Plugin[commands.InteractionBot](
+plugin = Plugin[commands.InteractionBot](
     name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
