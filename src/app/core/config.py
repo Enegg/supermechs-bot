@@ -5,7 +5,7 @@ from app import paths
 from app.class_utils import attrs_from_path
 from app.utils import unfold_binary_prefix
 
-from supermechs.gamerules import DEFAULT_GAME_RULES, GameRules
+from supermechs.gamerules import BuildRules
 
 __all__ = ("CONFIG",)
 
@@ -13,7 +13,7 @@ _converter = cattrs.Converter()
 _converter.register_structure_hook(int, lambda val, _: unfold_binary_prefix(val))
 
 
-@attrs.frozen
+@attrs.frozen(kw_only=True)
 class Config:
     date_format: str
     """General date format for logging purposes."""
@@ -23,10 +23,10 @@ class Config:
     """Placeholder image url."""
     max_image_size: int
     """Maximum allowed image size, in bytes."""
-    chunk_size: int = 1024**2
+    chunk_size: int
     """Size of chunk for iterative download."""
-    game_rules: GameRules = DEFAULT_GAME_RULES
-    """Set of rules the game shall obey."""
+    build_rules: BuildRules = BuildRules.default
+    """Set of rules the builds shall obey."""
     # no need to store logging config here for the app's lifetime
 
 

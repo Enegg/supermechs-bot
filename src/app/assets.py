@@ -73,7 +73,7 @@ ASSETS = attrs_from_path(Assets, paths.ASSETS, _converter)
 EMOJIS = ASSETS.emojis
 
 
-def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.game_rules.builds) -> str:
+def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:
     if weight < 0:
         return EMOJIS.weight_sub_0
     close = math.floor(rules.MAX_WEIGHT * 0.99)
