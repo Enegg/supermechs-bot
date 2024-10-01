@@ -26,7 +26,7 @@ WAIT_EMOJI = "<a:wait:731884722166431754>"
 CANCEL_DELAY = 3
 
 
-async def runner(fn: abc.Callable[[], object], sio: io.StringIO, cs: anyio.CancelScope) -> None:
+async def runner(cs: anyio.CancelScope, fn: abc.Callable[[], object], sio: io.StringIO) -> None:
     # NOTE: .run_sync somehow screws up imports/globals
     # TODO: a way to run code in isolation?
     # right now, any expensive code /will/ affect the entire bot
@@ -43,6 +43,17 @@ async def runner(fn: abc.Callable[[], object], sio: io.StringIO, cs: anyio.Cance
 
     cs.cancel()
 
+async def waiter(cs: anyio.CancelScope, inter: disnake.Interaction, cancelled: anyio.Event) -> None:
+    await anyio.sleep(CANCEL_DELAY)
+
+    button = ActionButton(label="Cancel", style=disnake.ButtonStyle.red)
+    await inter.edit_original_response(f"{WAIT_EMOJI} Processing...", components=[button])
+    button_inter, _ = await wait_for_components(button, client=plugin.bot, user_id=inter.author.id)
+    cancelled.set()
+    with anyio.CancelScope(shield=True):
+        # this is the only place we acknowledge the interaction, so shield it
+        await button_inter.response.defer()
+    cs.cancel()
 
 async def eval_code(inter: disnake.Interaction, code: str) -> None:
     await inter.response.defer(with_message=True, ephemeral=True)
@@ -74,32 +85,17 @@ async def eval_code(inter: disnake.Interaction, code: str) -> None:
         fn = types.FunctionType(compiled_code, context, name="fn")
 
         sio = io.StringIO()
-        cancelled: bool = False
-
-        async def waiter(inter: disnake.Interaction, cs: anyio.CancelScope) -> None:
-            nonlocal cancelled
-            await anyio.sleep(CANCEL_DELAY)
-
-            button = ActionButton(label="Cancel", style=disnake.ButtonStyle.red)
-            await inter.edit_original_response(f"{WAIT_EMOJI} Processing...", components=[button])
-            button_inter, _ = await wait_for_components(
-                button, client=plugin.bot, user_id=inter.author.id
-            )
-            cancelled = True
-            with anyio.CancelScope(shield=True):
-                # this is the only place we acknowledge the interaction, so shield it
-                await button_inter.response.defer()
-            cs.cancel()
+        cancelled = anyio.Event()
 
         with redirect_stdout(sio), redirect_stderr(sio):
             async with anyio.create_task_group() as tg:
-                tg.start_soon(runner, fn, sio, tg.cancel_scope)
-                tg.start_soon(waiter, inter, tg.cancel_scope)
+                tg.start_soon(runner, tg.cancel_scope, fn, sio)
+                tg.start_soon(waiter, tg.cancel_scope, inter, cancelled)
 
             run_time = time.perf_counter() - start_time
 
         output = sio.getvalue() or "[No output]"
-        status = f"cancelled after {run_time:.2f}s" if cancelled else f"finished in {run_time:.2f}s"
+        status = f"{'cancelled after' if cancelled.is_set() else 'finished in'} {run_time:.2f}s"
 
     title = f"-# Code {status}"
 
