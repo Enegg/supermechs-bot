@@ -11,7 +11,7 @@ from app.models import Player
 
 from supermechs.api import ArenaShop, Category
 
-plugin = Plugin[commands.InteractionBot](name="ArenaBuffs", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="ArenaBuffs", logger="ext")
 
 
 def format_value(category: Category, level: int, /) -> str:

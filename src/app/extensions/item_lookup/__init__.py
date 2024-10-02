@@ -27,7 +27,7 @@ else:
     LiteralTypeOrAny = Literal[(*get_type_args(LiteralType), "ANY")]
     LiteralElementOrAny = Literal[(*get_type_args(LiteralElement), "ANY")]
 
-plugin = Plugin[commands.InteractionBot](name="Item-lookup", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Item-lookup", logger="ext")
 
 
 @plugin.slash_command()

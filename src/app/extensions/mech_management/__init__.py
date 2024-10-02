@@ -32,7 +32,7 @@ from supermechs.api import Stat, Type, mech_weight
 from supermechs.ext.deserializers.exceptions import DataError
 from supermechs.ext.workshop import dump_mechs, load_mechs
 
-plugin = Plugin[commands.InteractionBot](name="Mech-manager", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Mech-manager", logger="ext")
 
 
 @plugin.load_hook(post=True)

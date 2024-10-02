@@ -20,7 +20,7 @@ from app.bridges.ui import ActionButton
 from app.core import ENV
 from app.utils import format_exception
 
-plugin = Plugin[commands.InteractionBot](name="Code-eval", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Code-eval", logger="ext")
 MODAL_SUFFIX = "code"
 WAIT_EMOJI = "<a:wait:731884722166431754>"
 CANCEL_DELAY = 3

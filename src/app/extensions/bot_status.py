@@ -17,7 +17,7 @@ from app.utils import fold_binary_prefix
 
 import supermechs
 
-plugin = Plugin[commands.InteractionBot](name="Bot-status", logger=__name__)
+plugin = Plugin[commands.InteractionBot](name="Bot-status", logger="ext")
 
 
 @plugin.slash_command()

@@ -12,7 +12,7 @@ from app.core import ENV
 from app.utils import format_exception
 
 plugin = Plugin[commands.InteractionBot](
-    name="Setup", slash_command_attrs={"guild_ids": ENV.test_guild_ids}, logger=__name__
+    name="Setup", logger="ext", slash_command_attrs={"guild_ids": ENV.test_guild_ids}
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
 # the lib wants a list which is invariant

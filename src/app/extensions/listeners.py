@@ -6,7 +6,7 @@ from disnake_plugins import Plugin
 from app.bridges import add_invocation
 from app.core import CONFIG
 
-plugin = Plugin(name="listeners", logger=__name__)
+plugin = Plugin(name="listeners", logger="ext")
 _EVENTS_LOG = logging.getLogger("event")
 
 
