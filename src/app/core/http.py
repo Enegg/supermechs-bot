@@ -11,15 +11,18 @@ _LOG = logging.getLogger(__name__)
 
 
 class HttpClient(Protocol):
-    connector: aiohttp.BaseConnector | None
-    proxy: str | None
+    @property
+    def connector(self) -> aiohttp.BaseConnector | None: ...
+    @property
+    def proxy(self) -> str | None: ...
 
 
 def client_session(client: HttpClient, /) -> aiohttp.ClientSession:
     """Create a client session with client's connector & proxy."""
 
     def _dumps(obj: object, /) -> str:
-        return orjson.dumps(obj).decode()  # it will be encoded again right away but oh well
+        # (Any) -> str which then they encode...
+        return orjson.dumps(obj).decode()
 
     session = aiohttp.ClientSession(
         connector=client.connector,

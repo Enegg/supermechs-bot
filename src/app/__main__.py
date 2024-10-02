@@ -9,8 +9,8 @@ from disnake.ext import commands
 
 import resources
 from app import i18n, paths
-from app.bridges import client_session, register_injections, setup_channel_logger
-from app.core import ENV, config_logging
+from app.bridges import register_injections, setup_channel_logger
+from app.core import ENV, client_session, config_logging
 from app.shared.item_packs import load_default_pack
 
 
