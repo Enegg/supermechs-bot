@@ -13,13 +13,15 @@ if TYPE_CHECKING:
 
 __all__ = ("embed_image", "sikrit_footer")
 
+FORMAT = "png"
+
 
 def embed_image(image: "Image", filename: str) -> tuple[str, disnake.File]:
     """Create and return a File with an attachment url."""
     filename = sanitize_filename(filename)
-    filename = str(pathlib.PurePath(filename).with_suffix(f".{format}"))
+    filename = str(pathlib.PurePath(filename).with_suffix("." + FORMAT))
     fp = io.BytesIO()
-    image.save(fp, format="png")
+    image.save(fp, format=FORMAT)
     fp.seek(0)
     return f"attachment://{filename}", disnake.File(fp, filename)
 
