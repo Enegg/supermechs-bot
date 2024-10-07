@@ -15,7 +15,7 @@ def walk_extensions(
     root_module: str,
     *,
     package: str | None = None,
-    ignore: abc.Iterable[str] | abc.Callable[[str], bool] | None = None,
+    ignore: abc.Callable[[str], bool] | None = None,
 ) -> abc.Iterator[str]:
     paths, name = find_submodules(root_module, package=package)
     yield from walk_modules(paths, f"{name}.", ignore)
@@ -41,6 +41,6 @@ def load_extensions(
     root_module: str,
     *,
     package: str | None = None,
-    ignore: abc.Iterable[str] | abc.Callable[[str], bool] | None = None,
+    ignore: abc.Callable[[str], bool] | None = None,
 ) -> None:
     _load_extensions(loader, walk_extensions(root_module, package=package, ignore=ignore))

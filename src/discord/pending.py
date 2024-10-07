@@ -11,12 +11,8 @@ __all__ = ("walk_modules",)
 def walk_modules(
     paths: abc.Iterable[str],
     prefix: str = "",
-    ignore: abc.Iterable[str] | abc.Callable[[str], bool] | None = None,
+    ignore: abc.Callable[[str], bool] | None = None,
 ) -> abc.Iterator[str]:
-    if isinstance(ignore, abc.Iterable):
-        ignore_tup = tuple(ignore)
-        ignore = lambda path: path.startswith(ignore_tup)  # noqa: E731
-
     seen: set[str] = set()
 
     for _, name, ispkg in pkgutil.iter_modules(paths, prefix):
