@@ -132,6 +132,7 @@ ui-disallowed = "Only the command invoker can interact with that."
 ui-quit = "Quit"
 ui-empty-option-label = "empty"
 ui-empty-option-desc = "Select to remove"
+ui-cmd-cancel-button = "Terminate"
 
 unknown-item-name = "Item '{name}' not found."
 

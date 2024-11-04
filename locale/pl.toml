@@ -107,7 +107,7 @@ transformRange = "Etapy transformacji"
 
 [messages]
 command-dev = "To komenda wyłącznie deweloperska."
-command-running = "Twoje poprzednie wywołanie tej komendy jest nadal w toku."
+command-running = "Twoje poprzednie wywołanie tej komendy nadal trwa."
 command-timeout = "Komenda przekroczyła limit czasu."
 command-error = "Wystąpił problem :( Szczegóły zostały przekazane winnemu deweloperowi."
 
@@ -115,6 +115,7 @@ ui-disallowed = "Tylko osoba wywołująca komendę może tego używać."
 ui-quit = "Wyjście"
 ui-empty-option-label = "pusty"
 ui-empty-option-desc = "Wybierz by usunąć"
+ui-cmd-cancel-button = "Zakończ"
 
 unknown-item-name = "Nie odnaleziono przedmiotu '{name}'."
 

@@ -1,5 +1,5 @@
 from collections import abc
-from typing import Any, Protocol, TypeAlias, TypedDict, runtime_checkable
+from typing import Any, Protocol, TypeAlias, runtime_checkable
 from typing_extensions import ParamSpec, TypeVar
 
 import disnake
@@ -9,7 +9,6 @@ __all__ = (
     "EmbedColorType",
     "EmojiType",
     "ListenerRegistry",
-    "SenderKeywords",
 )
 
 T = TypeVar("T")
@@ -32,10 +31,3 @@ class ListenerRegistry(Protocol):
     def remove_listener(
         self, func: CoroFunc[..., None], /, name: str | disnake.Event = ...
     ) -> None: ...
-
-
-class SenderKeywords(TypedDict, total=False):
-    content: str
-    embed: disnake.Embed
-    file: disnake.File
-    suppress_embeds: bool
