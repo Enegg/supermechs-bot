@@ -1,6 +1,7 @@
 from collections import abc
 from functools import partial
 
+from discord.commands import register_cancellable
 from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake_plugins import Plugin
@@ -206,7 +207,7 @@ class ArenaShopView:
 
 
 @plugin.slash_command()
-@commands.max_concurrency(1, commands.BucketType.user)
+@register_cancellable
 async def buffs(inter: CommandInteraction, player: Player) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""  # noqa: D400
     store = ui.CallbackStore()

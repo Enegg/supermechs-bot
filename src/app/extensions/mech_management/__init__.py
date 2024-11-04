@@ -5,6 +5,7 @@ from json import JSONDecodeError
 import anyio
 
 from discord import ComponentLimits, bytes_to_file, markdown as md
+from discord.commands import register_cancellable
 from discord.ui import wait_for_components
 from disnake import Attachment, CommandInteraction, Embed, Locale
 from disnake.ext import commands
@@ -96,7 +97,7 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
 
 
 @mech.sub_command()
-@commands.max_concurrency(1, commands.BucketType.user)
+@register_cancellable
 async def build(
     inter: CommandInteraction,
     locale: Locale,
@@ -143,7 +144,6 @@ async def build(
 
 
 @mech.sub_command(name="import")
-@commands.max_concurrency(1, commands.BucketType.user)
 async def import_(
     inter: CommandInteraction, gettext: i18n.GetText, player: Player, file: Attachment
 ) -> None:
