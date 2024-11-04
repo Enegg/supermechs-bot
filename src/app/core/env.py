@@ -2,6 +2,7 @@ import os
 from collections import abc
 
 import dotenv
+from monads.option import Option, from_none
 
 from disnake import Locale
 
@@ -29,13 +30,9 @@ class _Env:
         return (self.home_guild_id,)
 
     @property
-    def locale_override(self) -> Locale | None:
+    def locale_override(self) -> Option[Locale]:
         """Override of current locale."""
-        value = os.getenv("LOCALE_OVERRIDE")
-        if value is None:
-            return None
-
-        return Locale[value]
+        return from_none(os.getenv("LOCALE_OVERRIDE")).map(Locale.__getitem__)
 
     @locale_override.setter
     def locale_override(self, locale: Locale | str) -> None:

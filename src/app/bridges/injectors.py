@@ -10,7 +10,6 @@ from app.stored import players
 
 from .autocompleters import item_name_autocomplete
 
-from supermechs.abc.item import Name
 from supermechs.api import ItemData
 
 __all__ = ("register_injections",)
@@ -23,7 +22,7 @@ def register_injections() -> None:
     # somewhere in the main.py we'd need a blank import which isn't used anywhere)
 
     @commands.register_injection
-    def inject_item(inter: CommandInteraction, name: Name, locale: disnake.Locale) -> ItemData:
+    def inject_item(inter: CommandInteraction, name: str) -> ItemData:
         """Injection taking Item name and returning ItemData.
 
         Parameters
@@ -35,6 +34,7 @@ def register_injections() -> None:
         if item is not None:
             return item
 
+        locale = inject_locale(inter)
         msg = i18n.get_message(locale, "unknown-item-name", name=name)
         raise commands.UserInputError(msg)
 
@@ -46,12 +46,12 @@ def register_injections() -> None:
     @commands.register_injection
     def inject_locale(inter: CommandInteraction) -> disnake.Locale:
         """Injection returning context aware locale."""
-        return ENV.locale_override or inter.locale
+        return ENV.locale_override.unwrap_or(inter.locale)
 
     @commands.register_injection
     def inject_gettext(inter: CommandInteraction) -> i18n.GetText:
         """Injection returning a callable which returns localized messages."""
-        return i18n.get_gettext(ENV.locale_override or inter.locale)
+        return i18n.get_gettext(inject_locale(inter))
 
     inject_item.autocomplete("name")(item_name_autocomplete)
-    del inject_player, inject_gettext, inject_locale
+    del inject_player, inject_gettext
