@@ -1,8 +1,6 @@
 """Module extending the library provided UI kit."""
-# pyright: reportUnusedImport=false
-# ruff: noqa: F401
 
-from collections import abc
+from functools import partial
 from typing import TypeAlias
 
 import disnake
@@ -31,20 +29,22 @@ __all__ = (
     "TextInputStyle",
     "ToggleButton",
     "UrlButton",
-    "get_check",
+    "callback_store",
 )
 
 CallbackStore: TypeAlias = _CallbackStore[MessageInteraction]
 MessageComponents: TypeAlias = Components[MessageUIComponent]
 
 
-def get_check(user: disnake.abc.User, /) -> abc.Callable[[MessageInteraction], abc.Awaitable[bool]]:
+def callback_store(base_inter: disnake.Interaction, /) -> CallbackStore:
     async def interaction_check(inter: MessageInteraction, /) -> bool:
-        if inter.author.id == user.id:
+        if inter.author.id == base_inter.author.id:
             return True
 
         msg = i18n.get_message(inter.locale, "ui-disallowed")
         await inter.send(msg, ephemeral=True)
         return False
 
-    return interaction_check
+    return _CallbackStore(
+        partial(base_inter.bot.wait_for, disnake.Event.message_interaction), check=interaction_check
+    )

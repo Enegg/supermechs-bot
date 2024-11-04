@@ -8,6 +8,7 @@ from disnake_plugins import Plugin
 
 from app.assets import ASSETS, INVISIBLE_CHAR
 from app.bridges import ui
+from app.core import CONFIG
 from app.models import Player
 
 from supermechs.api import ArenaShop, Category
@@ -210,14 +211,14 @@ class ArenaShopView:
 @register_cancellable
 async def buffs(inter: CommandInteraction, player: Player) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""  # noqa: D400
-    store = ui.CallbackStore()
+    store = ui.callback_store(inter)
     view = ArenaShopView(store, player.arena_shop)
 
     await inter.response.send_message(
         "**Arena Shop**", components=view.paginator.page, ephemeral=True
     )
 
-    if await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author), timeout=180):
+    if await store.listen(timeout=CONFIG.command_timeout):
         await inter.edit_original_response(components=view.get_state_stopped())
 
 

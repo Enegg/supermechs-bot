@@ -10,7 +10,7 @@ from disnake_plugins import Plugin
 from app import paths
 from app.assets import ASSETS
 from app.bridges import embed_image, item_name_autocomplete, sikrit_footer, ui
-from app.core import ENV
+from app.core import CONFIG, ENV
 from app.shared.item_packs import DEFAULT_PACK, get_item_by_name
 
 from .item_lookup import item_compare_view, item_view
@@ -98,10 +98,10 @@ async def item(
 
     sikrit_footer(embed, locale)
 
-    store = ui.CallbackStore()
+    store = ui.callback_store(inter)
     layout = item_view(store, embed, item, locale, compact)
     await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
-    await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author))
+    await store.listen(timeout=CONFIG.command_timeout)
     await inter.edit_original_response(components=None)
 
 
@@ -185,10 +185,10 @@ async def compare(
 
     sikrit_footer(embed, locale)
 
-    store = ui.CallbackStore()
+    store = ui.callback_store(inter)
     layout = item_compare_view(store, embed, item_a, item_b, locale)
     await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
-    await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author))
+    await store.listen(timeout=CONFIG.command_timeout)
     await inter.edit_original_response(components=None)
 
 

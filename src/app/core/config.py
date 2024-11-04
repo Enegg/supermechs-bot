@@ -27,6 +27,7 @@ class Config:
     """Size of chunk for iterative download."""
     build_rules: BuildRules = BuildRules.default
     """Set of rules the builds shall obey."""
+    command_timeout: float = 180.0
     # no need to store logging config here for the app's lifetime
 
 

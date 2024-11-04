@@ -22,6 +22,7 @@ from app.bridges import (
     sikrit_footer,
     ui,
 )
+from app.core import CONFIG
 from app.devtools import debug_footer
 from app.models import Player
 from app.shared.item_packs import DEFAULT_PACK
@@ -119,7 +120,7 @@ async def build(
     else:
         build = player.get_or_create_build(sanitize_string(name))
 
-    store = ui.CallbackStore()
+    store = ui.callback_store(inter)
     view = MechView(store, build, item_pack, player, locale)
     file = MISSING
 
@@ -139,7 +140,7 @@ async def build(
     await inter.response.send_message(
         embed=view.embed, file=file, components=view.paginator.page, ephemeral=True
     )
-    await store.listen(plugin.bot.wait_for, check=ui.get_check(inter.author), timeout=180)
+    await store.listen(timeout=CONFIG.command_timeout)
     await inter.edit_original_response(components=None)
 
 
