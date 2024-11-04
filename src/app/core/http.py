@@ -7,6 +7,7 @@ from aiohttp.typedefs import StrOrURL
 
 __all__ = ("client_session",)
 
+RESPONSE_OK = 200
 _LOG = logging.getLogger(__name__)
 
 
@@ -32,9 +33,24 @@ def client_session(client: HttpClient, /) -> aiohttp.ClientSession:
     )
     _request = session._request  # pyright: ignore[reportPrivateUsage]
 
-    def _log_request(method: str, str_or_url: StrOrURL, **kwargs: Any) -> Any:  # noqa: ANN401
-        _LOG.info("method=%s url=%s", method, str_or_url)
-        return _request(method, str_or_url, proxy=client.proxy, **kwargs)
+    async def _log_request(
+        method: str,
+        str_or_url: StrOrURL,
+        **kwargs: Any,  # noqa: ANN401
+    ) -> aiohttp.ClientResponse:
+        _LOG.info("Request method=%s url=%s", method, str_or_url)
+        response = await _request(method, str_or_url, proxy=client.proxy, **kwargs)
+
+        _LOG.log(
+            logging.INFO if response.status == RESPONSE_OK else logging.WARNING,
+            "Response method=%s url=%s status=%d type=%s length=%s",
+            method,
+            str_or_url,
+            response.status,
+            response.content_type,
+            response.content_length,
+        )
+        return response
 
     session._request = _log_request  # pyright: ignore[reportPrivateUsage]
     return session
