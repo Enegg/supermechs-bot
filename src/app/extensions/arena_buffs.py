@@ -10,6 +10,7 @@ from app.assets import ASSETS, INVISIBLE_CHAR
 from app.bridges import ui
 from app.core import CONFIG
 from app.models import Player
+from defer import AsyncDeferBlock
 
 from supermechs.api import ArenaShop, Category
 
@@ -58,7 +59,7 @@ class ArenaShopView:
         )
         async def quit_button(inter: ui.MessageInteraction) -> None:
             store.stop()
-            await inter.response.edit_message(components=self.get_state_stopped())
+            await inter.response.defer()
 
         def update_state() -> None:
             prev_button.disabled = self.paginator.at_first_page
@@ -218,8 +219,9 @@ async def buffs(inter: CommandInteraction, player: Player) -> None:
         "**Arena Shop**", components=view.paginator.page, ephemeral=True
     )
 
-    if await store.listen(timeout=CONFIG.command_timeout):
-        await inter.edit_original_response(components=view.get_state_stopped())
+    async with AsyncDeferBlock() as defer:
+        defer(lambda: inter.edit_original_response(components=view.get_state_stopped()))
+        await store.listen(timeout=CONFIG.command_timeout)
 
 
 setup, teardown = plugin.create_extension_handlers()

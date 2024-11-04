@@ -11,7 +11,7 @@ from app import paths
 from app.assets import ASSETS
 from app.bridges import embed_image, item_name_autocomplete, sikrit_footer, ui
 from app.core import CONFIG, ENV
-from app.shared.item_packs import DEFAULT_PACK, get_item_by_name
+from defer import AsyncDeferBlock
 
 from .item_lookup import item_compare_view, item_view
 
@@ -101,8 +101,9 @@ async def item(
     store = ui.callback_store(inter)
     layout = item_view(store, embed, item, locale, compact)
     await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
-    await store.listen(timeout=CONFIG.command_timeout)
-    await inter.edit_original_response(components=None)
+    async with AsyncDeferBlock() as defer:
+        defer(inter.edit_original_response, components=None)
+        await store.listen(timeout=CONFIG.command_timeout)
 
 
 @plugin.slash_command(guild_ids=ENV.test_guild_ids)
@@ -188,8 +189,9 @@ async def compare(
     store = ui.callback_store(inter)
     layout = item_compare_view(store, embed, item_a, item_b, locale)
     await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
-    await store.listen(timeout=CONFIG.command_timeout)
-    await inter.edit_original_response(components=None)
+    async with AsyncDeferBlock() as defer:
+        defer(inter.edit_original_response, components=None)
+        await store.listen(timeout=CONFIG.command_timeout)
 
 
 setup, teardown = plugin.create_extension_handlers()
