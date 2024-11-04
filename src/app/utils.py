@@ -69,6 +69,7 @@ def format_exception(exc: BaseException, /) -> str:
 
     Makes paths embedded within the message relative to the cwd.
     """
+    # TODO: make it work with ExceptionGroups too
     tb = traceback.TracebackException.from_exception(exc, compact=True)
     cwd = PurePath(os.getcwd())  # noqa: PTH109
 
