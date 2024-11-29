@@ -14,7 +14,7 @@ from app.class_utils import attrs_from_path
 from app.core import CONFIG
 from app.typeshed import T
 
-from supermechs.api import BuildRules
+from supermechs.gamerules import BuildRules
 
 __all__ = ("ASSETS", "get_weight_emoji")
 
@@ -76,7 +76,7 @@ EMOJIS = ASSETS.emojis
 def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:
     if weight < 0:
         return EMOJIS.weight_sub_0
-    close = math.floor(rules.MAX_WEIGHT * 0.99)
+    close = math.floor(rules.safe_weight * 0.99)
     if weight < close:
         emojis = (
             "",
@@ -87,11 +87,11 @@ def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) 
             EMOJIS.weight_4,
         )
         return emojis[round((len(emojis) - 1) * weight / close)]
-    if weight < rules.MAX_WEIGHT:
+    if weight < rules.safe_weight:
         return EMOJIS.weight_99
-    if weight == rules.MAX_WEIGHT:
+    if weight == rules.safe_weight:
         return EMOJIS.weight_1k
-    if weight <= rules.OVERLOADED_MAX_WEIGHT:
+    if weight <= rules.max_weight:
         return EMOJIS.overload
     return EMOJIS.overweight
 

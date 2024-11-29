@@ -1,5 +1,5 @@
 import io
-import uuid
+from itertools import chain, islice
 from json import JSONDecodeError
 
 import anyio
@@ -22,18 +22,17 @@ from app.bridges import (
     sikrit_footer,
     ui,
 )
+from app.bridges.sm_utils import get_item_pack_for
 from app.core import CONFIG
 from app.devtools import debug_footer
 from app.models import Player
-from app.shared.item_packs import DEFAULT_PACK
 from app.utils import fold_binary_prefix
 from defer import AsyncDeferBlock
 
 from .mech_manager import MechView
 
-from supermechs.api import Stat, Type, mech_weight
-from supermechs.ext.deserializers.exceptions import DataError
-from supermechs.ext.workshop import dump_mechs, load_mechs
+from supermechs.enums import ItemTypeName
+from supermechs.tools import mech_weight
 
 plugin = Plugin[commands.InteractionBot](name="Mech-manager", logger="ext")
 
@@ -56,11 +55,11 @@ async def mech(inter: CommandInteraction) -> None:
 
 # TODO: localize this
 MECH_SUMMARY_TEMPLATE = f"""\
-- {ASSETS.types[Type.TORSO.name].emoji} {{TORSO}}
-- {ASSETS.types[Type.LEGS.name].emoji} {{LEGS}}
-- {ASSETS.sided_types[Type.SIDE_WEAPON.name].right.emoji} `{{WEAPONS}}` weapon(s)
-- {ASSETS.types[Type.MODULE.name].emoji} `{{MODULES}}` module(s)
-- {ASSETS.stats[Stat.weight.name].emoji} `{{WEIGHT}}`kg\
+- {ASSETS.types[ItemTypeName.TORSO].emoji} {{TORSO}}
+- {ASSETS.types[ItemTypeName.LEGS].emoji} {{LEGS}}
+- {ASSETS.sided_types[ItemTypeName.SIDE_WEAPON].right.emoji} `{{WEAPONS}}` weapon(s)
+- {ASSETS.types[ItemTypeName.MODULE].emoji} `{{MODULES}}` module(s)
+- {ASSETS.stats['weight'].emoji} `{{WEIGHT}}`kg\
 """
 
 
@@ -82,8 +81,8 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
         value = MECH_SUMMARY_TEMPLATE.format(
             TORSO="no torso" if mech.torso is None else mech.torso.name,
             LEGS="no legs" if mech.legs is None else mech.legs.name,
-            WEAPONS=sum(1 for _ in filter(None, mech.iter_items("weapons"))),
-            MODULES=sum(1 for _ in filter(None, mech.modules())),
+            WEAPONS=sum(1 for item in chain(mech.top_weapons(), mech.side_weapons()) if item),
+            MODULES=sum(1 for item in mech.modules() if item),
             WEIGHT=mech_weight(mech),
         )
         fields.append((build.name, value))
@@ -113,7 +112,7 @@ async def build(
     name:
         The name of an existing build or of one to create. {{ MECH_BUILD_NAME }}
     """  # noqa: D400
-    item_pack = DEFAULT_PACK.get_nowait()
+    item_pack = get_item_pack_for(inter)
 
     if name is None:
         build = player.get_recent_or_create_build()
@@ -167,7 +166,7 @@ async def import_(
     # the content type should be application/json,
     # but we may as well just rely on the loader to fail
 
-    default_pack = DEFAULT_PACK.get_nowait()
+    default_pack = get_item_pack_for(inter)
     data = await file.read()
     try:
         mechs, failed = load_mechs(data, default_pack)
@@ -226,7 +225,7 @@ async def export(
     if build_count == 0:
         return await inter.response.send_message(gettext("export-none"), ephemeral=True)
 
-    default_pack = DEFAULT_PACK.get_nowait()
+    default_pack = get_item_pack_for(inter)
     all_builds = tuple(player.builds.values())
 
     if build_count == 1:
@@ -234,13 +233,12 @@ async def export(
         file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
-    options = [(build.name, str(build.id)) for build in all_builds]
-    del options[ComponentLimits.select_options :]
-
+    options = {
+        build.name: str(i)
+        for i, build in enumerate(islice(all_builds, ComponentLimits.select_options))
+    }
     mech_select = ui.StringSelect(
-        placeholder=gettext("export-select"),
-        max_values=len(options),
-        options=dict(options),
+        placeholder=gettext("export-select"), max_values=len(options), options=options
     )
     button_all = ui.ActionButton(label=gettext("export-all"))
 
@@ -275,7 +273,7 @@ async def export(
 
     else:
         assert component_inter.values is not None
-        mechs = (player.builds[uuid.UUID(str_id)].as_mech() for str_id in component_inter.values)
+        mechs = (all_builds[int(i)].as_mech() for i in component_inter.values)
 
     file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
     await component_inter.response.edit_message(file=file, components=None)

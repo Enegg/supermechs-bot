@@ -27,6 +27,9 @@ Coro: TypeAlias = abc.Coroutine[Any, Any, RetT]
 CoroFunc: TypeAlias = abc.Callable[P, Coro[RetT]]
 """Function yielding a coroutine."""
 
+Json: TypeAlias = str | int | float | bool | None | abc.Sequence["Json"] | abc.Mapping[str, "Json"]
+"""Strict JSON type."""
+
 
 class Getter(Protocol[T, T2]):
     """Abstract property implementing `__get__`."""

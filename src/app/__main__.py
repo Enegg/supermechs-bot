@@ -7,11 +7,11 @@ import disnake
 from discord import load_extensions
 from disnake.ext import commands
 
-import resources
 from app import i18n, paths
-from app.bridges import register_injections, setup_channel_logger
+from app.bridges import register_injections
 from app.core import ENV, client_session, config_logging
-from app.shared.item_packs import load_default_pack
+from app.local_storage import load_default_pack, load_state, save_state
+from app.state import state
 
 
 async def main() -> None:
@@ -40,13 +40,15 @@ async def main() -> None:
     load_extensions(bot.load_extension, "extensions")
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, ENV.token)
-    await setup_channel_logger(bot, ENV.logs_channel_id)
+    await load_state(paths.STATE)
 
     async with client_session(bot.http) as session, anyio.create_task_group() as tg:
-        resources.set_session(session)
+        state.http_session = session
         tg.start_soon(load_default_pack, session)
         tg.start_soon(sync.sync_commands, bot)
         tg.start_soon(bot.connect)
+
+    await save_state(paths.STATE)
 
 
 if __name__ == "__main__":

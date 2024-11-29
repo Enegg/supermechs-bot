@@ -15,7 +15,7 @@ _converter.register_structure_hook(int, lambda val, _: unfold_binary_prefix(val)
 
 @attrs.frozen(kw_only=True)
 class Config:
-    date_format: str
+    date_format: str = "%d.%m.%Y %H:%M:%S"
     """General date format for logging purposes."""
     default_pack_url: str
     """The URL of the default item pack."""
@@ -23,7 +23,7 @@ class Config:
     """Placeholder image url."""
     max_image_size: int
     """Maximum allowed image size, in bytes."""
-    chunk_size: int
+    chunk_size: int = 1024 * 1024
     """Size of chunk for iterative download."""
     build_rules: BuildRules = BuildRules.default
     """Set of rules the builds shall obey."""

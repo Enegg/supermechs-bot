@@ -1,9 +1,8 @@
-from collections import abc
-from typing import Any, ClassVar
-from typing_extensions import override
+import io
+from typing import Any
 
+import aiohttp
 import anyio
-import attrs
 
 from discord import InteractionLimits
 
@@ -30,33 +29,31 @@ def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
     return anyio.move_on_after(InteractionLimits.response_timeout - threshold)
 
 
-@attrs.define
-class Deferred(abc.Awaitable[T]):
-    """Future-like object."""
+class ContentSizeError(OSError): ...
 
-    _sentinel: ClassVar[Any] = object()
 
-    _value: T = attrs.field(default=_sentinel, init=False)
-    _event: anyio.Event = attrs.field(factory=anyio.Event, init=False)
+async def read_content(
+    response: aiohttp.ClientResponse, max_size: int | None = None, chunk_size: int = -1
+) -> io.BytesIO:
+    if max_size is None:
+        bio = io.BytesIO(await response.content.read())
+        bio.seek(0)
+        return bio
 
-    @override
-    def __await__(self) -> abc.Generator[Any, Any, T]:
-        yield from self._event.wait().__await__()
-        return self._value
+    if (response.content_length or 0) > max_size:
+        raise ContentSizeError
 
-    def set(self, value: T, /) -> None:
-        """Set the value and awaken waiters."""
-        self._value = value
-        self._event.set()
+    bio = io.BytesIO()
 
-    def is_set(self) -> bool:
-        """Whether the value has been set."""
-        return self._event.is_set()
+    async for chunk in (
+        response.content.iter_chunked(chunk_size)
+        if chunk_size != -1
+        else response.content.iter_any()
+    ):
+        bio.write(chunk)
 
-    def get_nowait(self) -> T:
-        """Get the underlying value without awaiting."""
-        if self._value is self._sentinel:
-            msg = "Value access before .set"
-            raise LookupError(msg)
+        if bio.tell() > max_size:
+            raise ContentSizeError
 
-        return self._value
+    bio.seek(0)
+    return bio

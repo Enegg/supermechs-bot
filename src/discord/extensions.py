@@ -1,5 +1,6 @@
 """Utilities related to handling bot extensions."""
 
+import logging
 import sys
 from collections import abc
 
@@ -9,6 +10,8 @@ if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
 
 __all__ = ("load_extensions",)
+
+_LOG = logging.getLogger("extensions")
 
 
 def walk_extensions(
@@ -32,8 +35,15 @@ def _load_extensions(loader: abc.Callable[[str], None], plugins: abc.Iterable[st
             problems.append(exc)
 
     if problems:
-        msg = "Exceptions occurred during loading:"
-        raise ExceptionGroup(msg, problems)
+        # TODO: exceptions are raised at walk_modules' import_module
+        msg = "Exceptions during loading:"
+        exc = ExceptionGroup(msg, problems)
+
+        if __debug__:
+            _LOG.exception("Ignoring exceptions:", exc_info=exc)
+
+        else:
+            raise exc
 
 
 def load_extensions(

@@ -1,7 +1,5 @@
-import inspect
 import pathlib
 import reprlib
-from collections import abc
 
 import cattrs
 import rtoml
@@ -18,9 +16,3 @@ def attrs_from_path(
     """Read a .toml file under given path and parse it into a dataclass instance."""
     path = pathlib.Path(path)
     return conv.structure(rtoml.load(path), cls)
-
-
-def callable_repr(func: abc.Callable[..., object], /) -> str:
-    """Return the signature of a callable."""
-    signature = inspect.signature(func)
-    return f"{func.__name__}{signature}"

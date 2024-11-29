@@ -2,8 +2,7 @@ import logging
 from collections import abc
 from functools import partial
 from pathlib import Path
-from typing import Any, Final, Protocol, TypeAlias, TypedDict, cast as type_cast
-from typing_extensions import NotRequired
+from typing import Any, Final, NotRequired, Protocol, TypeAlias, TypedDict, cast as type_cast
 
 import rtoml
 
@@ -11,7 +10,7 @@ from disnake import Locale, LocalizationProtocol
 
 from app.typeshed import KT, Pathish
 
-from supermechs.enums.stats import Stat
+from supermechs.enums import StatName
 
 __all__ = ("GetText", "get_embed_tips", "get_gettext", "get_message", "get_stat_name", "load")
 
@@ -27,7 +26,7 @@ FALLBACK_LOCALE = Locale.en_US
 FALLBACK_NAME = "???"
 FILE_EXT = ".toml"
 
-stats: Final[abc.Mapping[LocalePair[Stat], str]] = {}
+stats: Final[abc.Mapping[LocalePair[str], str]] = {}
 messages: Final[abc.Mapping[LocalePair[str], str]] = {}
 embed_tips: Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
 _command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
@@ -60,7 +59,7 @@ def _get(
         return value
 
 
-def get_stat_name(locale: Locale, stat: Stat) -> str:
+def get_stat_name(locale: Locale, stat: str) -> str:
     return _get(stats, stat, locale, default=FALLBACK_NAME)
 
 
@@ -99,7 +98,7 @@ def _load_stats(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
     stats_data: abc.Mapping[str, _StatEntry] = data["stats"]
 
     for key, entry in stats_data.items():
-        stat = Stat[key]
+        stat = StatName[key]
         name = entry.get("default") or entry.get("in_game", FALLBACK_NAME)
         stats[stat, locale] = name
 
@@ -154,7 +153,7 @@ if __name__ == "__main__":
         for file_path in locale_path.glob(f"*{FILE_EXT}"):
             locale = Locale[file_path.stem]
 
-            for stat in Stat:
+            for stat in StatName:
                 if stat.name.endswith("addon"):
                     continue
 

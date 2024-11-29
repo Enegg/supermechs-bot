@@ -1,33 +1,43 @@
 import io
-from typing import TYPE_CHECKING, Literal, get_args as get_type_args
 
 from discord import MessageLimits
-from disnake import CommandInteraction, Embed, Locale
+from disnake import CommandInteraction, Embed, Locale, Localized, OptionChoice
 from disnake.ext import commands
 from disnake.utils import MISSING
 from disnake_plugins import Plugin
 
-from app import paths
 from app.assets import ASSETS
 from app.bridges import embed_image, item_name_autocomplete, sikrit_footer, ui
+from app.bridges.sm_utils import get_item_by_name, get_item_icon_url, get_item_pack_for
 from app.core import CONFIG, ENV
 from defer import AsyncDeferBlock
 
 from .item_lookup import item_compare_view, item_view
 
-from supermechs.api import Element, ItemData, Type
-from supermechs.ext.deserializers.typedefs.packs import LiteralElement, LiteralType
-
-if TYPE_CHECKING:
-    LiteralTypeOrAny = LiteralType | Literal["ANY"]
-    LiteralElementOrAny = LiteralElement | Literal["ANY"]
-
-else:
-    # disnake cannot parse unions of literals
-    LiteralTypeOrAny = Literal[(*get_type_args(LiteralType), "ANY")]
-    LiteralElementOrAny = Literal[(*get_type_args(LiteralElement), "ANY")]
+from supermechs.all import ItemData, ItemElementName, ItemTypeName, abc as smabc
 
 plugin = Plugin[commands.InteractionBot](name="Item-lookup", logger="ext")
+
+TYPE_CHOICES = [
+    OptionChoice(Localized("Torso", key="CHOICE_TORSO"), ItemTypeName.TORSO),
+    OptionChoice(Localized("Legs", key="CHOICE_LEGS"), ItemTypeName.LEGS),
+    OptionChoice(Localized("Drone", key="CHOICE_DRONE"), ItemTypeName.DRONE),
+    OptionChoice(Localized("Side weapon", key="CHOICE_SIDE_WEAPON"), ItemTypeName.SIDE_WEAPON),
+    OptionChoice(Localized("Top weapon", key="CHOICE_TOP_WEAPON"), ItemTypeName.TOP_WEAPON),
+    OptionChoice(Localized("Teleport", key="CHOICE_TELEPORT"), ItemTypeName.TELEPORT),
+    OptionChoice(Localized("Charge", key="CHOICE_CHARGE"), ItemTypeName.CHARGE),
+    OptionChoice(Localized("Hook", key="CHOICE_HOOK"), ItemTypeName.HOOK),
+    OptionChoice(Localized("Shield", key="CHOICE_SHIELD"), ItemTypeName.SHIELD),
+    OptionChoice(Localized("Module", key="CHOICE_MODULE"), ItemTypeName.MODULE),
+    OptionChoice(Localized("Any", key="CHOICE_TYPE_ANY"), "ANY"),
+]
+ELEMENT_CHOICES = [
+    OptionChoice(Localized("Physical", key="CHOICE_PHYS"), ItemElementName.PHYSICAL),
+    OptionChoice(Localized("Explosive", key="CHOICE_EXPL"), ItemElementName.EXPLOSIVE),
+    OptionChoice(Localized("Electric", key="CHOICE_ELEC"), ItemElementName.ELECTRIC),
+    OptionChoice(Localized("Combined", key="CHOICE_COMB"), "COMBINED"),
+    OptionChoice(Localized("Any", key="CHOICE_ELEMENT_ANY"), "ANY"),
+]
 
 
 @plugin.slash_command()
@@ -35,8 +45,8 @@ async def item(
     inter: CommandInteraction,
     locale: Locale,
     item: ItemData,
-    type: LiteralTypeOrAny = "ANY",  # noqa: A002
-    element: LiteralElementOrAny = "ANY",
+    type: str = commands.Param("ANY", choices=TYPE_CHOICES),  # noqa: A002
+    element: str = commands.Param("ANY", choices=ELEMENT_CHOICES),
     compact: bool = False,
 ) -> None:
     """Lookup item stats. {{ ITEM }}
@@ -50,51 +60,32 @@ async def item(
     compact:
         Compact layout. (broken on mobile) {{ ITEM_COMPACT }}
     """  # noqa: D400
-    del type, element  # used for autocomplete only
+    item_pack = get_item_pack_for(inter)
+    sprite = item_pack.get_sprite(item.id, item.stages[-1].tier)
 
-    if False:  # FIXME: waiting for renderer
-        _, renderer = get_default_pack()
-        sprite = renderer.get_item_sprite(item, get_final_stage(item.start_stage).tier)
-
-        if sprite.metadata.source == "url" and sprite.metadata.method == "single":
-            url, file = sprite.metadata.value, MISSING
-
-        else:
-            await sprite.load()
-            url, file = embed_image(sprite.image, item.name)
+    if sprite.url is not None:
+        url, file = sprite.url, MISSING
 
     else:
-        from PIL import Image
+        url, file = embed_image(await sprite.load(), item.name)
 
-        image = Image.open(paths.SILHOUETTE)
-        url, file = embed_image(image, item.name)
-
-    embed_color = ASSETS.elements[item.element.name].color
-
-    if item.type is Type.SIDE_WEAPON or item.type is Type.TOP_WEAPON:
-        icon_url = ASSETS.sided_types[item.type.name].right.image_url
-
-    else:
-        icon_url = ASSETS.types[item.type.name].image_url
+    embed_color = ASSETS.elements[item.element].color
+    icon_url = get_item_icon_url(item)
 
     if compact:
         embed = (
             Embed(color=embed_color)
             .set_author(name=item.name, icon_url=icon_url)
             .set_thumbnail(url)
-        )  # fmt: skip
+        )
 
     else:
+        desc = f"{item.element.capitalize()} {item.type.replace('_', ' ').lower()}"
         embed = (
-            Embed(
-                title=item.name,
-                description=f"{item.element.name.capitalize()} "
-                f"{item.type.name.replace('_', ' ').lower()}",
-                color=embed_color,
-            )
+            Embed(title=item.name, description=desc, color=embed_color)
             .set_thumbnail(icon_url)
             .set_image(url)
-        )  # fmt: skip
+        )
 
     sikrit_footer(embed, locale)
 
@@ -110,8 +101,8 @@ async def item(
 async def item_raw(
     inter: CommandInteraction,
     item: ItemData,
-    type: LiteralTypeOrAny = "ANY",  # noqa: A002
-    element: LiteralElementOrAny = "ANY",
+    type: str = commands.Param("ANY", choices=TYPE_CHOICES),  # noqa: A002
+    element: str = commands.Param("ANY", choices=ELEMENT_CHOICES),
 ) -> None:
     """Lookup raw item stats. {{ ITEM }}
 
@@ -122,16 +113,15 @@ async def item_raw(
     element:
         If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
     """  # noqa: D400
-    del type, element  # used for autocomplete only
     await inter.response.send_message(f"`{item!r:.{MessageLimits.content - 2}}`", ephemeral=True)
 
 
-def str_type(type: Type) -> str:  # noqa: A002
-    return type.name.replace("_", " ").lower()
+def str_type(type: smabc.ItemType) -> str:  # noqa: A002
+    return type.replace("_", " ").lower()
 
 
-def str_elem(element: Element) -> str:
-    return element.name.capitalize()
+def str_elem(element: smabc.ItemElement) -> str:
+    return element.capitalize()
 
 
 @plugin.slash_command()
@@ -150,9 +140,9 @@ async def compare(
     item2_name:
         Second item to compare. {{ COMPARE_SECOND }}
     """  # noqa: D400
-    pack = DEFAULT_PACK.get_nowait()
-    item_a = get_item_by_name(pack.items, item1_name)
-    item_b = get_item_by_name(pack.items, item2_name)
+    item_pack = get_item_pack_for(inter)
+    item_a = get_item_by_name(item_pack.items.values(), item1_name)
+    item_b = get_item_by_name(item_pack.items.values(), item2_name)
 
     if item_a is None or item_b is None:
         raise commands.UserInputError  # TODO
@@ -173,7 +163,7 @@ async def compare(
             desc_builder.write(f" {str_type(item_a.type)} / {str_type(item_b.type)}")
 
         desc = desc_builder.getvalue()
-        color = ASSETS.elements[item_a.element.name].color
+        color = ASSETS.elements[item_a.element].color
 
     else:
         desc = (

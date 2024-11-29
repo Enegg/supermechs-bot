@@ -5,11 +5,11 @@ from typing import Any, NamedTuple
 from discord import AutocompleteReturnType, InteractionLimits
 from disnake import CommandInteraction
 
-from app.bridges.user_input import StringLimits
-from app.shared.item_packs import get_item_pack_for
-from app.stored import players
+from app.bridges.sm_utils import get_item_pack_for
+from app.bridges.user_input import sanitize_string
+from app.local_storage import players
 
-from supermechs.api import Element, ItemData, Type
+from supermechs.abc import ItemData
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
@@ -103,16 +103,16 @@ def find_matches(names: abc.Iterable[str], phrase: str) -> list[MatchResult]:
     return results
 
 
-def _get_item_filters(options: abc.Mapping[str, Any], /) -> list[abc.Callable[[ItemData], bool]]:
+def _get_item_filters(
+    options: abc.Mapping[str, Any], /
+) -> list[abc.Callable[[ItemData], bool]]:
     filters: list[abc.Callable[[ItemData], bool]] = []
 
-    if (type_name := options.get("type", "ANY")) != "ANY":
-        target_type = Type[type_name]
-        filters.append(lambda item: item.type is target_type)
+    if (target_type := options.get("type", "ANY")) != "ANY":
+        filters.append(lambda item: item.type == target_type)
 
-    if (element_name := options.get("element", "ANY")) != "ANY":
-        target_element = Element[element_name]
-        filters.append(lambda item: item.element is target_element)
+    if (target_element := options.get("element", "ANY")) != "ANY":
+        filters.append(lambda item: item.element == target_element)
 
     return filters
 
@@ -123,9 +123,11 @@ async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> Aut
     filters = _get_item_filters(inter.filled_options)
 
     def filter_item_names() -> abc.Iterator[str]:
-        items = (cont.item for cont in pack.items.values())
-        items = (item for item in items if all(func(item) for func in filters))
-        return (item.name for item in items)
+        return (
+            item.name
+            for item in pack.items.values()
+            if all(func(item) for func in filters)
+        )  # fmt: skip
 
     input = input.strip()
     matching = find_matches(filter_item_names(), input)
@@ -143,6 +145,6 @@ async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> Autoc
     ]
 
     if not matching and input:
-        return [input[: StringLimits.names]]
+        return [sanitize_string(input)]
 
     return matching

@@ -1,79 +1,62 @@
 from collections import abc
-from typing import Final, TypeAlias, overload
+from typing import ClassVar, NewType
 
 import attrs
+from monads.option import Null, Option
 
+from app import paths
 from app.class_utils import limited_repr
 
-from .graphics import AbstractSprite
+from .graphics import (
+    CacheImage,
+    ImageRequest,
+    LoadedSprite,
+    PendingSprite,
+    Sprite,
+    SpriteKey,
+    read_image,
+)
 
-from supermechs.abc.item import ItemID
-from supermechs.abc.item_pack import PackKey
-from supermechs.api import Item, ItemData
-from supermechs.enums.stats import Tier
+from supermechs.all import ItemData, abc as smabc
 
-__all__ = ("ItemPack",)
+__all__ = ("ItemPack", "PackKey")
 
-SpriteKey: TypeAlias = tuple[ItemID, Tier]
+PackKey = NewType("PackKey", str)
 
 
 @attrs.define(kw_only=True)
 class ItemPack:
     """Mapping-like container of items and their graphics."""
 
-    key: Final[PackKey] = attrs.field()
-    name: str = attrs.field(default="<no name>")
-    description: str = attrs.field(default="<no description>")
+    missing_image: ClassVar[ImageRequest] = ImageRequest(
+        str(paths.SILHOUETTE), CacheImage(read_image)
+    )
 
-    items: Final[abc.Mapping[ItemID, ItemData]] = attrs.field(repr=limited_repr.repr)
-    sprites: Final[abc.Mapping[SpriteKey, AbstractSprite]] = attrs.field(repr=limited_repr.repr)
+    key: PackKey
+    name: Option[str] = Null.null
+    description: Option[str] = Null.null
+    url: str | None = None
 
-    def __contains__(self, value: ItemID | ItemData, /) -> bool:
-        if isinstance(value, int):
-            return value in self.items
+    items: abc.Mapping[smabc.ItemID, ItemData] = attrs.field(factory=dict, repr=limited_repr.repr)
+    image_requests: abc.MutableMapping[SpriteKey, ImageRequest] = attrs.field(
+        factory=dict, repr=limited_repr.repr
+    )
+    loaded_images: abc.MutableMapping[SpriteKey, LoadedSprite] = attrs.field(
+        factory=dict, repr=limited_repr.repr
+    )
 
-        if isinstance(value, ItemData):
-            return value.pack_key == self.key and value.id in self.items
-
-        return False
-
-    def get_item(self, item_id: ItemID, /) -> ItemData:
-        """Lookup an item by its ID.
-
-        Raises
-        ------
-        IDLookupError: item not found.
-        """
+    def get_item(self, item_id: smabc.ItemID, /) -> ItemData:
+        """Lookup an item by its ID."""
         return self.items[item_id]
 
-    @overload
-    def get_sprite(self, item: Item, /) -> AbstractSprite: ...
+    def get_sprite(self, item_id: smabc.ItemID, /, tier: smabc.StageTier) -> Sprite:
+        """Lookup item's sprite."""
+        key = (item_id, tier)
 
-    @overload
-    def get_sprite(self, item: ItemData, /, tier: Tier) -> AbstractSprite: ...
+        sprite = self.loaded_images.get(key)
 
-    def get_sprite(self, item: ItemData | Item, /, tier: Tier | None = None) -> AbstractSprite:
-        """Lookup item's sprite.
+        if sprite is not None:
+            return sprite
 
-        Raises
-        ------
-        PackKeyError: item comes from different pack.
-        """
-        if isinstance(item, ItemData):
-            if tier is None:
-                msg = "Tier not provided with ItemData"
-                raise TypeError(msg)
-
-        elif tier is not None:
-            msg = "Tier provided for Item"
-            raise TypeError(msg)
-
-        else:
-            tier = item.tier
-            item = item.data
-
-        if item.pack_key != self.key:
-            msg = f"Mismatched pack key: {item.pack_key} != {self.key}"
-            raise ValueError(msg)
-
-        return self.sprites[item.id, tier]
+        request = self.image_requests.pop(key, self.missing_image)
+        return PendingSprite(request, key, self.loaded_images.__setitem__)

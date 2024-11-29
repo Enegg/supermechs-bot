@@ -38,36 +38,36 @@ bullets_cost =                { }
 rockets_cost =                { }
 
 [tiers]
-COMMON =    { color = 0xB1B1B1, emoji = "⚪" }
-RARE =      { color = 0x55ACEE, emoji = "🔵" }
-EPIC =      { color = 0xCC41CC, emoji = "🟣" }
-LEGENDARY = { color = 0xE0A23C, emoji = "🟠" }
-MYTHICAL =  { color = 0xFE6333, emoji = "🟤" }
-DIVINE =    { color = 0xFFFFFF, emoji = "⚪" }
-PERK =      { color = 0xFFFF33, emoji = "🟡" }
+common =    { color = 0xB1B1B1, emoji = "⚪" }
+rare =      { color = 0x55ACEE, emoji = "🔵" }
+epic =      { color = 0xCC41CC, emoji = "🟣" }
+legendary = { color = 0xE0A23C, emoji = "🟠" }
+mythical =  { color = 0xFE6333, emoji = "🟤" }
+divine =    { color = 0xFFFFFF, emoji = "⚪" }
+perk =      { color = 0xFFFF33, emoji = "🟡" }
 
 [elements]
-PHYSICAL =  { color = 0xFFB800, emoji = "<:phydmg:725871208830074929>" }
-EXPLOSIVE = { color = 0xB71010, emoji = "<:expdmg:725871223338172448>" }
-ELECTRIC =  { color = 0x106ED8, emoji = "<:eledmg:725871233614479443>" }
-COMBINED =  { color = 0x211D1D, emoji = "<:combined:1026853188940349490>" }
-UNKNOWN =   { color = 0x000000, emoji = "❔" }
+physical =  { color = 0xFFB800, emoji = "<:phydmg:725871208830074929>" }
+explosive = { color = 0xB71010, emoji = "<:expdmg:725871223338172448>" }
+electric =  { color = 0x106ED8, emoji = "<:eledmg:725871233614479443>" }
+combined =  { color = 0x211D1D, emoji = "<:combined:1026853188940349490>" }
+unknown =   { color = 0x000000, emoji = "❔" }
 
 [types]
-TORSO =      { image_url = "https://i.imgur.com/iNtSziV.png", emoji =  "<:torso:730115680363347968>" }
-LEGS =       { image_url = "https://i.imgur.com/6NBLOhU.png", emoji =   "<:legs:730115699397361827>" }
-DRONE =      { image_url = "https://i.imgur.com/oqQmXTF.png", emoji =  "<:drone:730115574763618394>" }
-TELEPORTER = { image_url = "https://i.imgur.com/Fnq035A.png", emoji =   "<:tele:730115603683213423>" }
-CHARGE =     { image_url = "https://i.imgur.com/UnDqJx8.png", emoji = "<:charge:730115557239685281>" }
-HOOK =       { image_url = "https://i.imgur.com/8oAoPcJ.png", emoji =   "<:hook:730115622347735071>" }
-MODULE =     { image_url = "https://i.imgur.com/dQR8UgN.png", emoji =    "<:mod:730115649866694686>" }
+torso =    { image_url = "https://i.imgur.com/iNtSziV.png", emoji =  "<:torso:730115680363347968>" }
+legs =     { image_url = "https://i.imgur.com/6NBLOhU.png", emoji =   "<:legs:730115699397361827>" }
+drone =    { image_url = "https://i.imgur.com/oqQmXTF.png", emoji =  "<:drone:730115574763618394>" }
+teleport = { image_url = "https://i.imgur.com/Fnq035A.png", emoji =   "<:tele:730115603683213423>" }
+charge =   { image_url = "https://i.imgur.com/UnDqJx8.png", emoji = "<:charge:730115557239685281>" }
+hook =     { image_url = "https://i.imgur.com/8oAoPcJ.png", emoji =   "<:hook:730115622347735071>" }
+module =   { image_url = "https://i.imgur.com/dQR8UgN.png", emoji =    "<:mod:730115649866694686>" }
 
 [sided_types]
-[sided_types.SIDE_WEAPON]
+[sided_types.side_weapon]
 right = { image_url = "https://i.imgur.com/CBbvOnQ.png", emoji = "<:sider:730115747799629940>" }
 left  = { image_url = "https://i.imgur.com/UuyYCrw.png", emoji = "<:sidel:730115729365663884>" }
 
-[sided_types.TOP_WEAPON]
+[sided_types.top_weapon]
 right = { image_url = "https://i.imgur.com/LW7ZCGZ.png", emoji = "<:topr:730115786735091762>" }
 left  = { image_url = "https://i.imgur.com/1xlnVgK.png", emoji = "<:topl:730115768431280238>" }
 

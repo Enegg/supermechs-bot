@@ -3,14 +3,14 @@ from disnake import CommandInteraction
 from disnake.ext import commands
 
 from app import i18n
+from app.bridges.sm_utils import get_item_by_name, get_item_pack_for
 from app.core import ENV
+from app.local_storage import players
 from app.models import Player
-from app.shared.item_packs import get_item_by_name, get_item_pack_for
-from app.stored import players
 
 from .autocompleters import item_name_autocomplete
 
-from supermechs.api import ItemData
+from supermechs.all import ItemData
 
 __all__ = ("register_injections",)
 
@@ -30,7 +30,7 @@ def register_injections() -> None:
         name: The name of the item. {{ ITEM_NAME }}
         """
         item_pack = get_item_pack_for(inter)
-        item = get_item_by_name(item_pack.items, name)
+        item = get_item_by_name(item_pack.items.values(), name=name)
         if item is not None:
             return item
 

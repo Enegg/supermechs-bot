@@ -15,14 +15,14 @@ handlers = ["stdout", "file"]
 [logging.formatters.simple]
 format = "{asctime} [{levelname:<8}|{pathname}:{lineno}] {name} - {message}"
 style = "{"
-datefmt = "%d %H:%M:%S"
+datefmt = "%d-%H:%M:%S"
 
 [logging.formatters.json]
 "()" = "app.core.logging.JsonFormatter"
 [logging.formatters.json.fmt_keys]
+timestamp = "timestamp"
 level = "levelname"
 message = "message"
-timestamp = "timestamp"
 logger = "name"
 module = "module"
 function = "funcName"

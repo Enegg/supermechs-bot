@@ -11,8 +11,8 @@ from app.assets import ASSETS
 from app.async_utils import amap, move_on_before_timeout
 from app.bridges import get_ram_utilization, get_sloc, invoke_counter
 from app.core import CONFIG, ENV
-from app.shared.item_packs import DEFAULT_PACK
-from app.stored import players
+from app.local_storage import players
+from app.state import state
 from app.utils import fold_binary_prefix
 
 import supermechs
@@ -60,12 +60,10 @@ async def info(inter: CommandInteraction) -> None:
         app_loc, sm_loc = await amap(get_sloc, "src", *supermechs.__path__)
         backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
-    if DEFAULT_PACK.is_set():
-        default_pack = DEFAULT_PACK.get_nowait()
-        supermechs_fields += [
-            f"Default item pack: {md.hyperlink(default_pack.key, CONFIG.default_pack_url)}",
-            f"Total items: {len(default_pack.items)}",
-        ]
+    supermechs_fields += [
+        f"Default item pack: {md.hyperlink(state.item_pack.key, CONFIG.default_pack_url)}",
+        f"Total items: {len(state.item_pack.items)}",
+    ]
     embed = (
         Embed(title="Bot info", color=inter.me.color)
         .set_thumbnail(inter.me.display_avatar.url)

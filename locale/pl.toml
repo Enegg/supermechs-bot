@@ -102,8 +102,7 @@ default = "Rozrzut"
 default = "Obrażenia"
 
 [other]
-jumpRequired = "Wymagana zdolność skoku"
-transformRange = "Etapy transformacji"
+transform-range = "Etapy transformacji"
 
 [messages]
 command-dev = "To komenda wyłącznie deweloperska."
@@ -188,3 +187,21 @@ MECH_EXPORT_NAME = "eksportuj"
 MECH_EXPORT_DESCRIPTION = "Eksportuj swoje mechy do pliku wspieranego przez WU."
 MECH_EXPORT_FORMAT_NAME = "format"
 MECH_EXPORT_FORMAT_DESCRIPTION = "Format pliku, jaki zostanie załączony; inne niż .json nie są wspieranie przez WU."
+
+CHOICE_TORSO = "Tors"
+CHOICE_LEGS = "Nogi"
+CHOICE_DRONE = "Dron"
+CHOICE_SIDE_WEAPON = "Broń boczna"
+CHOICE_TOP_WEAPON = "Broń górna"
+CHOICE_TELEPORT = "Teleport"
+CHOICE_CHARGE = "Szarża"
+CHOICE_HOOK = "Kotwica"
+CHOICE_SHIELD = "Tarcza"
+CHOICE_MODULE = "Moduł"
+CHOICE_TYPE_ANY = "Każdy"
+
+CHOICE_PHYS = "Fizyczny"
+CHOICE_EXPL = "Wybuchowy"
+CHOICE_ELEC = "Elektryczny"
+CHOICE_COMB = "Mieszany"
+CHOICE_ELEMENT_ANY = "Każdy"

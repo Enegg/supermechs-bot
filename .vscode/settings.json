@@ -9,8 +9,9 @@
     },
     "files.exclude": {
         "**/__pycache__": true,
-        ".ruff_cache": true,
-        ".venv": true,
+        ".ruff_cache/": true,
+        ".venv/": true,
+        ".pdm-build/": true,
     },
     "[python]": {
         "editor.codeActionsOnSave": {

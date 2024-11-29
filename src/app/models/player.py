@@ -1,33 +1,36 @@
-import uuid
-from collections import abc
 from datetime import datetime
-from typing import Final
+from typing import Final, NewType, Self
 
 from attrs import define, field
 
+import disnake
 from disnake.utils import get as get_matching, utcnow
 
-from .mech_build import MechBuild
+from app.class_utils import limited_repr
+
+from .mech_build import BuildId, MechBuild
 
 from supermechs.arenashop import ArenaShop, arena_shop
 from supermechs.mech import Mech
 
-__all__ = ("Player",)
+__all__ = ("Player", "PlayerId")
+
+PlayerId = NewType("PlayerId", int)
 
 
 @define
 class Player:
     """Represents a SuperMechs player."""
 
-    id: Final[int] = field()
-    builds: Final[abc.MutableMapping[uuid.UUID, MechBuild]] = field(factory=dict)
-    arena_shop: Final[ArenaShop] = field(factory=arena_shop)
+    id: Final[PlayerId]
+    builds: Final[dict[BuildId, MechBuild]] = field(factory=dict)
+    arena_shop: Final[ArenaShop] = field(factory=arena_shop, repr=limited_repr.repr)
     created_at: Final[datetime] = field(factory=utcnow)
-    _recent_uuid: uuid.UUID | None = field(default=None, init=False)
+    _recent_build_id: BuildId | None = field(default=None, init=False)
 
     @property
     def recent_build(self) -> MechBuild | None:
-        return None if self._recent_uuid is None else self.builds[self._recent_uuid]
+        return None if self._recent_build_id is None else self.builds[self._recent_build_id]
 
     @recent_build.setter
     def recent_build(self, mech: MechBuild) -> None:
@@ -35,7 +38,7 @@ class Player:
             msg = "Recent build set to a mech not belonging to the player"
             raise ValueError(msg)
 
-        self._recent_uuid = mech.id
+        self._recent_build_id = mech.id
 
     def get_build_by_name(self, name: str, /) -> MechBuild | None:
         """Retrieve a build with given name."""
@@ -46,7 +49,8 @@ class Player:
 
         Parameters
         ----------
-        possible_name: The name to create a new build with. Ignored if there's a recent build.
+        possible_name:
+            The name to create a new build with. Ignored if there's a recent build.
         """
         if (recent := self.recent_build) is not None:
             return recent
@@ -69,7 +73,7 @@ class Player:
         return self.create_build(name)
 
     def load_build(self, name: str, mech: Mech) -> None:
-        build = MechBuild(mech, name)
+        build = MechBuild(mech=mech, name=name)
         self.builds[build.id] = build
 
     def create_build(self, name: str | None = None, /) -> MechBuild:
@@ -82,10 +86,10 @@ class Player:
         """
         build = MechBuild() if name is None else MechBuild(name=name)
         self.builds[build.id] = build
-        self._recent_uuid = build.id
+        self._recent_build_id = build.id
         return build
 
-    def rename_build(self, uuid: uuid.UUID, name: str) -> None:
+    def rename_build(self, uuid: BuildId, name: str) -> None:
         """Change the name a build is assigned to.
 
         Parameters
@@ -94,17 +98,21 @@ class Player:
         """
         self.builds[uuid].name = name
 
-    def delete_build(self, uuid: uuid.UUID, /) -> None:
+    def delete_build(self, id: BuildId, /) -> None:
         """Delete a build from player's builds.
 
         Parameters
         ----------
-        uuid:
-            The uuid of the build to delete.
+        id:
+            The id of the build to delete.
         """
         try:
-            del self.builds[uuid]
+            del self.builds[id]
 
         except KeyError:
-            msg = f"No build with uuid {uuid}"
+            msg = f"No build with ID {id}"
             raise LookupError(msg) from None
+
+    @classmethod
+    def from_user(cls, user: disnake.abc.User, /) -> Self:
+        return cls(id=PlayerId(user.id))
