@@ -37,12 +37,12 @@ class ItemPack:
     description: Option[str] = Null.null
     url: str | None = None
 
-    items: abc.Mapping[smabc.ItemID, ItemData] = attrs.field(factory=dict, repr=limited_repr.repr)
+    items: abc.Mapping[smabc.ItemID, ItemData] = attrs.field(factory=dict, repr=limited_repr)
     image_requests: abc.MutableMapping[SpriteKey, ImageRequest] = attrs.field(
-        factory=dict, repr=limited_repr.repr
+        factory=dict, repr=limited_repr
     )
     loaded_images: abc.MutableMapping[SpriteKey, LoadedSprite] = attrs.field(
-        factory=dict, repr=limited_repr.repr
+        factory=dict, repr=limited_repr
     )
 
     def get_item(self, item_id: smabc.ItemID, /) -> ItemData:

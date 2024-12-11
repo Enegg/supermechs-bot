@@ -24,7 +24,7 @@ class Player:
 
     id: Final[PlayerId]
     builds: Final[dict[BuildId, MechBuild]] = field(factory=dict)
-    arena_shop: Final[ArenaShop] = field(factory=arena_shop, repr=limited_repr.repr)
+    arena_shop: Final[ArenaShop] = field(factory=arena_shop, repr=limited_repr)
     created_at: Final[datetime] = field(factory=utcnow)
     _recent_build_id: BuildId | None = field(default=None, init=False)
 

@@ -6,8 +6,9 @@ import rtoml
 
 from app.typeshed import Pathish, T
 
-limited_repr = reprlib.Repr()
-limited_repr.maxdict = 20
+limited_repr_obj = reprlib.Repr()
+_repr_obj.maxdict = 20
+limited_repr = _repr_obj.repr
 
 
 def attrs_from_path(
