@@ -68,6 +68,7 @@ in_game = "Zasięg"
 default = "Pchnięcie"
 in_game = "Odrzut"
 [stats.pull]
+default = "Zbliżenie"
 in_game = "Przyciąganie"
 [stats.recoil]
 in_game = "Odrzut"
@@ -127,7 +128,7 @@ import-none = "Nie załadowano żadnych mechów."
 export-none = "Nie masz żadnych mechów do eksportu."
 export-select = "Wybierz mechy do eksportu"
 export-all = "wszystko"
-export-items-warning = "Masz {build_cound} mechów. Lista wyboru poniżej może wyświetlić jedynie {display_limit}."
+export-items-warning = "Masz {build_count} mechów. Lista wyboru poniżej może wyświetlić jedynie {display_limit}."
 
 mech-summary-title = 'Wyposażenie mecha "{name}"'
 mech-summary-field = "Podsumowanie:"
