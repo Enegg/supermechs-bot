@@ -6,26 +6,28 @@ from discord.interactions import MessageTemplate
 from disnake import Colour, CommandInteraction, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
-from disnake.utils import MISSING
 from disnake_plugins import Plugin
 
 from app import i18n
 from app.assets import INVISIBLE_CHAR
 from app.bridges import ui
 from app.bridges.cancellation import make_id
-from app.core import ENV
+from app.core import CONFIG
 from app.utils import format_exception
 
 plugin = Plugin[commands.InteractionBot](name="Exception-logs", logger="ext")
-_channel: Messageable = MISSING
+_channel: Messageable | None = None
 _LOG = logging.getLogger("event.command_error")
 
 
 @plugin.load_hook()
 async def on_load() -> None:
+    if CONFIG.logs_channel_id is None:
+        return
+
     global _channel  # noqa: PLW0603
     await plugin.bot.wait_until_first_connect()
-    channel = await plugin.bot.fetch_channel(ENV.logs_channel_id)
+    channel = await plugin.bot.fetch_channel(CONFIG.logs_channel_id)
 
     if not isinstance(channel, Messageable):
         msg = "Channel is not Messageable"
@@ -115,10 +117,12 @@ async def on_slash_command_error(inter: CommandInteraction, exc: commands.Comman
             await template.send_any_response(inter)
 
         except InteractionTimedOut:
-            await template.send_to_channel(_channel)
+            if _channel is not None:
+                await template.send_to_channel(_channel)
 
     else:
-        await template.send_to_channel(_channel)
+        if _channel is not None:
+            await template.send_to_channel(_channel)
 
         with suppress(InteractionTimedOut):
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)

@@ -4,7 +4,7 @@ from disnake.ext import commands
 
 from app import i18n
 from app.bridges.sm_utils import get_item_by_name, get_item_pack_for
-from app.core import ENV
+from app.core import CONFIG
 from app.local_storage import players
 from app.models import Player
 
@@ -46,7 +46,7 @@ def register_injections() -> None:
     @commands.register_injection
     def inject_locale(inter: CommandInteraction) -> disnake.Locale:
         """Injection returning context aware locale."""
-        return ENV.locale_override.unwrap_or(inter.locale)
+        return CONFIG.locale_override.unwrap_or(inter.locale)
 
     @commands.register_injection
     def inject_gettext(inter: CommandInteraction) -> i18n.GetText:

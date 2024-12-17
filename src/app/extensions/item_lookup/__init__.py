@@ -9,7 +9,7 @@ from disnake_plugins import Plugin
 from app.assets import ASSETS
 from app.bridges import embed_image, item_name_autocomplete, sikrit_footer, ui
 from app.bridges.sm_utils import get_item_by_name, get_item_icon_url, get_item_pack_for
-from app.core import CONFIG, ENV
+from app.core import CONFIG
 from defer import AsyncDeferBlock
 
 from .item_lookup import item_compare_view, item_view
@@ -97,7 +97,7 @@ async def item(
         await store.listen(timeout=CONFIG.command_timeout)
 
 
-@plugin.slash_command(guild_ids=ENV.test_guild_ids)
+@plugin.slash_command(guild_ids=CONFIG.test_guild_ids)
 async def item_raw(
     inter: CommandInteraction,
     item: ItemData,

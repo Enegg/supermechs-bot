@@ -69,7 +69,7 @@ class Assets:
     gifs: abc.Mapping[str, abc.Sequence[str]]
 
 
-ASSETS = attrs_from_path(Assets, paths.ASSETS, _converter)
+ASSETS = attrs_from_path(Assets, paths.ASSETS_TOML, _converter)
 EMOJIS = ASSETS.emojis
 
 

@@ -17,7 +17,7 @@ from disnake.ext import commands
 from disnake_plugins import Plugin
 
 from app.bridges.ui import ActionButton
-from app.core import ENV
+from app.core import CONFIG
 from app.utils import format_exception
 
 plugin = Plugin[commands.InteractionBot](name="Code-eval", logger="ext")
@@ -108,7 +108,7 @@ async def eval_code(inter: disnake.Interaction, code: str) -> None:
         await inter.edit_original_response(title, file=file, components=None)
 
 
-@plugin.slash_command(name="eval", guild_ids=ENV.test_guild_ids)
+@plugin.slash_command(name="eval", guild_ids=CONFIG.test_guild_ids)
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
 async def eval_(inter: disnake.CommandInteraction, code: str | None = None) -> None:

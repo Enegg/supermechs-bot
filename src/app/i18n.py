@@ -147,7 +147,7 @@ if __name__ == "__main__":
     def test_stat_locales() -> None:
         from app import paths
 
-        locale_path = paths.LOCALE
+        locale_path = paths.LOCALE_DIR
         load(locale_path)
 
         for file_path in locale_path.glob(f"*{FILE_EXT}"):

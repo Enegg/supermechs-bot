@@ -10,7 +10,7 @@ from app import meta
 from app.assets import ASSETS
 from app.async_utils import amap, move_on_before_timeout
 from app.bridges import get_ram_utilization, get_sloc, invoke_counter
-from app.core import CONFIG, ENV
+from app.core import CONFIG
 from app.local_storage import players
 from app.state import state
 from app.utils import fold_binary_prefix
@@ -75,7 +75,7 @@ async def info(inter: CommandInteraction) -> None:
     await inter.response.send_message(embed=embed, ephemeral=True)
 
 
-@plugin.slash_command(guild_ids=ENV.test_guild_ids)
+@plugin.slash_command(guild_ids=CONFIG.test_guild_ids)
 async def activity(inter: CommandInteraction) -> None:
     """Display command invocation activity."""
     desc = (

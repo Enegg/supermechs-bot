@@ -1,16 +1,11 @@
 from pathlib import Path
 
-__all__ = ("ASSETS", "LOCALE", "PLUGINS")
-
-_cwd = Path.cwd()
-
-LOCALE = _cwd / "locale/"
-ASSETS = _cwd / "assets/assets.toml"
-SILHOUETTE = ASSETS.parent / "silhouette.png"
-PLUGINS = _cwd / "app/extensions/"
-CONFIG = _cwd / "config.toml"
-STATE = _cwd / ".state/"
-
-
-def is_local(url: str, /) -> bool:
-    return url.startswith("file://")
+LOCALE_DIR = Path("locale/")
+ASSETS_DIR = Path("assets/")
+ASSETS_TOML = ASSETS_DIR / "assets.toml"
+SILHOUETTE = ASSETS_DIR / "silhouette.png"
+PLUGINS_DIR = Path("app/extensions/")
+CONFIG_TOML = Path("config.toml")
+STATE_DIR = Path(".state/")
+DEV_ENV = Path("dev.env")
+PROD_ENV = Path("prod.env")

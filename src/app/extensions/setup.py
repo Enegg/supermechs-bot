@@ -8,11 +8,11 @@ from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake_plugins import Plugin
 
-from app.core import ENV
+from app.core import CONFIG
 from app.utils import format_exception
 
 plugin = Plugin[commands.InteractionBot](
-    name="Setup", logger="ext", slash_command_attrs={"guild_ids": ENV.test_guild_ids}
+    name="Setup", logger="ext", slash_command_attrs={"guild_ids": CONFIG.test_guild_ids}
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
 # the lib wants a list which is invariant
@@ -150,14 +150,14 @@ async def set_locale(inter: CommandInteraction, locale: str | None = None) -> No
     locale: Locale code to override with.
     """
     if locale is None:
-        del ENV.locale_override
+        del CONFIG.locale_override
         msg = "Locale reset"
 
     elif locale not in disnake.Locale._value2member_map_:
         msg = f"Unknown locale: {locale}"
 
     else:
-        ENV.locale_override = locale
+        CONFIG.locale_override = locale
         msg = f"Locale set to {locale}"
 
     plugin.logger.info(msg)
