@@ -2,9 +2,11 @@ import logging
 from collections import abc
 from functools import partial
 from pathlib import Path
-from typing import Any, Final, NotRequired, Protocol, TypeAlias, TypedDict, cast as type_cast
+from typing import Final, NotRequired, Protocol, Required, TypeAlias, TypedDict, cast as type_cast
+from typing_extensions import ReadOnly
 
 import rtoml
+from monads.option import Null, Option, Some
 
 from disnake import Locale, LocalizationProtocol
 
@@ -32,6 +34,18 @@ embed_tips: Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
 _command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
 localization_provider: Final = type_cast(LocalizationProtocol, _command_locale)
+
+locale_override: Option[Locale] = Null.null
+
+
+def set_locale_override(locale: Locale) -> None:
+    global locale_override  # noqa: PLW0603
+    locale_override = Some(locale)
+
+
+def remove_locale_override() -> None:
+    global locale_override  # noqa: PLW0603
+    locale_override = Null.null
 
 
 def _get(
@@ -89,39 +103,16 @@ def get_embed_tips(locale: Locale, /) -> abc.Sequence[str]:
 
 
 class _StatEntry(TypedDict):
-    in_game: str
-    default: NotRequired[str]
-    short: NotRequired[str]
+    in_game: ReadOnly[str]
+    default: ReadOnly[NotRequired[str]]
+    short: ReadOnly[NotRequired[str]]
 
 
-def _load_stats(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
-    stats_data: abc.Mapping[str, _StatEntry] = data["stats"]
-
-    for key, entry in stats_data.items():
-        stat = StatName[key]
-        name = entry.get("default") or entry.get("in_game", FALLBACK_NAME)
-        stats[stat, locale] = name
-
-
-def _load_messages(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
-    messages_data: abc.Mapping[str, str] = data.get("messages") or {}
-
-    for key, message in messages_data.items():
-        messages[key, locale] = message
-
-
-def _load_commands(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
-    commands_data: dict[str, str] | None = data.get("commands")
-
-    if commands_data:
-        _command_locale[locale.value] = commands_data
-
-
-def _load_tips(data: abc.Mapping[str, Any], /, locale: Locale) -> None:
-    tips_data: abc.Sequence[str] | None = data.get("embed_tips")
-
-    if tips_data is not None:
-        embed_tips[locale] = tuple(tips_data)
+class _LocaleData(TypedDict, total=False):
+    stats: ReadOnly[Required[abc.Mapping[str, _StatEntry]]]
+    messages: ReadOnly[abc.Mapping[str, str]]
+    commands: ReadOnly[dict[str, str]]
+    embed_tips: ReadOnly[abc.Sequence[str]]
 
 
 def _load_file(path: Path, /) -> None:
@@ -131,10 +122,21 @@ def _load_file(path: Path, /) -> None:
 
     locale = Locale[path.stem]
     _LOGGER.info("Loading locale for %s", locale)
-    data = rtoml.loads(path.read_text("utf-8"))
+    data = type_cast(_LocaleData, rtoml.loads(path.read_text("utf-8")))
 
-    for loader in (_load_stats, _load_messages, _load_commands, _load_tips):
-        loader(data, locale)
+    for key, entry in data["stats"].items():
+        stat = StatName[key]
+        stats[stat, locale] = entry.get("default") or entry.get("in_game", FALLBACK_NAME)
+
+    if messages_data := data.get("messages"):
+        for key, message in messages_data.items():
+            messages[key, locale] = message
+
+    if commands_data := data.get("commands"):
+        _command_locale[locale.value] = commands_data
+
+    if tips_data := data.get("embed_tips"):
+        embed_tips[locale] = tuple(tips_data)
 
 
 def load(directory: Pathish, /) -> None:

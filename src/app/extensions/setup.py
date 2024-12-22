@@ -8,6 +8,7 @@ from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake_plugins import Plugin
 
+from app import i18n
 from app.core import CONFIG
 from app.utils import format_exception
 
@@ -17,6 +18,7 @@ plugin = Plugin[commands.InteractionBot](
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
 # the lib wants a list which is invariant
 KNOWN_PLUGIN_PATHS = list[str | int | float](walk_extensions("extensions"))
+assert len(KNOWN_PLUGIN_PATHS) <= InteractionLimits.autocomplete_options
 
 recently_loaded_plugin: str | None = None
 
@@ -142,23 +144,30 @@ def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteRe
 @plugin.slash_command()
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
-async def set_locale(inter: CommandInteraction, locale: str | None = None) -> None:
+async def set_locale(
+    inter: CommandInteraction,
+    locale_name: str | None = commands.Param(None, name="locale"),
+) -> None:
     """Override commands' locale.
 
     Parameters
     ----------
     locale: Locale code to override with.
     """
-    if locale is None:
-        del CONFIG.locale_override
+    if locale_name is None:
+        i18n.remove_locale_override()
         msg = "Locale reset"
 
-    elif locale not in disnake.Locale._value2member_map_:
-        msg = f"Unknown locale: {locale}"
-
     else:
-        CONFIG.locale_override = locale
-        msg = f"Locale set to {locale}"
+        try:
+            locale = disnake.Locale[locale_name]
+
+        except KeyError:
+            msg = f"Unknown locale: {locale_name}"
+
+        else:
+            i18n.set_locale_override(locale)
+            msg = f"Locale set to {locale_name}"
 
     plugin.logger.info(msg)
     await inter.response.send_message(msg)
@@ -172,8 +181,8 @@ async def get_matching_locale(_: CommandInteraction, input: str) -> Autocomplete
         return matching
 
     for locale in disnake.Locale:
-        if input in locale.value:
-            matching.append(locale.value)
+        if input in locale.name:
+            matching.append(locale.name)
 
             if len(matching) == InteractionLimits.autocomplete_options:
                 break
