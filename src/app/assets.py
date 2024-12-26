@@ -45,12 +45,9 @@ class Sided(Generic[T]):
 @attrs.frozen
 class Emojis:
     weight_sub_0: str
-    weight_0: str
-    weight_1: str
-    weight_2: str
-    weight_3: str
-    weight_4: str
-    weight_99: str
+    weight_stages: tuple[str, ...]
+    weight_900: str
+    weight_990: str
     weight_1k: str
     overload: str
     overweight: str
@@ -73,22 +70,17 @@ ASSETS = attrs_from_path(Assets, paths.ASSETS_TOML, _converter)
 EMOJIS = ASSETS.emojis
 
 
-def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:
+def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:  # noqa: PLR0911
     if weight < 0:
         return EMOJIS.weight_sub_0
-    close = math.floor(rules.safe_weight * 0.99)
-    if weight < close:
-        emojis = (
-            "",
-            EMOJIS.weight_0,
-            EMOJIS.weight_1,
-            EMOJIS.weight_2,
-            EMOJIS.weight_3,
-            EMOJIS.weight_4,
-        )
-        return emojis[round((len(emojis) - 1) * weight / close)]
+    progress = math.floor(rules.safe_weight * 0.9)
+    if weight < progress:
+        emojis = ("", *EMOJIS.weight_stages)
+        return emojis[round((len(emojis) - 1) * weight / progress)]
+    if weight < math.floor(rules.safe_weight * 0.99):
+        return EMOJIS.weight_900
     if weight < rules.safe_weight:
-        return EMOJIS.weight_99
+        return EMOJIS.weight_990
     if weight == rules.safe_weight:
         return EMOJIS.weight_1k
     if weight <= rules.max_weight:

@@ -49,6 +49,8 @@ async def info(inter: CommandInteraction) -> None:
     ]
     supermechs_fields = [
         f"Registered players: {len(players.mapping)}",
+        f"Default item pack: {md.hyperlink(state.item_pack.key, CONFIG.default_pack_url)}",
+        f"Total items: {len(state.item_pack.items)}",
     ]
     bytes_, prefix = fold_binary_prefix(get_ram_utilization())
     perf_fields = [
@@ -60,10 +62,6 @@ async def info(inter: CommandInteraction) -> None:
         app_loc, sm_loc = await amap(get_sloc, "src", *supermechs.__path__)
         backend_fields.append(f"Lines of code: {app_loc} bot, {sm_loc} SM library")
 
-    supermechs_fields += [
-        f"Default item pack: {md.hyperlink(state.item_pack.key, CONFIG.default_pack_url)}",
-        f"Total items: {len(state.item_pack.items)}",
-    ]
     embed = (
         Embed(title="Bot info", color=inter.me.color)
         .set_thumbnail(inter.me.display_avatar.url)

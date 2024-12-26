@@ -18,6 +18,7 @@ from smparse.packs.models import (
 from supermechs.all import (
     ItemData,
     ItemElementName,
+    ItemStats,
     ItemTagName,
     ItemTypeName,
     StageLevel,
@@ -25,7 +26,6 @@ from supermechs.all import (
     TransformStage,
     abc as smabc,
 )
-from supermechs.item import ItemStats
 
 ItemDict: TypeAlias = dict[smabc.ItemID, ItemData]
 

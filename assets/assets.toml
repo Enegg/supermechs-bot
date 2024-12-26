@@ -93,15 +93,18 @@ backfire_reduction =   { emoji = "<:backfire:725871901062201404>" }
 
 [emojis]
 weight_sub_0 = "🎈"
-weight_0     = "▫️"
-weight_1     = "◽"
-weight_2     = "◻️"
-weight_3     = "🔲"
-weight_4     = "⬜"
-weight_99    = "🟦"
-weight_1k    = "🟩"
-overload     = "🟨"
-overweight   = "⛔"
+weight_stages = [
+"▫️",
+"◽",
+"◻️",
+"🔲",
+    "⬜",
+]
+weight_900 = "🟦"
+weight_990 = "🟩"
+weight_1k  = "✅"
+overload   = "🟨"
+overweight = "⛔"
 
 [gifs]
 frantics = [

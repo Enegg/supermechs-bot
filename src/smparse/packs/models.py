@@ -30,7 +30,7 @@ class ItemBase:
     type: Option[LiteralType] = Null.null
     element: Option[LiteralElement] = Null.null
     transform_range: str = "C-C"
-    tags: frozenset[str] = frozenset()
+    tags: abc.Set[str] = frozenset()
 
 
 @attrs.define(kw_only=True)

@@ -147,11 +147,11 @@ async def compare(
     if item_a is None or item_b is None:
         raise commands.UserInputError  # TODO
 
-    if item_a.element is item_b.element:
+    if item_a.element == item_b.element:
         desc_builder = io.StringIO()
         desc_builder.write(str_elem(item_a.element))
 
-        if item_a.type is item_b.type:
+        if item_a.type == item_b.type:
             desc_builder.write(" ")
             type_ = str_type(item_a.type)
             desc_builder.write(type_)
