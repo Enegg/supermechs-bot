@@ -2,7 +2,7 @@ import logging
 from contextlib import suppress
 
 from discord import EmbedLimits, markdown as md, text_to_file
-from discord.interactions import MessageTemplate
+from discord.messages import MessageTemplate
 from disnake import Colour, CommandInteraction, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
@@ -20,20 +20,20 @@ _channel: Messageable | None = None
 _LOG = logging.getLogger("event.command_error")
 
 
-@plugin.load_hook()
-async def on_load() -> None:
-    if CONFIG.logs_channel_id is None:
-        return
+if CONFIG.logs_channel_id is not None:
+    # NOTE: the keyword is necessary to "save" the narrowed type of the id
 
-    global _channel  # noqa: PLW0603
-    await plugin.bot.wait_until_first_connect()
-    channel = await plugin.bot.fetch_channel(CONFIG.logs_channel_id)
+    @plugin.load_hook()
+    async def on_load(*, channel_id: int = CONFIG.logs_channel_id) -> None:
+        global _channel  # noqa: PLW0603
+        await plugin.bot.wait_until_first_connect()
+        channel = await plugin.bot.fetch_channel(channel_id)
 
-    if not isinstance(channel, Messageable):
-        msg = "Channel is not Messageable"
-        raise TypeError(msg)
+        if not isinstance(channel, Messageable):
+            msg = "Channel is not Messageable"
+            raise TypeError(msg)
 
-    _channel = channel
+        _channel = channel
 
 
 def cancel_button(inter: CommandInteraction, gettext: i18n.GetText) -> ui.ActionButton:
@@ -49,28 +49,30 @@ def get_user_error_message(
     inter: CommandInteraction, exc: commands.CommandError
 ) -> MessageTemplate | None:
     gettext = i18n.get_gettext(inter.locale)
+    info = MessageTemplate()
 
     match exc:
         case commands.NotOwner():
-            info = MessageTemplate(gettext("command-dev"))
+            info.with_content(gettext("command-dev"))
 
         case commands.UserInputError() | commands.CheckFailure():
             # TODO: localize (some UserInputErrors are localized)
-            info = MessageTemplate(str(exc))
+            info.with_content(str(exc))
 
         case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
-            info = MessageTemplate(
-                gettext("command-running"),
-                components=cancel_button(inter, gettext),
+            (
+                info.with_content(gettext("command-running")).with_components(
+                    cancel_button(inter, gettext)
+                )
             )
 
         case commands.MaxConcurrencyReached() as exc:
             # TODO: localize
-            info = MessageTemplate(str(exc))
+            info.with_content(str(exc))
 
         case commands.CommandInvokeError(original=TimeoutError()):
             _LOG.warning("Command %s timed out", inter.application_command.qualified_name)
-            info = MessageTemplate(gettext("command-timeout"))
+            info.with_content(gettext("command-timeout"))
 
         case _:
             info = None
@@ -91,7 +93,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     traceback_text = format_exception(exc)
 
     if len(traceback_text) + 10 > EmbedLimits.description:
-        template = template.with_files(text_to_file(traceback_text, "traceback.py"))
+        template = template.add_files(text_to_file(traceback_text, "traceback.py"))
         embed.description = header
 
     else:
@@ -103,26 +105,26 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
 
 @plugin.listener(Event.slash_command_error)
 async def on_slash_command_error(inter: CommandInteraction, exc: commands.CommandError) -> None:
-    if (msg := get_user_error_message(inter, exc)) is not None:
+    if (template := get_user_error_message(inter, exc)) is not None:
         with suppress(InteractionTimedOut):
-            await msg.ephemeral().send_any_response(inter)
+            await inter.send(**template.get_send_params(), ephemeral=True)
         return
 
     error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
     _LOG.exception("Exception in %s", inter.application_command.qualified_name, exc_info=error)
     template = exception_to_message(error, inter)
 
-    if __debug__:
+    if CONFIG.indev:
         try:
-            await template.send_any_response(inter)
+            await inter.send(**template.get_send_params())
 
         except InteractionTimedOut:
             if _channel is not None:
-                await template.send_to_channel(_channel)
+                await _channel.send(**template.get_send_params())
 
     else:
         if _channel is not None:
-            await template.send_to_channel(_channel)
+            await _channel.send(**template.get_send_params())
 
         with suppress(InteractionTimedOut):
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)
