@@ -7,12 +7,9 @@ import attrs
 import disnake
 from disnake import ui
 
-__all__ = ("MessageTemplate",)
+__all__ = ("MessageTemplate", "EditMode")
 
-Components: TypeAlias = (
-    ui.MessageUIComponent
-    | abc.Sequence[ui.MessageUIComponent | abc.Sequence[ui.MessageUIComponent]]
-)
+Components: TypeAlias = ui.Components[ui.MessageUIComponent]
 
 
 class EditMode(Enum):
