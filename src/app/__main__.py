@@ -9,9 +9,8 @@ from disnake.ext import commands
 
 from app import i18n, paths
 from app.bridges import register_injections
-from app.core import CONFIG, client_session, config_logging
+from app.core import CONFIG, config_logging, http
 from app.local_storage import load_default_pack, load_state, save_state
-from app.state import state
 
 
 async def main() -> None:
@@ -42,8 +41,7 @@ async def main() -> None:
     await disnake.Client.login(bot, CONFIG.bot_token)
     await load_state(paths.STATE_DIR)
 
-    async with client_session(bot.http) as session, anyio.create_task_group() as tg:
-        state.http_session = session
+    async with http.client_session(bot.http) as session, anyio.create_task_group() as tg:
         tg.start_soon(load_default_pack, session)
         tg.start_soon(sync.sync_commands, bot)
         tg.start_soon(bot.connect)

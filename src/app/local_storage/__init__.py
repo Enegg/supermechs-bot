@@ -10,8 +10,7 @@ from orjson import JSONDecodeError
 
 import disnake
 
-from app.core import CONFIG
-from app.core.http import RESPONSE_OK
+from app.core import CONFIG, http
 from app.local_storage.converter import converter
 from app.models import ItemPack, PackKey, Player
 from app.state import state
@@ -135,7 +134,7 @@ async def load_default_pack(session: ClientSession, /) -> None:
 
         case HttpResource(url):
             async with session.get(url) as response:
-                if response.status != RESPONSE_OK:
+                if response.status != http.ResponseStatus.ok:
                     _LOG.error("Pack not available")
                     return
 
