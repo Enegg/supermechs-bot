@@ -10,7 +10,7 @@ import cattrs
 from disnake import Color
 
 from app import paths
-from app.class_utils import attrs_from_path
+from app.class_utils import MappingParser
 from app.core import CONFIG
 from app.typeshed import T
 
@@ -62,12 +62,13 @@ class Assets:
     types: abc.Mapping[str, Asset]
     sided_types: abc.Mapping[str, Sided[Asset]]
     categories: abc.Mapping[str, Asset]
-    emojis: Emojis
     gifs: abc.Mapping[str, abc.Sequence[str]]
 
 
-ASSETS = attrs_from_path(Assets, paths.ASSETS_TOML, _converter)
-EMOJIS = ASSETS.emojis
+_config = MappingParser.from_path(paths.ASSETS_TOML)
+ASSETS = _config.structure(Assets)
+EMOJIS = _config.structure(Emojis, "emojis")
+del _config
 
 
 def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:  # noqa: PLR0911

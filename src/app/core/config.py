@@ -1,13 +1,14 @@
 import os
-from collections import ChainMap, abc
+from collections import abc
 
 import attrs
-import cattrs
 import dotenv
 import rtoml
 
 from app import paths
-from app.class_utils import BinaryInt
+from app.class_utils import ByteSize, MappingParser
+
+from .cli import ARGV
 
 from supermechs.gamerules import BuildRules
 
@@ -31,9 +32,9 @@ class Config:
     """The URL of the default item pack."""
     missing_image_url: str
     """Placeholder image url."""
-    max_image_size: BinaryInt = BinaryInt(25 * 1024 * 1024)
+    max_image_size: ByteSize = ByteSize(25 * 1024 * 1024)
     """Maximum allowed image size, in bytes."""
-    chunk_size: BinaryInt = BinaryInt(1024 * 1024)
+    chunk_size: ByteSize = ByteSize(1024 * 1024)
     """Size of chunk for iterative download."""
     build_rules: BuildRules = BuildRules.default
     """Set of rules the builds shall obey."""
@@ -45,6 +46,13 @@ class Config:
         return (self.home_guild_id,)
 
 
-# TODO: select path from cli arguments
-dotenv.load_dotenv(paths.DEV_ENV if __debug__ else paths.DEV_ENV)
-CONFIG = cattrs.structure(ChainMap(rtoml.load(paths.CONFIG_TOML), os.environ), Config)
+dotenv.load_dotenv(ARGV.dotenv_path)
+CONFIG = MappingParser(
+    attrs.asdict(ARGV),
+    os.environ,
+    rtoml.load(paths.CONFIG_TOML),
+).structure(Config)
+
+
+if __name__ == "__main__":
+    print(CONFIG)
