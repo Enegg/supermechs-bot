@@ -4,8 +4,9 @@ from discord.commands import cancel_for
 from disnake import CommandInteraction, Event
 from disnake_plugins import Plugin
 
-from app.bridges import add_invocation, ui
+from app.bridges import ui
 from app.bridges.cancellation import is_cancel_button, parse_id
+from app.bridges.telemetry import command_tracker
 
 plugin = Plugin(name="listeners", logger="ext")
 _LOG = logging.getLogger("event")
@@ -36,7 +37,7 @@ async def on_slash_command(inter: CommandInteraction, /) -> None:
         command_name,
         extra={"filled_options": inter.filled_options},
     )
-    add_invocation(inter.data.id, command_name)
+    command_tracker.add_invocation(inter)
 
 
 @plugin.listener(Event.button_click)

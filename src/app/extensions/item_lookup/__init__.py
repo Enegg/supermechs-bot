@@ -7,7 +7,8 @@ from disnake.utils import MISSING
 from disnake_plugins import Plugin
 
 from app.assets import ASSETS
-from app.bridges import embed_image, item_name_autocomplete, sikrit_footer, ui
+from app.bridges import ui
+from app.bridges.all import embed_image, item_name_autocomplete, sikrit_footer
 from app.bridges.sm_utils import get_item_by_name, get_item_icon_url, get_item_pack_for
 from app.core import CONFIG
 from defer import AsyncDeferBlock

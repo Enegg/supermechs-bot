@@ -14,13 +14,13 @@ from disnake_plugins import Plugin
 
 from app import i18n
 from app.assets import ASSETS
-from app.bridges import (
+from app.bridges import ui
+from app.bridges.all import (
     StringLimits,
     embed_image,
     mech_name_autocomplete,
     sanitize_string,
     sikrit_footer,
-    ui,
 )
 from app.bridges.sm_utils import get_item_pack_for
 from app.core import CONFIG

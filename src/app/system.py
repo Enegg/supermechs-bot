@@ -1,21 +1,18 @@
-from collections import Counter
 from threading import Lock
-from typing import Final, NamedTuple
 
 import anyio
 import anyio.to_thread
 import psutil
 
 from app.typeshed import Pathish
-from memo import AsyncMemo
 
-__all__ = ("add_invocation", "get_ram_utilization", "get_sloc", "invoke_counter")
+__all__ = ("get_ram_utilization", "get_sloc")
 
 
 def _file_sloc(path: Pathish, /) -> int:
     sloc = 0
 
-    with open(path, encoding="utf8") as file:  # noqa: PTH123
+    with open(path, encoding="utf-8") as file:  # noqa: PTH123
         for line in map(str.lstrip, file):
             if not line or line.startswith(("#", '"""')):
                 continue
@@ -25,7 +22,6 @@ def _file_sloc(path: Pathish, /) -> int:
     return sloc
 
 
-@AsyncMemo
 async def get_sloc(directory: Pathish = ".", /) -> int:
     """Get the number of significant lines of code of python files within the directory."""
     total: int = 0
@@ -47,15 +43,3 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
 def get_ram_utilization(pid: int | None = None, /) -> int:
     """Return the current process RAM utilization, in bytes."""
     return psutil.Process(pid).memory_info().rss
-
-
-class CommandData(NamedTuple):
-    id: int
-    name: str
-
-
-invoke_counter: Final = Counter[CommandData]()
-
-
-def add_invocation(id: int, name: str, /) -> None:
-    invoke_counter[CommandData(id, name)] += 1

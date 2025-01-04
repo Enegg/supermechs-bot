@@ -12,11 +12,10 @@ import anyio
 import disnake
 from discord import MessageLimits, markdown as md, text_to_file
 from discord.ui import random_str, wait_for_components
-from disnake import TextInputStyle, ui
 from disnake.ext import commands
 from disnake_plugins import Plugin
 
-from app.bridges.ui import ActionButton
+from app.bridges import ui
 from app.core import CONFIG
 from app.utils import format_exception
 
@@ -46,7 +45,7 @@ async def runner(cs: anyio.CancelScope, fn: abc.Callable[[], object], sio: io.St
 async def waiter(cs: anyio.CancelScope, inter: disnake.Interaction, cancelled: anyio.Event) -> None:
     await anyio.sleep(CANCEL_DELAY)
 
-    button = ActionButton(label="Cancel", style=disnake.ButtonStyle.red)
+    button = ui.ActionButton(label="Cancel", style=disnake.ButtonStyle.red)
     await inter.edit_original_response(f"{WAIT_EMOJI} Processing...", components=[button])
     button_inter, _ = await wait_for_components(button, client=plugin.bot, user_id=inter.author.id)
     cancelled.set()
@@ -124,7 +123,7 @@ async def eval_(inter: disnake.CommandInteraction, code: str | None = None) -> N
         return
 
     text_input = ui.TextInput(
-        label="Code to evaluate", custom_id=MODAL_SUFFIX, style=TextInputStyle.paragraph
+        label="Code to evaluate", custom_id=MODAL_SUFFIX, style=ui.TextInputStyle.paragraph
     )
     await inter.response.send_modal(
         title="Prompt", custom_id=f"{random_str()}:{MODAL_SUFFIX}", components=text_input
