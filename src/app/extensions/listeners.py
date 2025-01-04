@@ -6,7 +6,6 @@ from disnake_plugins import Plugin
 
 from app.bridges import add_invocation, ui
 from app.bridges.cancellation import is_cancel_button, parse_id
-from app.core import CONFIG
 
 plugin = Plugin(name="listeners", logger="ext")
 _LOG = logging.getLogger("event")
@@ -20,7 +19,7 @@ async def on_ready() -> None:
         _LOG.info(
             f"Username: {plugin.bot.user.name};"
             f" Session #{limit.total - limit.remaining}/{limit.total}"
-            f" (expires {limit.reset_time:{CONFIG.date_format}})"
+            f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
         )
 
     else:

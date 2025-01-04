@@ -26,8 +26,6 @@ class Config:
     logs_channel_id: int | None = None
     """ID of a text channel to send logs to."""
     bot_token: str = attrs.field(repr=lambda _: "***")
-    date_format: str = "%d.%m.%Y %H:%M:%S"
-    """General date format for logging purposes."""
     default_pack_url: str
     """The URL of the default item pack."""
     missing_image_url: str

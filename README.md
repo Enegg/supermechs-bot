@@ -16,9 +16,15 @@
 2. `pdm install`
 
 ## `.env` variables
-| Variable          | Description                                           | Type | Required                     |
-| ----------------- | ----------------------------------------------------- | ---- | ---------------------------- |
-| `BOT_TOKEN`       | Prod bot token                                        | str  | If running with `-O` flag    |
-| `BOT_TOKEN_DEV`   | Development bot token                                 | str  | If running without `-O` flag |
-| `HOME_GUILD_ID`   | ID of a guild dev-only commands will be registered to | int  | Always                       |
-| `LOGS_CHANNEL_ID` | ID of a text channel the bot will send tracebacks to  | int  | Always                       |
+| Variable            | Description                                           | Type  |
+| ------------------- | ----------------------------------------------------- | ----- |
+| `BOT_TOKEN`*        | Bot token                                             | str   |
+| `HOME_GUILD_ID`*    | ID of a guild dev-only commands will be registered to | int   |
+| `LOGS_CHANNEL_ID`   | ID of a text channel the bot will send tracebacks to  | int   |
+| `DEFAULT_PACK_URL`  | Path/url of the default items pack                    | str   |
+| `MISSING_IMAGE_URL` | Path/url of a placeholder image                       | str   |
+| `MAX_IMAGE_SIZE`    | Max size of an image fetched from user source         | int** |
+| `CHUNK_SIZE`        | Size of a chunk used while requesting data            | int** |
+
+\* required<br>
+\*\* supports binary prefixes (10MiB, 5KiB, etc)
