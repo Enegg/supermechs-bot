@@ -5,7 +5,7 @@
 groups = ["default", "dev", "lint"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:464553bd7b1591c0174954046a45b3b7770d0a7404f6feed96f313a3f23bb609"
+content_hash = "sha256:26f95e53013c7a482f1b5ce937384ef99bb4f2ef635735ea927f84440c0d88ed"
 
 [[metadata.targets]]
 requires_python = ">=3.10,<3.12"
@@ -119,6 +119,16 @@ files = [
 ]
 
 [[package]]
+name = "boltons"
+version = "20.2.1"
+summary = "When they're not builtins, they're boltons."
+groups = ["default"]
+files = [
+    {file = "boltons-20.2.1-py2.py3-none-any.whl", hash = "sha256:3dd8a8e3c1886e7f7ba3422b50f55a66e1700161bf01b919d098e7d96dd2d9b6"},
+    {file = "boltons-20.2.1.tar.gz", hash = "sha256:dd362291a460cc1e0c2e91cc6a60da3036ced77099b623112e8f833e6734bdc5"},
+]
+
+[[package]]
 name = "cattrs"
 version = "24.1.2"
 requires_python = ">=3.8"
@@ -132,6 +142,21 @@ dependencies = [
 files = [
     {file = "cattrs-24.1.2-py3-none-any.whl", hash = "sha256:67c7495b760168d931a10233f979b28dc04daf853b30752246f4f8471c6d68d0"},
     {file = "cattrs-24.1.2.tar.gz", hash = "sha256:8028cfe1ff5382df59dd36474a86e02d817b06eaf8af84555441bac915d2ef85"},
+]
+
+[[package]]
+name = "datargs"
+version = "1.1.0"
+requires_python = "<4.0,>=3.7"
+summary = "Declarative, type-safe command line argument parsers from dataclasses and attrs classes"
+groups = ["default"]
+dependencies = [
+    "boltons<21.0.0,>=20.2.1",
+    "typing-extensions<4.0.0,>=3.10.0; python_version < \"3.8\"",
+]
+files = [
+    {file = "datargs-1.1.0-py3-none-any.whl", hash = "sha256:1bf3c3f52e02cd93990abcfb4afe6b182557eb3375b116d7a83d158ec00e18b3"},
+    {file = "datargs-1.1.0.tar.gz", hash = "sha256:f0918b3a4fc2a903cfd0d221dfb09d1be2febc3c6bbe4ae2e196405b7120bf13"},
 ]
 
 [[package]]
