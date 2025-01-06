@@ -7,18 +7,17 @@ from app.assets import ASSETS
 from app.local_storage import players
 from app.models import ItemPack
 from app.state import state
+from resources import Resource
 
 from supermechs.all import ItemData, ItemTypeName, abc as smabc
 
 
-def get_item_icon_url(item: smabc.ItemData) -> str | None:
+def get_item_icon(item: smabc.ItemData, /) -> Resource:
     if item.type == ItemTypeName.SIDE_WEAPON or item.type == ItemTypeName.TOP_WEAPON:  # noqa: PLR1714
-        icon_url = ASSETS.sided_types[item.type].right.image_url
+        return ASSETS.sided_types[item.type].right.resource
 
     else:
-        icon_url = ASSETS.types[item.type].image_url
-
-    return icon_url
+        return ASSETS.types[item.type].resource
 
 
 def get_item_by_name(items: abc.Iterable[ItemData], name: str) -> ItemData | None:

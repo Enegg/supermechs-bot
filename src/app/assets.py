@@ -13,6 +13,7 @@ from app import paths
 from app.class_utils import MappingParser
 from app.core import CONFIG
 from app.typeshed import T
+from resources import Resource
 
 from supermechs.gamerules import BuildRules
 
@@ -21,14 +22,24 @@ __all__ = ("ASSETS", "get_weight_emoji")
 INVISIBLE_CHAR: Final = "\u2800"
 """Invisible character discord does not truncate."""
 
-_converter = cattrs.Converter()
-_converter.register_structure_hook(Color, lambda obj, cls: cls(obj))
+@cattrs.global_converter.register_structure_hook
+def _structure_color(value: int, cls: type) -> Color:
+    return Color(int(value))
+
+
+@cattrs.global_converter.register_structure_hook
+def _structure_resource(value: str, cls: type) -> Resource:
+    assert isinstance(value, str)
+    return from_uri(value)
+
+
+del _structure_color, _structure_resource
 
 
 @attrs.frozen
 class Asset:
     emoji: str = "❔"
-    image_url: str = CONFIG.missing_image_url
+    resource: Resource = Resource.from_uri(CONFIG.missing_image_url)
 
 
 @attrs.frozen

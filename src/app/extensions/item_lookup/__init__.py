@@ -9,7 +9,7 @@ from disnake_plugins import Plugin
 from app.assets import ASSETS
 from app.bridges import ui
 from app.bridges.all import embed_image, item_name_autocomplete, sikrit_footer
-from app.bridges.sm_utils import get_item_by_name, get_item_icon_url, get_item_pack_for
+from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_for
 from app.core import CONFIG
 from defer import AsyncDeferBlock
 
@@ -71,7 +71,7 @@ async def item(
         url, file = embed_image(await sprite.load(), item.name)
 
     embed_color = ASSETS.elements[item.element].color
-    icon_url = get_item_icon_url(item)
+    icon_url = get_item_icon(item).uri
 
     if compact:
         embed = (
