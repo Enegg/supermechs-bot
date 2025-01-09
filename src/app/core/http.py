@@ -9,7 +9,7 @@ from aiohttp.typedefs import StrOrURL
 
 import disnake.http
 
-__all__ = ("client_session", "ResponseStatus")
+__all__ = ("ResponseStatus", "client_session")
 
 _LOG = logging.getLogger(__name__)
 

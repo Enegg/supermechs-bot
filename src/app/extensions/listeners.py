@@ -14,17 +14,13 @@ _LOG = logging.getLogger("event")
 
 @plugin.listener(Event.ready)
 async def on_ready() -> None:
-    if __debug__:
-        limit = plugin.bot.session_start_limit
-        assert limit is not None
-        _LOG.info(
-            f"Username: {plugin.bot.user.name};"
-            f" Session #{limit.total - limit.remaining}/{limit.total}"
-            f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
-        )
-
-    else:
-        _LOG.info(f"Username: {plugin.bot.user.name}")
+    limit = plugin.bot.session_start_limit
+    assert limit is not None
+    _LOG.info(
+        f"Username: {plugin.bot.user.name};"
+        f" Session #{limit.total - limit.remaining}/{limit.total}"
+        f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
+    )
 
 
 @plugin.listener(Event.slash_command)

@@ -31,14 +31,15 @@ async def runner(cs: anyio.CancelScope, fn: abc.Callable[[], object], sio: io.St
     # right now, any expensive code /will/ affect the entire bot
     # otoh, full isolation will likely require a second event loop
     # which can cause issues
-    try:
-        obj = fn()
+    with redirect_stdout(sio), redirect_stderr(sio):
+        try:
+            obj = fn()
 
-        if inspect.isawaitable(obj):
-            await obj
+            if inspect.isawaitable(obj):
+                await obj
 
-    except Exception as exc:
-        sio.write(format_exception(exc))
+        except Exception as exc:
+            sio.write(format_exception(exc))
 
     cs.cancel()
 
@@ -86,12 +87,11 @@ async def eval_code(inter: disnake.Interaction, code: str) -> None:
         sio = io.StringIO()
         cancelled = anyio.Event()
 
-        with redirect_stdout(sio), redirect_stderr(sio):
-            async with anyio.create_task_group() as tg:
-                tg.start_soon(runner, tg.cancel_scope, fn, sio)
-                tg.start_soon(waiter, tg.cancel_scope, inter, cancelled)
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(runner, tg.cancel_scope, fn, sio)
+            tg.start_soon(waiter, tg.cancel_scope, inter, cancelled)
 
-            run_time = time.perf_counter() - start_time
+        run_time = time.perf_counter() - start_time
 
         output = sio.getvalue() or "[No output]"
         status = f"{'cancelled after' if cancelled.is_set() else 'finished in'} {run_time:.2f}s"
