@@ -117,7 +117,7 @@ def _get_item_filters(
     return filters
 
 
-async def item_name_autocomplete(inter: "CommandInteraction", input: str) -> AutocompleteReturnType:
+async def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for type & element."""
     pack = get_item_pack_for(inter)
     filters = _get_item_filters(inter.filled_options)

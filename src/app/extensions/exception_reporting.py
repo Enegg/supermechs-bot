@@ -11,7 +11,7 @@ from disnake_plugins import Plugin
 from app import i18n
 from app.assets import INVISIBLE_CHAR
 from app.bridges import ui
-from app.bridges.cancellation import make_id
+from app.commands.cancellation import make_id
 from app.core import CONFIG
 from app.utils import format_exception
 

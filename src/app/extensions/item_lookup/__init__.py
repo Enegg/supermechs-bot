@@ -1,44 +1,25 @@
 import io
 
 from discord import MessageLimits
-from disnake import CommandInteraction, Embed, Locale, Localized, OptionChoice
+from disnake import CommandInteraction, Embed, Locale
 from disnake.ext import commands
 from disnake.utils import MISSING
 from disnake_plugins import Plugin
 
 from app.assets import ASSETS
 from app.bridges import ui
-from app.bridges.all import embed_image, item_name_autocomplete, sikrit_footer
+from app.bridges.all import embed_image, sikrit_footer
 from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_for
+from app.commands.autocompleters import item_name_autocomplete
+from app.commands.params import ELEMENT_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
 from defer import AsyncDeferBlock
 
 from .item_lookup import item_compare_view, item_view
 
-from supermechs.all import ItemData, ItemElementName, ItemTypeName, abc as smabc
+from supermechs.all import ItemData, abc as smabc
 
 plugin = Plugin[commands.InteractionBot](name="Item-lookup", logger="ext")
-
-TYPE_CHOICES = [
-    OptionChoice(Localized("Torso", key="CHOICE_TORSO"), ItemTypeName.TORSO),
-    OptionChoice(Localized("Legs", key="CHOICE_LEGS"), ItemTypeName.LEGS),
-    OptionChoice(Localized("Drone", key="CHOICE_DRONE"), ItemTypeName.DRONE),
-    OptionChoice(Localized("Side weapon", key="CHOICE_SIDE_WEAPON"), ItemTypeName.SIDE_WEAPON),
-    OptionChoice(Localized("Top weapon", key="CHOICE_TOP_WEAPON"), ItemTypeName.TOP_WEAPON),
-    OptionChoice(Localized("Teleport", key="CHOICE_TELEPORT"), ItemTypeName.TELEPORT),
-    OptionChoice(Localized("Charge", key="CHOICE_CHARGE"), ItemTypeName.CHARGE),
-    OptionChoice(Localized("Hook", key="CHOICE_HOOK"), ItemTypeName.HOOK),
-    OptionChoice(Localized("Shield", key="CHOICE_SHIELD"), ItemTypeName.SHIELD),
-    OptionChoice(Localized("Module", key="CHOICE_MODULE"), ItemTypeName.MODULE),
-    OptionChoice(Localized("Any", key="CHOICE_TYPE_ANY"), "ANY"),
-]
-ELEMENT_CHOICES = [
-    OptionChoice(Localized("Physical", key="CHOICE_PHYS"), ItemElementName.PHYSICAL),
-    OptionChoice(Localized("Explosive", key="CHOICE_EXPL"), ItemElementName.EXPLOSIVE),
-    OptionChoice(Localized("Electric", key="CHOICE_ELEC"), ItemElementName.ELECTRIC),
-    OptionChoice(Localized("Combined", key="CHOICE_COMB"), "COMBINED"),
-    OptionChoice(Localized("Any", key="CHOICE_ELEMENT_ANY"), "ANY"),
-]
 
 
 @plugin.slash_command()

@@ -8,7 +8,7 @@ from discord import load_extensions
 from disnake.ext import commands
 
 from app import i18n, paths
-from app.bridges.all import register_injections
+from app.commands.injectors import register_injections
 from app.core import CONFIG, config_logging, http
 from app.local_storage import load_default_pack, load_state, save_state
 
