@@ -1,10 +1,8 @@
 from collections import abc
 from functools import partial
 
-from app.disnake_types import CommandInteraction
+from app.disnake_types import CommandInteraction, Plugin
 from discord.commands import register_cancellable
-from disnake.ext import commands
-from disnake_plugins import Plugin
 
 from app.assets import ASSETS, INVISIBLE_CHAR
 from app.bridges import ui
@@ -14,7 +12,7 @@ from defer import AsyncDeferBlock
 
 from supermechs.api import ArenaShop, Category
 
-plugin = Plugin[commands.InteractionBot](name="ArenaBuffs", logger="ext")
+plugin = Plugin(name="ArenaBuffs", logger="ext")
 
 
 def format_value(category: Category, level: int, /) -> str:

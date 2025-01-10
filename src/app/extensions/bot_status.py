@@ -1,11 +1,10 @@
 import random
 
-from app.disnake_types import CommandInteraction
+from app.disnake_types import CommandInteraction, Plugin
 from discord import markdown as md
 from disnake import Embed
-from disnake.ext import commands, tasks
+from disnake.ext import tasks
 from disnake.utils import oauth_url
-from disnake_plugins import Plugin
 
 from app import meta
 from app.assets import ASSETS
@@ -19,7 +18,7 @@ from app.utils import fold_binary_prefix
 
 import supermechs
 
-plugin = Plugin[commands.InteractionBot](name="Bot-status", logger="ext")
+plugin = Plugin(name="Bot-status", logger="ext")
 _app_and_lib_slocs: tuple[int, int] | None = None
 
 

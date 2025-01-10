@@ -4,14 +4,13 @@ from json import JSONDecodeError
 
 import anyio
 
-from app.disnake_types import CommandInteraction
+from app.disnake_types import CommandInteraction, Plugin
 from discord import ComponentLimits, bytes_to_file, markdown as md
 from discord.commands import register_cancellable
 from discord.ui import wait_for_components
 from disnake import Attachment, Embed, Locale
 from disnake.ext import commands
 from disnake.utils import MISSING
-from disnake_plugins import Plugin
 
 from app import i18n
 from app.assets import ASSETS
@@ -30,7 +29,7 @@ from .mech_manager import MechView
 from supermechs.enums import ItemTypeName
 from supermechs.tools import mech_weight
 
-plugin = Plugin[commands.InteractionBot](name="Mech-manager", logger="ext")
+plugin = Plugin(name="Mech-manager", logger="ext")
 
 
 @plugin.load_hook(post=True)

@@ -1,9 +1,12 @@
 from typing import TypeAlias
 
 import disnake
+import disnake_plugins
 from disnake.ext import commands
 
-Interaction: TypeAlias = disnake.Interaction[commands.InteractionBot]
-CommandInteraction: TypeAlias = disnake.CommandInteraction[commands.InteractionBot]
-MessageInteraction: TypeAlias = disnake.MessageInteraction[commands.InteractionBot]
-ModalInteraction: TypeAlias = disnake.ModalInteraction[commands.InteractionBot]
+Bot: TypeAlias = commands.InteractionBot
+Plugin: TypeAlias = disnake_plugins.Plugin[Bot]
+Interaction: TypeAlias = disnake.Interaction[Bot]
+CommandInteraction: TypeAlias = disnake.CommandInteraction[Bot]
+MessageInteraction: TypeAlias = disnake.MessageInteraction[Bot]
+ModalInteraction: TypeAlias = disnake.ModalInteraction[Bot]

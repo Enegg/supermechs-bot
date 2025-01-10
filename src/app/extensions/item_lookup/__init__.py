@@ -1,11 +1,10 @@
 import io
 
-from app.disnake_types import CommandInteraction
+from app.disnake_types import CommandInteraction, Plugin
 from discord import MessageLimits
 from disnake import Embed, Locale
 from disnake.ext import commands
 from disnake.utils import MISSING
-from disnake_plugins import Plugin
 
 from app.assets import ASSETS
 from app.bridges import ui
@@ -20,7 +19,7 @@ from .item_lookup import item_compare_view, item_view
 
 from supermechs.all import ItemData, abc as smabc
 
-plugin = Plugin[commands.InteractionBot](name="Item-lookup", logger="ext")
+plugin = Plugin(name="Item-lookup", logger="ext")
 
 
 @plugin.slash_command()
