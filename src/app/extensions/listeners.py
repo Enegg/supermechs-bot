@@ -1,7 +1,8 @@
 import logging
 
+from app.disnake_types import CommandInteraction
 from discord.commands import cancel_for
-from disnake import CommandInteraction, Event
+from disnake import Event
 from disnake_plugins import Plugin
 
 from app.bridges import ui

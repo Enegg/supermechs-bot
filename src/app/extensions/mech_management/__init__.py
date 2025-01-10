@@ -4,10 +4,11 @@ from json import JSONDecodeError
 
 import anyio
 
+from app.disnake_types import CommandInteraction
 from discord import ComponentLimits, bytes_to_file, markdown as md
 from discord.commands import register_cancellable
 from discord.ui import wait_for_components
-from disnake import Attachment, CommandInteraction, Embed, Locale
+from disnake import Attachment, Embed, Locale
 from disnake.ext import commands
 from disnake.utils import MISSING
 from disnake_plugins import Plugin

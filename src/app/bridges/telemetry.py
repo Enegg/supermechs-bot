@@ -5,7 +5,7 @@ from typing_extensions import override
 
 import attrs
 
-import disnake
+from app.disnake_types import CommandInteraction
 from discord import markdown as md
 from disnake.utils import utcnow
 
@@ -36,7 +36,7 @@ class CommandData:
 class CommandTracker:
     commands_data: dict[int, CommandData] = attrs.field(factory=dict)
 
-    def add_invocation(self, inter: disnake.CommandInteraction, /) -> None:
+    def add_invocation(self, inter: CommandInteraction, /) -> None:
         try:
             data = self.commands_data[inter.data.id]
 

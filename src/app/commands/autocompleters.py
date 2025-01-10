@@ -3,10 +3,10 @@ from difflib import SequenceMatcher
 from typing import Any, NamedTuple
 
 from discord import AutocompleteReturnType, InteractionLimits
-from disnake import CommandInteraction
 
 from app.bridges.sm_utils import get_item_pack_for
 from app.bridges.user_input import sanitize_string
+from app.disnake_types import CommandInteraction
 from app.local_storage import players
 
 from supermechs.abc import ItemData

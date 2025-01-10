@@ -1,9 +1,10 @@
 import logging
 from contextlib import suppress
 
+from app.disnake_types import CommandInteraction
 from discord import EmbedLimits, markdown as md, text_to_file
 from discord.messages import MessageTemplate
-from disnake import Colour, CommandInteraction, Embed, Event, InteractionTimedOut
+from disnake import Colour, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake_plugins import Plugin
@@ -59,6 +60,7 @@ def get_user_error_message(
             # TODO: localize (some UserInputErrors are localized)
             info.with_content(str(exc))
 
+        # 1 per user is special as it is cancellable
         case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
             (
                 info.with_content(gettext("command-running")).with_components(

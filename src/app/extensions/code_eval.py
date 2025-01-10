@@ -9,7 +9,7 @@ from contextlib import redirect_stderr, redirect_stdout
 
 import anyio
 
-import disnake
+from app.disnake_types import CommandInteraction, Interaction, ModalInteraction
 from discord import MessageLimits, markdown as md, text_to_file
 from discord.ui import random_str, wait_for_components
 from disnake.ext import commands
@@ -43,10 +43,10 @@ async def runner(cs: anyio.CancelScope, fn: abc.Callable[[], object], sio: io.St
 
     cs.cancel()
 
-async def waiter(cs: anyio.CancelScope, inter: disnake.Interaction, cancelled: anyio.Event) -> None:
+async def waiter(cs: anyio.CancelScope, inter: Interaction, cancelled: anyio.Event) -> None:
     await anyio.sleep(CANCEL_DELAY)
 
-    button = ui.ActionButton(label="Cancel", style=disnake.ButtonStyle.red)
+    button = ui.ActionButton(label="Cancel", style=ui.ButtonStyle.red)
     await inter.edit_original_response(f"{WAIT_EMOJI} Processing...", components=[button])
     button_inter, _ = await wait_for_components(button, client=plugin.bot, user_id=inter.author.id)
     cancelled.set()
@@ -55,7 +55,7 @@ async def waiter(cs: anyio.CancelScope, inter: disnake.Interaction, cancelled: a
         await button_inter.response.defer()
     cs.cancel()
 
-async def eval_code(inter: disnake.Interaction, code: str) -> None:
+async def eval_code(inter: Interaction, code: str) -> None:
     await inter.response.defer(with_message=True, ephemeral=True)
 
     start_time = time.perf_counter()
@@ -110,7 +110,7 @@ async def eval_code(inter: disnake.Interaction, code: str) -> None:
 @plugin.slash_command(name="eval", guild_ids=CONFIG.test_guild_ids)
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
-async def eval_(inter: disnake.CommandInteraction, code: str | None = None) -> None:
+async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
     """Evaluate the given input as code.
 
     Parameters
@@ -131,7 +131,7 @@ async def eval_(inter: disnake.CommandInteraction, code: str | None = None) -> N
 
 
 @plugin.listener()
-async def on_modal_submit(inter: disnake.ModalInteraction, /) -> None:
+async def on_modal_submit(inter: ModalInteraction, /) -> None:
     if not inter.custom_id.endswith(MODAL_SUFFIX):
         return
 

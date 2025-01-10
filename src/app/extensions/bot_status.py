@@ -1,7 +1,8 @@
 import random
 
+from app.disnake_types import CommandInteraction
 from discord import markdown as md
-from disnake import CommandInteraction, Embed
+from disnake import Embed
 from disnake.ext import commands, tasks
 from disnake.utils import oauth_url
 from disnake_plugins import Plugin

@@ -13,6 +13,7 @@ __all__ = (
 
 T = TypeVar("T")
 P = ParamSpec("P")
+ClientT = TypeVar("ClientT", bound=disnake.Client, infer_variance=True)
 
 CoroFunc: TypeAlias = abc.Callable[P, abc.Coroutine[Any, Any, T]]
 AutocompleteReturnType: TypeAlias = (

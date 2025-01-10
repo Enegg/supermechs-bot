@@ -2,9 +2,9 @@ from collections import abc
 from typing import NoReturn
 
 import disnake
+from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
 from discord.extensions import walk_extensions
-from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake_plugins import Plugin
 
@@ -16,8 +16,8 @@ plugin = Plugin[commands.InteractionBot](
     name="Setup", logger="ext", slash_command_attrs={"guild_ids": CONFIG.test_guild_ids}
 )
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
-# the lib wants a list which is invariant
-KNOWN_PLUGIN_PATHS = list[str | int | float](walk_extensions("extensions"))
+KNOWN_PLUGIN_PATHS = tuple(walk_extensions("extensions"))
+# TODO: CommandLimits.param_options or whatever
 assert len(KNOWN_PLUGIN_PATHS) <= InteractionLimits.autocomplete_options
 
 recently_loaded_plugin: str | None = None

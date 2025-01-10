@@ -4,7 +4,8 @@ from functools import partial
 from typing import TypeAlias
 
 import disnake
-from disnake import ButtonStyle, MessageInteraction, SelectOption, TextInputStyle
+from app.disnake_types import Interaction, MessageInteraction
+from disnake import ButtonStyle, SelectOption, TextInputStyle
 from disnake.ui import Components, MessageUIComponent, Modal, StringSelect, TextInput
 from ui_store import CallbackStore as _CallbackStore
 
@@ -36,7 +37,7 @@ CallbackStore: TypeAlias = _CallbackStore[MessageInteraction]
 MessageComponents: TypeAlias = Components[MessageUIComponent]
 
 
-def callback_store(base_inter: disnake.Interaction, /) -> CallbackStore:
+def callback_store(base_inter: Interaction, /) -> CallbackStore:
     async def interaction_check(inter: MessageInteraction, /) -> bool:
         if inter.author.id == base_inter.author.id:
             return True

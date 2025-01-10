@@ -12,7 +12,7 @@ dependencies = [
     "cattrs >= 24.1.2",
     "datargs >= 1.1.0",
     "discord-ui-store @ git+https://github.com/Enegg/discord-ui-store",
-    "disnake >= 2.9.1",
+    "disnake >= 2.10.1",
     "disnake-ext-plugins @ git+https://github.com/DisnakeCommunity/disnake-ext-plugins",
     "exceptiongroup >= 1.2.2; python_version < '3.11'",
     "orjson >= 3.8.10",
@@ -38,7 +38,7 @@ distribution = false
 
 [tool.pdm.dev-dependencies]
 dev = [ "-e app @ file:///${PROJECT_ROOT}" ]
-lint = [ "ruff >= 0.4.2" ]
+lint = [ "ruff >= 0.8.2" ]
 
 [tool.pdm.build]
 includes = ["src/app"]
@@ -78,18 +78,17 @@ select = [
 
     "ANN",   # annotations
     "ASYNC", # blocking calls in async context
-    "TCH",   # type-checking-only imports
+    "TC",    # type-checking-only imports
     "FURB",
     "PTH",   # pathlib > os.path / open
     "ERA",   # commented out code
 ]
 ignore = [
-    "ANN101",  # type of self
-    "ANN102",  # type of cls
+    "ANN401",  # use of Any
     "PIE796",  # non-unique enums (that's a job for @unique)
     "D1",      # don't enforce docstrings for public API
     "PLC0414", # import foo as foo
-    "TCH002",  # move under TYPE_CHECKING
+    "TC002",   # move under TYPE_CHECKING
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -116,7 +115,7 @@ section-order = [
 ]
 
 [tool.ruff.lint.isort.sections]
-discord = ["disnake", "discord", "ui_store", "disnake_plugins"]
+discord = ["disnake", "discord", "ui_store", "disnake_plugins", "app.disnake_types"]
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]

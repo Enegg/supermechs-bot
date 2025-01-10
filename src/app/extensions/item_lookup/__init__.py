@@ -1,7 +1,8 @@
 import io
 
+from app.disnake_types import CommandInteraction
 from discord import MessageLimits
-from disnake import CommandInteraction, Embed, Locale
+from disnake import Embed, Locale
 from disnake.ext import commands
 from disnake.utils import MISSING
 from disnake_plugins import Plugin

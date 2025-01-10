@@ -2,6 +2,7 @@ import os
 from typing import Protocol
 from typing_extensions import TypeVar
 
+from discord.typeshed import ClientT
 from disnake import Client, Event, MessageInteraction, ModalInteraction, ui
 
 
@@ -18,8 +19,8 @@ def random_str() -> str:
 
 
 async def wait_for_components(
-    *components_or_ids: IDHolderT, client: Client, user_id: int | None = None
-) -> tuple[MessageInteraction, IDHolderT]:
+    *components_or_ids: IDHolderT, client: ClientT, user_id: int | None = None
+) -> tuple[MessageInteraction[ClientT], IDHolderT]:
     """Wait for an interaction with any of given components.
 
     If `user_id` is provided, ignore interactions from anyone but the specified user.
@@ -30,21 +31,23 @@ async def wait_for_components(
 
     if user_id is None:
 
-        def check(inter: MessageInteraction, /) -> bool:
+        def check(inter: MessageInteraction[Client], /) -> bool:
             return inter.data.custom_id in ids_to_components
 
     else:
 
-        def check(inter: MessageInteraction, /) -> bool:
+        def check(inter: MessageInteraction[Client], /) -> bool:
             return inter.author.id == user_id and inter.data.custom_id in ids_to_components
 
-    inter: MessageInteraction = await client.wait_for(Event.message_interaction, check=check)
+    inter: MessageInteraction[ClientT] = await client.wait_for(
+        Event.message_interaction, check=check
+    )
     return (inter, ids_to_components[inter.data.custom_id])
 
 
 async def wait_for_modal(
-    modal_or_id: ui.Modal | str, client: Client, *, user_id: int | None = None
-) -> ModalInteraction:
+    modal_or_id: ui.Modal | str, client: ClientT, *, user_id: int | None = None
+) -> ModalInteraction[ClientT]:
     """Wait for a modal submission.
 
     If `user_id` is provided, ignore interactions from anyone but the specified user.
@@ -55,12 +58,12 @@ async def wait_for_modal(
 
     if user_id is None:
 
-        def check(inter: ModalInteraction, /) -> bool:
+        def check(inter: ModalInteraction[Client], /) -> bool:
             return inter.data.custom_id == modal_or_id
 
     else:
 
-        def check(inter: ModalInteraction, /) -> bool:
+        def check(inter: ModalInteraction[Client], /) -> bool:
             return inter.author.id == user_id and inter.data.custom_id == modal_or_id
 
     return await client.wait_for(Event.modal_submit, check=check)

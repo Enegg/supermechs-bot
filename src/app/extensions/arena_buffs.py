@@ -1,8 +1,8 @@
 from collections import abc
 from functools import partial
 
+from app.disnake_types import CommandInteraction
 from discord.commands import register_cancellable
-from disnake import CommandInteraction
 from disnake.ext import commands
 from disnake_plugins import Plugin
 

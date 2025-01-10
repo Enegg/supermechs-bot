@@ -1,11 +1,11 @@
 import logging
 from functools import wraps
-from typing import Concatenate, NamedTuple
+from typing import Concatenate, Final, NamedTuple
 
 import anyio
 
 import disnake
-from discord.typeshed import CoroFunc, P, T
+from discord.typeshed import ClientT, CoroFunc, P
 from disnake.ext import commands
 
 _LOG = logging.getLogger(__name__)
@@ -16,15 +16,15 @@ class CancelKey(NamedTuple):
     command_id: int
 
 
-command_cancel_scopes: dict[CancelKey, anyio.CancelScope] = {}
+_command_cancel_scopes: Final[dict[CancelKey, anyio.CancelScope]] = {}
 
 
-def get_key(inter: disnake.CommandInteraction, /) -> CancelKey:
+def get_key(inter: disnake.CommandInteraction[ClientT], /) -> CancelKey:
     return CancelKey(user_id=inter.author.id, command_id=inter.data.id)
 
 
 def cancel_for(key: CancelKey, /) -> None:
-    scope = command_cancel_scopes.get(key)
+    scope = _command_cancel_scopes.get(key)
     _LOG.info("Cancelling: key=%s, exists=%s", key, scope is not None)
 
     if scope is not None:
@@ -32,20 +32,21 @@ def cancel_for(key: CancelKey, /) -> None:
 
 
 def register_cancellable(
-    func: CoroFunc[Concatenate[disnake.CommandInteraction, P], T],
-) -> CoroFunc[Concatenate[disnake.CommandInteraction, P], T]:
+    func: CoroFunc[Concatenate[disnake.CommandInteraction[ClientT], P], object],
+) -> CoroFunc[Concatenate[disnake.CommandInteraction[ClientT], P], object]:
     """Set max concurrency to 1 per user and allow for external cancellation."""
 
     @wraps(func)
-    async def wrapper(inter: disnake.CommandInteraction, *args: P.args, **kwargs: P.kwargs) -> T:
+    async def wrapper(
+        inter: disnake.CommandInteraction[ClientT], *args: P.args, **kwargs: P.kwargs
+    ) -> object:
         key = get_key(inter)
 
-        with anyio.CancelScope() as cs:
-            command_cancel_scopes[key] = cs
+        with anyio.CancelScope() as _command_cancel_scopes[key]:
             try:
-                return await func(inter, *args, **kwargs)
+                await func(inter, *args, **kwargs)
 
             finally:
-                del command_cancel_scopes[key]
+                del _command_cancel_scopes[key]
 
     return commands.max_concurrency(1, commands.BucketType.user)(wrapper)

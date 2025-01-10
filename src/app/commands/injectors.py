@@ -1,5 +1,5 @@
 import disnake
-from disnake import CommandInteraction
+from app.disnake_types import CommandInteraction
 from disnake.ext import commands
 
 from app import i18n
