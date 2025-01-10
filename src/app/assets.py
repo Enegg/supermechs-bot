@@ -30,7 +30,7 @@ def _structure_color(value: int, cls: type) -> Color:
 @cattrs.global_converter.register_structure_hook
 def _structure_resource(value: str, cls: type) -> Resource:
     assert isinstance(value, str)
-    return from_uri(value)
+    return Resource.from_uri(value)
 
 
 del _structure_color, _structure_resource

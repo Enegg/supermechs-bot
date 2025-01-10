@@ -1,9 +1,10 @@
 import logging
 from enum import IntEnum
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 from typing_extensions import override
 
 import aiohttp
+import attrs
 import orjson
 from aiohttp.typedefs import StrOrURL
 
@@ -11,7 +12,7 @@ import disnake.http
 
 __all__ = ("ResponseStatus", "client_session")
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger("io")
 
 session: Final[aiohttp.ClientSession]
 """Global HTTP session. Access via `from app.core import http; http.session`"""
@@ -54,9 +55,18 @@ def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
     """Create a client session with client's connector & proxy."""
     global session  # noqa: PLW0603
 
+    # .venv/Lib/site-packages/aiohttp/payload.py:396
+    # aiohttp wants dumps(Any) -> str, then encodes it
+    @attrs.define
+    class _MockStr(str if TYPE_CHECKING else object):
+        proxied_bytes: bytes
+
+        @override
+        def encode(self, encoding: str = "utf-8", errors: str = "strict") -> bytes:
+            return self.proxied_bytes
+
     def _dumps(obj: object, /) -> str:
-        # (Any) -> str which then they encode...
-        return orjson.dumps(obj).decode()
+        return _MockStr(orjson.dumps(obj))
 
     session = _ClientSession(
         connector=client.connector,

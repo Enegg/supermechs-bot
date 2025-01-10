@@ -126,19 +126,21 @@ def item_pack_factory(data: abc.Mapping[str, Any], /, url: str | None = None) ->
 
 async def load_default_pack(session: ClientSession, /) -> None:
     data: abc.Mapping[str, Json]
-    url: str | None = None
+    url: str | None
 
     match Resource.from_uri(CONFIG.default_pack_url):
-        case FileResource() as file:
-            data = orjson.loads(await file.read())
+        case FileResource(path):
+            data = orjson.loads(await anyio.Path(path).read_bytes())
+            url = None
 
-        case HttpResource(url):
-            async with session.get(url) as response:
+        case HttpResource() as web_resource:
+            async with session.get(web_resource.url) as response:
                 if response.status != http.ResponseStatus.ok:
                     _LOG.error("Pack not available")
                     return
 
                 data = await response.json(encoding="utf8", content_type=None, loads=orjson.loads)
+            url = web_resource.uri
 
         case resource:
             msg = f"Unknown resource type: {resource}"

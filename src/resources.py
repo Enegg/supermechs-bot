@@ -1,9 +1,10 @@
 from collections import abc
-from typing import ClassVar, Final, Protocol, final
-from typing_extensions import Self, override
+from pathlib import Path
+from typing import Final, Protocol, Self, final
+from typing_extensions import override
 
-import anyio
 import attrs
+from yarl import URL
 
 __all__ = ("FileResource", "HttpResource", "Resource")
 
@@ -11,12 +12,16 @@ __all__ = ("FileResource", "HttpResource", "Resource")
 class Resource(abc.Hashable, Protocol):
     """Abstract protocol for a resource."""
 
-    _protocol_dispatch: ClassVar[dict[str, type[Self]]] = {}
+    _protocol_registry: Final[dict[str, type[Self]]] = {}
 
     @property
     def uri(self) -> str:
         """The Uniform Identifier of the Resource."""
         ...
+
+    @override
+    def __hash__(self) -> int:
+        return hash(self.uri)
 
     @classmethod
     def from_uri(cls, uri: str, /) -> Self:
@@ -27,7 +32,7 @@ class Resource(abc.Hashable, Protocol):
             msg = "uri has no protocol"
             raise ValueError(msg)
 
-        subcls = cls._protocol_dispatch.get(protocol)
+        subcls = cls._protocol_registry.get(protocol)
 
         if subcls is None:
             msg = f"Unknown protocol: {protocol}"
@@ -36,53 +41,46 @@ class Resource(abc.Hashable, Protocol):
         return subcls.from_uri(uri)
 
     @classmethod
-    def register(cls, subcls: type[Self], *protocols: str) -> None:
+    def _register(cls, subcls: type[Self], *protocols: str) -> None:
         for protocol in protocols:
-            cls._protocol_dispatch[protocol] = subcls
+            cls._protocol_registry[protocol] = subcls
 
 
 @final
-@attrs.define(hash=True)
+@attrs.define(hash=True, frozen=True)
 class HttpResource(Resource):
     """Web resource from the `http(s)://` protocol."""
 
-    url: Final[str]
+    url: Final[URL]
 
     @property
     @override
     def uri(self) -> str:
-        return self.url
+        return str(self.url)
 
     @classmethod
     @override
     def from_uri(cls, uri: str, /) -> Self:
-        return cls(uri)
+        return cls(URL(uri))
 
 
 @final
-@attrs.define(hash=True)
+@attrs.define(hash=True, frozen=True)
 class FileResource(Resource):
     """Local resource from the `file://` protocol."""
 
-    path: Final[anyio.Path]
+    path: Final[Path]
 
     @property
     @override
     def uri(self) -> str:
         return self.path.as_uri()
 
-    async def read(self) -> bytes:
-        return await self.path.read_bytes()
-
-    async def get_size(self) -> int:
-        return (await self.path.stat()).st_size
-
     @classmethod
     @override
     def from_uri(cls, uri: str, /) -> Self:
-        return cls(anyio.Path(uri.removeprefix("file://")))
+        return cls(Path(uri.removeprefix("file://")))
 
 
-# NOTE: do it this way as attrs clashes with __init_subclass__
-Resource.register(HttpResource, "http", "https")
-Resource.register(FileResource, "file")
+Resource._register(HttpResource, "http", "https")  # pyright: ignore[reportPrivateUsage]
+Resource._register(FileResource, "file")  # pyright: ignore[reportPrivateUsage]
