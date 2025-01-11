@@ -1,7 +1,7 @@
 from collections import abc
 from typing import NoReturn
 
-import diswnake
+import disnake
 from app.disnake_types import CommandInteraction, Plugin
 from discord import AutocompleteReturnType, InteractionLimits
 from discord.extensions import walk_extensions
