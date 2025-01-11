@@ -8,7 +8,8 @@ from typing_extensions import TypeVar
 
 import cattrs
 from cattrs import strategies
-from monads.option import Null, Option, Some, from_none
+from monads.option import Null, Option, Some
+from monads.tools import from_none
 
 T = TypeVar("T", infer_variance=True)
 
@@ -22,7 +23,7 @@ def wrap_option(obj: object, type_: type[Option[T]]) -> Option[T]:
     return from_none(converter.structure(obj, wrapped_type))
 
 
-def check_is_option(cls: Any) -> bool:  # noqa: ANN401
+def check_is_option(cls: Any) -> bool:
     if get_type_origin(cls) is not Union:  # pyright: ignore[reportDeprecated]
         return False
 

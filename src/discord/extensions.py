@@ -1,13 +1,9 @@
 """Utilities related to handling bot extensions."""
 
 import logging
-import sys
 from collections import abc
 
 from .pending import find_submodules, walk_modules
-
-if sys.version_info < (3, 11):
-    from exceptiongroup import ExceptionGroup
 
 __all__ = ("load_extensions",)
 
