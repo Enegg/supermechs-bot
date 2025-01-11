@@ -9,16 +9,17 @@ from contextlib import redirect_stderr, redirect_stdout
 
 import anyio
 
-from app.disnake_types import CommandInteraction, Interaction, ModalInteraction, Plugin
+from app.disnake_types import CommandInteraction, Interaction, ModalInteraction
 from discord import MessageLimits, markdown as md, text_to_file
 from discord.ui import random_str, wait_for_components
 from disnake.ext import commands
 
 from app.bridges import ui
 from app.core import CONFIG
+from app.plugins_factory import create_plugin
 from app.utils import format_exception
 
-plugin = Plugin(name="Code-eval", logger="ext")
+plugin = create_plugin(__name__)
 MODAL_SUFFIX = "code"
 WAIT_EMOJI = "<a:wait:731884722166431754>"
 CANCEL_DELAY = 3

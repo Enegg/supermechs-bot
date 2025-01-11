@@ -1,6 +1,6 @@
 import random
 
-from app.disnake_types import CommandInteraction, Plugin
+from app.disnake_types import CommandInteraction
 from discord import markdown as md
 from disnake import Embed
 from disnake.ext import tasks
@@ -12,13 +12,14 @@ from app.async_utils import amap
 from app.bridges.telemetry import command_tracker
 from app.core import CONFIG
 from app.local_storage import players
+from app.plugins_factory import create_plugin
 from app.state import state
 from app.system import get_ram_utilization, get_sloc
 from app.utils import fold_binary_prefix
 
 import supermechs
 
-plugin = Plugin(name="Bot-status", logger="ext")
+plugin = create_plugin(__name__)
 _app_and_lib_slocs: tuple[int, int] | None = None
 
 

@@ -26,6 +26,7 @@ async def main() -> None:
         localization_provider=i18n.localization_provider,
         test_guilds=CONFIG.test_guild_ids if CONFIG.indev else None,
         command_sync_flags=commands.CommandSyncFlags(
+            allow_command_deletion=False,
             sync_commands_debug=CONFIG.debug_command_sync,
             sync_on_cog_actions=False,
         ),

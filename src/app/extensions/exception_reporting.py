@@ -1,7 +1,7 @@
 import logging
 from contextlib import suppress
 
-from app.disnake_types import CommandInteraction, Plugin
+from app.disnake_types import CommandInteraction
 from discord import EmbedLimits, markdown as md, text_to_file
 from discord.messages import MessageTemplate
 from disnake import Colour, Embed, Event, InteractionTimedOut
@@ -13,9 +13,10 @@ from app.assets import INVISIBLE_CHAR
 from app.bridges import ui
 from app.commands.cancellation import make_id
 from app.core import CONFIG
+from app.plugins_factory import create_plugin
 from app.utils import format_exception
 
-plugin = Plugin(name="Exception-logs", logger="ext")
+plugin = create_plugin(__name__)
 _channel: Messageable | None = None
 _LOG = logging.getLogger("event.command_error")
 

@@ -4,7 +4,7 @@ from json import JSONDecodeError
 
 import anyio
 
-from app.disnake_types import CommandInteraction, Plugin
+from app.disnake_types import CommandInteraction
 from discord import ComponentLimits, bytes_to_file, markdown as md
 from discord.commands import register_cancellable
 from discord.ui import wait_for_components
@@ -21,6 +21,7 @@ from app.commands.autocompleters import mech_name_autocomplete
 from app.core import CONFIG
 from app.devtools import debug_footer
 from app.models import Player
+from app.plugins_factory import create_plugin
 from app.utils import fold_binary_prefix
 from defer import AsyncDeferBlock
 
@@ -29,7 +30,7 @@ from .mech_manager import MechView
 from supermechs.enums import ItemTypeName
 from supermechs.tools import mech_weight
 
-plugin = Plugin(name="Mech-manager", logger="ext")
+plugin = create_plugin(__name__)
 
 
 @plugin.load_hook(post=True)

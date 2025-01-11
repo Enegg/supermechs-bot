@@ -1,6 +1,6 @@
 import io
 
-from app.disnake_types import CommandInteraction, Plugin
+from app.disnake_types import CommandInteraction
 from discord import MessageLimits
 from disnake import Embed, Locale
 from disnake.ext import commands
@@ -13,13 +13,14 @@ from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import ELEMENT_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
+from app.plugins_factory import create_plugin
 from defer import AsyncDeferBlock
 
 from .item_lookup import item_compare_view, item_view
 
 from supermechs.all import ItemData, abc as smabc
 
-plugin = Plugin(name="Item-lookup", logger="ext")
+plugin = create_plugin(__name__)
 
 
 @plugin.slash_command()

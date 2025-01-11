@@ -1,18 +1,19 @@
 from collections import abc
 from functools import partial
 
-from app.disnake_types import CommandInteraction, Plugin
+from app.disnake_types import CommandInteraction
 from discord.commands import register_cancellable
 
 from app.assets import ASSETS, INVISIBLE_CHAR
 from app.bridges import ui
 from app.core import CONFIG
 from app.models import Player
+from app.plugins_factory import create_plugin
 from defer import AsyncDeferBlock
 
 from supermechs.api import ArenaShop, Category
 
-plugin = Plugin(name="ArenaBuffs", logger="ext")
+plugin = create_plugin(__name__)
 
 
 def format_value(category: Category, level: int, /) -> str:

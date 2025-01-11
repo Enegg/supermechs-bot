@@ -3,13 +3,13 @@ import logging
 from app.disnake_types import CommandInteraction
 from discord.commands import cancel_for
 from disnake import Event
-from disnake_plugins import Plugin
 
 from app.bridges import ui
 from app.bridges.telemetry import command_tracker
 from app.commands.cancellation import is_cancel_button, parse_id
+from app.plugins_factory import create_plugin
 
-plugin = Plugin(name="listeners", logger="ext")
+plugin = create_plugin(__name__)
 _LOG = logging.getLogger("event")
 
 

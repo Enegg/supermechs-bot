@@ -2,18 +2,17 @@ from collections import abc
 from typing import NoReturn
 
 import disnake
-from app.disnake_types import CommandInteraction, Plugin
+from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
 from discord.extensions import walk_extensions
 from disnake.ext import commands
 
 from app import i18n
 from app.core import CONFIG
+from app.plugins_factory import create_plugin
 from app.utils import format_exception
 
-plugin = Plugin(
-    name="Setup", logger="ext", slash_command_attrs={"guild_ids": CONFIG.test_guild_ids}
-)
+plugin = create_plugin(__name__, slash_command_attrs={"guild_ids": CONFIG.test_guild_ids})
 KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
 KNOWN_PLUGIN_PATHS = tuple(walk_extensions("extensions"))
 # TODO: CommandLimits.param_options or whatever
