@@ -36,7 +36,7 @@ async def main() -> None:
     sync.patch_delayed_sync(bot)
     i18n.load(paths.LOCALE_DIR)
     register_injections()
-    load_extensions(bot.load_extension, "extensions")
+    load_extensions(bot.load_extension, "extensions", strict=not CONFIG.indev)
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, CONFIG.bot_token)
     await load_state(paths.STATE_DIR)

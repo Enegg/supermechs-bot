@@ -9,6 +9,32 @@ import rtoml
 
 from app.typeshed import Pathish
 
+BUILTIN_KEYS = frozenset({
+    "args",
+    "asctime",
+    "created",
+    "exc_info",
+    "exc_text",
+    "filename",
+    "funcName",
+    "levelname",
+    "levelno",
+    "lineno",
+    "module",
+    "msecs",
+    "message",
+    "msg",
+    "name",
+    "pathname",
+    "process",
+    "processName",
+    "relativeCreated",
+    "stack_info",
+    "thread",
+    "threadName",
+    "taskName",
+})
+
 
 # https://www.youtube.com/watch?v=9L77QExPmI0
 class JsonFormatter(logging.Formatter):
@@ -42,10 +68,16 @@ class JsonFormatter(logging.Formatter):
         }
         message_dict.update(base_fields)
 
+        for key, value in record.__dict__.items():
+            if key not in BUILTIN_KEYS:
+                message_dict[key] = value
+
         return orjson.dumps(message_dict, default=str).decode()
 
 
 def config_logging(path: Pathish, /) -> None:
     """Configure the logging module."""
-    logging.config.dictConfig(rtoml.load(Path(path))["logging"])
+    config = rtoml.load(Path(path))["logging"]
+    Path(config["handlers"]["file"]["filename"]).parent.mkdir(exist_ok=True)
+    logging.config.dictConfig(config)
     logging.captureWarnings(True)

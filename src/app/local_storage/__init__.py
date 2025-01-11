@@ -120,7 +120,12 @@ def item_pack_factory(data: abc.Mapping[str, Any], /, url: str | None = None) ->
         url=url,
         items=items,
     )
-    _LOG.info("Item pack created: %s (%s) (%d items)", pack.key, pack.name, len(pack.items))
+    _LOG.info(
+        "Item pack created: key=%s name=%s (%d items)",
+        pack.key,
+        pack.name.map(repr).unwrap_or("<missing>"),
+        len(pack.items),
+    )
     return pack
 
 

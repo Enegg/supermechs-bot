@@ -5,7 +5,7 @@ import importlib.util
 import pkgutil
 from collections import abc
 
-__all__ = ("walk_modules",)
+__all__ = ("find_submodules", "walk_modules")
 
 
 def walk_modules(

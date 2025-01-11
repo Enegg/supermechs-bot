@@ -20,7 +20,9 @@ def walk_extensions(
     yield from walk_modules(paths, f"{name}.", ignore)
 
 
-def _load_extensions(loader: abc.Callable[[str], None], plugins: abc.Iterable[str]) -> None:
+def _load_extensions(
+    loader: abc.Callable[[str], None], plugins: abc.Iterable[str], *, strict: bool = False
+) -> None:
     problems: list[Exception] = []
 
     for module_name in plugins:
@@ -35,11 +37,10 @@ def _load_extensions(loader: abc.Callable[[str], None], plugins: abc.Iterable[st
         msg = "Exceptions during loading:"
         exc = ExceptionGroup(msg, problems)
 
-        if __debug__:
-            _LOG.exception("Ignoring exceptions:", exc_info=exc)
-
-        else:
+        if strict:
             raise exc
+
+        _LOG.exception("Ignoring exceptions:", exc_info=exc)
 
 
 def load_extensions(
@@ -48,5 +49,8 @@ def load_extensions(
     *,
     package: str | None = None,
     ignore: abc.Callable[[str], bool] | None = None,
+    strict: bool = False,
 ) -> None:
-    _load_extensions(loader, walk_extensions(root_module, package=package, ignore=ignore))
+    _load_extensions(
+        loader, walk_extensions(root_module, package=package, ignore=ignore), strict=strict
+    )
