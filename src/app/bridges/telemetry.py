@@ -7,7 +7,8 @@ import attrs
 
 from app.disnake_types import CommandInteraction
 from discord import markdown as md
-from disnake.utils import utcnow
+
+from app.utils import utcnow
 
 __all__ = ("command_tracker",)
 

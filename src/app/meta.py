@@ -2,7 +2,8 @@ import sys
 from typing import Final
 
 from disnake import __version__ as disnake_version
-from disnake.utils import utcnow
+
+from app.utils import utcnow
 
 __all__ = ("disnake_url", "disnake_version", "python_version", "started_at")
 

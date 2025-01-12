@@ -4,7 +4,9 @@ from collections import abc
 from pathlib import PurePath
 from typing import Literal, TypeAlias, get_args as get_type_args
 
-__all__ = ("fold_binary_prefix", "format_exception", "unfold_binary_prefix")
+from disnake.utils import utcnow as utcnow
+
+__all__ = ("fold_binary_prefix", "format_exception", "unfold_binary_prefix", "utcnow")
 
 
 # https://en.wikipedia.org/wiki/Binary_prefix

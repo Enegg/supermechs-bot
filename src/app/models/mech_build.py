@@ -4,7 +4,7 @@ from typing import Final, NewType
 
 import attrs
 
-from disnake.utils import utcnow
+from app.utils import utcnow
 
 from supermechs.item import Item
 from supermechs.mech import Mech

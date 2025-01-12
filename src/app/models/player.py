@@ -4,9 +4,10 @@ from typing import Final, NewType, Self
 from attrs import define, field
 
 import disnake
-from disnake.utils import get as get_matching, utcnow
+from disnake.utils import get as get_matching
 
 from app.class_utils import limited_repr
+from app.utils import utcnow
 
 from .mech_build import BuildId, MechBuild
 
