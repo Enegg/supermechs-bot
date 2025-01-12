@@ -16,3 +16,4 @@ TODO.md
 tests/data/
 dev/
 logs/
+.state/

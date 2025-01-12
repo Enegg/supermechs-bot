@@ -35,6 +35,7 @@ async def load_state(path: Pathish, /) -> None:
 async def save_state(path: Pathish, /) -> None:
     path = anyio.Path(path)
     state_path = path / STATE_FILE
+    await path.mkdir(exist_ok=True)
 
     if not await move_old_state(from_=state_path, to=path / OLD_STATE_FILE):
         return
@@ -74,9 +75,12 @@ def structure_state(data: bytes, /) -> None:
 
     else:
         players.mapping.update(state)
+        _LOG.info("Restored %d players", len(state))
 
 
 def unstructure_state() -> bytes:
+    # FIXME: the keys of a dict need to be str
+    _LOG.info("Dumping %d players", len(players.mapping))
     return orjson.dumps(converter.unstructure(players.mapping))
 
 
@@ -85,7 +89,7 @@ async def move_old_state(from_: anyio.Path, to: anyio.Path) -> bool:
         await from_.replace(to)
 
     except FileNotFoundError:
-        _LOG.warning("Old state file doesn't exist")
+        _LOG.warning("Old state not found")
 
     except OSError as err:
         _LOG.error("Failed to move state", exc_info=err)
@@ -95,7 +99,6 @@ async def move_old_state(from_: anyio.Path, to: anyio.Path) -> bool:
 
 
 async def dump_state(path: anyio.Path, data: bytes) -> None:
-    await path.touch()
     try:
         await path.write_bytes(data)
 
