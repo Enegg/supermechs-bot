@@ -24,7 +24,7 @@ def get_item_by_name(items: abc.Iterable[ItemData], name: str) -> ItemData | Non
     return get_matching(items, name=name)
 
 
-def get_item_pack_for(inter: Interaction, /) -> ItemPack:
+def get_item_pack_for(inter: Interaction) -> ItemPack:
     # grab a player if exists, but do not create a new one
     # since this can be invoked in item lookup commands
     # which don't require player

@@ -13,12 +13,14 @@ from supermechs.all import ItemData
 
 __all__ = ("register_injections",)
 
+# NOTE: disnake does not accept pos-only params
 
-def _inject_locale(inter: CommandInteraction, /) -> disnake.Locale:
+
+def _inject_locale(inter: CommandInteraction) -> disnake.Locale:
     return i18n.locale_override.unwrap_or(inter.locale)
 
 
-def _inject_item(inter: CommandInteraction, /, name: str) -> ItemData:
+def _inject_item(inter: CommandInteraction, name: str) -> ItemData:
     """Injection taking Item name and returning ItemData.
 
     Parameters
@@ -35,11 +37,11 @@ def _inject_item(inter: CommandInteraction, /, name: str) -> ItemData:
     raise commands.UserInputError(msg)
 
 
-def _inject_gettext(inter: CommandInteraction, /) -> i18n.GetText:
+def _inject_gettext(inter: CommandInteraction) -> i18n.GetText:
     return i18n.get_gettext(_inject_locale(inter))
 
 
-def _inject_player(inter: CommandInteraction, /) -> Player:
+def _inject_player(inter: CommandInteraction) -> Player:
     return players(inter.author)
 
 
