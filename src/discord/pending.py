@@ -13,34 +13,14 @@ def walk_modules(
     prefix: str = "",
     ignore: abc.Callable[[str], bool] | None = None,
 ) -> abc.Iterator[str]:
-    seen: set[str] = set()
-
-    for _, name, ispkg in pkgutil.iter_modules(paths, prefix):
+    for _, name, _ in pkgutil.iter_modules(paths, prefix):
         if ignore is not None and ignore(name):
             continue
 
-        if not ispkg:
-            yield name
-            continue
-
-        module = importlib.import_module(name)
-
-        if hasattr(module, "setup"):
-            yield name
-            continue
-
-        sub_paths: list[str] = []
-
-        for path in module.__path__ or ():
-            if path not in seen:
-                seen.add(path)
-                sub_paths.append(path)
-
-        if sub_paths:
-            yield from walk_modules(sub_paths, name + ".", ignore)
+        yield name
 
 
-def find_submodules(root_module: str, package: str | None = None) -> tuple[list[str], str]:
+def find_submodules(root_module: str, package: str | None = None) -> tuple[abc.Sequence[str], str]:
     if (spec := importlib.util.find_spec(root_module, package=package)) is None:
         msg = f"Unable to find root module '{root_module}'"
         raise ImportError(msg, name=root_module)
