@@ -10,7 +10,7 @@ from app.devtools import debug_footer
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten
 
-from supermechs.api import MAX_SHOP, ItemData, Stat, Tier
+from supermechs.all import MAX_SHOP, ItemData, Stat, Tier
 from supermechs.tools.item import transform_range
 from supermechs.tools.stats import buff_stats, max_stats
 from supermechs.utils import contains_any_of

@@ -2,9 +2,8 @@ import disnake
 from app.disnake_types import CommandInteraction
 from disnake.ext import commands
 
-from app import i18n
+from app import i18n, state
 from app.bridges.sm_utils import get_item_by_name, get_item_pack_for
-from app.local_storage import players
 from app.models import Player
 
 from .autocompleters import item_name_autocomplete
@@ -42,7 +41,7 @@ def _inject_gettext(inter: CommandInteraction) -> i18n.GetText:
 
 
 def _inject_player(inter: CommandInteraction) -> Player:
-    return players(inter.author)
+    return state.players(inter.author)
 
 
 def register_injections() -> None:

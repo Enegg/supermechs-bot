@@ -7,10 +7,9 @@ import disnake
 from discord import load_extensions
 from disnake.ext import commands
 
-from app import i18n, paths
+from app import i18n, paths, state
 from app.commands.injectors import register_injections
 from app.core import CONFIG, config_logging, http
-from app.local_storage import load_default_pack, load_state, save_state
 
 
 async def main() -> None:
@@ -36,18 +35,21 @@ async def main() -> None:
 
     sync.patch_delayed_sync(bot)
     i18n.load(paths.LOCALE_DIR)
+    partial_state = state.load(paths.STATE_DIR)
+
     register_injections()
     load_extensions(bot.load_extension, "extensions", strict=not CONFIG.indev)
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, CONFIG.bot_token)
-    await load_state(paths.STATE_DIR)
 
-    async with http.client_session(bot.http) as session, anyio.create_task_group() as tg:
-        tg.start_soon(load_default_pack, session)
-        tg.start_soon(sync.sync_commands, bot)
-        tg.start_soon(bot.connect)
+    try:
+        async with http.client_session(bot.http) as session, anyio.create_task_group() as tg:
+            tg.start_soon(state.load_async, session, partial_state)
+            tg.start_soon(sync.sync_commands, bot)
+            tg.start_soon(bot.connect)
 
-    await save_state(paths.STATE_DIR)
+    finally:
+        state.save(paths.STATE_DIR)
 
 
 if __name__ == "__main__":

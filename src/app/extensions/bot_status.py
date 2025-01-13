@@ -6,14 +6,12 @@ from disnake import Embed
 from disnake.ext import tasks
 from disnake.utils import oauth_url
 
-from app import meta
+from app import meta, state
 from app.assets import ASSETS
 from app.async_utils import amap
 from app.bridges.telemetry import command_tracker
 from app.core import CONFIG
-from app.local_storage import players
 from app.plugins_factory import create_plugin
-from app.state import state
 from app.system import get_ram_utilization, get_sloc
 from app.utils import fold_binary_prefix
 
@@ -66,7 +64,7 @@ async def info(inter: CommandInteraction) -> None:
         backend_fields.append(f"Lines of code: {app_loc} bot + {sm_loc} SM library")
 
     supermechs_fields = [
-        f"Registered players: {len(players.mapping)}",
+        f"Registered players: {len(state.players.mapping)}",
         f"Default item pack: {md.hyperlink(state.item_pack.key, CONFIG.default_pack_url)}",
         f"Total items: {len(state.item_pack.items)}",
     ]

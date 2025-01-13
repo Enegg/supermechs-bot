@@ -3,10 +3,9 @@ from collections import abc
 from app.disnake_types import Interaction
 from disnake.utils import get as get_matching
 
+from app import state
 from app.assets import ASSETS
-from app.local_storage import players
 from app.models import ItemPack
-from app.state import state
 from resources import Resource
 
 from supermechs.all import ItemData, ItemTypeName, abc as smabc
@@ -29,7 +28,7 @@ def get_item_pack_for(inter: Interaction) -> ItemPack:
     # since this can be invoked in item lookup commands
     # which don't require player
     try:
-        player = players.get(inter.author)
+        player = state.players.get(inter.author)
 
     except LookupError:
         return state.item_pack

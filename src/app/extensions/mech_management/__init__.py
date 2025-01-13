@@ -81,7 +81,7 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
             MODULES=sum(1 for item in mech.modules() if item),
             WEIGHT=mech_weight(mech),
         )
-        fields.append((build.name, value))
+        fields.append((build.name.unwrap_or("Unnamed Mech"), value))
 
     # TODO: paginate
     for title, value in fields:
@@ -229,8 +229,15 @@ async def export(
         file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
+    unnamed_counter: int = 0
+
+    def get_unnamed() -> str:
+        nonlocal unnamed_counter
+        unnamed_counter += 1
+        return f"Unnamed Mech {unnamed_counter}"
+
     options = {
-        build.name: str(i)
+        build.name.unwrap_or_else(get_unnamed): str(i)
         for i, build in enumerate(islice(all_builds, ComponentLimits.select_options))
     }
     mech_select = ui.StringSelect(
