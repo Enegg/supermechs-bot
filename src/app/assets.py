@@ -82,7 +82,7 @@ EMOJIS = _config.structure(Emojis, "emojis")
 del _config
 
 
-def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:  # noqa: PLR0911
+def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:
     if weight < 0:
         return EMOJIS.weight_sub_0
     progress = math.floor(rules.safe_weight * 0.9)

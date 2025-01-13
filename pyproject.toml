@@ -51,44 +51,34 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = [
-    "I",     # isort
-    "E",
-    "F",
-    "A",     # shadowing built-ins
-    "RUF",
-    "UP",
-    "PL",    # pylint
-
-    "Q",     # consistent string quotes
-    "FLY",   # static joins
-    "ISC",   # string concatenation
-
-    "D",     # pydocstyle
-
-    "SIM",   # simplifiable logic
-    "C4",    # simplifiable comprehensions
-    "PIE",   # misc
-
-    "G",     # avoid formatting in logging
-    "LOG",   # logging stuff
-
-    "TRY",   # try - except pitfalls
-    "EM",    # don't inline exception messages
-    "RSE",   # skip parens on empty exceptions
-
-    "ANN",   # annotations
-    "ASYNC", # blocking calls in async context
-    "TC",    # type-checking-only imports
-    "FURB",
-    "PTH",   # pathlib > os.path / open
-    "ERA",   # commented out code
+    "ALL",
 ]
 ignore = [
-    "ANN401",  # use of Any
-    "PIE796",  # non-unique enums (that's a job for @unique)
-    "D1",      # don't enforce docstrings for public API
-    "PLC0414", # import foo as foo
-    "TC002",   # move under TYPE_CHECKING
+    "FIX", "TD", # todo, fixme
+    "ARG",       # unused parameters
+    "ANN401",    # use of Any
+    "B005",      # I know str.strip(...) takes a set
+    "BLE001",    # catching Exception; reported in places where exceptions are gathered into a group
+    "COM812",    # don't require commas
+    "C901",      # complex functions oh no
+    "D1",        # don't enforce docstrings for public API
+    "FBT",       # positional bool params; using inlayHints
+    "PLR091",    # too many ...
+    "PLW0603",   # lifetime globals are ok
+    "PD",        # not using pandas
+    "PYI041",    # int | float isn't redundant
+    "PIE796",    # non-unique enums (that's a job for @unique)
+    "PLC0105",   # T_co / T_contra; don't care
+    "PLC0414",   # import foo as foo
+    "RET503",    # "return xyz(...)" where "xyz(...) -> None" is ok
+    "S101",      # assert
+    "SLF001",    # _member access; handled by pyright
+    "S311",      # we don't do cryptography
+    "T201",      # print
+    "TC002",     # move under TYPE_CHECKING
+    "N806",      # LET ME USE CONSTANTS IN FUNCTIONS
+    "N818",      # naming exceptions as *Error
+    "INP001",    # no __init__.py
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -136,20 +126,20 @@ allow-dunder-method-names = [
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
 
+enableTypeIgnoreComments = false  # this is dumb, when enabled suggests using # type: ignore instead of # pyright: ignore[ruleName]
 reportUnnecessaryTypeIgnoreComment = "warning"
 reportUnnecessaryCast = "warning"
 reportUnnecessaryIsInstance = "information"
 
 reportUnknownMemberType = false  # disnake causes plenty errors
-
+disableBytesTypePromotions = true
 deprecateTypingAliases = true
 reportMissingTypeStubs = false
 reportUnusedImport = "warning"
 
 reportImportCycles = true
-
+reportUninitializedInstanceVariable = true
 reportMatchNotExhaustive = "warning"
 reportImplicitOverride = "warning"
 reportOverlappingOverload = "warning"
 reportPrivateUsage = "warning"
-

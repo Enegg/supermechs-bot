@@ -21,11 +21,10 @@ from supermechs.enums import ItemElementName, StatName
 
 
 def embed_mech(mech: smabc.Mech[smabc.ItemData], locale: Locale, name: str) -> Embed:
-    embed = Embed(
+    return Embed(
         title=i18n.get_message(locale, "mech-summary-title", name=name),
         color=color_from_mech(mech),
     ).add_field(i18n.get_message(locale, "mech-summary-field"), format_summary(mech, locale))
-    return embed
 
 
 def get_mech_config(mech: smabc.Mech[smabc.ItemData], /) -> str:
@@ -211,7 +210,7 @@ class MechView:
         self.item_groups = group_items(pack)
         self.init_pages(store)
 
-    def init_pages(self, store: ui.CallbackStore) -> None:  # noqa: PLR0915
+    def init_pages(self, store: ui.CallbackStore) -> None:
         gettext = i18n.get_gettext(self.locale)
 
         @store.bind(ui.ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))

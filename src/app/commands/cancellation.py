@@ -1,6 +1,5 @@
-from discord.commands import CancelKey, get_key
-
 from app.disnake_types import CommandInteraction
+from discord.commands import CancelKey, get_key
 
 CANCEL_BUTTON_ID = "cancelcmd"
 

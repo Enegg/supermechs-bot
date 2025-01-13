@@ -26,7 +26,7 @@ if CONFIG.logs_channel_id is not None:
 
     @plugin.load_hook()
     async def on_load(*, channel_id: int = CONFIG.logs_channel_id) -> None:
-        global _channel  # noqa: PLW0603
+        global _channel
         await plugin.bot.wait_until_first_connect()
         channel = await plugin.bot.fetch_channel(channel_id)
 

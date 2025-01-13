@@ -67,8 +67,7 @@ async def read_http(
         if response.status != http.ResponseStatus.ok:
             return Err(ResponseNotOk(response.status))
 
-        else:
-            return await read_response_content(response, max_size, chunk_size)
+        return await read_response_content(response, max_size, chunk_size)
 
 
 async def read_resource(

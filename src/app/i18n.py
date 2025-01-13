@@ -39,12 +39,12 @@ locale_override: Option[Locale] = Null.null
 
 
 def set_locale_override(locale: Locale) -> None:
-    global locale_override  # noqa: PLW0603
+    global locale_override
     locale_override = Some(locale)
 
 
 def remove_locale_override() -> None:
-    global locale_override  # noqa: PLW0603
+    global locale_override
     locale_override = Null.null
 
 

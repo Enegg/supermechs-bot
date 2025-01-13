@@ -7,7 +7,7 @@ import attrs
 import disnake
 from disnake import ui
 
-__all__ = ("MessageTemplate", "EditMode")
+__all__ = ("EditMode", "MessageTemplate")
 
 Components: TypeAlias = ui.Components[ui.MessageUIComponent]
 

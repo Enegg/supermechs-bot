@@ -24,7 +24,7 @@ _app_and_lib_slocs: tuple[int, int] | None = None
 @plugin.register_loop()
 @tasks.loop(count=1)
 async def read_sloc() -> None:
-    global _app_and_lib_slocs  # noqa: PLW0603
+    global _app_and_lib_slocs
     sm_path = tuple(supermechs.__path__)
     assert len(sm_path) == 1
     slocs_seq = tuple(await amap(get_sloc, "src", sm_path[0]))

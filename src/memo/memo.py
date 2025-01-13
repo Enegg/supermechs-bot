@@ -27,7 +27,7 @@ class Memo(Generic[P, VT, KT]):
     factory: abc.Callable[P, VT] = field(repr=callable_repr)
     """The underlying cached function."""
 
-    key: abc.Callable[P, KT] = field(default=default_key, repr=callable_repr)  # type: ignore[reportAssignmentType]
+    key: abc.Callable[P, KT] = field(default=default_key, repr=callable_repr)  # pyright: ignore[reportAssignmentType]
     """Compute a key for a factory product."""
 
     mapping: dict[KT, VT] = field(factory=dict, init=False)

@@ -15,8 +15,7 @@ def get_item_icon(item: smabc.ItemData, /) -> Resource:
     if item.type == ItemTypeName.SIDE_WEAPON or item.type == ItemTypeName.TOP_WEAPON:  # noqa: PLR1714
         return ASSETS.sided_types[item.type].right.resource
 
-    else:
-        return ASSETS.types[item.type].resource
+    return ASSETS.types[item.type].resource
 
 
 def get_item_by_name(items: abc.Iterable[ItemData], name: str) -> ItemData | None:

@@ -200,4 +200,4 @@ def item_compare_view(
             debug_footer(embed)
 
     layout = [[buffs_button, quit_button]]
-    return layout
+    return layout  # noqa: RET504 https://github.com/astral-sh/ruff/issues/14052

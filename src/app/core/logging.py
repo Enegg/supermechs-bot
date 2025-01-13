@@ -70,7 +70,7 @@ class JsonFormatter(logging.Formatter):
 
         for key, value in record.__dict__.items():
             if key not in BUILTIN_KEYS:
-                message_dict[key] = value
+                message_dict[key] = value  # noqa: PERF403
 
         return orjson.dumps(message_dict, default=str).decode()
 

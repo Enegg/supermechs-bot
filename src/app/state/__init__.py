@@ -72,7 +72,7 @@ def item_pack_factory(data: abc.Mapping[str, Any], /, url: str | None = None) ->
 
 
 async def load_default_pack(session: aiohttp.ClientSession, /) -> None:
-    global item_pack  # noqa: PLW0603
+    global item_pack
     data: JsonObject
     url: str | None
 

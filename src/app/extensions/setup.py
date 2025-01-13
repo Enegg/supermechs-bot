@@ -31,7 +31,7 @@ async def plugin_(inter: CommandInteraction) -> None:
 async def _plugin_helper(
     inter: CommandInteraction, plugin: str | None, func: abc.Callable[[str], None], action: str
 ) -> None:
-    global recently_loaded_plugin  # noqa: PLW0603
+    global recently_loaded_plugin
     plugin = plugin or recently_loaded_plugin
 
     if plugin is None:

@@ -56,7 +56,7 @@ class _ClientSession(aiohttp.ClientSession):
 
 def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
     """Create a client session with client's connector & proxy."""
-    global session  # noqa: PLW0603
+    global session
 
     # .venv/Lib/site-packages/aiohttp/payload.py:396
     # aiohttp wants dumps(Any) -> str, then encodes it
