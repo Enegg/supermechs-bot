@@ -38,9 +38,11 @@ class DeferBlock:
     deferred: list[abc.Callable[[], object]] = attrs.field(factory=list, init=False)
 
     def __call__(self, f: abc.Callable[P, object], /, *args: P.args, **kwargs: P.kwargs) -> None:
-        if not (args or kwargs):
+        if args or kwargs:
+            self.deferred.append(partial(f, *args, **kwargs))
+
+        else:
             self.deferred.append(f)
-        self.deferred.append(partial(f, *args, **kwargs))
 
     def __enter__(self) -> Self:
         return self
@@ -102,9 +104,11 @@ class AsyncDeferBlock:
     deferred: list[AsyncFunc[[], object]] = attrs.field(factory=list, init=False)
 
     def __call__(self, f: AsyncFunc[P, object], /, *args: P.args, **kwargs: P.kwargs) -> None:
-        if not (args or kwargs):
+        if args or kwargs:
+            self.deferred.append(partial(f, *args, **kwargs))
+
+        else:
             self.deferred.append(f)
-        self.deferred.append(partial(f, *args, **kwargs))
 
     async def __aenter__(self) -> Self:
         await anyio.lowlevel.checkpoint()
