@@ -8,7 +8,7 @@ import attrs
 from aiohttp import ClientSession
 from PIL import Image
 
-from app.async_utils import read_content
+from app.core import http
 from app.typeshed import AsyncFunc, Pathish
 from vec2 import Point2D
 
@@ -95,7 +95,7 @@ class FetchImage:
         async with self.session.get(uri) as response:
             response.raise_for_status()
 
-            bio = await read_content(response, self.max_size, self.chunk_size)
+            bio = await http.read_content(response, self.max_size, self.chunk_size)
         return Image.open(bio).convert(mode="RGBA")
 
 
