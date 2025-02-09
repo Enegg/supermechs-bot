@@ -9,7 +9,7 @@ from app.bridges import ui
 from app.core import CONFIG
 from app.models import Player
 from app.plugins_factory import create_plugin
-from defer import AsyncDeferBlock
+from defer import Defer
 
 from supermechs.api import ArenaShop, Category
 
@@ -218,7 +218,7 @@ async def buffs(inter: CommandInteraction, player: Player) -> None:
         "**Arena Shop**", components=view.paginator.page, ephemeral=True
     )
 
-    async with AsyncDeferBlock() as defer:
+    async with Defer() as defer:
         defer(lambda: inter.edit_original_response(components=view.get_state_stopped()))
         await store.listen(timeout=CONFIG.command_timeout)
 

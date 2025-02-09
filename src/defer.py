@@ -1,20 +1,17 @@
 from collections import abc
-from functools import partial, wraps
-from typing import Any, Concatenate, ParamSpec, Self, TypeAlias
+from functools import partial
+from typing import Generic, ParamSpec
 from typing_extensions import TypeVar
 
 import anyio
 import anyio.lowlevel
 import attrs
 
-__all__ = ("AsyncDeferBlock", "DeferBlock")
+__all__ = ("Defer",)
 
 T = TypeVar("T", infer_variance=True)
-RetT = TypeVar("RetT", infer_variance=True)
+RetT = TypeVar("RetT", object, abc.Awaitable[object], infer_variance=True)
 P = ParamSpec("P")
-
-AsyncFunc: TypeAlias = abc.Callable[P, abc.Awaitable[T]]
-CoroFunc: TypeAlias = abc.Callable[P, abc.Coroutine[Any, Any, T]]
 
 # NOTE:
 # If an exception happens both in the body of the context manager as well as in at least one deferred
@@ -23,31 +20,27 @@ CoroFunc: TypeAlias = abc.Callable[P, abc.Coroutine[Any, Any, T]]
 
 
 @attrs.define
-class DeferBlock:
+class Defer(Generic[RetT]):
     """Context manager replicating Golang's `defer` statement.
 
     ### Usage:
     ```
-    with DeferBlock() as defer:
+    with Defer() as defer:
         file = open(...)
         defer(file.close)
         raise RuntimeError("rest assured, we hold no files hostage")
     ```
     """
 
-    deferred: list[abc.Callable[[], object]] = attrs.field(factory=list, init=False)
+    deferred: list[abc.Callable[[], RetT]] = attrs.field(factory=list, init=False)
 
-    def __call__(self, f: abc.Callable[P, object], /, *args: P.args, **kwargs: P.kwargs) -> None:
-        if args or kwargs:
-            self.deferred.append(partial(f, *args, **kwargs))
+    def __call__(self, f: abc.Callable[P, RetT], /, *args: P.args, **kwargs: P.kwargs) -> None:
+        self.deferred.append(partial(f, *args, **kwargs) if args or kwargs else f)
 
-        else:
-            self.deferred.append(f)
-
-    def __enter__(self) -> Self:
+    def __enter__(self: "Defer[object]") -> "Defer[object]":
         return self
 
-    def __exit__(self, _: object, exc: BaseException | None, __: object) -> None:
+    def __exit__(self: "Defer[object]", *_: object) -> None:
         unwind_excs: list[Exception] = []
 
         while self.deferred:
@@ -61,60 +54,13 @@ class DeferBlock:
 
         if unwind_excs:
             msg = "Exceptions while unwinding defer block:"
-            raise ExceptionGroup(msg, unwind_excs) from exc
+            raise ExceptionGroup(msg, unwind_excs)
 
-    @classmethod
-    def inject(cls, func: abc.Callable[Concatenate[Self, P], RetT], /) -> abc.Callable[P, RetT]:
-        """Short-hand for wrapping entire function's body in a defer block."""
-
-        @wraps(func)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> RetT:
-            with cls() as defer:
-                return func(defer, *args, **kwargs)
-
-        return wrapper
-
-    @classmethod
-    def inject_method(
-        cls, method: abc.Callable[Concatenate[T, Self, P], RetT], /
-    ) -> abc.Callable[Concatenate[T, P], RetT]:
-        """Short-hand for wrapping entire method's body in a defer block."""
-
-        @wraps(method)
-        def wrapper(self: T, /, *args: P.args, **kwargs: P.kwargs) -> RetT:
-            with cls() as defer:
-                return method(self, defer, *args, **kwargs)
-
-        return wrapper
-
-
-@attrs.define
-class AsyncDeferBlock:
-    """Async context manager replicating Golang's `defer` statement.
-
-    ### Usage:
-    ```
-    async with AsyncDeferBlock() as defer:
-        session = ClientSession()
-        defer(session.close)
-        raise RuntimeError("rest assured, we hold no sessions hostage")
-    ```
-    """
-
-    deferred: list[AsyncFunc[[], object]] = attrs.field(factory=list, init=False)
-
-    def __call__(self, f: AsyncFunc[P, object], /, *args: P.args, **kwargs: P.kwargs) -> None:
-        if args or kwargs:
-            self.deferred.append(partial(f, *args, **kwargs))
-
-        else:
-            self.deferred.append(f)
-
-    async def __aenter__(self) -> Self:
-        await anyio.lowlevel.checkpoint()
+    async def __aenter__(self: "Defer[abc.Awaitable[object]]") -> "Defer[abc.Awaitable[object]]":
+        await anyio.lowlevel.checkpoint_if_cancelled()
         return self
 
-    async def __aexit__(self, _: object, exc: BaseException | None, __: object) -> None:
+    async def __aexit__(self: "Defer[abc.Awaitable[object]]", *_: object) -> None:
         unwind_excs: list[Exception] = []
 
         with anyio.CancelScope(shield=True):
@@ -129,28 +75,4 @@ class AsyncDeferBlock:
 
             if unwind_excs:
                 msg = "Exceptions while unwinding defer block:"
-                raise ExceptionGroup(msg, unwind_excs) from exc
-
-    @classmethod
-    def inject(cls, func: AsyncFunc[Concatenate[Self, P], RetT], /) -> CoroFunc[P, RetT]:
-        """Short-hand for wrapping entire function's body in a defer block."""
-
-        @wraps(func)
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> RetT:
-            async with cls() as defer:
-                return await func(defer, *args, **kwargs)
-
-        return wrapper
-
-    @classmethod
-    def inject_method(
-        cls, method: AsyncFunc[Concatenate[T, Self, P], RetT], /
-    ) -> CoroFunc[Concatenate[T, P], RetT]:
-        """Short-hand for wrapping entire method's body in a defer block."""
-
-        @wraps(method)
-        async def wrapper(self: T, /, *args: P.args, **kwargs: P.kwargs) -> RetT:
-            async with cls() as defer:
-                return await method(self, defer, *args, **kwargs)
-
-        return wrapper
+                raise ExceptionGroup(msg, unwind_excs)

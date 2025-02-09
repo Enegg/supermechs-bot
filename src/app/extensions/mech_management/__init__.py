@@ -23,7 +23,7 @@ from app.devtools import debug_footer
 from app.models import Player
 from app.plugins_factory import create_plugin
 from app.utils import fold_binary_prefix
-from defer import AsyncDeferBlock
+from defer import Defer
 
 from .mech_manager import MechView
 
@@ -136,7 +136,7 @@ async def build(
     await inter.response.send_message(
         embed=view.embed, file=file, components=view.paginator.page, ephemeral=True
     )
-    async with AsyncDeferBlock() as defer:
+    async with Defer() as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.command_timeout)
 
