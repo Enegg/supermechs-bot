@@ -7,7 +7,7 @@ import attrs
 import disnake
 from disnake import ui
 
-__all__ = ("EditMode", "MessageTemplate")
+__all__ = ("EditMode", "MessageBuilder")
 
 Components: TypeAlias = ui.Components[ui.MessageUIComponent]
 
@@ -34,7 +34,7 @@ class EditParams(TypedDict, total=False):
 
 
 @attrs.define(kw_only=True)
-class MessageTemplate:
+class MessageBuilder:
     content: str | EditMode = attrs.field(default=EditMode.KEEP, kw_only=False)
     embeds: list[disnake.Embed] | Literal[EditMode.KEEP] = EditMode.KEEP
     files: list[disnake.File] | Literal[EditMode.KEEP] = EditMode.KEEP

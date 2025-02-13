@@ -3,7 +3,7 @@ from contextlib import suppress
 
 from app.disnake_types import CommandInteraction
 from discord import EmbedLimits, markdown as md, text_to_file
-from discord.messages import MessageTemplate
+from discord.message_builder import MessageBuilder
 from disnake import Colour, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
@@ -48,9 +48,9 @@ def cancel_button(inter: CommandInteraction, gettext: i18n.GetText) -> ui.Action
 
 def get_user_error_message(
     inter: CommandInteraction, exc: commands.CommandError
-) -> MessageTemplate | None:
+) -> MessageBuilder | None:
     gettext = i18n.get_gettext(inter.locale)
-    info = MessageTemplate()
+    info = MessageBuilder()
 
     match exc:
         case commands.NotOwner():
@@ -82,7 +82,7 @@ def get_user_error_message(
     return info
 
 
-def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageTemplate:
+def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
     arguments = ", ".join(f"`{option}: {value}`" for option, value in inter.filled_options.items())
     header = (
         f"Place: `{inter.guild or inter.channel}`\n"
@@ -91,42 +91,42 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
         f"Exception: `{type(exc).__name__}: {exc}`"
     )
     embed = Embed(title="⚠️ Uncaught exception", color=Colour(0xFF0000))
-    template = MessageTemplate(embeds=[embed])
+    builder = MessageBuilder(embeds=[embed])
     traceback_text = format_exception(exc)
 
     if len(traceback_text) + 10 > EmbedLimits.description:
-        template = template.add_files(text_to_file(traceback_text, "traceback.py"))
+        builder.add_files(text_to_file(traceback_text, "traceback.py"))
         embed.description = header
 
     else:
         embed.description = md.codeblock(traceback_text, "py")
         embed.add_field(INVISIBLE_CHAR, header, inline=False)
 
-    return template
+    return builder
 
 
 @plugin.listener(Event.slash_command_error)
 async def on_slash_command_error(inter: CommandInteraction, exc: commands.CommandError) -> None:
-    if (template := get_user_error_message(inter, exc)) is not None:
+    if (builder := get_user_error_message(inter, exc)) is not None:
         with suppress(InteractionTimedOut):
-            await inter.send(**template.get_send_params(), ephemeral=True)
+            await inter.send(**builder.get_send_params(), ephemeral=True)
         return
 
     error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
     _LOG.exception("Exception in %s", inter.application_command.qualified_name, exc_info=error)
-    template = exception_to_message(error, inter)
+    builder = exception_to_message(error, inter)
 
     if CONFIG.indev:
         try:
-            await inter.send(**template.get_send_params())
+            await inter.send(**builder.get_send_params())
 
         except InteractionTimedOut:
             if _channel is not None:
-                await _channel.send(**template.get_send_params())
+                await _channel.send(**builder.get_send_params())
 
     else:
         if _channel is not None:
-            await _channel.send(**template.get_send_params())
+            await _channel.send(**builder.get_send_params())
 
         with suppress(InteractionTimedOut):
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)
