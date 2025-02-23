@@ -9,6 +9,8 @@ from app import state
 from app.bridges.sm_utils import get_item_pack_for
 from app.bridges.user_input import sanitize_string
 
+from .params import DEFAULT_CHOICE
+
 from supermechs.abc import ItemData
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
@@ -108,10 +110,10 @@ def _get_item_filters(
 ) -> list[abc.Callable[[ItemData], bool]]:
     filters: list[abc.Callable[[ItemData], bool]] = []
 
-    if (target_type := options.get("type", "ANY")) != "ANY":
+    if (target_type := options.get("type", DEFAULT_CHOICE)) != DEFAULT_CHOICE:
         filters.append(lambda item: item.type == target_type)
 
-    if (target_element := options.get("element", "ANY")) != "ANY":
+    if (target_element := options.get("element", DEFAULT_CHOICE)) != DEFAULT_CHOICE:
         filters.append(lambda item: item.element == target_element)
 
     return filters

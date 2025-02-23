@@ -11,7 +11,7 @@ from app.bridges import ui
 from app.bridges.all import embed_image, sikrit_footer
 from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_for
 from app.commands.autocompleters import item_name_autocomplete
-from app.commands.params import ELEMENT_CHOICES, TYPE_CHOICES
+from app.commands.params import DEFAULT_CHOICE, ELEMENT_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
 from app.plugins_factory import create_plugin
 from defer import Defer
@@ -28,8 +28,8 @@ async def item(
     inter: CommandInteraction,
     locale: Locale,
     item: ItemData,
-    type: str = commands.Param("ANY", choices=TYPE_CHOICES),  # noqa: A002
-    element: str = commands.Param("ANY", choices=ELEMENT_CHOICES),
+    type: str = commands.Param(DEFAULT_CHOICE, choices=TYPE_CHOICES),  # noqa: A002
+    element: str = commands.Param(DEFAULT_CHOICE, choices=ELEMENT_CHOICES),
     compact: bool = False,
 ) -> None:
     """Lookup item stats. {{ ITEM }}
@@ -84,8 +84,8 @@ async def item(
 async def item_raw(
     inter: CommandInteraction,
     item: ItemData,
-    type: str = commands.Param("ANY", choices=TYPE_CHOICES),  # noqa: A002
-    element: str = commands.Param("ANY", choices=ELEMENT_CHOICES),
+    type: str = commands.Param(DEFAULT_CHOICE, choices=TYPE_CHOICES),  # noqa: A002
+    element: str = commands.Param(DEFAULT_CHOICE, choices=ELEMENT_CHOICES),
 ) -> None:
     """Lookup raw item stats. {{ ITEM }}
 
@@ -111,21 +111,21 @@ def str_elem(element: smabc.ItemElement) -> str:
 async def compare(
     inter: CommandInteraction,
     locale: Locale,
-    item1_name: str = commands.Param(name="item1", autocomplete=item_name_autocomplete),
-    item2_name: str = commands.Param(name="item2", autocomplete=item_name_autocomplete),
+    item_a_name: str = commands.Param(name="item1", autocomplete=item_name_autocomplete),
+    item_b_name: str = commands.Param(name="item2", autocomplete=item_name_autocomplete),
 ) -> None:
     """Interactive comparison between two items. {{ COMPARE }}
 
     Parameters
     ----------
-    item1_name:
+    item_a_name:
         First item to compare. {{ COMPARE_FIRST }}
-    item2_name:
+    item_b_name:
         Second item to compare. {{ COMPARE_SECOND }}
     """  # noqa: D400
     item_pack = get_item_pack_for(inter)
-    item_a = get_item_by_name(item_pack.items.values(), item1_name)
-    item_b = get_item_by_name(item_pack.items.values(), item2_name)
+    item_a = get_item_by_name(item_pack.items.values(), item_a_name)
+    item_b = get_item_by_name(item_pack.items.values(), item_b_name)
 
     if item_a is None or item_b is None:
         raise commands.UserInputError  # TODO
