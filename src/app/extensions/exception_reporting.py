@@ -3,6 +3,7 @@ from contextlib import suppress
 
 from app.disnake_types import CommandInteraction
 from discord import EmbedLimits, markdown as md, text_to_file
+from discord.interactions import inter_to_mention
 from discord.message_builder import MessageBuilder
 from disnake import Colour, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
@@ -87,8 +88,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     header = (
         f"Place: `{inter.guild or inter.channel}`\n"
         f"User: {inter.author.mention} (`{inter.author.display_name}`)\n"
-        f"Command: `/{inter.application_command.qualified_name}` {arguments}\n"
-        f"Exception: `{type(exc).__name__}: {exc}`"
+        f"Command: {inter_to_mention(inter)} {arguments}"
     )
     embed = Embed(title="⚠️ Uncaught exception", color=Colour(0xFF0000))
     builder = MessageBuilder(embeds=[embed])
@@ -96,7 +96,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
 
     if len(traceback_text) + 10 > EmbedLimits.description:
         builder.add_files(text_to_file(traceback_text, "traceback.py"))
-        embed.description = header
+        embed.description = f"{header}\nException: `{type(exc).__name__}: {exc}`"
 
     else:
         embed.description = md.codeblock(traceback_text, "py")
