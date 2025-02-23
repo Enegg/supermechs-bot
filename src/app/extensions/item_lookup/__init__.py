@@ -75,7 +75,7 @@ async def item(
     store = ui.callback_store(inter)
     layout = item_view(store, embed, item, locale, compact)
     await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
-    async with Defer() as defer:
+    async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.command_timeout)
 
@@ -162,7 +162,7 @@ async def compare(
     store = ui.callback_store(inter)
     layout = item_compare_view(store, embed, item_a, item_b, locale)
     await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
-    async with Defer() as defer:
+    async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.command_timeout)
 

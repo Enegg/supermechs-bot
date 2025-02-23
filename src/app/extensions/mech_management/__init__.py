@@ -136,7 +136,7 @@ async def build(
     await inter.response.send_message(
         embed=view.embed, file=file, components=view.paginator.page, ephemeral=True
     )
-    async with Defer() as defer:
+    async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.command_timeout)
 

@@ -1,6 +1,7 @@
 from collections import abc
+from contextlib import nullcontext
 from functools import partial
-from typing import Generic, ParamSpec
+from typing import Generic, ParamSpec, final
 from typing_extensions import TypeVar
 
 import anyio
@@ -19,6 +20,7 @@ P = ParamSpec("P")
 # by them. Consequently, something like a CancelledError from within the block won't be propagated.
 
 
+@final  # typing and injections would surely break
 @attrs.define
 class Defer(Generic[RetT]):
     """Context manager replicating Golang's `defer` statement.
@@ -30,8 +32,15 @@ class Defer(Generic[RetT]):
         defer(file.close)
         raise RuntimeError("rest assured, we hold no files hostage")
     ```
+
+    Parameters
+    ----------
+    shield: bool, optional
+        When used in an `async with` block, this parameter controls whether the deferred calls
+        should be shielded from cancellation.
     """
 
+    shield: bool = attrs.field(default=False, kw_only=True)
     deferred: list[abc.Callable[[], RetT]] = attrs.field(factory=list, init=False)
 
     def __call__(self, f: abc.Callable[P, RetT], /, *args: P.args, **kwargs: P.kwargs) -> None:
@@ -63,7 +72,7 @@ class Defer(Generic[RetT]):
     async def __aexit__(self: "Defer[abc.Awaitable[object]]", *_: object) -> None:
         unwind_excs: list[Exception] = []
 
-        with anyio.CancelScope(shield=True):
+        with anyio.CancelScope(shield=True) if self.shield else nullcontext():
             while self.deferred:
                 func = self.deferred.pop()
 

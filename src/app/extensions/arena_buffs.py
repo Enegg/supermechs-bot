@@ -218,7 +218,7 @@ async def buffs(inter: CommandInteraction, player: Player) -> None:
         "**Arena Shop**", components=view.paginator.page, ephemeral=True
     )
 
-    async with Defer() as defer:
+    async with Defer(shield=True) as defer:
         defer(lambda: inter.edit_original_response(components=view.get_state_stopped()))
         await store.listen(timeout=CONFIG.command_timeout)
 
