@@ -12,11 +12,11 @@ from app.core import http
 from app.typeshed import AsyncFunc, Pathish
 from vec2 import Point2D
 
-from supermechs.all import ItemTypeName, abc as smabc
+import supermechs.all as sm
 
 _LOG = logging.getLogger(__name__)
 
-SpriteKey: TypeAlias = tuple[smabc.ItemID, smabc.StageTier]
+SpriteKey: TypeAlias = tuple[sm.abc.ItemID, sm.abc.StageTier]
 ImageLoader: TypeAlias = AsyncFunc[[str], Image.Image]
 Processor: TypeAlias = abc.Callable[[Image.Image], Image.Image]
 
@@ -47,11 +47,11 @@ class Rectangular(Protocol):
     def height(self) -> int: ...
 
 
-def create_synthetic_joints(type: smabc.ItemType, rect: Rectangular) -> Joints:  # noqa: A002
-    if type == ItemTypeName.PERK:
+def create_synthetic_joints(type: sm.abc.ItemType, rect: Rectangular) -> Joints:  # noqa: A002
+    if type == sm.ItemTypeName.PERK:
         return Joints(torso=Point2D(0.5 * rect.width))
 
-    if type == ItemTypeName.TORSO:
+    if type == sm.ItemTypeName.TORSO:
         return Joints(
             hat=Point2D(0.5 * rect.width, 0.1 * rect.height),
             leg_1=Point2D(0.4 * rect.width, 0.9 * rect.height),
@@ -64,13 +64,13 @@ def create_synthetic_joints(type: smabc.ItemType, rect: Rectangular) -> Joints: 
             top_weapon_2=Point2D(0.75 * rect.width, 0.1 * rect.height),
         )
 
-    if type == ItemTypeName.LEGS:
+    if type == sm.ItemTypeName.LEGS:
         return Joints(torso=Point2D(0.5 * rect.width, 0.1 * rect.height))
 
-    if type == ItemTypeName.SIDE_WEAPON:
+    if type == sm.ItemTypeName.SIDE_WEAPON:
         return Joints(torso=Point2D(0.3 * rect.width, 0.5 * rect.height))
 
-    if type == ItemTypeName.TOP_WEAPON:
+    if type == sm.ItemTypeName.TOP_WEAPON:
         return Joints(torso=Point2D(0.3 * rect.width, 0.8 * rect.height))
 
     return Joints.ZERO

@@ -8,18 +8,17 @@ from app.models import Player
 
 from .autocompleters import item_name_autocomplete
 
-from supermechs.all import ItemData
+import supermechs.all as sm
 
 __all__ = ("register_injections",)
 
+
 # NOTE: disnake does not accept pos-only params
-
-
 def _inject_locale(inter: CommandInteraction) -> disnake.Locale:
     return i18n.locale_override.unwrap_or(inter.locale)
 
 
-def _inject_item(inter: CommandInteraction, name: str) -> ItemData:
+def _inject_item(inter: CommandInteraction, name: str) -> sm.ItemData:
     """Injection taking Item name and returning ItemData.
 
     Parameters

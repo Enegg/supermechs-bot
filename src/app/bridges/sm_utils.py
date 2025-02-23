@@ -8,17 +8,17 @@ from app.assets import ASSETS
 from app.models import ItemPack
 from resources import Resource
 
-from supermechs.all import ItemData, ItemTypeName, abc as smabc
+import supermechs.all as sm
 
 
-def get_item_icon(item: smabc.ItemData, /) -> Resource:
-    if item.type == ItemTypeName.SIDE_WEAPON or item.type == ItemTypeName.TOP_WEAPON:  # noqa: PLR1714
+def get_item_icon(item: sm.abc.ItemData, /) -> Resource:
+    if item.type == sm.ItemTypeName.SIDE_WEAPON or item.type == sm.ItemTypeName.TOP_WEAPON:  # noqa: PLR1714
         return ASSETS.sided_types[item.type].right.resource
 
     return ASSETS.types[item.type].resource
 
 
-def get_item_by_name(items: abc.Iterable[ItemData], name: str) -> ItemData | None:
+def get_item_by_name(items: abc.Iterable[sm.ItemData], name: str) -> sm.ItemData | None:
     return get_matching(items, name=name)
 
 

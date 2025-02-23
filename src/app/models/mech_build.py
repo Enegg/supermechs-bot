@@ -10,7 +10,7 @@ from app.utils import utcnow
 
 from .item_pack import ItemPack
 
-from supermechs.abc import ItemID, MechSlot
+import supermechs.all as sm
 from supermechs.item import Item
 from supermechs.mech import Mech
 
@@ -22,7 +22,7 @@ BuildId = NewType("BuildId", uuid.UUID)
 @attrs.define(kw_only=True, frozen=True)
 class PartialMechBuild:
     id: BuildId
-    mech: abc.Mapping[MechSlot, ItemID]
+    mech: abc.Mapping[sm.abc.MechSlot, sm.abc.ItemID]
     created_at: datetime
     name: Option[str]
     modified_at: datetime

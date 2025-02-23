@@ -15,37 +15,29 @@ from smparse.packs.models import (
     PackBase,
 )
 
-from supermechs.all import (
-    ItemData,
-    ItemElementName,
-    ItemStats,
-    ItemTagName,
-    ItemTypeName,
-    StageLevel,
-    StageTierName,
-    TransformStage,
-    abc as smabc,
-)
+import supermechs.all as sm
 
-ItemDict: TypeAlias = dict[smabc.ItemID, ItemData]
+ItemDict: TypeAlias = dict[sm.abc.ItemID, sm.ItemData]
 
-KNOWN_TAGS = frozenset(map(smabc.ItemTag, ItemTagName))
+KNOWN_TAGS = frozenset(map(sm.abc.ItemTag, sm.ItemTagName))
 
 
 def structure_item(
-    data: ItemBase, gen_id: abc.Callable[[int], smabc.ItemID], stages: abc.Sequence[TransformStage]
-) -> ItemData:
-    return ItemData(
+    data: ItemBase,
+    gen_id: abc.Callable[[int], sm.abc.ItemID],
+    stages: abc.Sequence[sm.TransformStage],
+) -> sm.ItemData:
+    return sm.ItemData(
         id=gen_id(data.id),
         name=data.name.unwrap_or("Item"),
-        type=smabc.ItemType(data.type.unwrap_or(ItemTypeName.PERK)),
-        element=smabc.ItemElement(data.element.unwrap_or(ItemElementName.PHYSICAL)),
+        type=sm.abc.ItemType(data.type.unwrap_or(sm.ItemTypeName.PERK)),
+        element=sm.abc.ItemElement(data.element.unwrap_or(sm.ItemElementName.PHYSICAL)),
         tags=KNOWN_TAGS.intersection(data.tags),
         stages=stages,
     )
 
 
-def structure_stages_v1(data: ItemV1) -> abc.Sequence[TransformStage]:
+def structure_stages_v1(data: ItemV1) -> abc.Sequence[sm.TransformStage]:
     low, _, hi = data.transform_range.partition("-")
 
     if not hi:
@@ -61,11 +53,11 @@ def structure_stages_v1(data: ItemV1) -> abc.Sequence[TransformStage]:
         hi = "c"
 
     tier_name = next(
-        (member for member in StageTierName if member.startswith(hi)), StageTierName.COMMON
+        (member for member in sm.StageTierName if member.startswith(hi)), sm.StageTierName.COMMON
     )
 
-    level = StageLevel(power=0, stats=data.stats)
-    stage = TransformStage(tier=smabc.StageTier(tier_name), levels=(level,))
+    level = sm.StageLevel(power=0, stats=data.stats)
+    stage = sm.TransformStage(tier=sm.abc.StageTier(tier_name), levels=(level,))
     return (stage,)
 
 
@@ -74,12 +66,12 @@ def lerp(value1: float, value2: float, weight: float) -> float:
 
 
 def interpolate(
-    start: ItemStats, end: ItemStats | None, power_levels: abc.Sequence[int]
-) -> abc.Sequence[StageLevel]:
+    start: sm.ItemStats, end: sm.ItemStats | None, power_levels: abc.Sequence[int]
+) -> abc.Sequence[sm.StageLevel]:
     if end is None:
-        return (StageLevel(power=power_levels[0], stats=start),)
+        return (sm.StageLevel(power=power_levels[0], stats=start),)
 
-    levels: list[StageLevel] = []
+    levels: list[sm.StageLevel] = []
 
     start_dict = asdict(start, recurse=False)
     end_dict = asdict(end, recurse=False)
@@ -101,59 +93,63 @@ def interpolate(
             else:
                 interpolated[key] = value1
 
-        stats = ItemStats(**interpolated)
-        levels.append(StageLevel(power=power, stats=stats))
+        stats = sm.ItemStats(**interpolated)
+        levels.append(sm.StageLevel(power=power, stats=stats))
 
     return tuple(levels)
 
 
-def make_levels() -> abc.Sequence[StageLevel]: ...
+def make_levels() -> abc.Sequence[sm.StageLevel]: ...
 
 
-def structure_stages_v3(data: ItemV3) -> abc.Sequence[TransformStage]:
+def structure_stages_v3(data: ItemV3) -> abc.Sequence[sm.TransformStage]:
     # TODO: non-base stat objects rely on base stats (see 0 weight on rare+)
-    stages: list[TransformStage] = []
+    stages: list[sm.TransformStage] = []
 
     if data.common is not None:
-        end = data.max_common or ItemStats.zeros
+        end = data.max_common or sm.ItemStats.zeros
         levels = interpolate(data.common, end, range(10))
-        common = TransformStage(tier=smabc.StageTier(StageTierName.COMMON), levels=levels)
+        common = sm.TransformStage(tier=sm.abc.StageTier(sm.StageTierName.COMMON), levels=levels)
         stages.append(common)
 
     if data.rare is not None:
         levels = interpolate(data.rare, data.max_rare, range(20))
-        rare = TransformStage(tier=smabc.StageTier(StageTierName.RARE), levels=levels)
+        rare = sm.TransformStage(tier=sm.abc.StageTier(sm.StageTierName.RARE), levels=levels)
         stages.append(rare)
 
     if data.epic is not None:
         levels = interpolate(data.epic, data.max_epic, range(30))
-        epic = TransformStage(tier=smabc.StageTier(StageTierName.EPIC), levels=levels)
+        epic = sm.TransformStage(tier=sm.abc.StageTier(sm.StageTierName.EPIC), levels=levels)
         stages.append(epic)
 
     if data.legendary is not None:
         levels = interpolate(data.legendary, data.max_legendary, range(40))
-        legendary = TransformStage(tier=smabc.StageTier(StageTierName.LEGENDARY), levels=levels)
+        legendary = sm.TransformStage(
+            tier=sm.abc.StageTier(sm.StageTierName.LEGENDARY), levels=levels
+        )
         stages.append(legendary)
 
     if data.mythical is not None:
         levels = interpolate(data.mythical, data.max_mythical, range(50))
-        mythical = TransformStage(tier=smabc.StageTier(StageTierName.MYTHICAL), levels=levels)
+        mythical = sm.TransformStage(
+            tier=sm.abc.StageTier(sm.StageTierName.MYTHICAL), levels=levels
+        )
         stages.append(mythical)
 
     if data.divine is not None:
-        level = StageLevel(power=0, stats=data.divine)
-        divine = TransformStage(tier=smabc.StageTier(StageTierName.DIVINE), levels=(level,))
+        level = sm.StageLevel(power=0, stats=data.divine)
+        divine = sm.TransformStage(tier=sm.abc.StageTier(sm.StageTierName.DIVINE), levels=(level,))
         stages.append(divine)
 
     return tuple(stages)
 
 
-def gen_id(key: str, id: int) -> smabc.ItemID:
-    return smabc.ItemID(f"{id}{key}")
+def gen_id(key: str, id: int) -> sm.abc.ItemID:
+    return sm.abc.ItemID(f"{id}{key}")
 
 
 def restructure(pack: AnyItemPack, /) -> tuple[PackBase, ItemDict]:
-    items: dict[smabc.ItemID, ItemData] = {}
+    items: dict[sm.abc.ItemID, sm.ItemData] = {}
 
     match pack:
         case ItemPackV1(config=config, items=raw_items):

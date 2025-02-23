@@ -18,7 +18,7 @@ from defer import Defer
 
 from .item_lookup import item_compare_view, item_view
 
-from supermechs.all import ItemData, abc as smabc
+import supermechs.all as sm
 
 plugin = create_plugin(__name__)
 
@@ -27,7 +27,7 @@ plugin = create_plugin(__name__)
 async def item(
     inter: CommandInteraction,
     locale: Locale,
-    item: ItemData,
+    item: sm.ItemData,
     type: str = commands.Param(DEFAULT_CHOICE, choices=TYPE_CHOICES),  # noqa: A002
     element: str = commands.Param(DEFAULT_CHOICE, choices=ELEMENT_CHOICES),
     compact: bool = False,
@@ -83,7 +83,7 @@ async def item(
 @plugin.slash_command(guild_ids=CONFIG.test_guild_ids)
 async def item_raw(
     inter: CommandInteraction,
-    item: ItemData,
+    item: sm.ItemData,
     type: str = commands.Param(DEFAULT_CHOICE, choices=TYPE_CHOICES),  # noqa: A002
     element: str = commands.Param(DEFAULT_CHOICE, choices=ELEMENT_CHOICES),
 ) -> None:
@@ -99,11 +99,11 @@ async def item_raw(
     await inter.response.send_message(f"`{item!r:.{MessageLimits.content - 2}}`", ephemeral=True)
 
 
-def str_type(type: smabc.ItemType) -> str:  # noqa: A002
+def str_type(type: sm.abc.ItemType) -> str:  # noqa: A002
     return type.replace("_", " ").lower()
 
 
-def str_elem(element: smabc.ItemElement) -> str:
+def str_elem(element: sm.abc.ItemElement) -> str:
     return element.capitalize()
 
 

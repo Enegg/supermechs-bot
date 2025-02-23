@@ -4,7 +4,7 @@ from functools import partial
 from itertools import islice
 
 from supermechs.abc.stats import StatsMapping, StatType
-from supermechs.api import Stat
+from supermechs.all import Stat
 
 
 def format_float(num: float, decimals: int) -> str:

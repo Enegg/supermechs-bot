@@ -11,7 +11,7 @@ from app.models import Player
 from app.plugins_factory import create_plugin
 from defer import Defer
 
-from supermechs.api import ArenaShop, Category
+from supermechs.all import ArenaShop, Category
 
 plugin = create_plugin(__name__)
 

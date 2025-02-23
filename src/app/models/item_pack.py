@@ -17,7 +17,7 @@ from .graphics import (
     read_image,
 )
 
-from supermechs.all import ItemData, abc as smabc
+import supermechs.all as sm
 
 __all__ = ("ItemPack", "PackKey")
 
@@ -37,7 +37,7 @@ class ItemPack:
     description: Option[str] = Null.null
     url: str | None = None
 
-    items: abc.Mapping[smabc.ItemID, ItemData] = attrs.field(factory=dict, repr=limited_repr)
+    items: abc.Mapping[sm.abc.ItemID, sm.ItemData] = attrs.field(factory=dict, repr=limited_repr)
     image_requests: abc.MutableMapping[SpriteKey, ImageRequest] = attrs.field(
         factory=dict, repr=limited_repr
     )
@@ -45,11 +45,11 @@ class ItemPack:
         factory=dict, repr=limited_repr
     )
 
-    def get_item(self, item_id: smabc.ItemID, /) -> ItemData:
+    def get_item(self, item_id: sm.abc.ItemID, /) -> sm.ItemData:
         """Lookup an item by its ID."""
         return self.items[item_id]
 
-    def get_sprite(self, item_id: smabc.ItemID, /, tier: smabc.StageTier) -> Sprite:
+    def get_sprite(self, item_id: sm.abc.ItemID, /, tier: sm.abc.StageTier) -> Sprite:
         """Lookup item's sprite."""
         key = (item_id, tier)
 

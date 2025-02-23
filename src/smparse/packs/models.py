@@ -5,7 +5,7 @@ import attrs
 import attrs.validators as v
 from monads.option import Null, Option
 
-from supermechs.all import ItemStats
+import supermechs.all as sm
 
 LiteralType: TypeAlias = Literal[
     "TORSO",
@@ -43,7 +43,7 @@ class PackBase:
 # ------------------------------------------- version 1 --------------------------------------------
 @attrs.define(kw_only=True)
 class ItemV1(ItemBase):
-    stats: ItemStats = attrs.field(factory=ItemStats)
+    stats: sm.ItemStats = attrs.field(factory=sm.ItemStats)
 
 
 @attrs.define(kw_only=True)
@@ -65,17 +65,17 @@ class ItemPackV2(PackBase):
 @attrs.define(kw_only=True)
 class ItemV3(ItemBase):
     # fmt: off
-    common:        ItemStats | None = None
-    max_common:    ItemStats | None = None
-    rare:          ItemStats | None = None
-    max_rare:      ItemStats | None = None
-    epic:          ItemStats | None = None
-    max_epic:      ItemStats | None = None
-    legendary:     ItemStats | None = None
-    max_legendary: ItemStats | None = None
-    mythical:      ItemStats | None = None
-    max_mythical:  ItemStats | None = None
-    divine:        ItemStats | None = None
+    common:        sm.ItemStats | None = None
+    max_common:    sm.ItemStats | None = None
+    rare:          sm.ItemStats | None = None
+    max_rare:      sm.ItemStats | None = None
+    epic:          sm.ItemStats | None = None
+    max_epic:      sm.ItemStats | None = None
+    legendary:     sm.ItemStats | None = None
+    max_legendary: sm.ItemStats | None = None
+    mythical:      sm.ItemStats | None = None
+    max_mythical:  sm.ItemStats | None = None
+    divine:        sm.ItemStats | None = None
     # fmt: on
 
 

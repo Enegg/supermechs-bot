@@ -11,7 +11,7 @@ from app.bridges.user_input import sanitize_string
 
 from .params import DEFAULT_CHOICE
 
-from supermechs.abc import ItemData
+import supermechs.all as sm
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
@@ -107,8 +107,8 @@ def find_matches(names: abc.Iterable[str], phrase: str) -> list[MatchResult]:
 
 def _get_item_filters(
     options: abc.Mapping[str, Any], /
-) -> list[abc.Callable[[ItemData], bool]]:
-    filters: list[abc.Callable[[ItemData], bool]] = []
+) -> list[abc.Callable[[sm.abc.ItemData], bool]]:
+    filters: list[abc.Callable[[sm.abc.ItemData], bool]] = []
 
     if (target_type := options.get("type", DEFAULT_CHOICE)) != DEFAULT_CHOICE:
         filters.append(lambda item: item.type == target_type)

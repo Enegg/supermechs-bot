@@ -16,18 +16,18 @@ from app.bridges.all import embed_image
 from app.devtools import debug_footer
 from app.models import ItemPack, MechBuild, Player
 
-from supermechs.all import ItemTypeName, Mech, abc as smabc, dominant_element, mech_summary
-from supermechs.enums import ItemElementName, StatName
+import supermechs.all as sm
+from supermechs.enums import ItemElementName, ItemTypeName, StatName
 
 
-def embed_mech(mech: smabc.Mech[smabc.ItemData], locale: Locale, name: str) -> Embed:
+def embed_mech(mech: sm.abc.Mech[sm.abc.ItemData], locale: Locale, name: str) -> Embed:
     return Embed(
         title=i18n.get_message(locale, "mech-summary-title", name=name),
         color=color_from_mech(mech),
     ).add_field(i18n.get_message(locale, "mech-summary-field"), format_summary(mech, locale))
 
 
-def get_mech_config(mech: smabc.Mech[smabc.ItemData], /) -> str:
+def get_mech_config(mech: sm.abc.Mech[sm.abc.ItemData], /) -> str:
     """Return a string of IDs of items visible on image."""
     items = (mech.torso, mech.legs, mech.drone)
     items = chain(items, mech.side_weapons(), mech.top_weapons())
@@ -35,7 +35,7 @@ def get_mech_config(mech: smabc.Mech[smabc.ItemData], /) -> str:
 
 
 def format_summary(
-    mech: Mech[smabc.HasStats], locale: Locale, buff_with: object | None = None
+    mech: sm.Mech[sm.abc.HasStats], locale: Locale, buff_with: object | None = None
 ) -> str:
     """Return a string of lines formatted with mech stats.
 
@@ -48,7 +48,7 @@ def format_summary(
     buff_with: optional
         `ArenaShop` to apply buffs from.
     """
-    summary = mech_summary(mech)
+    summary = sm.mech_summary(mech)
     values = attrs.asdict(summary, recurse=False)
     del values[StatName.weight]
 
@@ -67,7 +67,7 @@ def format_summary(
     return "\n".join(parts)
 
 
-def slot_emoji(slot: smabc.MechSlot, /) -> str:
+def slot_emoji(slot: sm.abc.MechSlot, /) -> str:
     """Return the emoji representing a slot, with respect to the right & left variants."""
     if slot.startswith(("top", "side")):
         slot_name, _, index = slot.rpartition("_")
@@ -78,8 +78,8 @@ def slot_emoji(slot: smabc.MechSlot, /) -> str:
 
 
 def sorted_options(
-    options: abc.Mapping[smabc.ItemElement, list[ui.SelectOption]],
-    primary_element: smabc.ItemElement | None,
+    options: abc.Mapping[sm.abc.ItemElement, list[ui.SelectOption]],
+    primary_element: sm.abc.ItemElement | None,
     /,
 ) -> list[ui.SelectOption]:
     """Return a list of `SelectOption`s sorted by element.
@@ -103,7 +103,7 @@ def sorted_options(
             element_order.remove(primary_element)
             element_order.insert(0, primary_element)
 
-        it = (options[smabc.ItemElement(key)] for key in element_order)
+        it = (options[sm.abc.ItemElement(key)] for key in element_order)
 
     for option_list in it:
         all_options += option_list
@@ -111,8 +111,8 @@ def sorted_options(
     return all_options
 
 
-def color_from_mech(mech: smabc.Mech[smabc.ItemData], /) -> EmbedColorType:
-    element = dominant_element(mech)
+def color_from_mech(mech: sm.abc.Mech[sm.abc.ItemData], /) -> EmbedColorType:
+    element = sm.dominant_element(mech)
 
     if element is None:
         if mech.torso is None:
@@ -137,7 +137,9 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[ui.SelectOpt
         type_: {
             element: [
                 ui.SelectOption(
-                    label=item.name, value=str(item.id), emoji=ASSETS.elements[item.element.name].emoji
+                    label=item.name,
+                    value=str(item.id),
+                    emoji=ASSETS.elements[item.element.name].emoji,
                 )
                 for item in items
             ]
@@ -158,7 +160,7 @@ def make_empty_option(locale: Locale, /) -> ui.SelectOption:
 
 class MechView:
     store: ui.CallbackStore
-    mech: Mech[Item]
+    mech: sm.Mech[Item]
     pack: ItemPack
     arena_shop: ArenaShop
     embed: Embed
@@ -399,7 +401,7 @@ class MechView:
     def update_dropdown(self, button: ui.ToggleButton, /) -> None:
         slot = self.id_to_slot[button.custom_id]
         options = self.item_groups[slot[0] if isinstance(slot, tuple) else slot]
-        element = dominant_element(self.mech)
+        element = sm.dominant_element(self.mech)
         self.select.all_options = [self.empty_option, *sorted_options(options, element)]
         item = self.mech[slot]
         self.select.placeholder = self.empty_option.label if item is None else item.name
