@@ -4,11 +4,12 @@ from functools import partial
 from app.disnake_types import CommandInteraction
 from discord.commands import register_cancellable
 
-from app.assets import ASSETS, INVISIBLE_CHAR
+from app.assets import ASSETS
 from app.bridges import ui
 from app.core import CONFIG
 from app.models import Player
 from app.plugins_factory import create_plugin
+from app.text_utils import Char
 from defer import Defer
 
 from supermechs.all import ArenaShop, Category
@@ -28,7 +29,7 @@ def iter_category(category: Category, /) -> abc.Iterator[str]:
 
 
 def make_label(shop: ArenaShop, category: Category, /) -> str:
-    return format_value(category, shop[category]).rjust(4, INVISIBLE_CHAR)
+    return format_value(category, shop[category]).rjust(4, Char.BLANK)
 
 
 class ArenaShopView:

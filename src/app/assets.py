@@ -2,7 +2,7 @@
 
 import math
 from collections import abc
-from typing import Final, Generic
+from typing import Generic
 
 import attrs
 import cattrs
@@ -19,8 +19,6 @@ from supermechs.gamerules import BuildRules
 
 __all__ = ("ASSETS", "get_weight_emoji")
 
-INVISIBLE_CHAR: Final = "\u2800"
-"""Invisible character discord does not truncate."""
 
 @cattrs.global_converter.register_structure_hook
 def _structure_color(value: int, cls: type) -> Color:

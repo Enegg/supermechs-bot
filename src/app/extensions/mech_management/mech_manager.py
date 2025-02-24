@@ -10,11 +10,12 @@ from disnake import Embed, Locale
 from disnake.utils import MISSING
 
 from app import i18n
-from app.assets import ASSETS, INVISIBLE_CHAR, get_weight_emoji
+from app.assets import ASSETS, get_weight_emoji
 from app.bridges import ui
 from app.bridges.all import embed_image
 from app.devtools import debug_footer
 from app.models import ItemPack, MechBuild, Player
+from app.text_utils import Char
 
 import supermechs.all as sm
 from supermechs.enums import ItemElementName, ItemTypeName, StatName
@@ -185,8 +186,7 @@ class MechView:
         ),
     )  # fmt: skip
     DUMMY_BUTTONS = tuple(
-        ui.ActionButton(label=INVISIBLE_CHAR, disabled=True, custom_id=f"$dummy{n}")
-        for n in range(4)
+        ui.ActionButton(label=Char.BLANK, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
     )
     PAGE_EMOJI = (ASSETS.types[ItemTypeName.MODULE].emoji, ASSETS.types[ItemTypeName.TORSO].emoji)
 

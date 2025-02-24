@@ -7,7 +7,7 @@ from discord import AutocompleteReturnType, InteractionLimits
 
 from app import state
 from app.bridges.sm_utils import get_item_pack_for
-from app.bridges.user_input import sanitize_string
+from app.text_utils import sanitize_string
 
 from .params import DEFAULT_CHOICE
 

@@ -1,9 +1,16 @@
-from enum import Enum
-
-__all__ = ("StringLimits", "sanitize_string")
+import enum
 
 
-class StringLimits(int, Enum):
+class Char(str, enum.Enum):
+    """Non-keyboard characters."""
+
+    TRIPLE_DOT = "…"
+    """Single character form of `...`."""
+    BLANK = "\u2800"
+    """Braille blank. Useful in places discord truncates normal space."""
+
+
+class StringLimits(enum.IntEnum):
     """Arbitrary length limits of various kinds of strings."""
 
     names = 32

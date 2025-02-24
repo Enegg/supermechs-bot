@@ -10,11 +10,11 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 
 from app import i18n
-from app.assets import INVISIBLE_CHAR
 from app.bridges import ui
 from app.commands.cancellation import make_id
 from app.core import CONFIG
 from app.plugins_factory import create_plugin
+from app.text_utils import Char
 from app.utils import format_exception
 
 plugin = create_plugin(__name__)
@@ -100,7 +100,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
 
     else:
         embed.description = md.codeblock(traceback_text, "py")
-        embed.add_field(INVISIBLE_CHAR, header, inline=False)
+        embed.add_field(Char.BLANK, header, inline=False)
 
     return builder
 

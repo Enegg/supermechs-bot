@@ -15,13 +15,14 @@ from disnake.utils import MISSING
 from app import i18n
 from app.assets import ASSETS
 from app.bridges import ui
-from app.bridges.all import StringLimits, embed_image, sanitize_string, sikrit_footer
+from app.bridges.embeds import embed_image, sikrit_footer
 from app.bridges.sm_utils import get_item_pack_for
 from app.commands.autocompleters import mech_name_autocomplete
 from app.core import CONFIG
 from app.devtools import debug_footer
 from app.models import Player
 from app.plugins_factory import create_plugin
+from app.text_utils import StringLimits, sanitize_string
 from app.utils import fold_binary_prefix
 from defer import Defer
 

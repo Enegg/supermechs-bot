@@ -4,9 +4,10 @@ from itertools import zip_longest
 from disnake import Embed, Locale
 
 from app import i18n
-from app.assets import ASSETS, INVISIBLE_CHAR
+from app.assets import ASSETS
 from app.bridges import ui
 from app.devtools import debug_footer
+from app.text_utils import Char
 
 from .helpers import get_row_width, iter_formatted_stats, try_shorten
 
@@ -140,7 +141,7 @@ def compact_fields(
     field_text = ("\n".join(lines[i : i + div]) for i in range(0, line_count, div))
     transform_range = item_transform_range(item)
 
-    for name, field in zip_longest((transform_range,), field_text, fillvalue=INVISIBLE_CHAR):
+    for name, field in zip_longest((transform_range,), field_text, fillvalue=Char.BLANK):
         embed.add_field(name, field)
 
 
