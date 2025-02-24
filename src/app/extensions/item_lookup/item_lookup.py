@@ -3,9 +3,8 @@ from itertools import zip_longest
 
 from disnake import Embed, Locale
 
-from app import i18n
+from app import i18n, ui
 from app.assets import ASSETS
-from app.bridges import ui
 from app.devtools import debug_footer
 from app.text_utils import Char
 

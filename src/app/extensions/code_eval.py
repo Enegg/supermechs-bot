@@ -14,7 +14,7 @@ from discord import MessageLimits, markdown as md, text_to_file
 from discord.ui import random_str, wait_for_components
 from disnake.ext import commands
 
-from app.bridges import ui
+from app import ui
 from app.core import CONFIG
 from app.plugins_factory import create_plugin
 from app.utils import format_exception

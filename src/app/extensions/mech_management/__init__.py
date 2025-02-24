@@ -12,9 +12,8 @@ from disnake import Attachment, Embed, Locale
 from disnake.ext import commands
 from disnake.utils import MISSING
 
-from app import i18n
+from app import i18n, ui
 from app.assets import ASSETS
-from app.bridges import ui
 from app.bridges.embeds import embed_image, sikrit_footer
 from app.bridges.sm_utils import get_item_pack_for
 from app.commands.autocompleters import mech_name_autocomplete

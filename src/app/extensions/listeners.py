@@ -4,7 +4,7 @@ from app.disnake_types import CommandInteraction
 from discord.commands import cancel_for
 from disnake import Event
 
-from app.bridges import ui
+from app import ui
 from app.bridges.telemetry import command_tracker
 from app.commands.cancellation import is_cancel_button, parse_id
 from app.plugins_factory import create_plugin

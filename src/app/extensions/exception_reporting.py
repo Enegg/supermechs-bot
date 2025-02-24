@@ -9,8 +9,7 @@ from disnake import Colour, Embed, Event, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
 
-from app import i18n
-from app.bridges import ui
+from app import i18n, ui
 from app.commands.cancellation import make_id
 from app.core import CONFIG
 from app.plugins_factory import create_plugin

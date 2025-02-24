@@ -1,4 +1,4 @@
-"""Module extending the library provided UI kit."""
+"""Extension of the library provided UI kit."""
 
 from functools import partial
 from typing import TypeAlias

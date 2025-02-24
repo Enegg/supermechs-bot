@@ -6,8 +6,8 @@ from disnake import Embed, Locale
 from disnake.ext import commands
 from disnake.utils import MISSING
 
+from app import ui
 from app.assets import ASSETS
-from app.bridges import ui
 from app.bridges.all import embed_image, sikrit_footer
 from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_for
 from app.commands.autocompleters import item_name_autocomplete
