@@ -71,7 +71,7 @@ ignore = [
     "PLC0105",   # T_co / T_contra; don't care
     "PLC0414",   # import foo as foo
     "RET503",    # "return xyz(...)" where "xyz(...) -> None" is ok
-    "S101",      # assert
+    "S101",      # asserts are very useful
     "SLF001",    # _member access; handled by pyright
     "S311",      # we don't do cryptography
     "T201",      # print
@@ -126,20 +126,21 @@ allow-dunder-method-names = [
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
 
-enableTypeIgnoreComments = false  # this is dumb, when enabled suggests using # type: ignore instead of # pyright: ignore[ruleName]
+# disabled even in strict
+deprecateTypingAliases = true
+reportImplicitOverride = "warning"
+reportImportCycles = true
+reportUninitializedInstanceVariable = true
 reportUnnecessaryTypeIgnoreComment = "warning"
+
+# prefer "# pyright: ignore[ruleName]" over "# type: ignore"
+enableTypeIgnoreComments = false
+
+# downgrade a few common non-issues
+reportUnusedImport = "warning"
+reportMatchNotExhaustive = "warning"
 reportUnnecessaryCast = "warning"
 reportUnnecessaryIsInstance = "information"
 
 reportUnknownMemberType = false  # disnake causes plenty errors
-disableBytesTypePromotions = true
-deprecateTypingAliases = true
 reportMissingTypeStubs = false
-reportUnusedImport = "warning"
-
-reportImportCycles = true
-reportUninitializedInstanceVariable = true
-reportMatchNotExhaustive = "warning"
-reportImplicitOverride = "warning"
-reportOverlappingOverload = "warning"
-reportPrivateUsage = "warning"
