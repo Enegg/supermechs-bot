@@ -58,6 +58,7 @@ ignore = [
     "ARG",       # unused parameters
     "ANN401",    # use of Any
     "B005",      # I know str.strip(...) takes a set
+    "B008",      # calls in param defaults
     "BLE001",    # catching Exception; reported in places where exceptions are gathered into a group
     "COM812",    # don't require commas
     "C901",      # complex functions oh no

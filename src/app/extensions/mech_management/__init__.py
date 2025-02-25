@@ -99,7 +99,9 @@ async def build(
     inter: CommandInteraction,
     locale: Locale,
     player: Player,
-    name: commands.String[str, 1, StringLimits.names] | None = None,
+    name: commands.String[str, 1, StringLimits.names] = commands.Param(
+        "", autocomplete=mech_name_autocomplete
+    ),
 ) -> None:
     """Interactive UI for modifying a mech build. {{ MECH_BUILD }}
 
@@ -110,7 +112,7 @@ async def build(
     """  # noqa: D400
     item_pack = get_item_pack_for(inter)
 
-    if name is None:
+    if name == "":
         build = player.get_recent_or_create_build()
 
     else:
@@ -280,9 +282,6 @@ async def export(
 
     file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
     await component_inter.response.edit_message(file=file, components=None)
-
-
-build.autocomplete("name")(mech_name_autocomplete)
 
 
 setup, teardown = plugin.create_extension_handlers()

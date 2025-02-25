@@ -53,6 +53,4 @@ def register_injections() -> None:
     commands.register_injection(_inject_locale)
     commands.register_injection(_inject_gettext)
     commands.register_injection(_inject_player)
-    commands.register_injection(
-        _inject_item,
-    ).autocomplete("name")(item_name_autocomplete)
+    commands.register_injection(_inject_item, autocompleters={"name": item_name_autocomplete})

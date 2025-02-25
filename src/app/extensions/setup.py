@@ -98,30 +98,6 @@ async def shutdown(inter: CommandInteraction) -> None:
     await plugin.bot.close()
 
 
-@plugin.slash_command(name="raise")
-@commands.default_member_permissions(administrator=True)
-@commands.is_owner()
-async def force_error(
-    inter: CommandInteraction,
-    exception: str,
-    message: str = "Exception raised via /raise",
-) -> NoReturn:
-    """Explicitly raises chosen exception.
-
-    Parameters
-    ----------
-    exception: Name of the exception to raise.
-    message: Message passed to the exception.
-    """
-    if exception not in KNOWN_EXCEPTION_NAMES:
-        raise commands.UserInputError("Unknown exception.")  # noqa: TRY003, EM101
-
-    exc: type[commands.CommandError] = getattr(commands.errors, exception)
-    await inter.response.defer()
-    raise exc(message)
-
-
-@force_error.autocomplete("exception")
 def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteReturnType:
     if len(input) < 2:  # noqa: PLR2004
         return KNOWN_EXCEPTION_NAMES[: InteractionLimits.autocomplete_options]
@@ -139,12 +115,51 @@ def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteRe
     return matching
 
 
+@plugin.slash_command(name="raise")
+@commands.default_member_permissions(administrator=True)
+@commands.is_owner()
+async def force_error(
+    inter: CommandInteraction,
+    exception: str = commands.Param(autocomplete=get_matching_exceptions),
+    message: str = "Exception raised via /raise",
+) -> NoReturn:
+    """Explicitly raises chosen exception.
+
+    Parameters
+    ----------
+    exception: Name of the exception to raise.
+    message: Message passed to the exception.
+    """
+    if exception not in KNOWN_EXCEPTION_NAMES:
+        raise commands.UserInputError("Unknown exception.")  # noqa: TRY003, EM101
+
+    exc: type[commands.CommandError] = getattr(commands.errors, exception)
+    await inter.response.defer()
+    raise exc(message)
+
+
+async def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:
+    matching: list[str] = []
+
+    if len(input) < 2:  # noqa: PLR2004
+        return matching
+
+    for locale in disnake.Locale:
+        if input in locale.name:
+            matching.append(locale.name)
+
+            if len(matching) == InteractionLimits.autocomplete_options:
+                break
+
+    return matching
+
+
 @plugin.slash_command()
 @commands.default_member_permissions(administrator=True)
 @commands.is_owner()
 async def set_locale(
     inter: CommandInteraction,
-    locale_name: str | None = commands.Param(None, name="locale"),
+    locale_name: str | None = commands.Param(None, name="locale", autocomplete=get_matching_locale),
 ) -> None:
     """Override commands' locale.
 
@@ -169,23 +184,6 @@ async def set_locale(
 
     plugin.logger.info(msg)
     await inter.response.send_message(msg)
-
-
-@set_locale.autocomplete("locale")
-async def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:
-    matching: list[str] = []
-
-    if len(input) < 2:  # noqa: PLR2004
-        return matching
-
-    for locale in disnake.Locale:
-        if input in locale.name:
-            matching.append(locale.name)
-
-            if len(matching) == InteractionLimits.autocomplete_options:
-                break
-
-    return matching
 
 
 setup, teardown = plugin.create_extension_handlers()
