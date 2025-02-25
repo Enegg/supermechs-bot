@@ -3,6 +3,9 @@ from collections import abc
 from functools import partial
 from itertools import islice
 
+from app.bridges.sm_utils import acronym_of
+from app.text_utils import Char
+
 from supermechs.abc.stats import StatsMapping, StatType
 from supermechs.all import Stat
 
@@ -20,7 +23,10 @@ def try_shorten(name: str, limit: int = 16) -> str:
     if len(name) < limit:
         return name
 
-    return "".join(s for s in name if s.isupper())
+    if (acronym := acronym_of(name)) is not None:
+        return acronym
+
+    return name[: limit - 1] + Char.TRIPLE_DOT
 
 
 def compare_numbers(

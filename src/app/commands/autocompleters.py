@@ -6,7 +6,7 @@ from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
 
 from app import state
-from app.bridges.sm_utils import get_item_pack_for
+from app.bridges.sm_utils import acronym_of, get_item_pack_for
 from app.text_utils import sanitize_string
 
 from .params import DEFAULT_CHOICE
@@ -63,25 +63,6 @@ def get_multiword_scores(
         scores.append(max_score)
 
     return scores
-
-
-def acronym_of(name: str, /) -> str | None:
-    """Return an acronym of the name, or None if one cannot (shouldn't) be made.
-
-    The acronym consists of capital letters in item's name;
-    it will not be made for non-PascalCase single-word names, or names which themselves
-    are an acronym for something (like EMP).
-    """
-    if not name:
-        return None
-    if name[0].isupper() and name[1:].islower():
-        # don't bother with single capital letters
-        return None
-    # filter out already-acronym names, like "EMP"
-    if name.isupper():
-        return None
-    # names which are partially acronyms are fine
-    return "".join(filter(str.isupper, name)).lower()
 
 
 def find_matches(names: abc.Iterable[str], phrase: str) -> list[MatchResult]:

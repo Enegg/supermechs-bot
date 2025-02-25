@@ -34,3 +34,22 @@ def get_item_pack_for(inter: Interaction) -> ItemPack:
 
     del player  # TODO
     return state.item_pack
+
+
+def acronym_of(name: str, /) -> str | None:
+    """Return an acronym of the name, or None if one cannot (shouldn't) be made.
+
+    The acronym consists of capital letters in item's name;
+    it will not be made for non-PascalCase single-word names, or names which themselves
+    are an acronym for something (like EMP).
+    """
+    if not name:
+        return None
+    if name[0].isupper() and name[1:].islower():
+        # don't bother with single capital letters
+        return None
+    # filter out already-acronym names, like "EMP"
+    if name.isupper():
+        return None
+    # names which are partially acronyms are fine
+    return "".join(filter(str.isupper, name)).lower()
