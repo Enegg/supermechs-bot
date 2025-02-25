@@ -15,11 +15,10 @@ from discord.ui import random_str, wait_for_components
 from disnake.ext import commands
 
 from app import ui
-from app.core import CONFIG
-from app.plugins_factory import create_plugin
+from app.plugins_factory import create_dev_plugin
 from app.utils import format_exception
 
-plugin = create_plugin(__name__)
+plugin = create_dev_plugin(__name__)
 MODAL_SUFFIX = "code"
 WAIT_EMOJI = "<a:wait:731884722166431754>"
 CANCEL_DELAY = 3
@@ -107,8 +106,7 @@ async def eval_code(inter: Interaction, code: str) -> None:
         await inter.edit_original_response(title, file=file, components=None)
 
 
-@plugin.slash_command(name="eval", guild_ids=CONFIG.test_guild_ids)
-@commands.default_member_permissions(administrator=True)
+@plugin.slash_command(name="eval")
 @commands.is_owner()
 async def eval_(inter: CommandInteraction, code: str | None = None) -> None:
     """Evaluate the given input as code.

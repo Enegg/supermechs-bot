@@ -1,10 +1,25 @@
 from app.disnake_types import Bot
-from disnake_plugins.plugin import Plugin, SlashCommandParams
+from disnake import Permissions
+from disnake_plugins.plugin import Plugin
+
+from app.core import CONFIG
 
 
-def create_plugin(
-    name: str, *, slash_command_attrs: SlashCommandParams | None = None
-) -> Plugin[Bot]:
+def _extract_plugin_name(name: str, /) -> str:
     _, _, name = name.rpartition(".")
-    name = name.replace("_", "-").capitalize()
-    return Plugin[Bot](name=name, logger="plugin", slash_command_attrs=slash_command_attrs)
+    return name.replace("_", "-").capitalize()
+
+
+def create_plugin(name: str, /) -> Plugin[Bot]:
+    return Plugin[Bot](name=_extract_plugin_name(name), logger="plugin")
+
+
+def create_dev_plugin(name: str, /) -> Plugin[Bot]:
+    return Plugin[Bot](
+        name=_extract_plugin_name(name),
+        logger="dev-plugin",
+        slash_command_attrs={
+            "guild_ids": CONFIG.test_guild_ids,
+            "default_member_permissions": Permissions(administrator=True),
+        },
+    )
