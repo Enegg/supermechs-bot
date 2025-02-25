@@ -63,10 +63,10 @@ def get_user_error_message(
         # 1 per user is special as it is cancellable
         case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
             (
-                info.with_content(gettext("command-running")).with_components(
-                    cancel_button(inter, gettext)
-                )
-            )
+                info
+                .with_content(gettext("command-running"))
+                .with_components(cancel_button(inter, gettext))
+            )  # fmt: skip
 
         case commands.MaxConcurrencyReached() as exc:
             # TODO: localize
@@ -116,12 +116,13 @@ async def on_slash_command_error(inter: CommandInteraction, exc: commands.Comman
     builder = exception_to_message(error, inter)
 
     if CONFIG.indev:
+        params = builder.get_send_params()
         try:
-            await inter.send(**builder.get_send_params())
+            await inter.send(**params)
 
         except InteractionTimedOut:
             if _channel is not None:
-                await _channel.send(**builder.get_send_params())
+                await _channel.send(**params)
 
     else:
         if _channel is not None:
