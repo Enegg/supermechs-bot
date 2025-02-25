@@ -14,11 +14,11 @@ from disnake.utils import MISSING
 
 from app import i18n, ui
 from app.assets import ASSETS
-from app.bridges.embeds import embed_image, sikrit_footer
 from app.bridges.sm_utils import get_item_pack_for
 from app.commands.autocompleters import mech_name_autocomplete
 from app.core import CONFIG
 from app.devtools import debug_footer
+from app.embed_utils import embed_image, sikrit_footer
 from app.models import Player
 from app.plugins_factory import create_plugin
 from app.text_utils import StringLimits, sanitize_string

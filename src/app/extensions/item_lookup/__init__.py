@@ -8,11 +8,11 @@ from disnake.utils import MISSING
 
 from app import ui
 from app.assets import ASSETS
-from app.bridges.all import embed_image, sikrit_footer
 from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_for
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import DEFAULT_CHOICE, ELEMENT_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
+from app.embed_utils import embed_image, sikrit_footer
 from app.plugins_factory import create_plugin
 from defer import Defer
 

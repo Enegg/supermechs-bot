@@ -11,8 +11,8 @@ from disnake.utils import MISSING
 
 from app import i18n, ui
 from app.assets import ASSETS, get_weight_emoji
-from app.bridges.all import embed_image
 from app.devtools import debug_footer
+from app.embed_utils import embed_image
 from app.models import ItemPack, MechBuild, Player
 from app.text_utils import Char
 
