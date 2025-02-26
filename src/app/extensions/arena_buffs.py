@@ -221,7 +221,7 @@ async def buffs(inter: CommandInteraction, player: Player) -> None:
 
     async with Defer(shield=True) as defer:
         defer(lambda: inter.edit_original_response(components=view.get_state_stopped()))
-        await store.listen(timeout=CONFIG.command_timeout)
+        await store.listen(timeout=CONFIG.user_input_timeout)
 
 
 setup, teardown = plugin.create_extension_handlers()

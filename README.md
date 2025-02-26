@@ -11,20 +11,27 @@
 [SuperMechs](https://www.supermechs.com/)-themed discord bot featuring item lookup, comparison, mech building, & more.
 
 ## Installation
-0. **Python 3.10+ is required**
+0. **Python 3.11+ is required**
 1. `pip install pdm`
 2. `pdm install`
 
 ## `.env` variables
-| Variable            | Description                                           | Type  |
-| ------------------- | ----------------------------------------------------- | ----- |
-| `BOT_TOKEN`*        | Bot token                                             | str   |
-| `HOME_GUILD_ID`*    | ID of a guild dev-only commands will be registered to | int   |
-| `LOGS_CHANNEL_ID`   | ID of a text channel the bot will send tracebacks to  | int   |
-| `DEFAULT_PACK_URL`  | Path/url of the default items pack                    | str   |
-| `MISSING_IMAGE_URL` | Path/url of a placeholder image                       | str   |
-| `MAX_IMAGE_SIZE`    | Max size of an image fetched from user source         | int** |
-| `CHUNK_SIZE`        | Size of a chunk used while requesting data            | int** |
+| Variable            | Type  | Description                                           |
+| ------------------- | ----- | ----------------------------------------------------- |
+| `BOT_TOKEN`*        | str   | Discord bot token                                     |
+| `HOME_GUILD_ID`*    | int   | ID of a guild dev-only commands will be registered to |
+| `LOGS_CHANNEL_ID`   | int   | ID of a text channel error messages will be sent to   |
+| `DEFAULT_PACK_URL`  | str   | Path/url of the default items pack                    |
+| `MISSING_IMAGE_URL` | str   | Path/url of a placeholder image                       |
+| `MAX_IMAGE_SIZE`    | int** | Max size of an image fetched from user source         |
+| `CHUNK_SIZE`        | int** | Size of a chunk used while requesting data            |
 
 \* required<br>
 \*\* supports binary prefixes (10MiB, 5KiB, etc)
+
+## CLI flags
+| Flag                   | Type | Default     | Description                                   |
+| ---------------------- | ---- | ----------- | --------------------------------------------- |
+| `--dotenv_path`        | str  | `"dev.env"` | Path to the .env file                         |
+| `--indev`              | bool | `__debug__` | Whether the bot is in development mode        |
+| `--debug_command_sync` | bool | `__debug__` | Whether disnake should log detailed sync info |

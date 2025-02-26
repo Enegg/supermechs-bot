@@ -140,7 +140,7 @@ async def build(
     )
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
-        await store.listen(timeout=CONFIG.command_timeout)
+        await store.listen(timeout=CONFIG.user_input_timeout)
 
 
 @mech.sub_command(name="import")
@@ -262,7 +262,7 @@ async def export(
         ephemeral=True,
     )
     try:
-        with anyio.fail_after(600):
+        with anyio.fail_after(CONFIG.user_input_timeout):
             component_inter, component = await wait_for_components(
                 mech_select,
                 button_all,

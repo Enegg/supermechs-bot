@@ -77,7 +77,7 @@ async def item(
     await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
-        await store.listen(timeout=CONFIG.command_timeout)
+        await store.listen(timeout=CONFIG.user_input_timeout)
 
 
 @plugin.slash_command(guild_ids=CONFIG.test_guild_ids)
@@ -164,7 +164,7 @@ async def compare(
     await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
-        await store.listen(timeout=CONFIG.command_timeout)
+        await store.listen(timeout=CONFIG.user_input_timeout)
 
 
 setup, teardown = plugin.create_extension_handlers()
