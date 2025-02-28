@@ -10,7 +10,7 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.commands.cancellation import make_id
+from app.commands.cancellation import get_cancel_button_id
 from app.core import CONFIG
 from app.plugins_factory import create_plugin
 from app.text_utils import Char
@@ -39,7 +39,7 @@ if CONFIG.logs_channel_id is not None:
 
 def cancel_button(inter: CommandInteraction, gettext: i18n.GetText) -> ui.ActionButton:
     return ui.ActionButton(
-        custom_id=make_id(inter),
+        custom_id=get_cancel_button_id(inter),
         style=ui.ButtonStyle.red,
         label=gettext("ui-cmd-cancel-button"),
         emoji="🛑",

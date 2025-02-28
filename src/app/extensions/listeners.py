@@ -1,12 +1,12 @@
 import logging
 
 from app.disnake_types import CommandInteraction
-from discord.commands import cancel_for
+from discord.commands import cancel_command_for
 from disnake import Event
 
 from app import ui
 from app.bridges.telemetry import command_tracker
-from app.commands.cancellation import is_cancel_button, parse_id
+from app.commands.cancellation import is_cancel_button, parse_cancel_token
 from app.plugins_factory import create_plugin
 
 plugin = create_plugin(__name__)
@@ -44,7 +44,7 @@ async def on_cancel_button(inter: ui.MessageInteraction, /) -> None:
 
     await inter.response.defer()
     await inter.delete_original_response()
-    cancel_for(parse_id(inter.data.custom_id))
+    cancel_command_for(parse_cancel_token(inter.data.custom_id))
 
 
 @plugin.listener(Event.slash_command_completion)
