@@ -5,6 +5,7 @@ import attrs
 import dotenv
 
 from app.class_utils import ByteSize, MappingParser
+from resources import HttpResource, Resource
 
 from .cli import ARGV
 
@@ -25,11 +26,11 @@ class Config:
     """Whether disnake should log detailed sync info."""
     logs_channel_id: int | None = None
     """ID of a text channel log messages will be sent to."""
-    default_pack_url: str = (
+    default_pack_uri: Resource = HttpResource.from_uri(
         "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7dc669d484db89062/raw"
     )
     """Path/URL of the default item pack."""
-    missing_image_url: str = (
+    missing_image_uri: Resource = HttpResource.from_uri(
         "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
     )
     """Path/URL of a placeholder image."""

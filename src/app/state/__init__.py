@@ -11,7 +11,7 @@ from app.core import CONFIG, http
 from app.models import ItemPack, PackKey, PartialPlayer, Player
 from app.typeshed import JsonObject, Pathish
 from memo import Memo
-from resources import FileResource, HttpResource, Resource
+from resources import FileResource, HttpResource
 from smparse.packs import structure_pack
 
 from .structuring import load_state, save_state
@@ -75,7 +75,7 @@ async def load_default_pack(session: aiohttp.ClientSession, /) -> None:
     data: JsonObject
     url: str | None
 
-    match Resource.from_uri(CONFIG.default_pack_url):
+    match CONFIG.default_pack_uri:
         case FileResource(path):
             data = orjson.loads(await anyio.Path(path).read_bytes())
             url = None
@@ -83,7 +83,7 @@ async def load_default_pack(session: aiohttp.ClientSession, /) -> None:
         case HttpResource() as web_resource:
             async with session.get(web_resource.url) as response:
                 if response.status != http.ResponseStatus.ok:
-                    _LOG.error("Pack not available")
+                    _LOG.error("Default pack is not available")
                     return
 
                 data = await response.json(encoding="utf8", content_type=None, loads=orjson.loads)
@@ -91,6 +91,6 @@ async def load_default_pack(session: aiohttp.ClientSession, /) -> None:
 
         case resource:
             msg = f"Unknown resource type: {resource}"
-            raise NotImplementedError(msg) from None
+            raise NotImplementedError(msg)
 
     item_pack = item_pack_factory(data, url)

@@ -19,7 +19,6 @@ from supermechs.gamerules import BuildRules
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 
 _DEFAULT_EMOJI = "❔"
-_DEFAULT_RESOURCE = Resource.from_uri(CONFIG.missing_image_url)
 _DEFAULT_COLOR = Color(0)
 
 
@@ -188,23 +187,23 @@ class Emojis:
 
 @attrs.frozen
 class TypeIcons:
-    none: Resource = _DEFAULT_RESOURCE
-    torso: Resource = _DEFAULT_RESOURCE
-    legs: Resource = _DEFAULT_RESOURCE
-    drone: Resource = _DEFAULT_RESOURCE
-    side_weapon: Resource = _DEFAULT_RESOURCE
-    right_side_weapon: Resource = _DEFAULT_RESOURCE
-    left_side_weapon: Resource = _DEFAULT_RESOURCE
-    top_weapon: Resource = _DEFAULT_RESOURCE
-    right_top_weapon: Resource = _DEFAULT_RESOURCE
-    left_top_weapon: Resource = _DEFAULT_RESOURCE
-    charge: Resource = _DEFAULT_RESOURCE
-    teleport: Resource = _DEFAULT_RESOURCE
-    hook: Resource = _DEFAULT_RESOURCE
-    shield: Resource = _DEFAULT_RESOURCE
-    module: Resource = _DEFAULT_RESOURCE
-    perk: Resource = _DEFAULT_RESOURCE
-    kit: Resource = _DEFAULT_RESOURCE
+    none: Resource = CONFIG.missing_image_uri
+    torso: Resource = CONFIG.missing_image_uri
+    legs: Resource = CONFIG.missing_image_uri
+    drone: Resource = CONFIG.missing_image_uri
+    side_weapon: Resource = CONFIG.missing_image_uri
+    right_side_weapon: Resource = CONFIG.missing_image_uri
+    left_side_weapon: Resource = CONFIG.missing_image_uri
+    top_weapon: Resource = CONFIG.missing_image_uri
+    right_top_weapon: Resource = CONFIG.missing_image_uri
+    left_top_weapon: Resource = CONFIG.missing_image_uri
+    charge: Resource = CONFIG.missing_image_uri
+    teleport: Resource = CONFIG.missing_image_uri
+    hook: Resource = CONFIG.missing_image_uri
+    shield: Resource = CONFIG.missing_image_uri
+    module: Resource = CONFIG.missing_image_uri
+    perk: Resource = CONFIG.missing_image_uri
+    kit: Resource = CONFIG.missing_image_uri
 
     def __getitem__(self, field: sm.abc.ItemType) -> Resource:
         return getattr(self, field)

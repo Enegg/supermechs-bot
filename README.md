@@ -29,8 +29,8 @@
 | `BOT_TOKEN`*        | str   | Discord bot token                                     |
 | `HOME_GUILD_ID`*    | int   | ID of a guild dev-only commands will be registered to |
 | `LOGS_CHANNEL_ID`   | int   | ID of a text channel error messages will be sent to   |
-| `DEFAULT_PACK_URL`  | str   | Path/url of the default items pack                    |
-| `MISSING_IMAGE_URL` | str   | Path/url of a placeholder image                       |
+| `DEFAULT_PACK_URI`  | str   | Path/url of the default items pack                    |
+| `MISSING_IMAGE_URI` | str   | Path/url of a placeholder image                       |
 | `MAX_IMAGE_SIZE`    | int** | Max size of an image fetched from user source         |
 | `CHUNK_SIZE`        | int** | Size of a chunk used while requesting data            |
 

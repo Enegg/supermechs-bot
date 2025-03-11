@@ -19,6 +19,7 @@ from app.core import CONFIG
 from app.plugins_factory import create_plugin
 from app.system import get_ram_usage, get_sloc
 from app.utils import as_binary_unit
+from resources import HttpResource
 
 import supermechs
 
@@ -90,9 +91,14 @@ async def info(inter: CommandInteraction) -> None:
         f"Lines of code: {_state.app_sloc} bot + {_state.lib_sloc} SM library",
     ]
 
+    pack_key = state.item_pack.key
+
+    if isinstance(CONFIG.default_pack_uri, HttpResource):
+        pack_key = md.hyperlink(pack_key, CONFIG.default_pack_uri.uri)
+
     supermechs_fields = [
         f"Registered players: {len(state.players.mapping)}",
-        f"Default item pack: {md.hyperlink(state.item_pack.key, CONFIG.default_pack_url)}",
+        f"Default item pack: {pack_key}",
         f"Total items: {len(state.item_pack.items)}",
     ]
     bytes_, prefix = as_binary_unit(get_ram_usage())
