@@ -1,4 +1,5 @@
 import random
+from typing import NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import markdown as md
@@ -18,18 +19,25 @@ from app.utils import fold_binary_prefix
 import supermechs
 
 plugin = create_plugin(__name__)
-_app_and_lib_slocs: tuple[int, int] | None = None
+
+
+class _SrcSloc(NamedTuple):
+    app: int
+    lib: int
+
+
+_sloc: _SrcSloc = _SrcSloc(0, 0)
 
 
 @plugin.register_loop()
 @tasks.loop(count=1)
 async def read_sloc() -> None:
-    global _app_and_lib_slocs
+    global _sloc
     sm_path = tuple(supermechs.__path__)
     assert len(sm_path) == 1
-    slocs_seq = tuple(await amap(get_sloc, "src", sm_path[0]))
+    slocs_seq = await amap(get_sloc, "src", sm_path[0])
     assert len(slocs_seq) == 2  # noqa: PLR2004
-    _app_and_lib_slocs = slocs_seq
+    _sloc = _SrcSloc(*slocs_seq)
 
 
 @plugin.slash_command()
@@ -59,9 +67,8 @@ async def info(inter: CommandInteraction) -> None:
         f"Python version: {meta.python_version}",
         f"Discord library: {md.hyperlink('disnake', meta.disnake_url)} {meta.disnake_version}",
     ]
-    if _app_and_lib_slocs is not None:
-        app_loc, sm_loc = _app_and_lib_slocs
-        backend_fields.append(f"Lines of code: {app_loc} bot + {sm_loc} SM library")
+    if _sloc.app:
+        backend_fields.append(f"Lines of code: {_sloc.app} bot + {_sloc.lib} SM library")
 
     supermechs_fields = [
         f"Registered players: {len(state.players.mapping)}",
