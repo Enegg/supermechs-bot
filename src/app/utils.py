@@ -6,7 +6,7 @@ from typing import Literal, TypeAlias, get_args as get_type_args
 
 from disnake.utils import utcnow as utcnow
 
-__all__ = ("fold_binary_prefix", "format_exception", "unfold_binary_prefix", "utcnow")
+__all__ = ("as_binary_unit", "atoi_bin", "format_exception", "utcnow")
 
 
 # https://en.wikipedia.org/wiki/Binary_prefix
@@ -14,36 +14,45 @@ BinaryPrefix: TypeAlias = Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", 
 BINARY_PREFIXES: abc.Sequence[BinaryPrefix] = get_type_args(BinaryPrefix)
 
 
-def fold_binary_prefix(bytes_: int, /, prefix: BinaryPrefix = "") -> tuple[int, BinaryPrefix]:
-    """Folds the number of bytes in increments of 1024, until it drops below 1024.
+def as_binary_unit(b: int, /, prefix: BinaryPrefix = "") -> tuple[int, BinaryPrefix]:
+    """Return a tuple representing the value in a binary prefixed unit.
 
-    Given `n = int(log(value, 1024))`, returns `(value // 1024 ** n, BINARY_PREFIXES[n])`.
-    The optional `prefix` will offset the returned prefix by associated exponent.
+    >>> fold_binary_unit(256 * 1024)
+    (256, "Ki")
+
+    The optional `prefix` offsets the returned prefix by associated exponent.
+
+    >>> fold_binary_unit(256 * 1024, "Gi")
+    (256, "Ti")
     """
-    if bytes_ < 0:
-        msg = "Number of bytes cannot be negative"
+    if b < 0:
+        msg = "Cannot fold negative value"
         raise ValueError(msg)
 
-    if bytes_ == 0:
-        # necessary as .bit_length() - 1 would be negative
+    # 0.bit_length() - 1 < 0
+    if b == 0:
         return 0, BINARY_PREFIXES[0]
 
     try:
-        current_exp = BINARY_PREFIXES.index(prefix)
+        initial_exponent = BINARY_PREFIXES.index(prefix)
     except ValueError:
         msg = f"Unknown binary prefix: {prefix!r}"
         raise ValueError(msg) from None
 
-    exp = min(
-        (bytes_.bit_length() - 1) // 10,
-        len(BINARY_PREFIXES) - 1 - current_exp,
+    exponent = min(
+        (b.bit_length() - 1) // 10,
+        len(BINARY_PREFIXES) - 1 - initial_exponent,
     )
-    # equivalent to bytes_ //= 1024 ** exp
-    bytes_ >>= 10 * exp
-    return bytes_, BINARY_PREFIXES[current_exp + exp]
+    b >>= 10 * exponent
+    return b, BINARY_PREFIXES[initial_exponent + exponent]
 
 
-def unfold_binary_prefix(value: str, /) -> int:
+def atoi_bin(value: str, /) -> int:
+    """Parse a string to int, with respect to its binary prefix (Ki/Mi/…).
+
+    >>> atoi_bin("10MiB")
+    10485760
+    """
     i = len(value)
 
     for n, char in enumerate(value):

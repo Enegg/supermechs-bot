@@ -13,6 +13,11 @@ from resources import FileResource, HttpResource, Resource
 _LOG = logging.getLogger("io")
 
 
+class UnknownResourceError(NotImplementedError):
+    def __init__(self, *args: object) -> None:
+        super().__init__("Unknown resource type", *args)
+
+
 @attrs.define(auto_exc=True)
 class ContentTooLarge(OSError):
     received: int

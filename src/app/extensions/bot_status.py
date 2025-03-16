@@ -13,8 +13,8 @@ from app.async_utils import amap
 from app.bridges.telemetry import command_tracker
 from app.core import CONFIG
 from app.plugins_factory import create_plugin
-from app.system import get_ram_utilization, get_sloc
-from app.utils import fold_binary_prefix
+from app.system import get_ram_usage, get_sloc
+from app.utils import as_binary_unit
 
 import supermechs
 
@@ -75,7 +75,7 @@ async def info(inter: CommandInteraction) -> None:
         f"Default item pack: {md.hyperlink(state.item_pack.key, CONFIG.default_pack_url)}",
         f"Total items: {len(state.item_pack.items)}",
     ]
-    bytes_, prefix = fold_binary_prefix(get_ram_utilization())
+    bytes_, prefix = as_binary_unit(get_ram_usage())
     perf_fields = [
         f"Started: {md.format_dt(meta.started_at, 'R')}",
         f"Latency: {round(bot.latency * 1000)}ms",

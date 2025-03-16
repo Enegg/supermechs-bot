@@ -22,7 +22,7 @@ from app.embed_utils import embed_image, sikrit_footer
 from app.models import Player
 from app.plugins_factory import create_plugin
 from app.text_utils import StringLimits, sanitize_string
-from app.utils import fold_binary_prefix
+from app.utils import as_binary_unit
 from defer import Defer
 
 from .mech_manager import MechView
@@ -158,7 +158,7 @@ async def import_(
     MAX_SIZE = 1 << 16
 
     if file.size > MAX_SIZE:
-        max_size, prefix = fold_binary_prefix(MAX_SIZE)
+        max_size, prefix = as_binary_unit(MAX_SIZE)
         msg = gettext("import-size-error", size=max_size, unit=prefix + "B")
         raise commands.UserInputError(msg)
     # the content type should be application/json,

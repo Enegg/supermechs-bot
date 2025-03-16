@@ -2,9 +2,8 @@ import io
 
 from app.disnake_types import CommandInteraction
 from discord import MessageLimits
-from disnake import Embed, Locale
+from disnake import Embed, File, Locale
 from disnake.ext import commands
-from disnake.utils import MISSING
 
 from app import ui
 from app.assets import ASSETS
@@ -12,9 +11,11 @@ from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import DEFAULT_CHOICE, ELEMENT_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
-from app.embed_utils import embed_image, sikrit_footer
+from app.embed_utils import embed_file_resource, embed_image, sikrit_footer
 from app.plugins_factory import create_plugin
+from app.resource_utils import UnknownResourceError
 from defer import Defer
+from resources import FileResource, HttpResource
 
 from .item_lookup import item_compare_view, item_view
 
@@ -45,21 +46,33 @@ async def item(
     """  # noqa: D400
     item_pack = get_item_pack_for(inter)
     sprite = item_pack.get_sprite(item.id, item.stages[-1].tier)
+    files: list[File] = []
 
     if sprite.url is not None:
-        url, file = sprite.url, MISSING
+        sprite_url = sprite.url
 
     else:
-        url, file = embed_image(await sprite.load(), item.name)
+        sprite_url, file = embed_image(await sprite.load(), item.name)
+        files.append(file)
 
-    embed_color = ASSETS.elements[item.element].color
-    icon_url = get_item_icon(item).uri
+    match get_item_icon(item):
+        case FileResource() as icon_file:
+            icon_url, icon_file = embed_file_resource(icon_file)
+            files.append(icon_file)
+
+        case HttpResource(icon_url):
+            icon_url = str(icon_url)
+
+        case _:
+            raise UnknownResourceError
+
+    embed_color = ASSETS.elements[item.element.lower()].color
 
     if compact:
         embed = (
             Embed(color=embed_color)
             .set_author(name=item.name, icon_url=icon_url)
-            .set_thumbnail(url)
+            .set_thumbnail(sprite_url)
         )
 
     else:
@@ -67,14 +80,14 @@ async def item(
         embed = (
             Embed(title=item.name, description=desc, color=embed_color)
             .set_thumbnail(icon_url)
-            .set_image(url)
+            .set_image(sprite_url)
         )
 
     sikrit_footer(embed, locale)
 
     store = ui.callback_store(inter)
     layout = item_view(store, embed, item, locale, compact)
-    await inter.response.send_message(embed=embed, file=file, components=layout, ephemeral=True)
+    await inter.response.send_message(embed=embed, files=files, components=layout, ephemeral=True)
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.user_input_timeout)

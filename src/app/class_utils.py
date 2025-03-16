@@ -8,7 +8,7 @@ import cattrs
 import rtoml
 
 from app.typeshed import Pathish, T
-from app.utils import unfold_binary_prefix
+from app.utils import atoi_bin
 
 _repr_obj = reprlib.Repr()
 _repr_obj.maxdict = 20
@@ -29,7 +29,7 @@ def _structure_binary_int(value: Any, _: object) -> ByteSize:
         msg = f"Invalid type: {value!r}"
         raise TypeError(msg) from None
 
-    return ByteSize(unfold_binary_prefix(value))
+    return ByteSize(atoi_bin(value))
 
 
 del _structure_binary_int

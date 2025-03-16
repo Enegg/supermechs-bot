@@ -7,18 +7,18 @@ import disnake
 from discord import sanitize_filename
 
 from app import i18n
-from resources import FileResource, HttpResource, Resource
+from resources import FileResource
 
 if TYPE_CHECKING:
     from PIL import Image
 
-__all__ = ("embed_image", "embed_resource", "sikrit_footer")
+__all__ = ("embed_image", "sikrit_footer")
 
 FORMAT = "png"
 
 
 def embed_image(image: "Image.Image", filename: str) -> tuple[str, disnake.File]:
-    """Create and return a File with an attachment url."""
+    """Create and return an image File with an attachment url."""
     filename = sanitize_filename(filename)
     filename = str(pathlib.PurePath(filename).with_suffix("." + FORMAT))
     fp = io.BytesIO()
@@ -27,20 +27,10 @@ def embed_image(image: "Image.Image", filename: str) -> tuple[str, disnake.File]
     return f"attachment://{filename}", disnake.File(fp, filename)
 
 
-def embed_resource(resource: Resource, filename: str) -> tuple[str, disnake.File]:
-    match resource:
-        case FileResource(path):
-            filename = sanitize_filename(filename)
-            url = f"attachment://{filename}"
-            file = disnake.File(path, filename=filename)
-            return url, file
-
-        case HttpResource(url):
-            return str(url), disnake.utils.MISSING
-
-        case _:
-            msg = "Unknown resource type"
-            raise NotImplementedError(msg)
+def embed_file_resource(resource: FileResource, /) -> tuple[str, disnake.File]:
+    """Create and return a resource File with an attachment url."""
+    filename = sanitize_filename(resource.path.name)
+    return f"attachment://{filename}", disnake.File(resource.path, filename=filename)
 
 
 def sikrit_footer(embed: disnake.Embed, /, locale: disnake.Locale, chance: float = 0.01) -> None:

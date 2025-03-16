@@ -6,7 +6,7 @@ import psutil
 
 from app.typeshed import Pathish
 
-__all__ = ("get_ram_utilization", "get_sloc")
+__all__ = ("get_ram_usage", "get_sloc")
 
 
 def _file_sloc(path: Pathish, /) -> int:
@@ -40,6 +40,6 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
     return total
 
 
-def get_ram_utilization(pid: int | None = None, /) -> int:
+def get_ram_usage(pid: int | None = None, /) -> int:
     """Return the current process RAM utilization, in bytes."""
     return psutil.Process(pid).memory_info().rss

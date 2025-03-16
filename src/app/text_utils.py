@@ -1,7 +1,7 @@
 import enum
 
 
-class Char(str, enum.Enum):
+class Char(enum.StrEnum):
     """Non-keyboard characters."""
 
     TRIPLE_DOT = "…"

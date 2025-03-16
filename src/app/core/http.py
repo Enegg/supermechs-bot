@@ -11,7 +11,7 @@ from aiohttp.typedefs import StrOrURL
 
 import disnake.http
 
-from app.utils import fold_binary_prefix
+from app.utils import as_binary_unit
 
 __all__ = ("ResponseStatus", "client_session")
 
@@ -44,13 +44,13 @@ class _ClientSession(aiohttp.ClientSession):
         response = await super()._request(method, str_or_url, **kwargs)
         _LOG.log(
             logging.INFO if response.status == ResponseStatus.ok else logging.WARNING,
-            "Response method=%s url=%s status=%d type=%s length=%s (%s%s)",
+            "Response method=%s url=%s status=%d type=%s length=%s (%s%sB)",
             method,
             str_or_url,
             response.status,
             response.content_type,
             response.content_length,
-            *fold_binary_prefix(response.content_length or 0),
+            *as_binary_unit(response.content_length or 0),
         )
         return response
 
