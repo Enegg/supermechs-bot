@@ -37,7 +37,7 @@ async def read_sloc() -> None:
     assert len(sm_path) == 1
     slocs_seq = await amap(get_sloc, "src", sm_path[0])
     assert len(slocs_seq) == 2  # noqa: PLR2004
-    _sloc = _SrcSloc(*slocs_seq)
+    _sloc = _SrcSloc._make(slocs_seq)
 
 
 @plugin.slash_command()
