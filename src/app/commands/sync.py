@@ -9,7 +9,7 @@ _SYNC_GUARD = anyio.ResourceGuard("syncing")
 SYNC_FINISHED = anyio.Event()
 
 
-def patch_delayed_sync(bot: commands.InteractionBot, /) -> None:
+def prevent_delayed_sync(bot: commands.InteractionBot, /) -> None:
     """Patches delayed sync not to fire."""
     # this patch has to be done mostly because plugins call this method with no opt-out
     bot._schedule_delayed_command_sync = lambda: None  # pyright: ignore[reportPrivateUsage]

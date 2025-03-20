@@ -35,7 +35,7 @@ plugin = create_plugin(__name__)
 
 @plugin.load_hook(post=True)
 async def on_load() -> None:
-    from app import sync
+    from app.commands import sync
 
     # wait until API command caches are populated
     await sync.SYNC_FINISHED.wait()

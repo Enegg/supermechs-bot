@@ -8,12 +8,12 @@ from discord import load_extensions
 from disnake.ext import commands
 
 from app import i18n, paths, state
-from app.commands.injectors import register_injections
+from app.commands.injections import register_injections
 from app.core import CONFIG, config_logging, http
 
 
 async def main() -> None:
-    from app import sync
+    from app.commands import sync
 
     config_logging(paths.CONFIG_TOML)
     disnake.VoiceClient.warn_nacl = False
@@ -33,7 +33,7 @@ async def main() -> None:
     if CONFIG.indev:
         bot.get_global_command_named = partial(bot.get_guild_command_named, CONFIG.home_guild_id)
 
-    sync.patch_delayed_sync(bot)
+    sync.prevent_delayed_sync(bot)
     i18n.load(paths.LOCALE_DIR)
     partial_state = state.load(paths.STATE_DIR)
 
