@@ -1,40 +1,22 @@
 import logging
 from contextlib import suppress
 
-from app.disnake_types import CommandInteraction
+from app.disnake_types import Bot, CommandInteraction
 from discord import EmbedLimits, markdown as md, text_to_file
 from discord.interactions import inter_to_mention
 from discord.message_builder import MessageBuilder
-from disnake import Colour, Embed, Event, InteractionTimedOut
+from disnake import Colour, Embed, Event, HTTPException, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
 
 from app import i18n, ui
 from app.commands.cancellation import get_cancel_button_id
 from app.core import CONFIG
-from app.plugins_factory import create_plugin
 from app.text_utils import Char
 from app.utils import format_exception
 
-plugin = create_plugin(__name__)
 _channel: Messageable | None = None
 _LOG = logging.getLogger("event.command_error")
-
-
-if CONFIG.logs_channel_id is not None:
-    # NOTE: the keyword is necessary to "save" the narrowed type of the id
-
-    @plugin.load_hook()
-    async def on_load(*, channel_id: int = CONFIG.logs_channel_id) -> None:
-        global _channel
-        await plugin.bot.wait_until_first_connect()
-        channel = await plugin.bot.fetch_channel(channel_id)
-
-        if not isinstance(channel, Messageable):
-            msg = "Channel is not Messageable"
-            raise TypeError(msg)
-
-        _channel = channel
 
 
 def cancel_button(inter: CommandInteraction, gettext: i18n.GetText) -> ui.ActionButton:
@@ -62,11 +44,8 @@ def get_user_error_message(
 
         # 1 per user is special as it is cancellable
         case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
-            (
-                info
-                .with_content(gettext("command-running"))
-                .with_components(cancel_button(inter, gettext))
-            )  # fmt: skip
+            info.with_content(gettext("command-running"))
+            info.with_components(cancel_button(inter, gettext))
 
         case commands.MaxConcurrencyReached() as exc:
             # TODO: localize
@@ -104,7 +83,6 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     return builder
 
 
-@plugin.listener(Event.slash_command_error)
 async def on_slash_command_error(inter: CommandInteraction, exc: commands.CommandError) -> None:
     if (builder := get_user_error_message(inter, exc)) is not None:
         with suppress(InteractionTimedOut):
@@ -112,10 +90,14 @@ async def on_slash_command_error(inter: CommandInteraction, exc: commands.Comman
         return
 
     error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
-    _LOG.exception("Exception in %s", inter.application_command.qualified_name, exc_info=error)
+    _LOG.error("Exception in %s", inter.application_command.qualified_name, exc_info=error)
     builder = exception_to_message(error, inter)
+    await send_response(inter, builder)
 
-    if CONFIG.indev:
+
+if CONFIG.indev:
+
+    async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
         params = builder.get_send_params()
         try:
             await inter.send(**params)
@@ -124,7 +106,9 @@ async def on_slash_command_error(inter: CommandInteraction, exc: commands.Comman
             if _channel is not None:
                 await _channel.send(**params)
 
-    else:
+else:
+
+    async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
         if _channel is not None:
             await _channel.send(**builder.get_send_params())
 
@@ -132,4 +116,21 @@ async def on_slash_command_error(inter: CommandInteraction, exc: commands.Comman
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)
 
 
-setup, teardown = plugin.create_extension_handlers()
+def setup(bot: Bot) -> None:
+    bot.add_listener(on_slash_command_error, Event.slash_command_error)
+
+
+async def setup_channel(bot: Bot, channel_id: int) -> None:
+    global _channel
+    try:
+        channel = await bot.fetch_channel(channel_id)
+
+    except HTTPException as exc:
+        _LOG.error("Fetching logs channel failed", exc_info=exc)
+        return
+
+    if not isinstance(channel, Messageable):
+        _LOG.error("Channel is not Messageable")
+        return
+
+    _channel = channel

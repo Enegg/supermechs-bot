@@ -8,6 +8,7 @@ from discord import load_extensions
 from disnake.ext import commands
 
 from app import i18n, paths, state
+from app.commands import exception_handling
 from app.commands.injections import register_injections
 from app.core import CONFIG, config_logging, http
 
@@ -41,6 +42,11 @@ async def main() -> None:
     load_extensions(bot.load_extension, "extensions", strict=not CONFIG.indev)
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, CONFIG.bot_token)
+
+    exception_handling.setup(bot)
+
+    if CONFIG.logs_channel_id is not None:
+        await exception_handling.setup_channel(bot, CONFIG.logs_channel_id)
 
     try:
         async with http.client_session(bot.http) as session, anyio.create_task_group() as tg:
