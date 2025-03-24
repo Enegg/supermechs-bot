@@ -208,8 +208,8 @@ class ArenaShopView:
         return page
 
 
-@plugin.slash_command()
 @register_cancellable
+@plugin.slash_command()
 async def buffs(inter: CommandInteraction, player: Player) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""  # noqa: D400
     store = ui.callback_store(inter)

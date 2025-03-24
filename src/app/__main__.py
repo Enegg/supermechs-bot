@@ -8,7 +8,7 @@ from discord import load_extensions
 from disnake.ext import commands
 
 from app import i18n, paths, state
-from app.commands import exception_handling
+from app.commands import cancellation, exception_handling
 from app.commands.injections import register_injections
 from app.core import CONFIG, config_logging, http
 
@@ -43,6 +43,7 @@ async def main() -> None:
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, CONFIG.bot_token)
 
+    cancellation.setup(bot)
     exception_handling.setup(bot)
 
     if CONFIG.logs_channel_id is not None:

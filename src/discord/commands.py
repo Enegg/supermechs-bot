@@ -1,14 +1,29 @@
+import enum
 import logging
 from functools import wraps
-from typing import Concatenate, Final, NamedTuple
+from typing import Any, Final, NamedTuple, TypeAlias
+from typing_extensions import TypeVar
 
 import anyio
 
 import disnake
-from discord.typeshed import ClientT, CoroFunc, P
 from disnake.ext import commands
 
 _LOG = logging.getLogger(__name__)
+
+
+class CustomEvent(enum.StrEnum):
+    cancel = "command_cancellable"
+
+    @property
+    def listener_name(self) -> str:
+        return f"on_{self.value}"
+
+
+# disnake lies about inheriting from Enum, and renamed _member_names_ :pain:
+assert CustomEvent._member_map_.keys().isdisjoint(disnake.Event._enum_member_names_)  # pyright: ignore[reportUnknownArgumentType, reportAttributeAccessIssue]
+
+AnyContext: TypeAlias = commands.Context[commands.Bot] | disnake.CommandInteraction[disnake.Client]
 
 
 class CancelToken(NamedTuple):
@@ -19,7 +34,7 @@ class CancelToken(NamedTuple):
 _COMMAND_CANCEL_SCOPES: Final[dict[CancelToken, anyio.CancelScope]] = {}
 
 
-def get_cancel_token(inter: disnake.CommandInteraction[ClientT], /) -> CancelToken:
+def get_cancel_token(inter: disnake.CommandInteraction[disnake.Client], /) -> CancelToken:
     return CancelToken(user_id=inter.author.id, command_id=inter.data.id)
 
 
@@ -31,16 +46,32 @@ def cancel_command_for(token: CancelToken, /) -> None:
         scope.cancel()
 
 
-def register_cancellable(
-    func: CoroFunc[Concatenate[disnake.CommandInteraction[ClientT], P], object],
-) -> CoroFunc[Concatenate[disnake.CommandInteraction[ClientT], P], object]:
-    """Set max concurrency to 1 per user and allow for external cancellation."""
+async def _on_concurrent_command(ctx: AnyContext, exc: commands.CommandError) -> bool:
+    if (
+        not isinstance(exc, commands.MaxConcurrencyReached)
+        or exc.number != 1
+        or exc.per is not commands.BucketType.user
+    ):
+        return False
 
-    @commands.max_concurrency(1, commands.BucketType.user)
+    ctx.bot.dispatch(CustomEvent.cancel, ctx)
+    return True
+
+
+CommandT = TypeVar("CommandT", bound=commands.InvokableApplicationCommand, infer_variance=True)
+
+
+def register_cancellable(command: CommandT) -> CommandT:
+    """Enable cancellation of a command.
+
+    Cancellable commands have their concurrency set to 1 per user.
+    """
+    func = command._callback  # pyright: ignore[reportPrivateUsage]
+
     @wraps(func)
     async def command_callback(
-        inter: disnake.CommandInteraction[ClientT], *args: P.args, **kwargs: P.kwargs
-    ) -> object:
+        inter: disnake.CommandInteraction[disnake.Client], *args: Any, **kwargs: Any
+    ) -> None:
         token = get_cancel_token(inter)
 
         with anyio.CancelScope() as _COMMAND_CANCEL_SCOPES[token]:
@@ -50,4 +81,9 @@ def register_cancellable(
             finally:
                 del _COMMAND_CANCEL_SCOPES[token]
 
-    return command_callback
+    command._callback = command_callback  # pyright: ignore[reportPrivateUsage]
+
+    max_concurrency = commands.MaxConcurrency(1, per=commands.BucketType.user, wait=False)
+    command._max_concurrency = max_concurrency  # pyright: ignore[reportPrivateUsage]
+    command.error(_on_concurrent_command)
+    return command

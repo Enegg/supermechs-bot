@@ -93,8 +93,8 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
     await inter.send(embed=embed, ephemeral=True)
 
 
-@mech.sub_command()
 @register_cancellable
+@mech.sub_command()
 async def build(
     inter: CommandInteraction,
     locale: Locale,

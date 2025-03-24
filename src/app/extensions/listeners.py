@@ -1,12 +1,9 @@
 import logging
 
 from app.disnake_types import CommandInteraction
-from discord.commands import cancel_command_for
 from disnake import Event
 
-from app import ui
 from app.bridges.telemetry import command_tracker
-from app.commands.cancellation import is_cancel_button, parse_cancel_token
 from app.plugins_factory import create_plugin
 
 plugin = create_plugin(__name__)
@@ -35,16 +32,6 @@ async def on_slash_command(inter: CommandInteraction, /) -> None:
         extra={"filled_options": inter.filled_options},
     )
     command_tracker.add_invocation(inter)
-
-
-@plugin.listener(Event.button_click)
-async def on_cancel_button(inter: ui.MessageInteraction, /) -> None:
-    if not is_cancel_button(inter.data.custom_id):
-        return
-
-    await inter.response.defer()
-    await inter.delete_original_response()
-    cancel_command_for(parse_cancel_token(inter.data.custom_id))
 
 
 @plugin.listener(Event.slash_command_completion)

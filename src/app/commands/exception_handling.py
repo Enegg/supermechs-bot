@@ -9,23 +9,13 @@ from disnake import Colour, Embed, Event, HTTPException, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
 
-from app import i18n, ui
-from app.commands.cancellation import get_cancel_button_id
+from app import i18n
 from app.core import CONFIG
 from app.text_utils import Char
 from app.utils import format_exception
 
 _channel: Messageable | None = None
 _LOG = logging.getLogger("event.command_error")
-
-
-def cancel_button(inter: CommandInteraction, gettext: i18n.GetText) -> ui.ActionButton:
-    return ui.ActionButton(
-        custom_id=get_cancel_button_id(inter),
-        style=ui.ButtonStyle.red,
-        label=gettext("ui-cmd-cancel-button"),
-        emoji="🛑",
-    )
 
 
 def get_user_error_message(
@@ -41,11 +31,6 @@ def get_user_error_message(
         case commands.UserInputError() | commands.CheckFailure():
             # TODO: localize (some UserInputErrors are localized)
             info.with_content(str(exc))
-
-        # 1 per user is special as it is cancellable
-        case commands.MaxConcurrencyReached(number=1, per=commands.BucketType.user):
-            info.with_content(gettext("command-running"))
-            info.with_components(cancel_button(inter, gettext))
 
         case commands.MaxConcurrencyReached() as exc:
             # TODO: localize
