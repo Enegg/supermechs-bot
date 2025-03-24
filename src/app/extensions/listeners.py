@@ -21,6 +21,11 @@ async def on_ready() -> None:
     )
 
 
+@plugin.listener(Event.disconnect)
+async def on_disconnect() -> None:
+    _LOG.info("Disconnected")
+
+
 @plugin.listener(Event.slash_command)
 async def on_slash_command(inter: CommandInteraction, /) -> None:
     command_name = inter.application_command.qualified_name

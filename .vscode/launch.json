@@ -13,7 +13,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "src/app",
-            "justMyCode": true
+            "justMyCode": false,
         }
     ]
 }
