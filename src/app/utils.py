@@ -1,10 +1,11 @@
 import os
 import traceback
 from collections import abc
-from pathlib import PurePath
 from typing import Literal, TypeAlias, get_args as get_type_args
 
 from disnake.utils import utcnow as utcnow
+
+from app.typeshed import Pathish
 
 __all__ = ("as_binary_unit", "atoi_bin", "format_exception", "utcnow")
 
@@ -82,17 +83,27 @@ def format_exception(exc: BaseException, /) -> str:
     """
     # TODO: make it work with ExceptionGroups too
     tb = traceback.TracebackException.from_exception(exc, compact=True)
-    cwd = PurePath(os.getcwd())  # noqa: PTH109
+    cwd = os.getcwd()  # noqa: PTH109
 
     for frame_summary in tb.stack:
-        file = PurePath(frame_summary.filename)
-
         try:
-            relative_path = file.relative_to(cwd)
+            frame_summary.filename = strip_cwd(frame_summary.filename, cwd)
 
         except ValueError:
             continue
 
-        frame_summary.filename = f".{os.sep}{relative_path}"
-
     return "".join(tb.format())
+
+
+def strip_cwd(path: Pathish, cwd: Pathish | None = None) -> str:
+    """Make path relative to the cwd. `{cwd}/pth` becomes `./pth`.
+
+    Raises
+    ------
+    ValueError
+        Path is not within the cwd.
+    """
+    if cwd is None:
+        cwd = os.getcwd()  # noqa: PTH109
+
+    return f".{os.sep}{os.path.relpath(path, cwd)}"

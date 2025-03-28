@@ -5,11 +5,15 @@ disable_existing_loggers = false
 [logging.root]
 level = "INFO"
 handlers = ["stdout", "file"]
+filters = ["normalize_path"]
+
+[logging.filters.normalize_path]
+"()" = "app.core.logging.get_path_normalizer"
 
 [logging.formatters.simple]
 format = "{asctime} [{levelname:<8}|{pathname}:{lineno}] {name} - {message}"
 style = "{"
-datefmt = "%d-%H:%M:%S"
+datefmt = "%Y-%m-%d %H:%M:%S"
 
 [logging.formatters.json]
 "()" = "app.core.logging.JsonFormatter"
@@ -27,15 +31,29 @@ class = "logging.StreamHandler"
 level = "INFO"
 formatter = "simple"
 stream = "ext://sys.stdout"
+filters = ["normalize_path"]
 
 [logging.handlers.file]
 class = "logging.handlers.RotatingFileHandler"
 level = "DEBUG"
 formatter = "json"
 filename = "logs/log.jsonl"
+encoding = "utf-8"
 maxBytes = 1_048_576
 backupCount = 5
+filters = ["normalize_path"]
 
-[logging.loggers]
-disnake = { level = "ERROR" }
-"disnake.client" = { level = "CRITICAL" }
+[logging.handlers.disnake]
+class = "logging.handlers.RotatingFileHandler"
+level = "DEBUG"
+formatter = "json"
+filename = "logs/disnake_log.jsonl"
+encoding = "utf-8"
+maxBytes = 1_048_576
+backupCount = 5
+filters = ["normalize_path"]
+
+[logging.loggers.disnake]
+level = "DEBUG"
+handlers = ["disnake"]
+propagate = false

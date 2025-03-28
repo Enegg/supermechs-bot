@@ -1,13 +1,20 @@
+# https://www.youtube.com/watch?v=9L77QExPmI0
+# TODO (3.12): QueueHandler/QueueListener
 import datetime
+import io
 import logging
 import logging.config
+import logging.handlers
+from collections import abc
 from pathlib import Path
+from typing import TypeAlias
 from typing_extensions import override
 
 import orjson
 import rtoml
 
 from app.typeshed import Pathish
+from app.utils import strip_cwd
 
 BUILTIN_KEYS = frozenset({
     "args",
@@ -33,18 +40,68 @@ BUILTIN_KEYS = frozenset({
     "thread",
     "threadName",
     "taskName",
-})
+})  # fmt: skip
+
+FilterType: TypeAlias = logging.Filter | abc.Callable[[logging.LogRecord], logging.LogRecord | bool]
+"""Type of an object acceptable as a Filter."""
 
 
-# https://www.youtube.com/watch?v=9L77QExPmI0
+# TODO (3.12): return a copy
+"""
+def normalize_record_path(record: logging.LogRecord) -> logging.LogRecord:
+    if record.pathname == "(unknown file)":
+        return record
+
+    try:
+        path = strip_cwd(record.pathname)
+
+    except ValueError:
+        return record
+
+    # TODO (3.13): copy.replace?
+    record = copy.copy(record)
+    record.pathname = path
+    return record
+"""
+
+def normalize_record_path(record: logging.LogRecord) -> bool:
+    if record.pathname == "(unknown file)":
+        return True
+
+    if record.pathname.startswith("./"):
+        return True
+
+    try:
+        record.pathname = strip_cwd(record.pathname)
+
+    except ValueError:
+        return True
+
+    return True
+
+
+def get_path_normalizer() -> FilterType:
+    return normalize_record_path
+
+
+def patch_file_handler() -> None:
+    _base_open = logging.FileHandler._open
+
+    def _open(self: logging.FileHandler) -> io.TextIOWrapper:
+        Path(self.baseFilename).parent.mkdir(exist_ok=True, parents=True)
+        return _base_open(self)
+
+    logging.FileHandler._open = _open
+
+
 class JsonFormatter(logging.Formatter):
     def __init__(
         self,
         *,
-        fmt_keys: dict[str, str] | None = None,
+        fmt_keys: abc.Mapping[str, str] = {},
     ) -> None:
         super().__init__()
-        self.fmt_keys = fmt_keys or {}
+        self.fmt_keys = fmt_keys
 
     @override
     def format(self, record: logging.LogRecord) -> str:
@@ -78,6 +135,6 @@ class JsonFormatter(logging.Formatter):
 def config_logging(path: Pathish, /) -> None:
     """Configure the logging module."""
     config = rtoml.load(Path(path))["logging"]
-    Path(config["handlers"]["file"]["filename"]).parent.mkdir(exist_ok=True)
+    patch_file_handler()
     logging.config.dictConfig(config)
     logging.captureWarnings(True)
