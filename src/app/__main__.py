@@ -1,7 +1,9 @@
 import logging
+import signal
 from functools import partial
 
 import anyio
+import anyio.abc
 
 import disnake
 from discord import load_extensions
@@ -11,6 +13,22 @@ from app import i18n, paths, state
 from app.commands import cancellation, exception_handling
 from app.commands.injections import register_injections
 from app.core import CONFIG, config_logging, http
+
+
+def install_signal_handler(bot: commands.InteractionBot, tg: anyio.abc.TaskGroup) -> None:
+    # NOTE: anyio.open_signal_receiver does not work on Windows
+    def handle(signum: int, frame: object) -> None:
+        del frame
+        sig = signal.Signals(signum).name
+        logging.warning("Received %s, stopping", sig)
+        tg.start_soon(bot.close)
+
+    signal.signal(signal.SIGINT, handle)
+    signal.signal(signal.SIGTERM, handle)
+    logging.info(
+        "Ctrl+C handler installed;"
+        " bot should shutdown gracefully, but won't stop loops outside python!"
+    )
 
 
 async def main() -> None:
@@ -51,6 +69,7 @@ async def main() -> None:
 
     try:
         async with http.client_session(bot.http) as session, anyio.create_task_group() as tg:
+            install_signal_handler(bot, tg)
             tg.start_soon(state.load_async, session, partial_state)
             tg.start_soon(sync.sync_commands, bot)
             tg.start_soon(bot.connect)
@@ -62,10 +81,6 @@ async def main() -> None:
 if __name__ == "__main__":
     try:
         anyio.run(main)
-
-    except KeyboardInterrupt:
-        # graceful shutdown it is not
-        pass
 
     finally:
         logging.shutdown()
