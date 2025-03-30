@@ -1,3 +1,8 @@
+frantic_gifs = [
+    "https://i.imgur.com/Bbbf4AH.mp4",
+    "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
+]
+
 [stats]
 weight =                      { emoji =     "<:weight:725870760484143174>" }
 hit_points =                  { emoji =     "<:health:725870887588462652>" }
@@ -90,24 +95,3 @@ explosive_resistance = { emoji =   "<:expres:725871136935772294>" }
 electric_resistance =  { emoji =  "<:elecres:725871146716758077>" }
 total_hp =             { emoji =   "<:health:725870887588462652>" }
 backfire_reduction =   { emoji = "<:backfire:725871901062201404>" }
-
-[emojis]
-weight_sub_0 = "🎈"
-weight_stages = [
-    "▫️",
-    "◽",
-    "◻️",
-    "🔲",
-    "⬜",
-]
-weight_900 = "🟦"
-weight_990 = "🟩"
-weight_1k  = "✅"
-overload   = "🟨"
-overweight = "⛔"
-
-[gifs]
-frantics = [
-    "https://i.imgur.com/Bbbf4AH.mp4",
-    "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
-]

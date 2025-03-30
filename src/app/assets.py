@@ -52,17 +52,6 @@ class Sided(Generic[T]):
 
 
 @attrs.frozen
-class Emojis:
-    weight_sub_0: str
-    weight_stages: tuple[str, ...]
-    weight_900: str
-    weight_990: str
-    weight_1k: str
-    overload: str
-    overweight: str
-
-
-@attrs.frozen
 class Assets:
     stats: abc.Mapping[str, Asset]
     extra_stats: abc.Mapping[str, Asset]
@@ -71,45 +60,25 @@ class Assets:
     types: abc.Mapping[str, Asset]
     sided_types: abc.Mapping[str, Sided[Asset]]
     categories: abc.Mapping[str, Asset]
-    gifs: abc.Mapping[str, abc.Sequence[str]]
+    frantic_gifs: abc.Sequence[str]
 
 
-_config = MappingParser.from_path(paths.ASSETS_TOML)
-ASSETS = _config.structure(Assets)
-EMOJIS = _config.structure(Emojis, "emojis")
-del _config
+ASSETS = MappingParser.from_path(paths.ASSETS_TOML).structure(Assets)
 
 
 def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:
     if weight < 0:
-        return EMOJIS.weight_sub_0
+        return "🎈"
     progress = math.floor(rules.safe_weight * 0.9)
     if weight < progress:
-        emojis = ("", *EMOJIS.weight_stages)
+        emojis = ("", "▫️", "◽", "◻️", "🔲", "⬜")
         return emojis[round((len(emojis) - 1) * weight / progress)]
     if weight < math.floor(rules.safe_weight * 0.99):
-        return EMOJIS.weight_900
+        return "🟦"
     if weight < rules.safe_weight:
-        return EMOJIS.weight_990
+        return "🟩"
     if weight == rules.safe_weight:
-        return EMOJIS.weight_1k
+        return "✅"
     if weight <= rules.max_weight:
-        return EMOJIS.overload
-    return EMOJIS.overweight
-
-
-def blend_colors1(*colors: Color) -> Color:
-    # https://stackoverflow.com/a/1351485
-    return Color.from_rgb(
-        round(255 - math.sqrt(sum((255 - color.r) ** 2 for color in colors) / len(colors))),
-        round(255 - math.sqrt(sum((255 - color.g) ** 2 for color in colors) / len(colors))),
-        round(255 - math.sqrt(sum((255 - color.b) ** 2 for color in colors) / len(colors))),
-    )
-
-
-def blend_colors2(*colors: Color) -> Color:
-    return Color.from_rgb(
-        sum(color.r for color in colors) // len(colors),
-        sum(color.g for color in colors) // len(colors),
-        sum(color.b for color in colors) // len(colors),
-    )
+        return "🟨"
+    return "⛔"

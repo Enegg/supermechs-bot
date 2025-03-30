@@ -65,7 +65,7 @@ async def load_state() -> None:
 @plugin.slash_command()
 async def frantic(inter: CommandInteraction) -> None:
     """Humiliate frantic users."""
-    choice = random.choice(ASSETS.gifs["frantics"])
+    choice = random.choice(ASSETS.frantic_gifs)
     await inter.response.send_message(choice)
 
 
@@ -87,8 +87,8 @@ async def info(inter: CommandInteraction) -> None:
     backend_fields = [
         f"Python version: {meta.python_version}",
         f"Discord library: {md.hyperlink('disnake', meta.disnake_url)} {meta.disnake_version}",
+        f"Lines of code: {_state.app_sloc} bot + {_state.lib_sloc} SM library",
     ]
-    backend_fields.append(f"Lines of code: {_state.app_sloc} bot + {_state.lib_sloc} SM library")
 
     supermechs_fields = [
         f"Registered players: {len(state.players.mapping)}",
