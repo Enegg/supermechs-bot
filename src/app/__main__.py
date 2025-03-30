@@ -38,6 +38,8 @@ async def main() -> None:
     disnake.VoiceClient.warn_nacl = False
 
     bot = commands.InteractionBot(
+        # NOTE: guilds provides things like Interaction.me,
+        # which is typed as -> Member | ClientUser, but can actually be None
         intents=disnake.Intents(guilds=True),
         activity=disnake.Game("SuperMechs"),
         allowed_mentions=disnake.AllowedMentions.none(),
