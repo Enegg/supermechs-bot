@@ -10,14 +10,14 @@ from disnake import Embed, Locale
 from disnake.utils import MISSING
 
 from app import i18n, ui
-from app.assets import ASSETS, get_weight_emoji
+from app.assets import COLORS, EMOJIS
 from app.devtools import debug_footer
 from app.embed_utils import embed_image
 from app.models import ItemPack, MechBuild, Player
 from app.text_utils import Char
 
 import supermechs.all as sm
-from supermechs.enums import ItemElementName, ItemTypeName, StatName
+from supermechs.enums import ItemElementName, StatName
 
 
 def embed_mech(mech: sm.abc.Mech[sm.abc.ItemData], locale: Locale, name: str) -> Embed:
@@ -55,13 +55,13 @@ def format_summary(
     # if buff_with is not None:
 
     parts = [
-        f"{ASSETS.stats[StatName.weight]} **{summary.weight:.0f}**"
+        f"{EMOJIS.stats.weight} **{summary.weight:.0f}**"
         f" {i18n.get_stat_name(locale, StatName.weight)}"
-        f" {get_weight_emoji(int(summary.weight))}"
+        f" {EMOJIS.get_weight_emoji(int(summary.weight))}"
     ]
 
     parts.extend(
-        f"{ASSETS.stats[stat].emoji} **{value:.0f}** {i18n.get_stat_name(locale, stat)}"
+        f"{EMOJIS.stats[stat]} **{value:.0f}** {i18n.get_stat_name(locale, stat)}"
         for stat, value in values.items()
     )
     return "\n".join(parts)
@@ -69,12 +69,15 @@ def format_summary(
 
 def slot_emoji(slot: sm.abc.MechSlot, /) -> str:
     """Return the emoji representing a slot, with respect to the right & left variants."""
-    if slot.startswith(("top", "side")):
-        slot_name, _, index = slot.rpartition("_")
-        asset = ASSETS.sided_types[slot_name]
-        return (asset.right if int(index) % 2 else asset.left).emoji
+    if slot.startswith("top"):
+        index = slot[-1]
+        return EMOJIS.types.right_top_weapon if int(index) % 2 else EMOJIS.types.left_top_weapon
 
-    return ASSETS.types[slot].emoji
+    if slot.startswith("side"):
+        index = slot[-1]
+        return EMOJIS.types.right_side_weapon if int(index) % 2 else EMOJIS.types.left_side_weapon
+
+    return EMOJIS.types[sm.abc.ItemType(slot)]
 
 
 def sorted_options(
@@ -120,11 +123,13 @@ def color_from_mech(mech: sm.abc.Mech[sm.abc.ItemData], /) -> EmbedColorType:
 
         element = mech.torso.element
 
-    return ASSETS.elements[element].color
+    return COLORS.elements[element]
 
 
 def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[ui.SelectOption]]]:
-    item_groups = {type_: {element: list[ItemData]() for element in Element} for type_ in Type}
+    item_groups = {
+        type_: {element: list[sm.abc.ItemData]() for element in Element} for type_ in Type
+    }
 
     for item in pack.items.values():
         item_groups[item.type][item.element].append(item)
@@ -139,7 +144,7 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[ui.SelectOpt
                 ui.SelectOption(
                     label=item.name,
                     value=str(item.id),
-                    emoji=ASSETS.elements[item.element.name].emoji,
+                    emoji=EMOJIS.elements[item.element.name],
                 )
                 for item in items
             ]
@@ -187,7 +192,7 @@ class MechView:
     DUMMY_BUTTONS = tuple(
         ui.ActionButton(label=Char.BLANK, disabled=True, custom_id=f"$dummy{n}") for n in range(4)
     )
-    PAGE_EMOJI = (ASSETS.types[ItemTypeName.MODULE].emoji, ASSETS.types[ItemTypeName.TORSO].emoji)
+    PAGE_EMOJI = (EMOJIS.types.module, EMOJIS.types.torso)
 
     def __init__(
         self,

@@ -4,7 +4,7 @@ from app.disnake_types import Interaction
 from disnake.utils import get as get_matching
 
 from app import state
-from app.assets import ASSETS
+from app.assets import ICONS
 from app.models import ItemPack
 from resources import Resource
 
@@ -12,10 +12,13 @@ import supermechs.all as sm
 
 
 def get_item_icon(item: sm.abc.ItemData, /) -> Resource:
-    if item.type == sm.ItemTypeName.SIDE_WEAPON or item.type == sm.ItemTypeName.TOP_WEAPON:  # noqa: PLR1714
-        return ASSETS.sided_types[item.type].right.resource
+    if item.type == sm.ItemTypeName.SIDE_WEAPON:
+        return ICONS.types.right_side_weapon
 
-    return ASSETS.types[item.type].resource
+    if item.type == sm.ItemTypeName.TOP_WEAPON:
+        return ICONS.types.right_top_weapon
+
+    return ICONS.types[item.type]
 
 
 def get_item_by_name(items: abc.Iterable[sm.ItemData], name: str) -> sm.ItemData | None:

@@ -13,7 +13,7 @@ from disnake.ext import commands
 from disnake.utils import MISSING
 
 from app import i18n, ui
-from app.assets import ASSETS
+from app.assets import EMOJIS
 from app.bridges.sm_utils import get_item_pack_for
 from app.commands.autocompleters import mech_name_autocomplete
 from app.core import CONFIG
@@ -27,7 +27,6 @@ from defer import Defer
 
 from .mech_manager import MechView
 
-from supermechs.enums import ItemTypeName
 from supermechs.tools import mech_weight
 
 plugin = create_plugin(__name__)
@@ -51,11 +50,11 @@ async def mech(inter: CommandInteraction) -> None:
 
 # TODO: localize this
 MECH_SUMMARY_TEMPLATE = f"""\
-- {ASSETS.types[ItemTypeName.TORSO].emoji} {{TORSO}}
-- {ASSETS.types[ItemTypeName.LEGS].emoji} {{LEGS}}
-- {ASSETS.sided_types[ItemTypeName.SIDE_WEAPON].right.emoji} `{{WEAPONS}}` weapon(s)
-- {ASSETS.types[ItemTypeName.MODULE].emoji} `{{MODULES}}` module(s)
-- {ASSETS.stats['weight'].emoji} `{{WEIGHT}}`kg\
+- {EMOJIS.types.torso} {{TORSO}}
+- {EMOJIS.types.legs} {{LEGS}}
+- {EMOJIS.types.right_side_weapon} `{{WEAPONS}}` weapon(s)
+- {EMOJIS.types.module} `{{MODULES}}` module(s)
+- {EMOJIS.stats.weight} `{{WEIGHT}}`kg\
 """
 
 

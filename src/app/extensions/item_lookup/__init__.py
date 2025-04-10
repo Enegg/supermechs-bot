@@ -6,7 +6,7 @@ from disnake import Embed, File, Locale
 from disnake.ext import commands
 
 from app import ui
-from app.assets import ASSETS
+from app.assets import COLORS
 from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_for
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import DEFAULT_CHOICE, ELEMENT_CHOICES, TYPE_CHOICES
@@ -66,7 +66,7 @@ async def item(
         case _:
             raise UnknownResourceError
 
-    embed_color = ASSETS.elements[item.element.lower()].color
+    embed_color = COLORS.elements[item.element]
 
     if compact:
         embed = (
@@ -159,7 +159,7 @@ async def compare(
             desc_builder.write(f" {str_type(item_a.type)} / {str_type(item_b.type)}")
 
         desc = desc_builder.getvalue()
-        color = ASSETS.elements[item_a.element].color
+        color = COLORS.elements[item_a.element]
 
     else:
         desc = (

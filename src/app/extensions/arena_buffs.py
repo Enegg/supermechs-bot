@@ -5,7 +5,7 @@ from app.disnake_types import CommandInteraction
 from discord.commands import register_cancellable
 
 from app import ui
-from app.assets import ASSETS
+from app.assets import EMOJIS
 from app.core import CONFIG
 from app.models import Player
 from app.plugins_factory import create_plugin
@@ -143,7 +143,7 @@ class ArenaShopView:
             ),
             style_on=ui.ButtonStyle.blurple,
             label=make_label(self.shop, category),
-            emoji=ASSETS.categories[category.name].emoji,
+            emoji=EMOJIS.categories[category.name],
             custom_id=self.store.make_id(category.name),
         )
         self.store.bind(btn)(partial(self.buff_button, btn))

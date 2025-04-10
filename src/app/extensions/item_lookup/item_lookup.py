@@ -4,7 +4,7 @@ from itertools import zip_longest
 from disnake import Embed, Locale
 
 from app import i18n, ui
-from app.assets import ASSETS
+from app.assets import EMOJIS
 from app.devtools import debug_footer
 from app.text_utils import Char
 
@@ -78,7 +78,7 @@ def item_transform_range(item: ItemData, /, at_tier: Tier | None = None) -> str:
         at_tier = tiers[-1]
 
     index = at_tier - tiers[0]
-    str_range = [ASSETS.tiers[tier.name].emoji for tier in tiers]
+    str_range = [EMOJIS.tiers[tier] for tier in tiers]
     str_range[index] = f"({str_range[index]})"
     return "".join(str_range)
 
@@ -103,11 +103,11 @@ def default_fields(
             spaced = True
 
         string.write(
-            f"{ASSETS.stats[stat.name].emoji} **{str_value}** {i18n.get_stat_name(locale, stat)}\n"
+            f"{EMOJIS.stats[stat.name]} **{str_value}** {i18n.get_stat_name(locale, stat)}\n"
         )
 
     if item.tags.require_jump:
-        string.write(f"{ASSETS.stats[Stat.jump.name].emoji} **Jumping required**")
+        string.write(f"{EMOJIS.stats.jump} **Jumping required**")
 
     embed.add_field("Stats:", string.getvalue(), inline=False)
 
@@ -129,10 +129,10 @@ def compact_fields(
         stats = buff_stats(stats, MAX_SHOP)
 
     for stat_key, str_value in iter_formatted_stats(stats, avg, 0):
-        lines.append(f"{ASSETS.stats[stat_key.name].emoji} **{str_value}**")
+        lines.append(f"{EMOJIS.stats[stat_key.name]} **{str_value}**")
 
     if item.tags.require_jump:
-        lines.append(f"{ASSETS.stats[Stat.jump.name].emoji}❗")
+        lines.append(f"{EMOJIS.stats.jump}❗")
 
     line_count = len(lines)
     div = get_row_width(line_count, 4)
@@ -187,7 +187,7 @@ def item_compare_view(
             require_jump = True
 
         if require_jump:
-            emoji = ASSETS.stats[Stat.jump.name].emoji
+            emoji = EMOJIS.stats.jump
             name_field.append(f"{emoji} **{gettext('item-compare-jump-required')}**")
 
         modify_field_at = embed.set_field_at if embed._fields else embed.insert_field_at
