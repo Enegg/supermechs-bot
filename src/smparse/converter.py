@@ -4,20 +4,17 @@ from typing import (
     get_args as get_type_args,
     get_origin as get_type_origin,
 )
-from typing_extensions import TypeVar
 
 import cattrs
 from cattrs import strategies
 from monads.option import Null, Option, Some
 from monads.tools import from_none
 
-T = TypeVar("T", infer_variance=True)
-
 converter = cattrs.Converter()
 strategies.configure_union_passthrough(bool | int | float | str | None, converter)
 
 
-def wrap_option(obj: object, type_: type[Option[T]]) -> Option[T]:
+def wrap_option[T](obj: object, type_: type[Option[T]]) -> Option[T]:
     parametrized_some = get_type_args(type_)[0]
     wrapped_type = get_type_args(parametrized_some)[0]
     return from_none(converter.structure(obj, wrapped_type))

@@ -1,7 +1,7 @@
 import io
 import logging
 from collections import abc
-from typing import ClassVar, Protocol, Self, TypeAlias
+from typing import ClassVar, Protocol, Self
 
 import anyio.lowlevel
 import attrs
@@ -16,9 +16,9 @@ import supermechs.all as sm
 
 _LOG = logging.getLogger(__name__)
 
-SpriteKey: TypeAlias = tuple[sm.abc.ItemID, sm.abc.StageTier]
-ImageLoader: TypeAlias = AsyncFunc[[str], Image.Image]
-Processor: TypeAlias = abc.Callable[[Image.Image], Image.Image]
+type SpriteKey = tuple[sm.abc.ItemID, sm.abc.StageTier]
+type ImageLoader = AsyncFunc[[str], Image.Image]
+type Processor = abc.Callable[[Image.Image], Image.Image]
 
 
 @attrs.frozen(kw_only=True)

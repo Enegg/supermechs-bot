@@ -1,6 +1,5 @@
 import logging
-from collections import abc
-from typing import Any, Final, NewType
+from typing import Final, NewType
 
 import aiohttp
 import anyio
@@ -53,7 +52,7 @@ def _player_factory(user: disnake.abc.User, /) -> Player:
 players: Final = Memo(_player_factory, lambda user: user.id)
 
 
-def item_pack_factory(data: abc.Mapping[str, Any], /, url: str | None = None) -> ItemPack:
+def item_pack_factory(data: JsonObject, /, url: str | None = None) -> ItemPack:
     pack_data, items = structure_pack(data)
     pack = ItemPack(
         key=PackKey(pack_data.key),

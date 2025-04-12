@@ -1,5 +1,4 @@
-from typing import final
-from typing_extensions import override
+from typing import final, override
 
 import disnake
 

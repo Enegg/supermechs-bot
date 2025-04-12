@@ -1,6 +1,6 @@
 from collections import abc
 from enum import Enum, auto
-from typing import Literal, Self, TypeAlias, TypedDict
+from typing import Literal, Self, TypedDict
 
 import attrs
 
@@ -9,7 +9,7 @@ from disnake import ui
 
 __all__ = ("EditMode", "MessageBuilder")
 
-Components: TypeAlias = ui.Components[ui.MessageUIComponent]
+type Components = ui.Components[ui.MessageUIComponent]
 
 
 class EditMode(Enum):

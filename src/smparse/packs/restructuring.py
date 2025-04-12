@@ -1,6 +1,6 @@
 from collections import abc
 from functools import partial
-from typing import TypeAlias, assert_never
+from typing import assert_never
 
 from attrs import asdict
 
@@ -17,7 +17,7 @@ from smparse.packs.models import (
 
 import supermechs.all as sm
 
-ItemDict: TypeAlias = dict[sm.abc.ItemID, sm.ItemData]
+type ItemDict = dict[sm.abc.ItemID, sm.ItemData]
 
 KNOWN_TAGS = frozenset(map(sm.abc.ItemTag, sm.ItemTagName))
 

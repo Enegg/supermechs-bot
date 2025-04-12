@@ -1,18 +1,16 @@
 from collections import abc, defaultdict
 from contextlib import asynccontextmanager
-from typing import Generic
 
 import anyio
 from attrs import define, field
 
-from memo.typeshed import KT, VT, P
 from memo.utils import callable_repr, default_key
 
 __all__ = ("AsyncMemo",)
 
 
 @define
-class AsyncMemo(Generic[P, VT, KT]):
+class AsyncMemo[**P, VT, KT]:
     """Unbound cache of an async factory function.
 
     - bypass caching via `.factory(...)`.

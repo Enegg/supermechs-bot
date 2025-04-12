@@ -1,8 +1,7 @@
 """Collection of functions related to (discord specific) markdown formatting."""
 
 from enum import StrEnum
-from typing import Protocol
-from typing_extensions import override
+from typing import Protocol, override
 
 import disnake
 from disnake.utils import format_dt

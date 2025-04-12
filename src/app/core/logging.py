@@ -1,13 +1,13 @@
 # https://www.youtube.com/watch?v=9L77QExPmI0
 # TODO (3.12): QueueHandler/QueueListener
+import copy
 import datetime
 import io
 import logging
 import logging.config
 from collections import abc
 from pathlib import Path
-from typing import TypeAlias
-from typing_extensions import override
+from typing import override
 
 import orjson
 import rtoml
@@ -41,12 +41,10 @@ BUILTIN_KEYS = frozenset({
     "taskName",
 })  # fmt: skip
 
-FilterType: TypeAlias = logging.Filter | abc.Callable[[logging.LogRecord], logging.LogRecord | bool]
+type FilterType = logging.Filter | abc.Callable[[logging.LogRecord], logging.LogRecord | bool]
 """Type of an object acceptable as a Filter."""
 
 
-# TODO (3.12): return a copy
-"""
 def normalize_record_path(record: logging.LogRecord) -> logging.LogRecord:
     if record.pathname == "(unknown file)":
         return record
@@ -61,22 +59,6 @@ def normalize_record_path(record: logging.LogRecord) -> logging.LogRecord:
     record = copy.copy(record)
     record.pathname = path
     return record
-"""
-
-def normalize_record_path(record: logging.LogRecord) -> bool:
-    if record.pathname == "(unknown file)":
-        return True
-
-    if record.pathname.startswith("./"):
-        return True
-
-    try:
-        record.pathname = strip_cwd(record.pathname)
-
-    except ValueError:
-        return True
-
-    return True
 
 
 def get_path_normalizer() -> FilterType:

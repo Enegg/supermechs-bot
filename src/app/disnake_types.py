@@ -1,10 +1,8 @@
-from typing import TypeAlias
-
 import disnake
 from disnake.ext import commands
 
-Bot: TypeAlias = commands.InteractionBot
-Interaction: TypeAlias = disnake.Interaction[Bot]
-CommandInteraction: TypeAlias = disnake.CommandInteraction[Bot]
-MessageInteraction: TypeAlias = disnake.MessageInteraction[Bot]
-ModalInteraction: TypeAlias = disnake.ModalInteraction[Bot]
+type Bot = commands.InteractionBot
+type Interaction = disnake.Interaction[Bot]
+type CommandInteraction = disnake.CommandInteraction[Bot]
+type MessageInteraction = disnake.MessageInteraction[Bot]
+type ModalInteraction = disnake.ModalInteraction[Bot]

@@ -2,21 +2,20 @@ import logging
 from collections import abc
 from functools import partial
 from pathlib import Path
-from typing import Final, NotRequired, Protocol, Required, TypeAlias, TypedDict, cast as type_cast
-from typing_extensions import ReadOnly
+from typing import Final, NotRequired, Protocol, ReadOnly, Required, TypedDict, cast as type_cast
 
 import rtoml
 from monads.option import Null, Option, Some
 
 from disnake import Locale, LocalizationProtocol
 
-from app.typeshed import KT, Pathish
+from app.typeshed import Pathish
 
 from supermechs.enums import StatName
 
 __all__ = ("GetText", "get_embed_tips", "get_gettext", "get_message", "get_stat_name", "load")
 
-LocalePair: TypeAlias = tuple[KT, Locale]
+type LocalePair[KT] = tuple[KT, Locale]
 
 
 class GetText(Protocol):
@@ -33,7 +32,7 @@ messages: Final[abc.Mapping[LocalePair[str], str]] = {}
 embed_tips: Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
 _command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
-localization_provider: Final = type_cast(LocalizationProtocol, _command_locale)
+localization_provider: Final = type_cast("LocalizationProtocol", _command_locale)
 
 locale_override: Option[Locale] = Null.null
 
@@ -48,7 +47,7 @@ def remove_locale_override() -> None:
     locale_override = Null.null
 
 
-def _get(
+def _get[KT](
     store: abc.MutableMapping[LocalePair[KT], str],
     key: KT,
     locale: Locale,
@@ -122,7 +121,7 @@ def _load_file(path: Path, /) -> None:
 
     locale = Locale[path.stem]
     _LOGGER.info("Loading locale for %s", locale)
-    data = type_cast(_LocaleData, rtoml.loads(path.read_text("utf-8")))
+    data = type_cast("_LocaleData", rtoml.loads(path.read_text("utf-8")))
 
     for key, entry in data["stats"].items():
         stat = StatName[key]

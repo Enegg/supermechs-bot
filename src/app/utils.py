@@ -1,7 +1,7 @@
 import os
 import traceback
 from collections import abc
-from typing import Literal, TypeAlias, get_args as get_type_args
+from typing import Literal, get_args as get_type_args
 
 from disnake.utils import utcnow as utcnow
 
@@ -11,8 +11,9 @@ __all__ = ("as_binary_unit", "atoi_bin", "format_exception", "utcnow")
 
 
 # https://en.wikipedia.org/wiki/Binary_prefix
-BinaryPrefix: TypeAlias = Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"]
-BINARY_PREFIXES: abc.Sequence[BinaryPrefix] = get_type_args(BinaryPrefix)
+type BinaryPrefix = Literal["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"]
+BINARY_PREFIXES: abc.Sequence[BinaryPrefix] = get_type_args(BinaryPrefix.__value__)
+assert BINARY_PREFIXES
 
 
 def as_binary_unit(b: int, /, prefix: BinaryPrefix = "") -> tuple[int, BinaryPrefix]:

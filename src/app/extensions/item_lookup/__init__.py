@@ -76,7 +76,7 @@ async def item(
         )
 
     else:
-        desc = f"{item.element.capitalize()} {item.type.replace('_', ' ').lower()}"
+        desc = f"{item.element.capitalize()} {item.type.replace("_", " ").lower()}"
         embed = (
             Embed(title=item.name, description=desc, color=embed_color)
             .set_thumbnail(icon_url)

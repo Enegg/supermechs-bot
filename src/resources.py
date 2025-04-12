@@ -1,7 +1,6 @@
 from collections import abc
 from pathlib import Path
-from typing import Final, Protocol, Self, final
-from typing_extensions import override
+from typing import Final, Protocol, Self, final, override
 
 import attrs
 from yarl import URL

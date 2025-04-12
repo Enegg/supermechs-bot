@@ -1,8 +1,6 @@
 import os
 from typing import Protocol
-from typing_extensions import TypeVar
 
-from discord.typeshed import ClientT
 from disnake import Client, Event, MessageInteraction, ModalInteraction, ui
 
 
@@ -11,14 +9,11 @@ class HasCustomID(Protocol):
     def custom_id(self) -> str: ...
 
 
-IDHolderT = TypeVar("IDHolderT", bound=HasCustomID | str, infer_variance=True)
-
-
 def random_str() -> str:
     return os.urandom(16).hex()
 
 
-async def wait_for_components(
+async def wait_for_components[IDHolderT: HasCustomID | str, ClientT: Client](
     *components_or_ids: IDHolderT, client: ClientT, user_id: int | None = None
 ) -> tuple[MessageInteraction[ClientT], IDHolderT]:
     """Wait for an interaction with any of given components.
@@ -45,7 +40,7 @@ async def wait_for_components(
     return (inter, ids_to_components[inter.data.custom_id])
 
 
-async def wait_for_modal(
+async def wait_for_modal[ClientT: Client](
     modal_or_id: ui.Modal | str, client: ClientT, *, user_id: int | None = None
 ) -> ModalInteraction[ClientT]:
     """Wait for a modal submission.

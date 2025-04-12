@@ -1,6 +1,5 @@
 from collections import abc
-from typing import Any, Protocol, TypeAlias, runtime_checkable
-from typing_extensions import ParamSpec, TypeVar
+from typing import Any, Protocol, runtime_checkable
 
 import disnake
 
@@ -11,16 +10,12 @@ __all__ = (
     "ListenerRegistry",
 )
 
-T = TypeVar("T")
-P = ParamSpec("P")
-ClientT = TypeVar("ClientT", bound=disnake.Client, infer_variance=True)
-
-CoroFunc: TypeAlias = abc.Callable[P, abc.Coroutine[Any, Any, T]]
-AutocompleteReturnType: TypeAlias = (
+type CoroFunc[**P, T] = abc.Callable[P, abc.Coroutine[Any, Any, T]]
+type AutocompleteReturnType = (
     abc.Sequence[str | disnake.Localized[str]] | abc.Mapping[str, str | disnake.Localized[str]]
 )
-EmbedColorType: TypeAlias = disnake.Color | int | None
-EmojiType: TypeAlias = str | disnake.Emoji | disnake.PartialEmoji
+type EmbedColorType = disnake.Color | int | None
+type EmojiType = str | disnake.Emoji | disnake.PartialEmoji
 
 
 @runtime_checkable

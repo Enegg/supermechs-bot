@@ -1,7 +1,6 @@
 from collections import deque
 from datetime import datetime
-from typing import Final
-from typing_extensions import override
+from typing import Final, override
 
 import attrs
 

@@ -1,5 +1,5 @@
 from collections import abc
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import attrs
 import attrs.validators as v
@@ -7,7 +7,7 @@ from monads.option import Null, Option
 
 import supermechs.all as sm
 
-LiteralType: TypeAlias = Literal[
+type LiteralType = Literal[
     "TORSO",
     "LEGS",
     "DRONE",
@@ -20,7 +20,7 @@ LiteralType: TypeAlias = Literal[
     "HOOK",
     "MODULE",
 ]
-LiteralElement: TypeAlias = Literal["PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
+type LiteralElement = Literal["PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
 
 
 @attrs.define(kw_only=True)
@@ -53,7 +53,7 @@ class ItemPackV1:
 
 
 # ------------------------------------------- version 2 --------------------------------------------
-ItemV2: TypeAlias = ItemV1
+type ItemV2 = ItemV1
 
 
 @attrs.define(kw_only=True)
@@ -84,4 +84,4 @@ class ItemPackV3(PackBase):
     items: abc.Sequence[ItemV3]
 
 
-AnyItemPack: TypeAlias = ItemPackV1 | ItemPackV2 | ItemPackV3
+type AnyItemPack = ItemPackV1 | ItemPackV2 | ItemPackV3

@@ -1,18 +1,13 @@
 from collections import abc
 from contextlib import nullcontext
 from functools import partial
-from typing import Generic, ParamSpec, final
-from typing_extensions import TypeVar
+from typing import final
 
 import anyio
 import anyio.lowlevel
 import attrs
 
 __all__ = ("Defer",)
-
-T = TypeVar("T", infer_variance=True)
-RetT = TypeVar("RetT", object, abc.Awaitable[object], infer_variance=True)
-P = ParamSpec("P")
 
 # NOTE:
 # If an exception happens both in the body of the context manager as well as in at least one deferred
@@ -22,7 +17,7 @@ P = ParamSpec("P")
 
 @final  # typing and injections would surely break
 @attrs.define
-class Defer(Generic[RetT]):
+class Defer[RetT: (object, abc.Awaitable[object])]:
     """Context manager replicating Golang's `defer` statement.
 
     ### Usage:
@@ -43,7 +38,7 @@ class Defer(Generic[RetT]):
     shield: bool = attrs.field(default=False, kw_only=True)
     deferred: list[abc.Callable[[], RetT]] = attrs.field(factory=list, init=False)
 
-    def __call__(self, f: abc.Callable[P, RetT], /, *args: P.args, **kwargs: P.kwargs) -> None:
+    def __call__[**P](self, f: abc.Callable[P, RetT], /, *args: P.args, **kwargs: P.kwargs) -> None:
         self.deferred.append(partial(f, *args, **kwargs) if args or kwargs else f)
 
     def __enter__(self: "Defer[object]") -> "Defer[object]":

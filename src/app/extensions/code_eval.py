@@ -42,6 +42,7 @@ async def runner(cs: anyio.CancelScope, fn: abc.Callable[[], object], sio: io.St
 
     cs.cancel()
 
+
 async def waiter(cs: anyio.CancelScope, inter: Interaction, cancelled: anyio.Event) -> None:
     await anyio.sleep(CANCEL_DELAY)
 
@@ -53,6 +54,7 @@ async def waiter(cs: anyio.CancelScope, inter: Interaction, cancelled: anyio.Eve
         # this is the only place we acknowledge the interaction, so shield it
         await button_inter.response.defer()
     cs.cancel()
+
 
 async def eval_code(inter: Interaction, code: str) -> None:
     await inter.response.defer(with_message=True, ephemeral=True)
@@ -93,7 +95,7 @@ async def eval_code(inter: Interaction, code: str) -> None:
         run_time = time.perf_counter() - start_time
 
         output = sio.getvalue() or "[No output]"
-        status = f"{'cancelled after' if cancelled.is_set() else 'finished in'} {run_time:.2f}s"
+        status = f"{"cancelled after" if cancelled.is_set() else "finished in"} {run_time:.2f}s"
 
     title = f"-# Code {status}"
 

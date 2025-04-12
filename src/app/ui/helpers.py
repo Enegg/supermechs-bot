@@ -1,22 +1,20 @@
 from collections import abc
-from typing import Final, Generic, TypeVar
+from typing import Final
 
 import attrs
 
 __all__ = ("Paginator",)
 
-T_co = TypeVar("T_co", covariant=True)
-
 
 @attrs.define
-class Paginator(Generic[T_co]):
+class Paginator[T]:
     """State machine proxying a value at a specific index of a sequence."""
 
-    pages: Final[abc.Sequence[T_co]]
+    pages: Final[abc.Sequence[T]]
     index: int = 0
 
     @property
-    def page(self) -> T_co:
+    def page(self) -> T:
         return self.pages[self.index]
 
     @property

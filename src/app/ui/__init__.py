@@ -1,7 +1,6 @@
 """Extension of the library provided UI kit."""
 
 from functools import partial
-from typing import TypeAlias
 
 import disnake
 from app.disnake_types import Interaction, MessageInteraction
@@ -33,8 +32,8 @@ __all__ = (
     "callback_store",
 )
 
-CallbackStore: TypeAlias = _CallbackStore[MessageInteraction]
-MessageComponents: TypeAlias = Components[MessageUIComponent]
+type CallbackStore = _CallbackStore[MessageInteraction]
+type MessageComponents = Components[MessageUIComponent]
 
 
 def callback_store(base_inter: Interaction, /) -> CallbackStore:

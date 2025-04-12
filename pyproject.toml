@@ -6,7 +6,7 @@ authors = [
     {name = "Eneg", email = "42005170+Enegg@users.noreply.github.com"},
 ]
 dependencies = [
-    "aiohttp == 3.9.5",
+    "aiohttp >= 3.10.11",
     "anyio == 4.*",
     "attrs >= 23.2.0",
     "cattrs >= 24.1.2",
@@ -23,7 +23,7 @@ dependencies = [
     "monads @ git+https://github.com/Enegg/py-monads@v0.1.0",
     "supermechs @ git+https://github.com/Enegg/supermechs@rewrite",
 ]
-requires-python = ">= 3.11, < 3.12"
+requires-python = ">= 3.12, < 3.14"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 
@@ -47,7 +47,7 @@ includes = ["src/app"]
 [tool.ruff]
 src = ["src"]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
@@ -63,6 +63,7 @@ ignore = [
     "COM812",    # don't require commas
     "D1",        # don't enforce docstrings for public API
     "FBT",       # positional bool params; using inlayHints
+    "F821",      # undefined variables; => pyright
     "INP001",    # no __init__.py
     "N806",      # LET ME USE CONSTANTS IN FUNCTIONS
     "N818",      # naming exceptions as *Error
@@ -76,7 +77,7 @@ ignore = [
     "RET503",    # "return xyz(...)" where "xyz(...) -> None" is ok
     "S101",      # asserts are very useful
     "S311",      # we don't do cryptography
-    "SLF001",    # _member access; handled by pyright
+    "SLF001",    # _member access; => pyright
     "T201",      # print
     "TC002",     # move under TYPE_CHECKING
 ]
@@ -132,7 +133,7 @@ allow-dunder-method-names = [
 
 [tool.pyright]
 typeCheckingMode = "strict"
-pythonVersion = "3.11"
+pythonVersion = "3.13"
 
 # disabled even in strict
 deprecateTypingAliases = true

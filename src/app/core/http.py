@@ -1,8 +1,7 @@
 import io
 import logging
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Final
-from typing_extensions import override
+from typing import TYPE_CHECKING, Any, Final, override
 
 import aiohttp
 import attrs

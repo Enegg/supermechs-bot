@@ -1,7 +1,7 @@
 import math
 from collections import abc
 from enum import Enum
-from typing import Any, SupportsFloat, SupportsIndex, TypeAlias
+from typing import Any, SupportsFloat, SupportsIndex
 
 from smparse.converter import converter
 from smparse.packs.models import AnyItemPack, ItemPackV1, ItemPackV2, ItemPackV3
@@ -55,7 +55,7 @@ _STAT_RENAME_TABLE: abc.Mapping[str, str] = {
 _STAT_WITH_ADDON: abc.Set[str] = {"phyDmg", "eleDmg", "expDmg", "range"}
 
 
-ConvertibleToFloat: TypeAlias = str | SupportsFloat | SupportsIndex
+type ConvertibleToFloat = str | SupportsFloat | SupportsIndex
 
 
 def none_to_nan(value: ConvertibleToFloat | None, /) -> float:

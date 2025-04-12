@@ -1,8 +1,7 @@
 import enum
 import logging
 from functools import wraps
-from typing import Any, Final, NamedTuple, TypeAlias
-from typing_extensions import TypeVar
+from typing import Any, Final, NamedTuple
 
 import anyio
 
@@ -23,7 +22,7 @@ class CustomEvent(enum.StrEnum):
 # disnake lies about inheriting from Enum, and renamed _member_names_ :pain:
 assert CustomEvent._member_map_.keys().isdisjoint(disnake.Event._enum_member_names_)  # pyright: ignore[reportUnknownArgumentType, reportAttributeAccessIssue]
 
-AnyContext: TypeAlias = commands.Context[commands.Bot] | disnake.CommandInteraction[disnake.Client]
+type AnyContext = commands.Context[commands.Bot] | disnake.CommandInteraction[disnake.Client]
 
 
 class CancelToken(NamedTuple):
@@ -58,10 +57,9 @@ async def _on_concurrent_command(ctx: AnyContext, exc: commands.CommandError) ->
     return True
 
 
-CommandT = TypeVar("CommandT", bound=commands.InvokableApplicationCommand, infer_variance=True)
-
-
-def register_cancellable(command: CommandT) -> CommandT:
+def register_cancellable[CommandT: commands.InvokableApplicationCommand](
+    command: CommandT,
+) -> CommandT:
     """Enable cancellation of a command.
 
     Cancellable commands have their concurrency set to 1 per user.

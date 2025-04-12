@@ -1,5 +1,4 @@
 from collections import abc
-from typing import TypeAlias
 
 import attrs
 import attrs.validators as v
@@ -50,4 +49,4 @@ class SpritesSheetGfx:
     items: abc.Sequence[ItemGfx]
 
 
-AnyGfx: TypeAlias = ItemPackGfx | SpritesSheetGfx
+type AnyGfx = ItemPackGfx | SpritesSheetGfx

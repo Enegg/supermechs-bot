@@ -1,9 +1,9 @@
-from enum import Enum
+import enum
 
 __all__ = ("ComponentLimits", "EmbedLimits", "InteractionLimits", "MessageLimits")
 
 
-class EmbedLimits(int, Enum):
+class EmbedLimits(enum.IntEnum):
     """Limits imposed on embeds & their sub-components."""
 
     title = 256
@@ -24,7 +24,7 @@ class EmbedLimits(int, Enum):
     """Maximum number of characters over all parts of an embed."""
 
 
-class MessageLimits(int, Enum):
+class MessageLimits(enum.IntEnum):
     """Limits imposed on sending messages."""
 
     content = 2000
@@ -37,7 +37,7 @@ class MessageLimits(int, Enum):
     """Maximum number of action rows per message."""
 
 
-class ComponentLimits(int, Enum):
+class ComponentLimits(enum.IntEnum):
     """Limits imposed on UI components."""
 
     row_width = 5
@@ -64,7 +64,7 @@ class ComponentLimits(int, Enum):
     """Maximum length of a modal's text input's placeholder."""
 
 
-class InteractionLimits(int, Enum):
+class InteractionLimits(enum.IntEnum):
     """Limits imposed on responding to interactions."""
 
     autocomplete_options = 25

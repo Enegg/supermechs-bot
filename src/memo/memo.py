@@ -1,16 +1,14 @@
 from collections import abc
-from typing import Generic
 
 from attrs import define, field
 
-from memo.typeshed import KT, VT, P
 from memo.utils import callable_repr, default_key
 
 __all__ = ("Memo",)
 
 
 @define
-class Memo(Generic[P, VT, KT]):
+class Memo[**P, VT, KT]:
     """Unbound cache of a factory function.
 
     - bypass caching via `.factory(...)`.

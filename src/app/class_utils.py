@@ -7,7 +7,7 @@ import attrs
 import cattrs
 import rtoml
 
-from app.typeshed import Pathish, T
+from app.typeshed import Pathish
 from app.utils import atoi_bin
 
 _repr_obj = reprlib.Repr()
@@ -46,7 +46,7 @@ class MappingParser:
         self.mappings = list(mappings)
         self.conv = conv
 
-    def structure(self, cls: type[T], *key_path: str) -> T:
+    def structure[T](self, cls: type[T], *key_path: str) -> T:
         # ChainMap is mutable and expects MutableMappings, but we don't care about mutation
         config: abc.Mapping[str, Any] = ChainMap(*self.mappings)  # pyright: ignore[reportArgumentType]
 

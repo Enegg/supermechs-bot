@@ -1,5 +1,4 @@
-from typing import ClassVar
-from typing_extensions import override
+from typing import ClassVar, override
 
 from discord.typeshed import EmojiType
 from discord.ui import random_str
