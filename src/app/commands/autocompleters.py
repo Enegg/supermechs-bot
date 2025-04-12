@@ -9,8 +9,6 @@ from app import state
 from app.bridges.sm_utils import acronym_of, get_item_pack_for
 from app.text_utils import sanitize_string
 
-from .params import DEFAULT_CHOICE
-
 import supermechs.all as sm
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
@@ -91,34 +89,28 @@ def _get_item_filters(
 ) -> list[abc.Callable[[sm.abc.ItemData], bool]]:
     filters: list[abc.Callable[[sm.abc.ItemData], bool]] = []
 
-    if (target_type := options.get("type", DEFAULT_CHOICE)) != DEFAULT_CHOICE:
+    if (target_type := options.get("type")) is not None:
         filters.append(lambda item: item.type == target_type)
 
-    if (target_element := options.get("element", DEFAULT_CHOICE)) != DEFAULT_CHOICE:
+    if (target_element := options.get("element")) is not None:
         filters.append(lambda item: item.element == target_element)
 
     return filters
 
 
-async def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
+def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for type & element."""
     pack = get_item_pack_for(inter)
     filters = _get_item_filters(inter.filled_options)
-
-    def filter_item_names() -> abc.Iterator[str]:
-        return (
-            item.name
-            for item in pack.items.values()
-            if all(func(item) for func in filters)
-        )  # fmt: skip
-
     input = input.strip()
-    matching = find_matches(filter_item_names(), input)
+    matching = find_matches(
+        (item.name for item in pack.items.values() if all(func(item) for func in filters)), input
+    )
     del matching[InteractionLimits.autocomplete_options :]
     return [result.name for result in matching]
 
 
-async def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
+def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for player builds."""
     player = state.players(inter.author)
     lowercase = input.lower()
