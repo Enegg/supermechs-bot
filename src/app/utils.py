@@ -19,12 +19,12 @@ assert BINARY_PREFIXES
 def as_binary_unit(b: int, /, prefix: BinaryPrefix = "") -> tuple[int, BinaryPrefix]:
     """Return a tuple representing the value in a binary prefixed unit.
 
-    >>> fold_binary_unit(256 * 1024)
+    >>> as_binary_unit(256 * 1024)
     (256, "Ki")
 
     The optional `prefix` offsets the returned prefix by associated exponent.
 
-    >>> fold_binary_unit(256 * 1024, "Gi")
+    >>> as_binary_unit(256 * 1024, "Gi")
     (256, "Ti")
     """
     if b < 0:

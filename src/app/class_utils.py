@@ -48,7 +48,7 @@ class MappingParser:
 
     def structure[T](self, cls: type[T], *key_path: str) -> T:
         # ChainMap is mutable and expects MutableMappings, but we don't care about mutation
-        config: abc.Mapping[str, Any] = ChainMap(*self.mappings)  # pyright: ignore[reportArgumentType]
+        config: abc.Mapping[str, Any] = ChainMap[str, Any](*self.mappings)  # pyright: ignore[reportArgumentType]
 
         for key in key_path:
             config = config[key]

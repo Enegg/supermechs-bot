@@ -3,7 +3,6 @@ import logging
 
 import aiohttp
 import anyio
-import anyio.lowlevel
 import attrs
 from monads.result import Err, Ok, Result
 
