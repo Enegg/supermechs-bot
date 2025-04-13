@@ -66,8 +66,8 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
 
     embed = Embed(title="Your builds", color=inter.author.color)
 
-    if player.recent_build is not None:
-        embed.description = f"Currently active: **{player.recent_build.name}**"
+    if player.recent_build is not None and player.recent_build.name:
+        embed.description = f"Currently active: **{player.recent_build.name.value}**"
 
     fields: list[tuple[str, str]] = []
 
