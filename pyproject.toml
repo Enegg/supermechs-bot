@@ -152,4 +152,5 @@ reportUnnecessaryCast = "warning"
 reportUnnecessaryIsInstance = "information"
 
 reportUnknownMemberType = false  # disnake causes plenty errors
+reportUnknownVariableType = false  # gg pyright
 reportMissingTypeStubs = false
