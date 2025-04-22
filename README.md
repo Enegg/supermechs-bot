@@ -18,7 +18,7 @@
 2. `uv sync`
 
 ## Setup
-- Create a `.env` file from [template](.env.example)
+- Create a `.env` file from [template](example.env)
 - Ensure the `.venv` is active (`.venv\Scripts\activate`)
 - Run via `python src/app`, or F5
 
@@ -44,4 +44,4 @@
 | `--indev`              | bool | `__debug__`* | Whether the bot is in development mode        |
 | `--debug_command_sync` | bool | `__debug__`* | Whether disnake should log detailed sync info |
 
-\* `False` if running with `python -O` [flag](https://docs.python.org/3/using/cmdline.html#cmdoption-O)
+\* `False` if running with [`python -O` flag](https://docs.python.org/3/using/cmdline.html#cmdoption-O)
