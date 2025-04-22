@@ -1,7 +1,8 @@
 import io
 import logging
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Final, override
+from functools import partial
+from typing import Any, Final
 
 import aiohttp
 import attrs
@@ -31,27 +32,25 @@ class ResponseStatus(IntEnum):
     Im_a_teapot = 418
 
 
-class _ClientSession(aiohttp.ClientSession):
-    @override
-    async def _request(
-        self,
-        method: str,
-        str_or_url: StrOrURL,
-        **kwargs: Any,
-    ) -> aiohttp.ClientResponse:
-        _LOG.info("Request method=%s url=%s", method, str_or_url)
-        response = await super()._request(method, str_or_url, **kwargs)
-        _LOG.log(
-            logging.INFO if response.status == ResponseStatus.ok else logging.WARNING,
-            "Response method=%s url=%s status=%d type=%s length=%s (%s%sB)",
-            method,
-            str_or_url,
-            response.status,
-            response.content_type,
-            response.content_length,
-            *as_binary_unit(response.content_length or 0),
-        )
-        return response
+async def _request(
+    self: aiohttp.ClientSession,
+    method: str,
+    str_or_url: StrOrURL,
+    **kwargs: Any,
+) -> aiohttp.ClientResponse:
+    _LOG.info("Request method=%s url=%s", method, str_or_url)
+    response = await aiohttp.ClientSession._request(self, method, str_or_url, **kwargs)  # pyright: ignore[reportPrivateUsage]
+    _LOG.log(
+        logging.INFO if response.status == ResponseStatus.ok else logging.WARNING,
+        "Response method=%s url=%s status=%d type=%s length=%s (%s%sB)",
+        method,
+        str_or_url,
+        response.status,
+        response.content_type,
+        response.content_length,
+        *as_binary_unit(response.content_length or 0),
+    )
+    return response
 
 
 def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
@@ -61,22 +60,22 @@ def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
     # .venv/Lib/site-packages/aiohttp/payload.py:396
     # aiohttp wants dumps(Any) -> str, then encodes it
     @attrs.define
-    class _MockStr(str if TYPE_CHECKING else object):
+    class _MockStr:
         proxied_bytes: bytes
 
-        @override
-        def encode(self, encoding: str = "utf-8", errors: str = "strict") -> bytes:
+        def encode(self, encoding: str = "", errors: str = "") -> bytes:
             return self.proxied_bytes
 
-    def _dumps(obj: object, /) -> str:
+    def _dumps(obj: object, /) -> Any:
         return _MockStr(orjson.dumps(obj))
 
-    session = _ClientSession(
+    session = aiohttp.ClientSession(
         connector=client.connector,
         connector_owner=client.connector is None,
         timeout=aiohttp.ClientTimeout(total=30),
         json_serialize=_dumps,
     )
+    session._request = partial(_request, session)  # pyright: ignore[reportPrivateUsage]
     return session
 
 
