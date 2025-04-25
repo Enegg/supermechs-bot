@@ -208,7 +208,7 @@ class MechView:
         self.pack = pack
         self.renderer: Any = object()  # TODO
         self.arena_shop = player.arena_shop
-        self.embed = embed_mech(build.mech, locale, build.name)
+        self.embed = embed_mech(build.mech, locale, build.name)  # FIXME
         self.locale = locale
         self.active = None
         self.empty_option = make_empty_option(locale)
