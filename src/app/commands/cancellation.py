@@ -47,6 +47,6 @@ async def on_concurrent_command(inter: CommandInteraction) -> None:
     await inter.response.send_message(gettext("command-running"), components=button, ephemeral=True)
 
 
-def setup(bot: Bot) -> None:
+def setup(bot: Bot, /) -> None:
     bot.add_listener(on_cancel_button, Event.button_click)
     bot.add_listener(on_concurrent_command, CustomEvent.cancel.listener_name)

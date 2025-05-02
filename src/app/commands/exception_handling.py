@@ -49,7 +49,7 @@ def get_user_error_message(
 def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
     arguments = ", ".join(f"`{option}: {value}`" for option, value in inter.filled_options.items())
     header = (
-        f"Place: `{inter.guild or inter.channel}`\n"
+        f"Place: <#{inter.channel_id}>\n"
         f"User: {inter.author.mention} (`{inter.author.display_name}`)\n"
         f"Command: {inter_to_mention(inter)} {arguments}"
     )
@@ -101,7 +101,7 @@ else:
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)
 
 
-def setup(bot: Bot) -> None:
+def setup(bot: Bot, /) -> None:
     bot.add_listener(on_slash_command_error, Event.slash_command_error)
 
 
@@ -118,4 +118,5 @@ async def setup_channel(bot: Bot, channel_id: int) -> None:
         _LOG.error("Channel is not Messageable")
         return
 
+    _LOG.info("Installed channel logger: #%s", channel.name)
     _channel = channel

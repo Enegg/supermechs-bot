@@ -22,7 +22,7 @@ class GetText(Protocol):
     def __call__(self, key: str, /, **format_kwargs: object) -> str: ...
 
 
-_LOGGER = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 FALLBACK_LOCALE = Locale.en_US
 FALLBACK_NAME = "???"
 FILE_EXT = ".toml"
@@ -61,11 +61,11 @@ def _get[KT](
             value = store[key, FALLBACK_LOCALE]
 
         except KeyError:
-            _LOGGER.error("Key %s does not exist.", key)  # noqa: TRY400
+            _LOG.error("Key %s does not exist.", key)
             value = str(key) if default is None else default
 
         else:
-            _LOGGER.warning("Key %s does not exist for locale %s.", key, locale)
+            _LOG.warning("Key %s does not exist for locale %s.", key, locale)
             # prevent further logs
             store[key, locale] = value
 
@@ -120,7 +120,7 @@ def _load_file(path: Path, /) -> None:
         raise FileNotFoundError(msg)
 
     locale = Locale[path.stem]
-    _LOGGER.info("Loading locale for %s", locale)
+    _LOG.info("Loading locale for %s", locale)
     data = type_cast("_LocaleData", rtoml.loads(path.read_text("utf-8")))
 
     for key, entry in data["stats"].items():
