@@ -20,7 +20,7 @@ dependencies = [
     "rtoml >= 0.9.0",
     "typing-extensions >= 4.9.0",
     "discord-ui-store @ git+https://github.com/Enegg/discord-ui-store@v0.1.5",
-    "monads @ git+https://github.com/Enegg/py-monads@v0.1.2",
+    "monads @ git+https://github.com/Enegg/py-monads@v0.1.3",
     "supermechs @ git+https://github.com/Enegg/supermechs@rewrite",
 ]
 requires-python = ">= 3.13, < 3.14"

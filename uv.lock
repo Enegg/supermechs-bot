@@ -199,8 +199,8 @@ wheels = [
 
 [[package]]
 name = "monads"
-version = "0.1.2"
-source = { git = "https://github.com/Enegg/py-monads?rev=v0.1.2#b88bcc5b8215d36fa60295b4292d00a2756df9f6" }
+version = "0.1.3"
+source = { git = "https://github.com/Enegg/py-monads?rev=v0.1.3#4887071f72d84ab6e3f888ca74fbdc1e3c7546ce" }
 dependencies = [
     { name = "attrs" },
     { name = "typing-extensions" },
@@ -427,7 +427,7 @@ requires-dist = [
     { name = "discord-ui-store", git = "https://github.com/Enegg/discord-ui-store?rev=v0.1.5" },
     { name = "disnake", specifier = ">=2.10.1" },
     { name = "disnake-ext-plugins", specifier = "==0.3.*" },
-    { name = "monads", git = "https://github.com/Enegg/py-monads?rev=v0.1.2" },
+    { name = "monads", git = "https://github.com/Enegg/py-monads?rev=v0.1.3" },
     { name = "orjson", specifier = ">=3.8.10" },
     { name = "pillow", specifier = "==10.*" },
     { name = "psutil", specifier = ">=5.9.7" },
