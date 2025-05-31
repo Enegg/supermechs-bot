@@ -54,9 +54,7 @@ def embed_mech(
 ) -> Embed:
     summary = get_mech_stats(build.mech, arena_buffs)
     return Embed(
-        title=i18n.get_message(
-            locale, "mech-summary-title", name=build.name.unwrap_or("Unnamed Mech")
-        ),
+        title=i18n.get_message(locale, "mech-summary-title", name=build.name),
         color=color_from_mech(build.mech),
     ).add_field(
         i18n.get_message(locale, "mech-summary-field"),

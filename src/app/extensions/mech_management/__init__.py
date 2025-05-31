@@ -102,8 +102,8 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
 
     embed = Embed(title="Your builds", color=inter.author.color)
 
-    if player.recent_build is not None and player.recent_build.name:
-        embed.description = f"Currently active: **{player.recent_build.name.value}**"
+    if player.recent_build is not None:
+        embed.description = f"Currently active: **{player.recent_build.name}**"
 
     fields: list[tuple[str, str]] = []
 
@@ -116,7 +116,7 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
             MODULES=count_modules(mech),
             WEIGHT=get_weight(mech),
         )
-        fields.append((build.name.unwrap_or("Unnamed Mech"), value))
+        fields.append((build.name, value))
 
     # TODO: paginate
     for title, value in fields:
@@ -146,10 +146,16 @@ async def build(
         The name of an existing build or of one to create. {{ MECH_BUILD_NAME }}
     """  # noqa: D400
     if name == "":
-        build = player.get_recent_or_create_build()
+        if (build := player.recent_build) is None:
+            build = player.create_build()
 
     else:
-        build = player.get_or_create_build(sanitize_string(name))
+        for build in player.builds.values():
+            if build.name == name:
+                break
+
+        else:
+            build = player.create_build(sanitize_string(name))
 
     store = ui.callback_store(inter)
     view = MechView(store, build, player, locale)

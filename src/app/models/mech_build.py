@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Final
 
 import attrs
-from monads.option import Null, Option
 
 from app import snowflake
 from app.utils import utcnow
@@ -22,8 +21,5 @@ class MechBuild:
     id: Final[BuildId] = attrs.field(factory=snowflake.new[BuildId])
     created_at: Final[datetime] = attrs.field(factory=utcnow)
     # mutable
-    name: Option[str] = Null.null
+    name: str = "Unnamed Mech"
     modified_at: datetime = attrs.Factory(lambda self: self.created_at, True)
-
-    def as_mech(self) -> tuple[Option[str], sm.Mech[Item]]:
-        return (self.name, self.mech)

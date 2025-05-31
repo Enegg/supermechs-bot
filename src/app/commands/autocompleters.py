@@ -138,10 +138,7 @@ def mech_name_autocomplete(inter: CommandInteraction, input: str) -> Autocomplet
 
     lowercase = input.lower()
     matching = [
-        name
-        for build in player.iter_builds()
-        for name in build.name
-        if name.lower().startswith(lowercase)
+        build.name for build in player.iter_builds() if build.name.lower().startswith(lowercase)
     ]
 
     if not matching and input:
