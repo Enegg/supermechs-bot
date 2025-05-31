@@ -66,7 +66,7 @@ def _get[KT](
             store[key, FALLBACK_LOCALE] = value
 
         else:
-            _LOG.warning("Key %s does not exist for locale %s", key, locale)
+            _LOG.warning("Locale %s has no key %r", locale, key)
             store[key, locale] = value
 
         return value
