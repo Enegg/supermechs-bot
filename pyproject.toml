@@ -17,15 +17,19 @@ dependencies = [
     "pillow == 10.*",
     "psutil >= 5.9.7",
     "python-dotenv >= 1.0.0",
+    "rich >= 14.0.0",
     "rtoml >= 0.9.0",
     "typing-extensions >= 4.9.0",
     "discord-ui-store @ git+https://github.com/Enegg/discord-ui-store@v0.1.5",
     "monads @ git+https://github.com/Enegg/py-monads@v0.1.3",
-    "supermechs @ git+https://github.com/Enegg/supermechs@rewrite",
+    "msgspec >= 0.19.0",
 ]
 requires-python = ">= 3.13, < 3.14"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
+
+[project.urls]
+Repository = "https://github.com/Enegg/supermechs-bot"
 
 
 [build-system]
@@ -58,10 +62,11 @@ ignore = [
     "ANN401",    # use of Any
     "ARG",       # unused parameters
     "B005",      # I know str.strip(...) takes a set
-    "BLE001",    # catching Exception; reported in places where exceptions are gathered into a group
+    "BLE001",    # except Exception; reported in places where exceptions are gathered into a group
     "C901",      # complex functions oh no
     "COM812",    # don't require commas
     "D1",        # don't enforce docstrings for public API
+    "E501",      # line too long; => formatter
     "FBT",       # positional bool params; using inlayHints
     "F821",      # undefined variables; => pyright
     "INP001",    # no __init__.py
@@ -95,7 +100,7 @@ max-line-length = 105
 combine-as-imports = true
 split-on-trailing-comma = false
 extra-standard-library = ["typing_extensions"]
-forced-separate = ["supermechs"]
+forced-separate = ["supermechs", "dupermechs"]
 section-order = [
     "future",
     "standard-library",
@@ -112,15 +117,17 @@ discord = ["disnake", "discord", "ui_store", "disnake_plugins", "app.disnake_typ
 exempt-modules = ["typing", "typing_extensions"]
 
 [tool.ruff.lint.flake8-builtins]
-builtins-ignorelist = ["id", "format", "input"]
+builtins-ignorelist = ["id", "format", "input", "type"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = [
     "disnake.Color",
     "disnake.ext.commands.Param",
-    "resources.Resource.from_uri",
-    "app.class_utils.ByteSize",
+    "app.cattrs_utils.ByteSize",
 ]
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"dupermechs.all" = "sm"
 
 [tool.ruff.lint.pylint]
 max-args = 8

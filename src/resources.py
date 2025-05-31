@@ -1,52 +1,40 @@
-from collections import abc
 from pathlib import Path
 from typing import Final, Protocol, Self, final, override
 
 import attrs
 from yarl import URL
 
-__all__ = ("FileResource", "HttpResource", "Resource")
+__all__ = ("AnyResource", "FileResource", "HttpResource", "Resource", "from_uri")
+
+type AnyResource = HttpResource | FileResource
 
 
-class Resource(abc.Hashable, Protocol):
+def from_uri(uri: str, /) -> AnyResource:
+    if uri.startswith(("https:", "http:")):
+        return HttpResource.from_uri(uri)
+
+    if uri.startswith("file:"):
+        return FileResource.from_uri(uri)
+
+    msg = f"Unknown protocol: {uri!r}"
+    raise ValueError(msg)
+
+
+class Resource(Protocol):
     """Abstract protocol for a resource."""
-
-    _protocol_registry: Final[dict[str, type[Self]]] = {}
 
     @property
     def uri(self) -> str:
         """The Uniform Identifier of the Resource."""
         ...
 
-    @override
-    def __hash__(self) -> int:
-        return hash(self.uri)
-
     @classmethod
     def from_uri(cls, uri: str, /) -> Self:
         """Construct a Resource from a uri."""
-        protocol, _, rest = uri.partition("://")
-
-        if not rest:
-            msg = "uri has no protocol"
-            raise ValueError(msg)
-
-        subcls = cls._protocol_registry.get(protocol)
-
-        if subcls is None:
-            msg = f"Unknown protocol: {protocol}"
-            raise NotImplementedError(msg)
-
-        return subcls.from_uri(uri)
-
-    @classmethod
-    def _register(cls, subcls: type[Self], *protocols: str) -> None:
-        for protocol in protocols:
-            cls._protocol_registry[protocol] = subcls
-
+        ...
 
 @final
-@attrs.define(hash=True, frozen=True)
+@attrs.frozen
 class HttpResource(Resource):
     """Web resource from the `http(s)://` protocol."""
 
@@ -64,7 +52,7 @@ class HttpResource(Resource):
 
 
 @final
-@attrs.define(hash=True, frozen=True)
+@attrs.frozen
 class FileResource(Resource):
     """Local resource from the `file://` protocol."""
 
@@ -78,8 +66,4 @@ class FileResource(Resource):
     @classmethod
     @override
     def from_uri(cls, uri: str, /) -> Self:
-        return cls(Path(uri.removeprefix("file://")))
-
-
-Resource._register(HttpResource, "http", "https")  # pyright: ignore[reportPrivateUsage]
-Resource._register(FileResource, "file")  # pyright: ignore[reportPrivateUsage]
+        return cls(Path.from_uri(uri))

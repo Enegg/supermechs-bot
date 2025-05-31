@@ -1,4 +1,7 @@
 import io
+from collections import abc
+
+from monads.result import Err, Ok
 
 from app.disnake_types import CommandInteraction
 from discord import MessageLimits
@@ -6,88 +9,100 @@ from disnake import Embed, File, Locale
 from disnake.ext import commands
 
 from app import ui
-from app.assets import COLORS
-from app.bridges.sm_utils import get_item_by_name, get_item_icon, get_item_pack_for
+from app.assets import COLORS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
-from app.commands.params import DEFAULT_CHOICE, ELEMENT_CHOICES, TYPE_CHOICES
+from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
 from app.embed_utils import embed_file_resource, embed_image, sikrit_footer
+from app.managers import gfx, packs
+from app.models.ids import SpriteId
 from app.plugins_factory import create_plugin
-from app.resource_utils import UnknownResourceError
 from defer import Defer
 from resources import FileResource, HttpResource
 
-from .item_lookup import item_compare_view, item_view
-
-import supermechs.all as sm
+import dupermechs.all as sm
 
 plugin = create_plugin(__name__)
+
+
+async def get_image_url(
+    sprite_id: SpriteId, item: sm.IItem, files: abc.MutableSequence[File]
+) -> str | None:
+    if (url := gfx.get_image_url(sprite_id)) is not None:
+        return url
+
+    match await gfx.fetch_image(sprite_id):
+        case Ok(image):
+            url, file = embed_image(image, item.name)
+            files.append(file)
+            return url
+
+        case Err(None):
+            return None
+
+        case Err(Exception() as error):
+            plugin.logger.error("Failed to fetch sprite:", exc_info=error)
+
+        case Err(error):
+            plugin.logger.error("Failed to fetch sprite: %s", error)
+
+    return None
+
+
+def get_icon_url(item: sm.IItem, files: abc.MutableSequence[File]) -> str | None:
+    match get_slot_icon(item.type):
+        case FileResource() as icon_file:
+            url, file = embed_file_resource(icon_file)
+            files.append(file)
+            return url
+
+        case HttpResource(url):
+            return str(url)
+
+        case None:
+            return None
 
 
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
     locale: Locale,
-    item: sm.ItemData,
-    type: str = commands.Param(DEFAULT_CHOICE, choices=TYPE_CHOICES),  # noqa: A002
-    element: str = commands.Param(DEFAULT_CHOICE, choices=ELEMENT_CHOICES),
-    compact: bool = False,
+    item: sm.IItem,
+    type: str | None = commands.Param(None, choices=TYPE_CHOICES),
+    element: str | None = commands.Param(None, choices=ELEMENT_CHOICES),
+    rarity: str | None = commands.Param(None, choices=TIER_CHOICES),
+    legacy: bool = False,
 ) -> None:
     """Lookup item stats. {{ ITEM }}
 
     Parameters
     ----------
     type:
-        Limits suggestions to chosen type. {{ ITEM_TYPE }}
+        Limit suggestions to this type. {{ ITEM_TYPE }}
     element:
-        Limits suggestions to chosen element. {{ ITEM_ELEMENT }}
-    compact:
-        Compact layout. (broken on mobile) {{ ITEM_COMPACT }}
+        Limit suggestions to this element. {{ ITEM_ELEMENT }}
+    rarity:
+        Remove suggestions below this rarity. {{ ITEM_TIER }}
+    legacy:
+        Show legacy items. {{ ITEM_LEGACY }}
     """  # noqa: D400
-    item_pack = get_item_pack_for(inter)
-    sprite = item_pack.get_sprite(item.id, item.stages[-1].tier)
     files: list[File] = []
+    icon_url = get_icon_url(item, files)
 
-    if sprite.url is not None:
-        sprite_url = sprite.url
+    from .item_lookup import ItemUIContext, item_view
 
-    else:
-        sprite_url, file = embed_image(await sprite.load(), item.name)
-        files.append(file)
-
-    match get_item_icon(item):
-        case FileResource() as icon_file:
-            icon_url, icon_file = embed_file_resource(icon_file)
-            files.append(icon_file)
-
-        case HttpResource(icon_url):
-            icon_url = str(icon_url)
-
-        case _:
-            raise UnknownResourceError
-
-    embed_color = COLORS.elements[item.element]
-
-    if compact:
-        embed = (
-            Embed(color=embed_color)
-            .set_author(name=item.name, icon_url=icon_url)
-            .set_thumbnail(sprite_url)
-        )
-
-    else:
-        desc = f"{item.element.capitalize()} {item.type.replace("_", " ").lower()}"
-        embed = (
-            Embed(title=item.name, description=desc, color=embed_color)
-            .set_thumbnail(icon_url)
-            .set_image(sprite_url)
-        )
-
-    sikrit_footer(embed, locale)
-
+    ctx = ItemUIContext(
+        item=item,
+        locale=locale,
+        stage_index=len(item.stages) - 1,
+        level_index=len(item.stages[-1].levels) - 1,
+        icon_url=icon_url,
+    )
     store = ui.callback_store(inter)
-    layout = item_view(store, embed, item, locale, compact)
-    await inter.response.send_message(embed=embed, files=files, components=layout, ephemeral=True)
+    layout = item_view(store, ctx)
+    await inter.response.send_message(
+        embed=ctx.get_embed(), files=files, components=layout, ephemeral=True
+    )
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.user_input_timeout)
@@ -96,28 +111,36 @@ async def item(
 @plugin.slash_command(guild_ids=CONFIG.test_guild_ids)
 async def item_raw(
     inter: CommandInteraction,
-    item: sm.ItemData,
-    type: str = commands.Param(DEFAULT_CHOICE, choices=TYPE_CHOICES),  # noqa: A002
-    element: str = commands.Param(DEFAULT_CHOICE, choices=ELEMENT_CHOICES),
+    item: sm.IItem,
+    type: str | None = commands.Param(None, choices=TYPE_CHOICES),
+    element: str | None = commands.Param(None, choices=ELEMENT_CHOICES),
+    rarity: str | None = commands.Param(None, choices=TIER_CHOICES),
+    legacy: bool = False,
 ) -> None:
     """Lookup raw item stats. {{ ITEM }}
 
     Parameters
     ----------
     type:
-        If provided, filters suggested names to given type. {{ ITEM_TYPE }}
+        Limit suggestions to this type. {{ ITEM_TYPE }}
     element:
-        If provided, filters suggested names to given element. {{ ITEM_ELEMENT }}
+        Limit suggestions to this element. {{ ITEM_ELEMENT }}
+    rarity:
+        Remove suggestions below this rarity. {{ ITEM_TIER }}
+    legacy:
+        Show legacy items. {{ ITEM_LEGACY }}
+    compact:
+        Compact layout. (broken on mobile) {{ ITEM_COMPACT }}
     """  # noqa: D400
     await inter.response.send_message(f"`{item!r:.{MessageLimits.content - 2}}`", ephemeral=True)
 
 
-def str_type(type: sm.abc.ItemType) -> str:  # noqa: A002
-    return type.replace("_", " ").lower()
+def str_type(type: sm.Item.Type) -> str:
+    return type.name.replace("_", " ").lower()
 
 
-def str_elem(element: sm.abc.ItemElement) -> str:
-    return element.capitalize()
+def str_elem(element: sm.Item.Element) -> str:
+    return element.name.capitalize()
 
 
 @plugin.slash_command()
@@ -136,18 +159,27 @@ async def compare(
     item_b_name:
         Second item to compare. {{ COMPARE_SECOND }}
     """  # noqa: D400
-    item_pack = get_item_pack_for(inter)
-    item_a = get_item_by_name(item_pack.items.values(), item_a_name)
-    item_b = get_item_by_name(item_pack.items.values(), item_b_name)
+    item_a = packs.find_first_by_name(item_a_name)
+    item_b = packs.find_first_by_name(item_b_name)
 
-    if item_a is None or item_b is None:
-        raise commands.UserInputError  # TODO
+    match item_a, item_b:
+        case None, None:
+            msg = "Items not found."
+            raise commands.UserInputError(msg)
+        case None, _:
+            msg = "Item1 not found."
+            raise commands.UserInputError(msg)
+        case _, None:
+            msg = "Item2 not found."
+            raise commands.UserInputError(msg)
+        case _:
+            pass
 
-    if item_a.element == item_b.element:
+    if item_a.element is item_b.element:
         desc_builder = io.StringIO()
         desc_builder.write(str_elem(item_a.element))
 
-        if item_a.type == item_b.type:
+        if item_a.type is item_b.type:
             desc_builder.write(" ")
             type_ = str_type(item_a.type)
             desc_builder.write(type_)
@@ -171,6 +203,11 @@ async def compare(
     embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
 
     sikrit_footer(embed, locale)
+
+    await inter.response.send_message(embed=embed, ephemeral=True)
+    return  # FIXME
+
+    from .item_lookup import item_compare_view
 
     store = ui.callback_store(inter)
     layout = item_compare_view(store, embed, item_a, item_b, locale)

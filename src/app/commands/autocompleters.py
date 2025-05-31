@@ -1,15 +1,18 @@
 from collections import abc
 from difflib import SequenceMatcher
-from typing import Any, NamedTuple
+from itertools import islice
+from typing import TYPE_CHECKING, Any, NamedTuple, cast as type_cast
 
 from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
 
-from app import state
-from app.bridges.sm_utils import acronym_of, get_item_pack_for
-from app.text_utils import sanitize_string
+from app.managers import packs, players
+from app.text_utils import acronym_of, sanitize_string
 
-import supermechs.all as sm
+import dupermechs.all as sm
+
+if TYPE_CHECKING:
+    from .params import FilledOptions
 
 __all__ = ("item_name_autocomplete", "mech_name_autocomplete")
 
@@ -23,6 +26,7 @@ class MatchResult(NamedTuple):
     def sort_key(self) -> tuple[object, ...]:
         return (
             self.is_acronym,
+            # max of an iterable, then of the two
             max(self.direct_score, max(self.multiword_scores, default=0.0)),
             self.direct_score,
         )
@@ -86,38 +90,56 @@ def find_matches(names: abc.Iterable[str], phrase: str) -> list[MatchResult]:
 
 def _get_item_filters(
     options: abc.Mapping[str, Any], /
-) -> list[abc.Callable[[sm.abc.ItemData], bool]]:
-    filters: list[abc.Callable[[sm.abc.ItemData], bool]] = []
+) -> list[abc.Callable[[sm.IItem], bool]]:
+    options = type_cast("FilledOptions", options)
 
-    if (target_type := options.get("type")) is not None:
-        filters.append(lambda item: item.type == target_type)
+    filters: list[abc.Callable[[sm.IItem], bool]] = []
 
-    if (target_element := options.get("element")) is not None:
-        filters.append(lambda item: item.element == target_element)
+    if (type_name := options.get("type")) is not None:
+        target_type= sm.Item.Type[type_name]
+        filters.append(lambda item: item.type is target_type)
+
+    if (element_name := options.get("element")) is not None:
+        target_element = sm.Item.Element[element_name]
+        filters.append(lambda item: item.element is target_element)
+
+    if (tier_name := options.get("rarity")) is not None:
+        min_tier = sm.Item.Rarity[tier_name]
+        filters.append(lambda item: item.stages[0].tier >= min_tier)
 
     return filters
 
 
 def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for type & element."""
-    pack = get_item_pack_for(inter)
+    # TODO: player-chosen item packs
     filters = _get_item_filters(inter.filled_options)
+    names = (
+        item.name
+        for item in packs.iter_items()
+        if all(func(item) for func in filters)
+    )  # fmt: skip
     input = input.strip()
-    matching = find_matches(
-        (item.name for item in pack.items.values() if all(func(item) for func in filters)), input
-    )
+
+    if not input:
+        return list(islice(names, InteractionLimits.autocomplete_options))
+
+    matching = find_matches(names, input)
     del matching[InteractionLimits.autocomplete_options :]
     return [result.name for result in matching]
 
 
 def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for player builds."""
-    player = state.players(inter.author)
-    lowercase = input.lower()
+    player = players.find_player_by_user(inter.author)
 
+    if player is None:
+        return [sanitize_string(input)] if input else []  # cannot send an empty string
+
+    lowercase = input.lower()
     matching = [
         name
-        for build in player.builds.values()
+        for build in player.iter_builds()
         for name in build.name
         if name.lower().startswith(lowercase)
     ]

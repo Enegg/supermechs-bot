@@ -33,8 +33,7 @@ def embed_file_resource(resource: FileResource, /) -> tuple[str, disnake.File]:
     return f"attachment://{filename}", disnake.File(resource.path, filename=filename)
 
 
-def sikrit_footer(embed: disnake.Embed, /, locale: disnake.Locale, chance: float = 0.01) -> None:
+def sikrit_footer(embed: disnake.Embed, /, locale: disnake.Locale) -> None:
     """Randomly set a "tip" footer on an embed."""
-    if random.random() < chance:
-        tips = i18n.get_embed_tips(locale)
-        embed.set_footer(text=random.choice(tips))
+    tips = i18n.get_embed_tips(locale)
+    embed.set_footer(text=random.choice(tips))

@@ -12,6 +12,7 @@ from typing import override
 import orjson
 import rtoml
 
+from app import paths
 from app.typeshed import Pathish
 from app.utils import strip_cwd
 
@@ -50,7 +51,7 @@ def normalize_record_path(record: logging.LogRecord) -> logging.LogRecord:
         return record
 
     try:
-        path = strip_cwd(record.pathname)
+        path = strip_cwd(record.pathname, paths.CWD)
 
     except ValueError:
         return record

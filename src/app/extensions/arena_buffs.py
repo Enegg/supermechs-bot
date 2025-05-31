@@ -1,3 +1,4 @@
+# pyright: reportUninitializedInstanceVariable=false
 from collections import abc
 from functools import partial
 
@@ -7,46 +8,59 @@ from discord.commands import register_cancellable
 from app import ui
 from app.assets import EMOJIS
 from app.core import CONFIG
+from app.gamerules import ARENA_BONUSES, MAXED_ARENA_SHOP
 from app.models import Player
 from app.plugins_factory import create_plugin
 from app.text_utils import Char
 from defer import Defer
 
-from supermechs.all import ArenaShop, Category
+import dupermechs.all as sm
+from dupermechs.enums import ArenaShopCategory
+from dupermechs.stats import AnyBonus, FlatBonus, MultiplierBonus
 
 plugin = create_plugin(__name__)
 
 
-def format_value(category: Category, level: int, /) -> str:
-    suffix = "" if category.data.is_absolute else "%"
-    value = category.data.progression[level]
-    return f"{value:+}{suffix}"
+def format_bonus(bonus: AnyBonus, /) -> str:
+    match bonus:
+        case FlatBonus(value):
+            return f"{value:+}"
+
+        case MultiplierBonus():
+            multi = bonus.as_percent()
+            if multi.is_integer():
+                return f"{multi:+.0f}%"
+            return f"{multi:+f}%"
 
 
-def iter_category(category: Category, /) -> abc.Iterator[str]:
-    for level in range(len(category.data.progression)):
-        yield format_value(category, level)
+def iter_category(category: ArenaShopCategory, /) -> abc.Iterator[str]:
+    for bonus in ARENA_BONUSES[category]:
+        yield format_bonus(bonus)
 
 
-def make_label(shop: ArenaShop, category: Category, /) -> str:
-    return format_value(category, shop[category]).rjust(4, Char.BLANK)
+def make_label(shop: sm.IArenaShopLevels, category: ArenaShopCategory, /) -> str:
+    return format_bonus(ARENA_BONUSES[category][shop[category]]).rjust(4, Char.BLANK)
+
+
+def is_shop_maxed(shop: sm.IArenaShopLevels, /) -> bool:
+    return shop == MAXED_ARENA_SHOP
 
 
 class ArenaShopView:
-    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[Category]]] = (
+    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[ArenaShopCategory]]] = (
         (
-            (Category.energy_capacity,     Category.heat_capacity, Category.physical_damage),
-            (Category.energy_regeneration, Category.heat_cooling,  Category.explosive_damage),
-            (Category.energy_damage,       Category.heat_damage,   Category.electric_damage),
+            (ArenaShopCategory.energy_capacity,     ArenaShopCategory.heat_capacity, ArenaShopCategory.physical_damage),
+            (ArenaShopCategory.energy_regeneration, ArenaShopCategory.heat_cooling,  ArenaShopCategory.explosive_damage),
+            (ArenaShopCategory.energy_damage,       ArenaShopCategory.heat_damage,   ArenaShopCategory.electric_damage),
         ),
         (
-            (Category.physical_resistance,  Category.total_hp),
-            (Category.explosive_resistance, Category.backfire_reduction),
-            (Category.electric_resistance,  ),
+            (ArenaShopCategory.physical_resistance,  ArenaShopCategory.total_hp),
+            (ArenaShopCategory.explosive_resistance, ArenaShopCategory.backfire_reduction),
+            (ArenaShopCategory.electric_resistance,  ArenaShopCategory.damage_vs_titans),
         ),
     )  # fmt: skip
 
-    def __init__(self, store: ui.CallbackStore, shop: ArenaShop) -> None:
+    def __init__(self, store: ui.CallbackStore, shop: sm.ArenaShopLevels) -> None:
         self.store = store
         self.shop = shop
         self.active: ui.ToggleButton | None = None
@@ -54,13 +68,6 @@ class ArenaShopView:
         self.init_pages(store)
 
     def init_pages(self, store: ui.CallbackStore) -> None:
-        @store.bind(
-            ui.ActionButton(label="Quit", style=ui.ButtonStyle.red, custom_id=store.make_id())
-        )
-        async def quit_button(inter: ui.MessageInteraction) -> None:
-            store.stop()
-            await inter.response.defer()
-
         def update_state() -> None:
             prev_button.disabled = self.paginator.at_first_page
             next_button.disabled = self.paginator.at_last_page
@@ -101,10 +108,10 @@ class ArenaShopView:
             )
         )
         async def select(inter: ui.MessageInteraction) -> None:
-            assert inter.values is not None
-            level = int(inter.values[0])
-
+            assert inter.values
             assert self.active is not None
+
+            level = int(inter.values[0])
             self.modify_buff(self.active, level)
             self.set_state_idle()
 
@@ -118,32 +125,30 @@ class ArenaShopView:
                     [*map(self.make_button, self.LAYOUT[0][0])],
                     [*map(self.make_button, self.LAYOUT[0][1])],
                     [*map(self.make_button, self.LAYOUT[0][2])],
-                    [quit_button, prev_button, next_button, max_button],
+                    [prev_button, next_button, max_button],
                     [select],
                 ],
                 [
                     [*map(self.make_button, self.LAYOUT[1][0])],
                     [*map(self.make_button, self.LAYOUT[1][1])],
                     [*map(self.make_button, self.LAYOUT[1][2])],
-                    [quit_button, prev_button, next_button, max_button],
+                    [prev_button, next_button, max_button],
                     [select],
                 ],
             ]
         )
-        max_button.disabled = all(
-            btn.style_off is ui.ButtonStyle.green for btn in self.all_slot_buttons
-        )
+        max_button.disabled = is_shop_maxed(self.shop)
 
-    def make_button(self, category: Category, /) -> ui.ToggleButton:
+    def make_button(self, category: ArenaShopCategory, /) -> ui.ToggleButton:
         btn = ui.ToggleButton(
             style_off=(
                 ui.ButtonStyle.green
-                if self.shop[category] == category.data.max_level
+                if self.shop[category] == MAXED_ARENA_SHOP[category]
                 else ui.ButtonStyle.gray
             ),
             style_on=ui.ButtonStyle.blurple,
             label=make_label(self.shop, category),
-            emoji=EMOJIS.categories[category.name],
+            emoji=EMOJIS.categories[category],
             custom_id=self.store.make_id(category.name),
         )
         self.store.bind(btn)(partial(self.buff_button, btn))
@@ -153,6 +158,7 @@ class ArenaShopView:
     async def buff_button(self, button: ui.ToggleButton, inter: ui.MessageInteraction) -> None:
         if self.active is button:
             self.set_state_idle()
+            await inter.response.edit_message(components=self.paginator.page)
             return
 
         button.on = True
@@ -165,7 +171,7 @@ class ArenaShopView:
 
         self.active = button
         self.select.placeholder = button.label
-        category = Category.of_name(self.store.strip_id(button))
+        category = ArenaShopCategory[self.store.strip_id(button)]
         self.select.options = [
             ui.SelectOption(label=f"{level}: {buff}", value=str(level))
             for level, buff in enumerate(iter_category(category))
@@ -173,8 +179,9 @@ class ArenaShopView:
         await inter.response.edit_message(components=self.paginator.page)
 
     def modify_buff(self, button: ui.ToggleButton, level: int = -1) -> None:
-        category = Category.of_name(self.store.strip_id(button))
-        max_level = category.data.max_level
+        category = ArenaShopCategory[self.store.strip_id(button)]
+
+        max_level = MAXED_ARENA_SHOP[category]
 
         if level == -1:
             level = max_level

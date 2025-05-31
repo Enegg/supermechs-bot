@@ -1,161 +1,148 @@
 """Various assets existing on discord side."""
 
+import logging
 import math
 from collections import abc
+from typing import Final
 
 import attrs
-import cattrs
 
 from disnake import Color
 
 from app import paths
 from app.class_utils import MappingParser
-from app.core import CONFIG
-from resources import Resource
+from app.gamerules import BUILD_RULES
+from resources import AnyResource, FileResource
 
-import supermechs.all as sm
-from supermechs.gamerules import BuildRules
+import dupermechs.all as sm
+from dupermechs.enums import MechSlot
 
-__all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
+__all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS", "get_silhouette")
 
-_DEFAULT_EMOJI = "❔"
-_DEFAULT_COLOR = Color(0)
-
-
-@cattrs.global_converter.register_structure_hook
-def _structure_color(value: int, cls: type) -> Color:
-    return Color(int(value))
-
-
-@cattrs.global_converter.register_structure_hook
-def _structure_resource(value: str, cls: type) -> Resource:
-    assert isinstance(value, str)
-    return Resource.from_uri(value)
-
-
-del _structure_color, _structure_resource
+_LOG = logging.getLogger(__name__)
+NULL_EMOJI: Final[str] = "❔"
+NULL_COLOR: Final[Color] = Color(0)
+MISSING_IMAGE: Final[FileResource] = FileResource(paths.MISSING_PNG)
 
 
 @attrs.frozen
 class TypeEmojis:
-    none: str = _DEFAULT_EMOJI
-    torso: str = _DEFAULT_EMOJI
-    legs: str = _DEFAULT_EMOJI
-    drone: str = _DEFAULT_EMOJI
-    side_weapon: str = _DEFAULT_EMOJI
-    right_side_weapon: str = _DEFAULT_EMOJI
-    left_side_weapon: str = _DEFAULT_EMOJI
-    top_weapon: str = _DEFAULT_EMOJI
-    right_top_weapon: str = _DEFAULT_EMOJI
-    left_top_weapon: str = _DEFAULT_EMOJI
-    charge: str = _DEFAULT_EMOJI
-    teleport: str = _DEFAULT_EMOJI
-    hook: str = _DEFAULT_EMOJI
-    shield: str = _DEFAULT_EMOJI
-    module: str = _DEFAULT_EMOJI
-    perk: str = _DEFAULT_EMOJI
-    kit: str = _DEFAULT_EMOJI
+    torso: str = NULL_EMOJI
+    legs: str = NULL_EMOJI
+    drone: str = NULL_EMOJI
+    side_weapon: str = NULL_EMOJI
+    right_side_weapon: str = NULL_EMOJI
+    left_side_weapon: str = NULL_EMOJI
+    top_weapon: str = NULL_EMOJI
+    right_top_weapon: str = NULL_EMOJI
+    left_top_weapon: str = NULL_EMOJI
+    charge: str = NULL_EMOJI
+    teleport: str = NULL_EMOJI
+    hook: str = NULL_EMOJI
+    shield: str = NULL_EMOJI
+    module: str = NULL_EMOJI
+    perk: str = NULL_EMOJI
+    kit: str = NULL_EMOJI
 
-    def __getitem__(self, field: sm.abc.ItemType) -> str:
-        return getattr(self, field)
+    def __getitem__(self, field: sm.Item.Type, /) -> str:
+        return getattr(self, field.name)
 
 
 @attrs.frozen
 class ElementEmojis:
-    none: str = _DEFAULT_EMOJI
-    physical: str = _DEFAULT_EMOJI
-    explosive: str = _DEFAULT_EMOJI
-    electric: str = _DEFAULT_EMOJI
-    combined: str = _DEFAULT_EMOJI
+    other: str = NULL_EMOJI
+    physical: str = NULL_EMOJI
+    explosive: str = NULL_EMOJI
+    electric: str = NULL_EMOJI
+    combined: str = NULL_EMOJI
 
-    def __getitem__(self, field: sm.abc.ItemElement) -> str:
-        return getattr(self, field)
+    def __getitem__(self, field: sm.Item.Element, /) -> str:
+        return getattr(self, field.name)
 
 
 @attrs.frozen
 class TierEmojis:
-    none: str = _DEFAULT_EMOJI
-    common: str = _DEFAULT_EMOJI
-    rare: str = _DEFAULT_EMOJI
-    epic: str = _DEFAULT_EMOJI
-    legendary: str = _DEFAULT_EMOJI
-    mythical: str = _DEFAULT_EMOJI
-    divine: str = _DEFAULT_EMOJI
-    perk: str = _DEFAULT_EMOJI
+    common: str = NULL_EMOJI
+    rare: str = NULL_EMOJI
+    epic: str = NULL_EMOJI
+    legendary: str = NULL_EMOJI
+    mythical: str = NULL_EMOJI
+    divine: str = NULL_EMOJI
+    perk: str = NULL_EMOJI
 
-    def __getitem__(self, field: sm.abc.StageTier) -> str:
-        return getattr(self, field)
+    def __getitem__(self, field: sm.Item.Rarity, /) -> str:
+        return getattr(self, field.name)
 
 
 @attrs.frozen
 class StatEmojis:
-    unknown: str = _DEFAULT_EMOJI
-    weight: str = _DEFAULT_EMOJI
-    hit_points: str = _DEFAULT_EMOJI
-    energy_capacity: str = _DEFAULT_EMOJI
-    energy_regeneration: str = _DEFAULT_EMOJI
-    heat_capacity: str = _DEFAULT_EMOJI
-    heat_cooling: str = _DEFAULT_EMOJI
-    physical_resistance: str = _DEFAULT_EMOJI
-    explosive_resistance: str = _DEFAULT_EMOJI
-    electric_resistance: str = _DEFAULT_EMOJI
-    bullets_capacity: str = _DEFAULT_EMOJI
-    rockets_capacity: str = _DEFAULT_EMOJI
-    walk: str = _DEFAULT_EMOJI
-    jump: str = _DEFAULT_EMOJI
-    physical_damage: str = _DEFAULT_EMOJI
-    physical_damage_addon: str = _DEFAULT_EMOJI
-    physical_resistance_damage: str = _DEFAULT_EMOJI
-    electric_damage: str = _DEFAULT_EMOJI
-    electric_damage_addon: str = _DEFAULT_EMOJI
-    energy_damage: str = _DEFAULT_EMOJI
-    energy_capacity_damage: str = _DEFAULT_EMOJI
-    regeneration_damage: str = _DEFAULT_EMOJI
-    electric_resistance_damage: str = _DEFAULT_EMOJI
-    explosive_damage: str = _DEFAULT_EMOJI
-    explosive_damage_addon: str = _DEFAULT_EMOJI
-    heat_damage: str = _DEFAULT_EMOJI
-    heat_capacity_damage: str = _DEFAULT_EMOJI
-    cooling_damage: str = _DEFAULT_EMOJI
-    explosive_resistance_damage: str = _DEFAULT_EMOJI
-    range: str = _DEFAULT_EMOJI
-    range_addon: str = _DEFAULT_EMOJI
-    push: str = _DEFAULT_EMOJI
-    pull: str = _DEFAULT_EMOJI
-    recoil: str = _DEFAULT_EMOJI
-    advance: str = _DEFAULT_EMOJI
-    retreat: str = _DEFAULT_EMOJI
-    uses: str = _DEFAULT_EMOJI
-    backfire: str = _DEFAULT_EMOJI
-    heat_generation: str = _DEFAULT_EMOJI
-    energy_cost: str = _DEFAULT_EMOJI
-    bullets_cost: str = _DEFAULT_EMOJI
-    rockets_cost: str = _DEFAULT_EMOJI
+    weight: str = NULL_EMOJI
+    hit_points: str = NULL_EMOJI
+    energy_capacity: str = NULL_EMOJI
+    energy_regeneration: str = NULL_EMOJI
+    heat_capacity: str = NULL_EMOJI
+    heat_cooling: str = NULL_EMOJI
+    physical_resistance: str = NULL_EMOJI
+    explosive_resistance: str = NULL_EMOJI
+    electric_resistance: str = NULL_EMOJI
+    bullets_capacity: str = NULL_EMOJI
+    rockets_capacity: str = NULL_EMOJI
+    walk: str = NULL_EMOJI
+    jump: str = NULL_EMOJI
+    physical_damage: str = NULL_EMOJI
+    physical_damage_addon: str = NULL_EMOJI
+    physical_resistance_damage: str = NULL_EMOJI
+    electric_damage: str = NULL_EMOJI
+    electric_damage_addon: str = NULL_EMOJI
+    energy_damage: str = NULL_EMOJI
+    energy_capacity_damage: str = NULL_EMOJI
+    regeneration_damage: str = NULL_EMOJI
+    electric_resistance_damage: str = NULL_EMOJI
+    explosive_damage: str = NULL_EMOJI
+    explosive_damage_addon: str = NULL_EMOJI
+    heat_damage: str = NULL_EMOJI
+    heat_capacity_damage: str = NULL_EMOJI
+    cooling_damage: str = NULL_EMOJI
+    explosive_resistance_damage: str = NULL_EMOJI
+    range: str = NULL_EMOJI
+    range_addon: str = NULL_EMOJI
+    push: str = NULL_EMOJI
+    pull: str = NULL_EMOJI
+    recoil: str = NULL_EMOJI
+    advance: str = NULL_EMOJI
+    retreat: str = NULL_EMOJI
+    uses: str = NULL_EMOJI
+    backfire: str = NULL_EMOJI
+    repair: str = NULL_EMOJI
+    heat_generation: str = NULL_EMOJI
+    energy_cost: str = NULL_EMOJI
+    bullets_cost: str = NULL_EMOJI
+    rockets_cost: str = NULL_EMOJI
 
-    def __getitem__(self, field: str) -> str:
-        return getattr(self, field)
+    def __getitem__(self, field: sm.enums.ItemStat | sm.enums.MechStat, /) -> str:
+        return getattr(self, field.name)
 
 
 @attrs.frozen
 class CategoryEmojis:
-    energy_capacity: str = _DEFAULT_EMOJI
-    energy_regeneration: str = _DEFAULT_EMOJI
-    energy_damage: str = _DEFAULT_EMOJI
-    heat_capacity: str = _DEFAULT_EMOJI
-    heat_cooling: str = _DEFAULT_EMOJI
-    heat_damage: str = _DEFAULT_EMOJI
-    physical_damage: str = _DEFAULT_EMOJI
-    explosive_damage: str = _DEFAULT_EMOJI
-    electric_damage: str = _DEFAULT_EMOJI
-    physical_resistance: str = _DEFAULT_EMOJI
-    explosive_resistance: str = _DEFAULT_EMOJI
-    electric_resistance: str = _DEFAULT_EMOJI
-    total_hp: str = _DEFAULT_EMOJI
-    backfire_reduction: str = _DEFAULT_EMOJI
-    damage_vs_titans: str = _DEFAULT_EMOJI
+    energy_capacity: str = NULL_EMOJI
+    energy_regeneration: str = NULL_EMOJI
+    energy_damage: str = NULL_EMOJI
+    heat_capacity: str = NULL_EMOJI
+    heat_cooling: str = NULL_EMOJI
+    heat_damage: str = NULL_EMOJI
+    physical_damage: str = NULL_EMOJI
+    explosive_damage: str = NULL_EMOJI
+    electric_damage: str = NULL_EMOJI
+    physical_resistance: str = NULL_EMOJI
+    explosive_resistance: str = NULL_EMOJI
+    electric_resistance: str = NULL_EMOJI
+    total_hp: str = NULL_EMOJI
+    backfire_reduction: str = NULL_EMOJI
+    damage_vs_titans: str = NULL_EMOJI
 
-    def __getitem__(self, field: str) -> str:
-        return getattr(self, field)
+    def __getitem__(self, field: sm.enums.ArenaShopCategory, /) -> str:
+        return getattr(self, field.name)
 
 
 @attrs.frozen
@@ -167,46 +154,61 @@ class Emojis:
     categories: CategoryEmojis = attrs.Factory(CategoryEmojis)
 
     @staticmethod
-    def get_weight_emoji(weight: int, /, *, rules: BuildRules = CONFIG.build_rules) -> str:
+    def get_weight_emoji(weight: int, /) -> str:
         if weight < 0:
             return "🎈"
-        progress = math.floor(rules.safe_weight * 0.9)
+        progress = math.floor(BUILD_RULES.safe_weight * 0.9)
         if weight < progress:
             emojis = ("", "▫️", "◽", "◻️", "🔲", "⬜")
             return emojis[round((len(emojis) - 1) * weight / progress)]
-        if weight < math.floor(rules.safe_weight * 0.99):
+        if weight < math.floor(BUILD_RULES.safe_weight * 0.99):
             return "🟦"
-        if weight < rules.safe_weight:
+        if weight < BUILD_RULES.safe_weight:
             return "🟩"
-        if weight == rules.safe_weight:
+        if weight == BUILD_RULES.safe_weight:
             return "✅"
-        if weight <= rules.max_weight:
+        if weight <= BUILD_RULES.max_weight:
             return "🟨"
         return "⛔"
 
 
+def get_slot_emoji(slot: MechSlot, /) -> str:
+    """Return the emoji representing a slot, with respect to the right & left variants."""
+    if slot is MechSlot.top_weapon_1:
+        return EMOJIS.types.left_top_weapon
+    if slot is MechSlot.top_weapon_2:
+        return EMOJIS.types.right_top_weapon
+    if slot in (MechSlot.side_weapon_1, MechSlot.side_weapon_3):
+        return EMOJIS.types.left_side_weapon
+    if slot in (MechSlot.side_weapon_2, MechSlot.side_weapon_4):
+        return EMOJIS.types.right_side_weapon
+    if slot.name.startswith("module"):
+        return EMOJIS.types.module
+    # TODO: this is the only place using types[]
+    return EMOJIS.types[sm.Item.Type[slot.name]]
+
+
 @attrs.frozen
 class TypeIcons:
-    none: Resource = CONFIG.missing_image_uri
-    torso: Resource = CONFIG.missing_image_uri
-    legs: Resource = CONFIG.missing_image_uri
-    drone: Resource = CONFIG.missing_image_uri
-    side_weapon: Resource = CONFIG.missing_image_uri
-    right_side_weapon: Resource = CONFIG.missing_image_uri
-    left_side_weapon: Resource = CONFIG.missing_image_uri
-    top_weapon: Resource = CONFIG.missing_image_uri
-    right_top_weapon: Resource = CONFIG.missing_image_uri
-    left_top_weapon: Resource = CONFIG.missing_image_uri
-    charge: Resource = CONFIG.missing_image_uri
-    teleport: Resource = CONFIG.missing_image_uri
-    hook: Resource = CONFIG.missing_image_uri
-    shield: Resource = CONFIG.missing_image_uri
-    module: Resource = CONFIG.missing_image_uri
-    perk: Resource = CONFIG.missing_image_uri
-    kit: Resource = CONFIG.missing_image_uri
+    torso: AnyResource | None = None
+    legs: AnyResource | None = None
+    drone: AnyResource | None = None
+    side_weapon: AnyResource | None = None
+    right_side_weapon: AnyResource | None = None
+    left_side_weapon: AnyResource | None = None
+    top_weapon: AnyResource | None = None
+    right_top_weapon: AnyResource | None = None
+    left_top_weapon: AnyResource | None = None
+    charge: AnyResource | None = None
+    teleport: AnyResource | None = None
+    hook: AnyResource | None = None
+    shield: AnyResource | None = None
+    module: AnyResource | None = None
+    perk: AnyResource | None = None
+    kit: AnyResource | None = None
 
-    def __getitem__(self, field: sm.abc.ItemType) -> Resource:
-        return getattr(self, field)
+    def __getitem__(self, field: sm.Item.Type, /) -> AnyResource | None:
+        return getattr(self, field.name)
 
 
 @attrs.frozen
@@ -216,14 +218,14 @@ class Icons:
 
 @attrs.frozen
 class ElementColors:
-    none: Color = _DEFAULT_COLOR
-    physical: Color = _DEFAULT_COLOR
-    explosive: Color = _DEFAULT_COLOR
-    electric: Color = _DEFAULT_COLOR
-    combined: Color = _DEFAULT_COLOR
+    other: Color = NULL_COLOR
+    physical: Color = NULL_COLOR
+    explosive: Color = NULL_COLOR
+    electric: Color = NULL_COLOR
+    combined: Color = NULL_COLOR
 
-    def __getitem__(self, field: sm.abc.ItemElement) -> Color:
-        return getattr(self, field)
+    def __getitem__(self, field: sm.Item.Element, /) -> Color:
+        return getattr(self, field.name)
 
 
 @attrs.frozen
@@ -242,3 +244,36 @@ EMOJIS = _PARSER.structure(Emojis, "emojis")
 ICONS = _PARSER.structure(Icons, "icons")
 COLORS = _PARSER.structure(Colors, "colors")
 del _PARSER
+
+
+_SILHOUETTES: Final[abc.Mapping[sm.Item.Type, FileResource]] = {}
+
+
+def _populate_silhouettes() -> None:
+    for path in paths.SILHOUETTES_DIR.iterdir():
+        try:
+            type = sm.Item.Type[path.stem.lower()]
+
+        except KeyError:
+            _LOG.error("%s is not a valid silhouette", path)
+
+        else:
+            _SILHOUETTES[type] = FileResource(path)
+
+
+_populate_silhouettes()
+del _populate_silhouettes
+
+
+def get_silhouette[T](type: sm.Item.Type, /, default: T = None) -> FileResource | T:
+    return _SILHOUETTES.get(type, default)
+
+
+def get_slot_icon(type: sm.Item.Type, /) -> AnyResource | None:
+    if type is sm.Item.Type.side_weapon:
+        return ICONS.types.right_side_weapon
+
+    if type is sm.Item.Type.top_weapon:
+        return ICONS.types.right_top_weapon
+
+    return ICONS.types[type]

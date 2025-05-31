@@ -1,7 +1,6 @@
 import random
-import types
 from functools import partial
-from typing import NamedTuple, Protocol
+from typing import NamedTuple
 
 import disnake
 from app.disnake_types import CommandInteraction
@@ -11,55 +10,42 @@ from disnake import Embed
 from disnake.ext import tasks
 from disnake.utils import oauth_url
 
-from app import meta, state
-from app.assets import ASSETS
+from app import meta, ui
+from app.assets import ASSETS, EMOJIS
 from app.async_utils import gather
-from app.bridges.telemetry import command_tracker
+from app.commands import telemetry
 from app.core import CONFIG
+from app.devtools import debug_footer
+from app.managers import packs, players
 from app.plugins_factory import create_plugin
 from app.system import get_ram_usage, get_sloc
 from app.utils import as_binary_unit
 from resources import HttpResource
 
-import supermechs
-
 plugin = create_plugin(__name__)
 
 
-class MiniAppInfo(Protocol):
-    @property
-    def owner(self) -> disnake.abc.User: ...
-    @property
-    def bot_public(self) -> bool: ...
-
-
-class _State(NamedTuple):
-    app_info: MiniAppInfo = types.SimpleNamespace(owner=NullUser(), bot_public=False)  # pyright: ignore[reportAssignmentType]
+class _BotInfo(NamedTuple):
+    owner: disnake.abc.User = NullUser()
     app_sloc: int = 0
-    lib_sloc: int = 0
+    bot_public: bool = False
 
 
-_state: _State = _State()
+_bot_info: _BotInfo = _BotInfo()
 
 
 @plugin.register_loop(wait_until_ready=True)
 @tasks.loop(count=1)
-async def load_state() -> None:
-    global _state
-    match supermechs.__path__:
-        case [str() as path]:
-            pass
-
-        case unknown:
-            msg = f"Expected a sequence of 1 path, got {unknown!r}"
-            raise RuntimeError(msg)
-
-    _state = _State._make(
-        await gather(
-            plugin.bot.application_info,
-            partial(get_sloc, "src"),
-            partial(get_sloc, path),
-        )
+async def load_info() -> None:
+    global _bot_info
+    app_info, app_sloc = await gather(
+        plugin.bot.application_info,
+        partial(get_sloc, "src"),
+    )
+    _bot_info = _BotInfo(
+        owner=app_info.owner,
+        app_sloc=app_sloc,
+        bot_public=app_info.bot_public,
     )
 
 
@@ -75,35 +61,38 @@ async def info(inter: CommandInteraction) -> None:
     """Display information about the bot."""
     bot = plugin.bot
 
+    components: ui.MessageComponents = []
     general_fields = [
-        f"Developer: {_state.app_info.owner.mention}",
+        f"Developer: {_bot_info.owner.mention}",
         f"Created: {md.format_dt(bot.user.created_at, 'R')}",
         f"Servers: {len(bot.guilds)}",
-        f"Invoked commands: {command_tracker.total_invocations()}",
     ]
-    if _state.app_info.bot_public:
+    if _bot_info.bot_public:
         invite = oauth_url(bot.user.id, scopes=("bot", "applications.commands"))
-        general_fields.append(md.hyperlink("**Invite link**", invite))
+        components.append(ui.UrlButton(url=invite, label="Invite me!", emoji=EMOJIS.types.drone))
 
     backend_fields = [
         f"Python version: {meta.python_version}",
         f"Discord library: {md.hyperlink('disnake', meta.disnake_url)} {meta.disnake_version}",
-        f"Lines of code: {_state.app_sloc} bot + {_state.lib_sloc} SM library",
+        f"Lines of code: {_bot_info.app_sloc}",
     ]
 
-    pack_key = state.item_pack.key
+    metadata = packs.get_item_pack_metadata()
+    pack_key = (metadata.key or metadata.name).unwrap_or("<unknown>")
 
-    if isinstance(CONFIG.default_pack_uri, HttpResource):
-        pack_key = md.hyperlink(pack_key, CONFIG.default_pack_uri.uri)
+    if isinstance(CONFIG.item_pack_uri, HttpResource):
+        pack_key = md.hyperlink(pack_key, CONFIG.item_pack_uri.uri)
 
+    item_pack = packs.get_item_pack()
     supermechs_fields = [
-        f"Registered players: {len(state.players.mapping)}",
-        f"Default item pack: {pack_key}",
-        f"Total items: {len(state.item_pack.items)}",
+        f"Registered players: {players.player_count()}",
+        f"Item pack: {pack_key}",
+        f"Total items: {len(item_pack.reloaded_items)} reloaded, {len(item_pack.legacy_items)} legacy",
     ]
     bytes_, prefix = as_binary_unit(get_ram_usage())
     perf_fields = [
         f"Started: {md.format_dt(meta.started_at, 'R')}",
+        f"Invoked commands: {telemetry.total_invocations()}",
         f"Latency: {round(bot.latency * 1000)}ms",
         f"RAM usage: {bytes_}{prefix}B",
     ]
@@ -112,20 +101,35 @@ async def info(inter: CommandInteraction) -> None:
         Embed(title="Bot info", color=inter.me.color)
         .set_thumbnail(inter.me.display_avatar.url)
         .add_field("General", "\n".join(general_fields), inline=False)
-        .add_field("Backend", "\n".join(backend_fields), inline=False)
         .add_field("SuperMechs", "\n".join(supermechs_fields), inline=False)
+        .add_field("Backend", "\n".join(backend_fields), inline=False)
         .add_field("Performance", "\n".join(perf_fields), inline=False)
     )
-    await inter.response.send_message(embed=embed, ephemeral=True)
+    if CONFIG.indev:
+        debug_footer(embed)
+
+    await inter.response.send_message(embed=embed, components=components, ephemeral=True)
 
 
 @plugin.slash_command(guild_ids=CONFIG.test_guild_ids)
 async def activity(inter: CommandInteraction) -> None:
     """Display command invocation activity."""
+    api_commands = (
+        inter.bot._connection._global_application_commands  # pyright: ignore[reportPrivateUsage]
+        or inter.bot._connection._guild_application_commands[CONFIG.home_guild_id]  # pyright: ignore[reportPrivateUsage]
+    )
+
+    def _get_mention(id: int) -> str:
+        command = api_commands.get(id)
+        if command is None:
+            return str(id)
+
+        return md.command_mention(command)
+
     desc = (
         "\n".join(
-            f"{md.command_mention(command)}: {command.total_invocations}"
-            for command in command_tracker.commands_data.values()
+            f"- {_get_mention(id)}: {invocations.total}"
+            for id, invocations in telemetry.iter_invocations()
         )
         or "No invocations since bot started"
     )

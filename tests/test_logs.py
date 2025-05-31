@@ -1,5 +1,4 @@
 import logging
-import logging.config
 
 from app import paths
 from app.core.logging import config_logging

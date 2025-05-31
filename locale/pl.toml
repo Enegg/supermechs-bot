@@ -1,109 +1,42 @@
 [stats]
-[stats.weight]
-in_game = "Waga"
-[stats.hit_points]
-default = "Punkty wytrzymałości"
-in_game = "Punkty życia"
-[stats.energy_capacity]
-default = "Pojemność energii"
-in_game = "Energia"
-[stats.regeneration]
-in_game = "Regeneracja"
-[stats.heat_capacity]
-default = "Pojemność cieplna"
-in_game = "Ciepło"
-[stats.cooling]
-in_game = "Chłodzenie"
-[stats.bullets_capacity]
-default = "Pojemność pocisków"
-in_game = "???"
-[stats.rockets_capacity]
-default = "Pojemność rakiet"
-in_game = "???"
-[stats.physical_resistance]
-in_game = "Odporność na obrażenia fizyczne"
-short = "Odporność fizyczna"
-[stats.explosive_resistance]
-in_game = "Odporność na obrażenia wybuchowe"
-short = "Odporność eksplozyjna"
-[stats.electric_resistance]
-in_game = "Odporność na obrażenia elektryczne"
-short = "Odporność elektryczna"
-[stats.physical_damage]
-in_game = "Obrażenia fizyczne"
-[stats.physical_resistance_damage]
-in_game = "Zmniejszanie wytrzymałości"
-short = "Redukcja odporności"
-[stats.electric_damage]
-in_game = "Obrażenia elektryczne"
-[stats.energy_damage]
-in_game = "Obrażenia energetyczne"
-[stats.energy_capacity_damage]
-default = "Redukcja pojemności energii"
-in_game = "Maks. obrażenia energetyczne"
-[stats.regeneration_damage]
-in_game = "Redukcja regeneracji"
-[stats.electric_resistance_damage]
-in_game = "Zmniejszanie wytrzymałości"
-short = "Redukcja odporności"
-[stats.explosive_damage]
-in_game = "Obrażenia wybuchowe"
-[stats.heat_damage]
-in_game = "Obrażenia cieplne"
-[stats.heat_capacity_damage]
-default = "Redukcja pojemności cieplnej"
-in_game = "Maks. obrażenia cieplne"
-[stats.cooling_damage]
-in_game = "Redukcja chłodzenia"
-[stats.explosive_resistance_damage]
-in_game = "Zmniejszanie wytrzymałości"
-short = "Redukcja odporności"
-[stats.walk]
-in_game = "Zasięg chodu"
-[stats.jump]
-in_game = "Zasięg skoku"
-[stats.range]
-in_game = "Zasięg"
-[stats.push]
-default = "Pchnięcie"
-in_game = "Odrzut"
-[stats.pull]
-default = "Zbliżenie"
-in_game = "Przyciąganie"
-[stats.recoil]
-in_game = "Odrzut"
-[stats.advance]
-default = "Natarcie"
-in_game = "Do przodu"
-[stats.retreat]
-in_game = "Odwrót"
-[stats.uses]
-in_game = "Liczba użyć"
-short = "Użycia"
-[stats.backfire]
-default = "Samoobrażenia"
-in_game = "Strzał"
-short = "Rykoszet"
-[stats.heat_generation]
-in_game = "Wydzielanie ciepła"
-short = "Emisja ciepła"
-[stats.energy_cost]
-in_game = "Pobór energii"
-[stats.bullets_cost]
-default = "Zużycie pocisków"
-in_game = "???"
-[stats.rockets_cost]
-default = "Zużycie rakiet"
-in_game = "???"
-
-[custom_stats]
-[custom_stats.spread]
-default = "Rozrzut"
-[custom_stats.anyDmg]
-default = "Obrażenia"
-
-[other]
-transform-range = "Etapy transformacji"
+weight = "Waga"
+hit_points = "Punkty wytrzymałości"
+energy_capacity = "Pojemność energii"
+energy_regeneration = "Regeneracja"
+heat_capacity = "Pojemność ciepła"
+heat_cooling = "Chłodzenie"
+bullets_capacity = "Pojemność pocisków"
+rockets_capacity = "Pojemność rakiet"
+physical_resistance = "Odporność na obrażenia fizyczne"
+explosive_resistance = "Odporność na obrażenia wybuchowe"
+electric_resistance = "Odporność na obrażenia elektryczne"
+physical_damage = "Obrażenia fizyczne"
+physical_resistance_damage = "Redukcja odporności"
+electric_damage = "Obrażenia elektryczne"
+energy_damage = "Obrażenia energetyczne"
+energy_capacity_damage = "Redukcja pojemności energii"
+regeneration_damage = "Redukcja regeneracji"
+electric_resistance_damage = "Redukcja odporności"
+explosive_damage = "Obrażenia wybuchowe"
+heat_damage = "Obrażenia cieplne"
+heat_capacity_damage = "Redukcja pojemności cieplnej"
+cooling_damage = "Redukcja chłodzenia"
+explosive_resistance_damage = "Redukcja odporności"
+walk = "Zasięg chodu"
+jump = "Zasięg skoku"
+range = "Zasięg"
+push = "Pchnięcie"
+pull = "Przyciąganie"
+recoil = "Odrzut"
+advance = "Natarcie"
+retreat = "Cofnięcie"
+uses = "Liczba użyć"
+backfire = "Samoobrażenia"
+repair = "Naprawa"
+heat_generation = "Emisja ciepła"
+energy_cost = "Pobór energii"
+bullets_cost = "Zużycie pocisków"
+rockets_cost = "Zużycie rakiet"
 
 [messages]
 command-dev = "To komenda wyłącznie deweloperska."
@@ -140,9 +73,30 @@ mech-build-ui-select-up-desc = "Wybierz by zobaczyć poprzednie przedmioty"
 mech-build-ui-select-down-label = "Więcej przedmiotów"
 mech-build-ui-select-down-desc = "Wybierz by zobaczyć więcej przedmiotów"
 
+item-lookup-ui-buffs = "Bonusy"
+item-lookup-ui-damage-avg = "Średnia obrażeń"
+item-lookup-ui-damage-vs-titans = "Obrażenia dla tytanów"
+item-lookup-power-level = "Poziom"
+item-lookup-ui-level-select-label = "Poziom"
+item-lookup-ui-select-placeholder = "Wybierz poziom"
+item-lookup-ui-select-up-label = "Poprzednie poziomy"
+item-lookup-ui-select-down-label = "Następne poziomy"
+item-lookup-jump-required = "Wymagana zdolność skoku"
+item-lookup-no-stats = "Brak statystyk do pokazania"
+item-lookup-no-image = "Podgląd niedostępny"
+item-lookup-stats-header = "Statystyki"
+
 item-compare-ui-buffs = "Bonusy"
 item-compare-jump-required = "Wymagana zdolność skoku"
 item-compare-stat-header = "Statystyka"
+
+tier-common = "zwykły"
+tier-rare = "rzadki"
+tier-epic = "epicki"
+tier-legendary = "legendarny"
+tier-mythical = "mityczny"
+tier-divine = "boski"
+tier-perk = "dodatek"
 
 [commands]
 ARENA_BUFFS_NAME = "arena-bonusy"
@@ -153,11 +107,13 @@ ITEM_DESCRIPTION = "Podgląd przedmiotów i ich statystyk."
 ITEM_NAME_NAME = "nazwa"
 ITEM_NAME_DESCRIPTION = "Nazwa przedmiotu."
 ITEM_TYPE_NAME = "typ"
-ITEM_TYPE_DESCRIPTION = "Ogranicza sugestie do wybranego typu."
+ITEM_TYPE_DESCRIPTION = "Ogranicza sugestie do tego typu."
 ITEM_ELEMENT_NAME = "element"
-ITEM_ELEMENT_DESCRIPTION = "Ogranicza sugestie do wybranego elementu."
-ITEM_COMPACT_NAME = "kompaktowy"
-ITEM_COMPACT_DESCRIPTION = "Kompaktowe ułożenie (psuje się na aplikacji mobilnej)."
+ITEM_ELEMENT_DESCRIPTION = "Ogranicza sugestie do tego elementu."
+ITEM_RARITY_NAME = "rzadkość"
+ITEM_RARITY_DESCRIPTION = "Usuwa sugestie poniżej tej rzadkości."
+ITEM_LEGACY_NAME = "relikty"
+ITEM_LEGACY_DESCRIPTION = "Pokaż przedmioty reliktowe (legacy)."
 
 COMPARE_NAME = "porównaj"
 COMPARE_DESCRIPTION = "Menu porównania dwóch przedmiotów."
@@ -199,10 +155,10 @@ CHOICE_CHARGE = "Szarża"
 CHOICE_HOOK = "Kotwica"
 CHOICE_SHIELD = "Tarcza"
 CHOICE_MODULE = "Moduł"
-CHOICE_TYPE_ANY = "Każdy"
+CHOICE_PERK = "Perk"
 
 CHOICE_PHYS = "Fizyczny"
 CHOICE_EXPL = "Wybuchowy"
 CHOICE_ELEC = "Elektryczny"
 CHOICE_COMB = "Mieszany"
-CHOICE_ELEMENT_ANY = "Każdy"
+CHOICE_NONE = "Pozostałe"

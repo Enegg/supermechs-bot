@@ -1,89 +1,147 @@
-from collections import abc
+# pyright: reportUninitializedInstanceVariable=false
+import copy
+from collections import Counter, abc
 from functools import partial
-from itertools import chain
-from typing import Any, ClassVar
-
-import attrs
+from typing import Any, ClassVar, Protocol
 
 from discord import ComponentLimits, EmbedColorType
 from disnake import Embed, Locale
 from disnake.utils import MISSING
 
 from app import i18n, ui
-from app.assets import COLORS, EMOJIS
+from app.assets import COLORS, EMOJIS, get_slot_emoji
 from app.devtools import debug_footer
 from app.embed_utils import embed_image
-from app.models import ItemPack, MechBuild, Player
+from app.gamerules import ARENA_BONUSES
+from app.managers import packs
+from app.models import MechBuild, Player
+from app.models.item import HasStats, Item
 from app.text_utils import Char
 
-import supermechs.all as sm
-from supermechs.enums import ItemElementName, StatName
+import dupermechs.all as sm
+from dupermechs import stats
+from dupermechs.arenashop import bind_levels
+from dupermechs.enums import ItemStat, MechSlot, MechStat
+
+SLOT_TO_TYPE: abc.Mapping[sm.Mech.Slot, sm.Item.Type] = {
+    sm.Mech.Slot.torso: sm.Item.Type.torso,
+    sm.Mech.Slot.legs: sm.Item.Type.legs,
+    sm.Mech.Slot.drone: sm.Item.Type.drone,
+    sm.Mech.Slot.side_weapon_1: sm.Item.Type.side_weapon,
+    sm.Mech.Slot.side_weapon_2: sm.Item.Type.side_weapon,
+    sm.Mech.Slot.side_weapon_3: sm.Item.Type.side_weapon,
+    sm.Mech.Slot.side_weapon_4: sm.Item.Type.side_weapon,
+    sm.Mech.Slot.top_weapon_1: sm.Item.Type.top_weapon,
+    sm.Mech.Slot.top_weapon_2: sm.Item.Type.top_weapon,
+    sm.Mech.Slot.charge: sm.Item.Type.charge,
+    sm.Mech.Slot.teleport: sm.Item.Type.teleport,
+    sm.Mech.Slot.hook: sm.Item.Type.hook,
+    sm.Mech.Slot.shield: sm.Item.Type.shield,
+    sm.Mech.Slot.perk: sm.Item.Type.perk,
+    sm.Mech.Slot.module_1: sm.Item.Type.module,
+    sm.Mech.Slot.module_2: sm.Item.Type.module,
+    sm.Mech.Slot.module_3: sm.Item.Type.module,
+    sm.Mech.Slot.module_4: sm.Item.Type.module,
+    sm.Mech.Slot.module_5: sm.Item.Type.module,
+    sm.Mech.Slot.module_6: sm.Item.Type.module,
+    sm.Mech.Slot.module_7: sm.Item.Type.module,
+    sm.Mech.Slot.module_8: sm.Item.Type.module,
+}
 
 
-def embed_mech(mech: sm.abc.Mech[sm.abc.ItemData], locale: Locale, name: str) -> Embed:
+def embed_mech(
+    build: MechBuild, locale: Locale, arena_buffs: sm.IArenaShopLevels | None = None
+) -> Embed:
+    summary = get_mech_stats(build.mech, arena_buffs)
     return Embed(
-        title=i18n.get_message(locale, "mech-summary-title", name=name),
-        color=color_from_mech(mech),
-    ).add_field(i18n.get_message(locale, "mech-summary-field"), format_summary(mech, locale))
+        title=i18n.get_message(
+            locale, "mech-summary-title", name=build.name.unwrap_or("Unnamed Mech")
+        ),
+        color=color_from_mech(build.mech),
+    ).add_field(
+        i18n.get_message(locale, "mech-summary-field"),
+        format_summary(summary, locale),
+    )
 
 
-def get_mech_config(mech: sm.abc.Mech[sm.abc.ItemData], /) -> str:
+class HasItemId(Protocol):
+    @property
+    def id(self) -> sm.Item.Id: ...
+
+
+def get_mech_config(mech: sm.Mech[HasItemId], /) -> str:
     """Return a string of IDs of items visible on image."""
-    items = (mech.torso, mech.legs, mech.drone)
-    items = chain(items, mech.side_weapons(), mech.top_weapons())
+    items = (
+        mech.torso, mech.legs, mech.drone,
+        mech.side_weapon_1, mech.side_weapon_2, mech.side_weapon_4, mech.side_weapon_4,
+        mech.top_weapon_1, mech.top_weapon_2,
+    )  # fmt: skip
     return "_".join("0" if item is None else str(item.id) for item in items)
 
 
-def format_summary(
-    mech: sm.Mech[sm.abc.HasStats], locale: Locale, buff_with: object | None = None
-) -> str:
-    """Return a string of lines formatted with mech stats.
+def iter_items[T](mech: sm.Mech[T], /) -> abc.Iterator[T]:
+    for slot in sm.Mech.Slot:
+        if (item := mech[slot]) is not None:
+            yield item
 
-    Parameters
-    ----------
-    mech:
-        `Mech` to format stats of.
-    locale:
-        `Locale` to use for i18n of stat names.
-    buff_with: optional
-        `ArenaShop` to apply buffs from.
-    """
-    summary = sm.mech_summary(mech)
-    values = attrs.asdict(summary, recurse=False)
-    del values[StatName.weight]
 
-    # if buff_with is not None:
+def get_mech_stats(
+    mech: sm.Mech[HasStats], arena_buffs: sm.IArenaShopLevels | None = None
+) -> sm.ItemStats:
+    mech_stats = stats.combine(item.stats for item in iter_items(mech))
+    mech_stats_parts = [mech_stats]
+
+    if arena_buffs is not None:
+        buffs = bind_levels(arena_buffs, ARENA_BONUSES)
+        mech_stats_parts.append(stats.bonus_mech_stats(mech_stats, buffs))
+
+    return stats.combine(mech_stats_parts)
+
+
+def format_summary(summary: sm.IItemStats, locale: Locale) -> str:
+    """Return a string of lines formatted with mech stats."""
+    overload = stats.overload_hp_penalty(summary.weight)  # TODO# safe_weight
+    summary = copy.replace(summary, hit_points=summary.hit_points - overload)
 
     parts = [
-        f"{EMOJIS.stats.weight} **{summary.weight:.0f}**"
-        f" {i18n.get_stat_name(locale, StatName.weight)}"
-        f" {EMOJIS.get_weight_emoji(int(summary.weight))}"
+        f"{EMOJIS.stats.weight} **{summary.weight}**"
+        f" {i18n.get_stat_name(locale, MechStat.weight)}"
+        f" {EMOJIS.get_weight_emoji(summary.weight)}"
     ]
 
-    parts.extend(
-        f"{EMOJIS.stats[stat]} **{value:.0f}** {i18n.get_stat_name(locale, stat)}"
-        for stat, value in values.items()
-    )
+    def add_part(value: int, emoji: str, stat: ItemStat) -> None:
+        if value != 0:
+            parts.append(f"{emoji} **{value}** {i18n.get_stat_name(locale, stat)}")
+
+    if overload:
+        parts.append(
+            f"{EMOJIS.stats.hit_points} **{summary.hit_points}**"
+            f" {i18n.get_stat_name(locale, MechStat.hit_points)}"
+            f" ***{-overload}*** {EMOJIS.stats.weight}"
+        )
+
+    else:
+        add_part(summary.hit_points, EMOJIS.stats.hit_points, ItemStat.hit_points)
+
+    # fmt: off
+    add_part(summary.energy_capacity, EMOJIS.stats.energy_capacity, ItemStat.energy_capacity)
+    add_part(summary.energy_regeneration, EMOJIS.stats.energy_regeneration, ItemStat.energy_regeneration)
+    add_part(summary.heat_capacity, EMOJIS.stats.heat_capacity, ItemStat.heat_capacity)
+    add_part(summary.heat_cooling, EMOJIS.stats.heat_cooling, ItemStat.heat_cooling)
+    add_part(summary.physical_resistance, EMOJIS.stats.physical_resistance, ItemStat.physical_resistance)
+    add_part(summary.explosive_resistance, EMOJIS.stats.explosive_resistance, ItemStat.explosive_resistance)
+    add_part(summary.electric_resistance, EMOJIS.stats.electric_resistance, ItemStat.electric_resistance)
+    add_part(summary.bullets_capacity, EMOJIS.stats.bullets_capacity, ItemStat.bullets_capacity)
+    add_part(summary.rockets_capacity, EMOJIS.stats.rockets_capacity, ItemStat.rockets_capacity)
+    add_part(summary.walk, EMOJIS.stats.walk, ItemStat.walk)
+    add_part(summary.jump, EMOJIS.stats.jump, ItemStat.jump)
+    # fmt: on
     return "\n".join(parts)
 
 
-def slot_emoji(slot: sm.abc.MechSlot, /) -> str:
-    """Return the emoji representing a slot, with respect to the right & left variants."""
-    if slot.startswith("top"):
-        index = slot[-1]
-        return EMOJIS.types.right_top_weapon if int(index) % 2 else EMOJIS.types.left_top_weapon
-
-    if slot.startswith("side"):
-        index = slot[-1]
-        return EMOJIS.types.right_side_weapon if int(index) % 2 else EMOJIS.types.left_side_weapon
-
-    return EMOJIS.types[sm.abc.ItemType(slot)]
-
-
 def sorted_options(
-    options: abc.Mapping[sm.abc.ItemElement, list[ui.SelectOption]],
-    primary_element: sm.abc.ItemElement | None,
-    /,
+    options: abc.Mapping[sm.Item.Element, abc.Sequence[ui.SelectOption]],
+    primary_element: sm.Item.Element | None,
 ) -> list[ui.SelectOption]:
     """Return a list of `SelectOption`s sorted by element.
 
@@ -96,17 +154,18 @@ def sorted_options(
 
     else:
         element_order = [
-            ItemElementName.PHYSICAL,
-            ItemElementName.EXPLOSIVE,
-            ItemElementName.ELECTRIC,
-            "COMBINED",
+            sm.Item.Element.physical,
+            sm.Item.Element.explosive,
+            sm.Item.Element.electric,
+            sm.Item.Element.combined,
+            sm.Item.Element.other,
         ]
 
         if primary_element is not None:
             element_order.remove(primary_element)
             element_order.insert(0, primary_element)
 
-        it = (options[sm.abc.ItemElement(key)] for key in element_order)
+        it = (options[key] for key in element_order)
 
     for option_list in it:
         all_options += option_list
@@ -114,8 +173,42 @@ def sorted_options(
     return all_options
 
 
-def color_from_mech(mech: sm.abc.Mech[sm.abc.ItemData], /) -> EmbedColorType:
-    element = sm.dominant_element(mech)
+class HasElement(Protocol):
+    @property
+    def element(self) -> sm.Item.Element: ...
+
+
+def dominant_element(mech: sm.Mech[HasElement], /, threshold: int = 2) -> sm.Item.Element | None:
+    counter = Counter[sm.Item.Element]()
+
+    def add(item: HasElement | None, /) -> None:
+        if item is not None:
+            counter[item.element] += 1
+
+    add(mech.torso)
+    add(mech.legs)
+    add(mech.drone)
+    add(mech.hook)
+    add(mech.side_weapon_1)
+    add(mech.side_weapon_2)
+    add(mech.side_weapon_3)
+    add(mech.side_weapon_4)
+    add(mech.top_weapon_1)
+    add(mech.top_weapon_2)
+
+    match counter.most_common(2):
+        case [(element, _)]:
+            return element
+
+        case [(element, count_1), (_, count_2)] if count_1 - count_2 >= threshold:
+            return element
+
+        case _:
+            return None
+
+
+def color_from_mech(mech: sm.Mech[HasElement], /) -> EmbedColorType:
+    element = dominant_element(mech)
 
     if element is None:
         if mech.torso is None:
@@ -126,12 +219,12 @@ def color_from_mech(mech: sm.abc.Mech[sm.abc.ItemData], /) -> EmbedColorType:
     return COLORS.elements[element]
 
 
-def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[ui.SelectOption]]]:
+def group_items() -> dict[sm.Item.Type, dict[sm.Item.Element, list[ui.SelectOption]]]:
     item_groups = {
-        type_: {element: list[sm.abc.ItemData]() for element in Element} for type_ in Type
+        type_: {element: list[sm.IItem]() for element in sm.Item.Element} for type_ in sm.Item.Type
     }
 
-    for item in pack.items.values():
+    for item in packs.iter_items():
         item_groups[item.type][item.element].append(item)
 
     for element_dict in item_groups.values():
@@ -144,7 +237,7 @@ def group_items(pack: ItemPack, /) -> dict[Type, dict[Element, list[ui.SelectOpt
                 ui.SelectOption(
                     label=item.name,
                     value=str(item.id),
-                    emoji=EMOJIS.elements[item.element.name],
+                    emoji=EMOJIS.elements[item.element],
                 )
                 for item in items
             ]
@@ -163,30 +256,32 @@ def make_empty_option(locale: Locale, /) -> ui.SelectOption:
     )
 
 
+def is_shop_empty(shop: sm.IArenaShopLevels, /) -> bool:
+    return all(shop[c] == 0 for c in sm.ArenaShop.Category)
+
+
 class MechView:
     store: ui.CallbackStore
-    mech: sm.Mech[Item]
-    pack: ItemPack
-    arena_shop: ArenaShop
-    embed: Embed
+    build: MechBuild
+    arena_shop: sm.IArenaShopLevels
     locale: Locale
     paginator: ui.Paginator[abc.Sequence[abc.Sequence[ui.MessageUIComponent]]]
     active: ui.ToggleButton | None
     empty_option: ui.SelectOption
     mech_config: str
 
-    command_mention: ClassVar[str] = "`/buffs`"
+    buffs_mention: ClassVar[str] = "`/buffs`"
 
     # pages of rows of components
-    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[SlotType]]] = (
+    LAYOUT: abc.Sequence[abc.Sequence[abc.Sequence[MechSlot]]] = (
         (
-            ((Type.TOP_WEAPON,  0), Type.DRONE, (Type.TOP_WEAPON,  1), Type.CHARGE),
-            ((Type.SIDE_WEAPON, 2), Type.TORSO, (Type.SIDE_WEAPON, 3), Type.TELEPORTER),
-            ((Type.SIDE_WEAPON, 0), Type.LEGS,  (Type.SIDE_WEAPON, 1), Type.HOOK),
+            (MechSlot.top_weapon_1, MechSlot.drone, MechSlot.top_weapon_2, MechSlot.charge),
+            (MechSlot.side_weapon_3, MechSlot.torso, MechSlot.side_weapon_4, MechSlot.teleport),
+            (MechSlot.side_weapon_1, MechSlot.legs, MechSlot.side_weapon_2, MechSlot.hook),
         ),
         (
-            tuple((Type.MODULE, n) for n in range(0, 4)),  # noqa: PIE808
-            tuple((Type.MODULE, n) for n in range(4, 8)),
+            (MechSlot.module_1, MechSlot.module_2, MechSlot.module_3, MechSlot.module_4),
+            (MechSlot.module_5, MechSlot.module_6, MechSlot.module_7, MechSlot.module_8),
         ),
     )  # fmt: skip
     DUMMY_BUTTONS = tuple(
@@ -198,22 +293,18 @@ class MechView:
         self,
         store: ui.CallbackStore,
         build: MechBuild,
-        pack: ItemPack,
-        # renderer: PackRenderer,
         player: Player,
         locale: Locale,
     ) -> None:
         self.store = store
-        self.mech = build.mech
-        self.pack = pack
+        self.build = build
         self.renderer: Any = object()  # TODO
         self.arena_shop = player.arena_shop
-        self.embed = embed_mech(build.mech, locale, build.name)  # FIXME
         self.locale = locale
         self.active = None
         self.empty_option = make_empty_option(locale)
         self.mech_config = get_mech_config(build.mech)
-        self.item_groups = group_items(pack)
+        self.item_groups = group_items()
         self.init_pages(store)
 
     def init_pages(self, store: ui.CallbackStore) -> None:
@@ -221,26 +312,23 @@ class MechView:
 
         @store.bind(ui.ActionButton(emoji=self.PAGE_EMOJI[0], custom_id=store.make_id()))
         async def modules_button(inter: ui.MessageInteraction) -> None:
-            """Swap mech view with modules viw and back."""
             self.paginator.index ^= 1  # 0 or 1
             modules_button.emoji = self.PAGE_EMOJI[self.paginator.index]
             await inter.response.edit_message(components=self.paginator.page)
 
         @store.bind(ui.ToggleButton(label="🡅", custom_id=store.make_id()))
         async def buffs_button(inter: ui.MessageInteraction) -> None:
-            """Toggle arena buffs to mech's stats."""
             if is_shop_empty(self.arena_shop):
                 return await inter.response.send_message(
-                    gettext("mech-build-no-buffs", command_mention=self.command_mention),
+                    gettext("mech-build-no-buffs", command_mention=self.buffs_mention),
                     ephemeral=True,
                 )
 
             buffs_button.toggle()
-            assert self.embed._fields is not None  # pyright: ignore[reportPrivateUsage]
-            self.embed._fields[0]["value"] = format_summary(  # pyright: ignore[reportPrivateUsage]
-                self.mech, self.locale, self.arena_shop if buffs_button.on else None
+            embed = embed_mech(
+                self.build, self.locale, self.arena_shop if buffs_button.on else None
             )
-            await inter.response.edit_message(embed=self.embed, components=self.paginator.page)
+            await inter.response.edit_message(embed=embed, components=self.paginator.page)
 
         @store.bind(
             ui.ActionButton(
@@ -272,9 +360,8 @@ class MechView:
             )
         )
         async def select(inter: ui.MessageInteraction) -> None:
-            """Item select dropdown."""
             assert self.active is not None
-            assert inter.values is not None
+            assert inter.values
             value = inter.values[0]
 
             if select.update_on_own_option(value):
@@ -288,57 +375,44 @@ class MechView:
                 self.active.style_off = ui.ButtonStyle.gray
 
             else:
-                item_data = self.pack.get_item(ItemID(value))
-                target_type = slot[0] if isinstance(slot, tuple) else slot
+                sm_item = packs.get_item_by_id(sm.Item.Id(int(value)))
+                item = Item.maxed(sm_item)
 
-                if item_data.type is not target_type:
-                    # challenge complete: How Did We Get Here?
-                    msg = f"{item_data.type} is not valid for slot {target_type}"
-                    raise RuntimeWarning(msg)
-
-                item = Item.maxed(item_data)
-                select.placeholder = item_data.name
+                select.placeholder = item.name
                 self.active.style_off = ui.ButtonStyle.green
 
-            self.mech[slot] = item
-            self.embed.color = color_from_mech(self.mech)
+            self.build.mech = copy.replace(self.build.mech, **{slot.name: item})
             self.set_state_idle()
 
-            self.embed.set_field_at(
-                0,
-                name="Stats:",
-                value=format_summary(
-                    self.mech,
-                    self.locale,
-                    self.arena_shop if buffs_button.on else None,
-                ),
+            embed = embed_mech(
+                self.build, self.locale, self.arena_shop if buffs_button.on else None
             )
-            new_config = get_mech_config(self.mech)
+            new_config = get_mech_config(self.build.mech)
 
             if new_config == self.mech_config:
                 return await inter.response.edit_message(
-                    embed=self.embed, components=self.paginator.page
+                    embed=embed, components=self.paginator.page
                 )
 
             self.mech_config = new_config
             url, file = None, MISSING
 
-            if False:
-                if self.mech.torso is not None:
-                    image = self.renderer.create_mech_image(self.mech)
+            if False:  # FIXME: mech image rendering
+                if self.build.mech.torso is not None:
+                    image = self.renderer.create_mech_image(self.build.mech)
                     url, file = embed_image(image, new_config)
 
-            self.embed.set_image(url)
+            embed.set_image(url)
 
             if __debug__:
-                debug_footer(self.embed, replace=True)
+                debug_footer(embed, replace=True)
 
             await inter.response.edit_message(
-                embed=self.embed, file=file, components=self.paginator.page, attachments=[]
+                embed=embed, file=file, components=self.paginator.page, attachments=[]
             )
 
         self.select = select
-        id_to_slot: dict[str, SlotType] = {}
+        id_to_slot: dict[str, MechSlot] = {}
 
         async def slot_button_cb(button: ui.ToggleButton, inter: ui.MessageInteraction) -> None:
             if button.on:
@@ -352,13 +426,13 @@ class MechView:
 
             await inter.response.edit_message(components=self.paginator.page)
 
-        def make_button(slot: SlotType, /) -> ui.ToggleButton:
+        def make_button(slot: MechSlot, /) -> ui.ToggleButton:
             btn = ui.ToggleButton(
                 style_off=(
-                    ui.ButtonStyle.gray if self.mech[slot] is None else ui.ButtonStyle.green
+                    ui.ButtonStyle.gray if self.build.mech[slot] is None else ui.ButtonStyle.green
                 ),
                 style_on=ui.ButtonStyle.blurple,
-                emoji=slot_emoji(slot),
+                emoji=get_slot_emoji(slot),
                 custom_id=self.store.make_id(),
             )
             id_to_slot[btn.custom_id] = slot
@@ -404,8 +478,9 @@ class MechView:
 
     def update_dropdown(self, button: ui.ToggleButton, /) -> None:
         slot = self.id_to_slot[button.custom_id]
-        options = self.item_groups[slot[0] if isinstance(slot, tuple) else slot]
-        element = sm.dominant_element(self.mech)
-        self.select.all_options = [self.empty_option, *sorted_options(options, element)]
-        item = self.mech[slot]
+        type = SLOT_TO_TYPE[slot]
+        options = self.item_groups[type]
+        element = dominant_element(self.build.mech)
+        self.select.set_all_options([self.empty_option, *sorted_options(options, element)])
+        item = self.build.mech[slot]
         self.select.placeholder = self.empty_option.label if item is None else item.name

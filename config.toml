@@ -11,7 +11,7 @@ filters = ["normalize_path"]
 "()" = "app.core.logging.get_path_normalizer"
 
 [logging.formatters.simple]
-format = "{asctime} [{levelname:<8}|{pathname}:{lineno}] {name} - {message}"
+format = "{asctime} [{levelname:^8}] [{pathname}:{lineno}] {message}"
 style = "{"
 datefmt = "%Y-%m-%d %H:%M:%S"
 

@@ -10,15 +10,16 @@ import disnake
 from discord import load_extensions
 from disnake.ext import commands
 
-from app import i18n, paths, state
-from app.commands import cancellation, exception_handling
-from app.commands.injections import register_injections
-from app.core import CONFIG, config_logging, http
+from app import aio, i18n, paths
+from app.commands import cancellation, exception_handling, injections, telemetry
+from app.core import CONFIG, config_logging
+from app.managers import loader
 
 _LOG = logging.getLogger("main")
 
 
 def setup_signal_handler(bot: disnake.Client, tg: anyio.abc.TaskGroup) -> None:
+    # TODO: cancel all ongoing commands before .close
     # NOTE: anyio.open_signal_receiver does not work on Windows
     def handle(signum: int, frame: object) -> None:
         del frame
@@ -46,7 +47,6 @@ async def main() -> None:
         localization_provider=i18n.localization_provider,
         test_guilds=CONFIG.test_guild_ids if CONFIG.indev else None,
         command_sync_flags=commands.CommandSyncFlags(
-            allow_command_deletion=False,
             sync_commands_debug=CONFIG.debug_command_sync,
             sync_on_cog_actions=False,
         ),
@@ -60,28 +60,25 @@ async def main() -> None:
     i18n.load(paths.LOCALE_DIR)
     cancellation.setup(bot)
     exception_handling.setup(bot)
-    register_injections()
-    partial_state = state.load(paths.STATE_DIR)
+    telemetry.setup(bot)
+    injections.register_injections()
 
-    try:
-        load_extensions(bot.load_extension, "extensions", strict=not CONFIG.indev)
-        # bypass call to _schedule_app_command_preparation
-        await disnake.Client.login(bot, CONFIG.bot_token)
+    load_extensions(bot.load_extension, "extensions", strict=not CONFIG.indev)
+    # bypass call to _schedule_app_command_preparation
+    await disnake.Client.login(bot, CONFIG.bot_token)
 
-        if CONFIG.logs_channel_id is not None:
-            await exception_handling.setup_channel(bot, CONFIG.logs_channel_id)
+    if CONFIG.logs_channel_id:
+        await exception_handling.setup_channel(bot, CONFIG.logs_channel_id)
 
-        else:
-            _LOG.info("logs_channel_id not specified, channel logging disabled")
+    else:
+        _LOG.info(f"{CONFIG.logs_channel_id=}, channel logging disabled")
 
-        async with http.client_session(bot.http) as session, anyio.create_task_group() as tg:
-            setup_signal_handler(bot, tg)
-            tg.start_soon(state.load_async, session, partial_state)
-            tg.start_soon(sync.sync_commands, bot)
-            tg.start_soon(bot.connect)
+    async with aio.client_session(bot.http), anyio.create_task_group() as tg:
+        setup_signal_handler(bot, tg)
 
-    finally:
-        state.save(paths.STATE_DIR)
+        tg.start_soon(loader.load_datapack)
+        tg.start_soon(sync.sync_commands, bot)
+        tg.start_soon(bot.connect)
 
 
 if __name__ == "__main__":

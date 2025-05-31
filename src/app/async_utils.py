@@ -1,6 +1,9 @@
+from collections import abc
+from contextlib import asynccontextmanager
 from typing import Any, cast as type_cast, overload
 
 import anyio
+import attrs
 
 from discord import InteractionLimits
 
@@ -25,9 +28,9 @@ async def amap[T, RetT](coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
 @overload
 async def gather[T1, T2](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], /) -> tuple[T1, T2]: ...
 @overload
-async def gather[T1, T2, T3](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], /) -> tuple[T1, T2, T3]: ... # noqa: E501
+async def gather[T1, T2, T3](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], /) -> tuple[T1, T2, T3]: ...
 @overload
-async def gather[T1, T2, T3, T4](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], c4: AsyncFunc[[], T4], /) -> tuple[T1, T2, T3, T4]: ...  # noqa: E501
+async def gather[T1, T2, T3, T4](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], c4: AsyncFunc[[], T4], /) -> tuple[T1, T2, T3, T4]: ...
 # fmt: on
 @overload
 async def gather[T](*coros: AsyncFunc[[], T]) -> tuple[T, ...]: ...
@@ -47,3 +50,32 @@ async def gather[T](*coros: AsyncFunc[[], T]) -> tuple[T, ...]:  # pyright: igno
 def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
     """Create a cancel scope which timeouts before interaction response."""
     return anyio.move_on_after(InteractionLimits.response_timeout - threshold)
+
+
+@attrs.define
+class LockManager[KT]:
+    """Manager controlling `anyio.Lock` creation.
+
+    The first context to acquire a lock under a given key will evict it on release.
+    Subsequent access via the same key in that timeframe acquires the same lock.
+    """
+
+    _locks: dict[KT, anyio.Lock] = attrs.field(factory=dict, init=False)
+
+    @asynccontextmanager
+    async def acquire_for(self, key: KT, /) -> abc.AsyncIterator[None]:
+        try:
+            lock = self._locks[key]
+            owner = False
+
+        except KeyError:
+            lock = self._locks[key] = anyio.Lock()
+            owner = True
+
+        try:
+            async with lock:
+                yield
+
+        finally:
+            if owner:
+                del self._locks[key]

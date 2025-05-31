@@ -1,7 +1,7 @@
 """Collection of functions related to (discord specific) markdown formatting."""
 
 from enum import StrEnum
-from typing import Protocol, override
+from typing import Any, Protocol, override
 
 import disnake
 from disnake.utils import format_dt
@@ -34,13 +34,14 @@ def strip_codeblock(text: str, /) -> str:
 class Commandish(Protocol):
     @property
     def id(self) -> int: ...
-
     @property
     def name(self) -> str: ...
 
 
-def command_mention(command: Commandish, /) -> str:
+def command_mention(command: Commandish | disnake.CommandInteraction[Any], /) -> str:
     """Return a string mentioning a slash command."""
+    if isinstance(command, disnake.CommandInteraction):
+        return f"</{command.application_command.qualified_name}:{command.data.id}>"
     return f"</{command.name}:{command.id}>"
 
 

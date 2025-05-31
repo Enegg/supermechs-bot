@@ -43,35 +43,52 @@ class PaginatedSelect(ui.StringSelect[None]):
         self.option_up = option_up
         self.option_down = option_down
         self.page = page
-        self._update_page()
+        self.update_page()
 
-    @property
-    def total_pages(self) -> int:
-        """The total number of pages this select has."""
-        total_option_count = len(self._all_options)
-
-        if total_option_count <= ComponentLimits.select_options:
+    @staticmethod
+    def option_to_page_count(options: int, /) -> int:
+        if options <= ComponentLimits.select_options:
             return 1
 
         first_and_last_page = (ComponentLimits.select_options - 1) * 2
 
-        if total_option_count <= first_and_last_page:
+        if options <= first_and_last_page:
             # fits on two pages, add one of up/down option on each
             return 2
 
         size = ComponentLimits.select_options - 2
-        return 2 + (total_option_count - first_and_last_page + size - 1) // size
+        return 2 + (options - first_and_last_page + size - 1) // size
+
+    @staticmethod
+    def option_to_page_index(option: int, total_options: int) -> int:
+        if total_options <= ComponentLimits.select_options:
+            return 0
+
+        first_page = ComponentLimits.select_options - 1
+
+        if option < first_page:
+            return 0
+
+        if total_options <= first_page * 2:
+            return 1
+
+        mid_page = first_page - 1
+        pages = (total_options - first_page * 2 + mid_page - 1) // mid_page
+
+        if option < first_page + mid_page * pages:
+            return 1 + (option - first_page) // mid_page
+
+        return 1 + pages
+
+    def set_all_options(self, options: abc.Sequence[SelectOption], page: int = 0) -> None:
+        self._all_options = options
+        self.page = page
+        self.update_page()
 
     @property
     def all_options(self) -> abc.Sequence[SelectOption]:
         """All underlying `SelectOption`s."""
         return self._all_options
-
-    @all_options.setter
-    def all_options(self, new: abc.Sequence[SelectOption], /) -> None:
-        self._all_options = new
-        self.page = 0
-        self._update_page()
 
     def update_on_own_option(self, option_id: str, /) -> bool:
         if option_id == self.option_up.value:
@@ -83,12 +100,12 @@ class PaginatedSelect(ui.StringSelect[None]):
         else:
             return False
 
-        self._update_page()
+        self.update_page()
         return True
 
-    def _update_page(self) -> None:
+    def update_page(self) -> None:
         page = self.page
-        total = self.total_pages
+        total = self.option_to_page_count(len(self._all_options))
 
         options = self._underlying.options
         options.clear()

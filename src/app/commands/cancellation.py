@@ -35,8 +35,8 @@ async def on_cancel_button(inter: ui.MessageInteraction, /) -> None:
         return
 
     await inter.response.defer()
-    await inter.delete_original_response()
     cancel_command_for(parse_cancel_token(inter.data.custom_id))
+    await inter.delete_original_response()
     # NOTE: concrete command classes override .invoke
     # TODO: somehow invoke command callback using MessageInteraction
 

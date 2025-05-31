@@ -134,7 +134,7 @@ async def force_error(
     raise exc(message)
 
 
-async def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:
+def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:
     matching: list[str] = []
 
     if len(input) < 2:  # noqa: PLR2004

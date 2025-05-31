@@ -5,6 +5,7 @@ from typing import Literal, get_args as get_type_args
 
 from disnake.utils import utcnow as utcnow
 
+from app import paths
 from app.typeshed import Pathish
 
 __all__ = ("as_binary_unit", "atoi_bin", "format_exception", "utcnow")
@@ -84,11 +85,10 @@ def format_exception(exc: BaseException, /) -> str:
     """
     # TODO: make it work with ExceptionGroups too
     tb = traceback.TracebackException.from_exception(exc, compact=True)
-    cwd = os.getcwd()  # noqa: PTH109
 
     for frame_summary in tb.stack:
         try:
-            frame_summary.filename = strip_cwd(frame_summary.filename, cwd)
+            frame_summary.filename = strip_cwd(frame_summary.filename, paths.CWD)
 
         except ValueError:
             continue
@@ -97,7 +97,7 @@ def format_exception(exc: BaseException, /) -> str:
 
 
 def strip_cwd(path: Pathish, cwd: Pathish | None = None) -> str:
-    """Make path relative to the cwd. `{cwd}/pth` becomes `./pth`.
+    """Make path relative to the cwd. `{cwd}/pth` becomes `pth`.
 
     Raises
     ------
@@ -107,4 +107,4 @@ def strip_cwd(path: Pathish, cwd: Pathish | None = None) -> str:
     if cwd is None:
         cwd = os.getcwd()  # noqa: PTH109
 
-    return f".{os.sep}{os.path.relpath(path, cwd)}"
+    return os.path.relpath(path, cwd)

@@ -16,111 +16,44 @@ embed_tips = [
     "What time is it",
 ]
 [stats]
-[stats.weight]
-in_game = "Weight"
-[stats.hit_points]
-default = "HP"
-in_game = "Hit Points"
-[stats.energy_capacity]
-default = "Energy capacity"
-in_game = "Energy"
-[stats.regeneration]
-in_game = "Regeneration"
-short = "Regen"
-[stats.heat_capacity]
-default = "Heat capacity"
-in_game = "Heat"
-[stats.cooling]
-in_game = "Cooling"
-[stats.bullets_capacity]
-default = "Bullet capacity"
-in_game = "Bullet cap"
-[stats.rockets_capacity]
-default = "Rocket capacity"
-in_game = "Rocket cap"
-[stats.physical_resistance]
-default = "Physical resistance"
-in_game = "Pys resist"
-[stats.explosive_resistance]
-default = "Explosive resistance"
-in_game = "Exp resist"
-[stats.electric_resistance]
-default = "Electric resistance"
-in_game = "Ele resist"
-[stats.physical_damage]
-default = "Physical damage"
-in_game = "Pys dmg"
-[stats.physical_resistance_damage]
-default = "Resistance drain"
-in_game = "Resist drain"
-[stats.electric_damage]
-default = "Electric damage"
-in_game = "Ele dmg"
-[stats.energy_damage]
-default = "Energy damage"
-in_game = "Energy dmg"
-[stats.energy_capacity_damage]
-default = "Max energy damage"
-in_game = "Max energy dmg"
-[stats.regeneration_damage]
-default = "Regeneration damage"
-in_game = "Regen dmg"
-[stats.electric_resistance_damage]
-default = "Resistance drain"
-in_game = "Resist drain"
-[stats.explosive_damage]
-default = "Explosive damage"
-in_game = "Exp dmg"
-[stats.heat_damage]
-default = "Heat damage"
-in_game = "Heat dmg"
-[stats.heat_capacity_damage]
-default = "Max heat damage"
-in_game = "Max heat dmg"
-[stats.cooling_damage]
-default = "Cooling damage"
-in_game = "Cooling dmg"
-[stats.explosive_resistance_damage]
-default = "Resistance drain"
-in_game = "Resist drain"
-[stats.walk]
-in_game = "Walking"
-[stats.jump]
-in_game = "Jumping"
-[stats.range]
-in_game = "Range"
-[stats.push]
-default = "Knockback"
-in_game = "Push"
-[stats.pull]
-in_game = "Pull"
-[stats.recoil]
-in_game = "Recoil"
-[stats.advance]
-in_game = "Advance"
-[stats.retreat]
-in_game = "Retreat"
-[stats.uses]
-in_game = "Uses"
-[stats.backfire]
-in_game = "Backfire"
-[stats.heat_generation]
-in_game = "Heat cost"
-[stats.energy_cost]
-in_game = "Energy cost"
-[stats.bullets_cost]
-in_game = "Bullets cost"
-[stats.rockets_cost]
-in_game = "Rockets cost"
-
-[custom-stats]
-[custom-stats.spread]
-default = "Damage spread"
-[custom-stats.anyDmg]
-default = "Damage"
-
-[other]
-transform-range = "Transformation tiers"
+weight = "Weight"
+hit_points = "Hit points"
+energy_capacity = "Energy capacity"
+energy_regeneration = "Regeneration"
+heat_capacity = "Heat capacity"
+heat_cooling = "Cooling"
+bullets_capacity = "Bullets capacity"
+rockets_capacity = "Rockets capacity"
+physical_resistance = "Physical resistance"
+explosive_resistance = "Explosive resistance"
+electric_resistance = "Electric resistance"
+physical_damage = "Physical damage"
+physical_resistance_damage = "Resistance drain"
+electric_damage = "Electric damage"
+energy_damage = "Energy damage"
+energy_capacity_damage = "Energy capacity damage"
+regeneration_damage = "Regeneration damage"
+electric_resistance_damage = "Resistance drain"
+explosive_damage = "Explosive damage"
+heat_damage = "Heat damage"
+heat_capacity_damage = "Heat capacity damage"
+cooling_damage = "Cooling damage"
+explosive_resistance_damage = "Resistance drain"
+walk = "Walk"
+jump = "Jump"
+range = "Range"
+push = "Push"
+pull = "Pull"
+recoil = "Recoil"
+advance = "Advance"
+retreat = "Retreat"
+uses = "Uses"
+backfire = "Backfire"
+repair = "Repair"
+heat_generation = "Heat cost"
+energy_cost = "Energy cost"
+bullets_cost = "Bullets cost"
+rockets_cost = "Rockets cost"
 
 [messages]
 command-dev = "This is a developer-only command."
@@ -157,6 +90,27 @@ mech-build-ui-select-up-desc = "Select to show previous items"
 mech-build-ui-select-down-label = "More items"
 mech-build-ui-select-down-desc = "Select to show more items"
 
+item-lookup-ui-buffs = "Buffs"
+item-lookup-ui-damage-avg = "Damage average"
+item-lookup-ui-damage-vs-titans = "Damage vs titans"
+item-lookup-power-level = "Power level"
+item-lookup-ui-level-select-label = "Level"
+item-lookup-ui-select-placeholder = "Select level"
+item-lookup-ui-select-up-label = "Previous levels"
+item-lookup-ui-select-down-label = "Next levels"
+item-lookup-jump-required = "Jumping required"
+item-lookup-no-stats = "No stats to show"
+item-lookup-no-image = "Image not available"
+item-lookup-stats-header = "Stats"
+
 item-compare-ui-buffs = "Buffs"
 item-compare-jump-required = "Jumping required"
-item-compare-stat-header = "Stat"
+item-compare-stat-header = "Stats"
+
+tier-common = "common"
+tier-rare = "rare"
+tier-epic = "epic"
+tier-legendary = "legendary"
+tier-mythical = "mythical"
+tier-divine = "divine"
+tier-perk = "perk"

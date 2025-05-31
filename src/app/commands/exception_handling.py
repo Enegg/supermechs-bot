@@ -3,7 +3,6 @@ from contextlib import suppress
 
 from app.disnake_types import Bot, CommandInteraction
 from discord import EmbedLimits, markdown as md, text_to_file
-from discord.interactions import inter_to_mention
 from discord.message_builder import MessageBuilder
 from disnake import Colour, Embed, Event, HTTPException, InteractionTimedOut
 from disnake.abc import Messageable
@@ -51,7 +50,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     header = (
         f"Place: <#{inter.channel_id}>\n"
         f"User: {inter.author.mention} (`{inter.author.display_name}`)\n"
-        f"Command: {inter_to_mention(inter)} {arguments}"
+        f"Command: {md.command_mention(inter)} {arguments}"
     )
     embed = Embed(title="⚠️ Uncaught exception", color=Colour(0xFF0000))
     builder = MessageBuilder(embeds=[embed])

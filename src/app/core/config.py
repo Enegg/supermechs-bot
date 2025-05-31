@@ -1,15 +1,15 @@
 import os
 from collections import abc
+from typing import Final
 
 import attrs
 import dotenv
 
-from app.class_utils import ByteSize, MappingParser
-from resources import HttpResource, Resource
+from app.cattrs_utils import ByteSize
+from app.class_utils import MappingParser
+from resources import AnyResource
 
 from .cli import ARGV
-
-from supermechs.gamerules import BuildRules
 
 __all__ = ("CONFIG",)
 
@@ -26,20 +26,14 @@ class Config:
     """Whether disnake should log detailed sync info."""
     logs_channel_id: int | None = None
     """ID of a text channel log messages will be sent to."""
-    default_pack_uri: Resource = HttpResource.from_uri(
-        "https://gist.githubusercontent.com/ctrlraul/3b5669e4246bc2d7dc669d484db89062/raw"
-    )
+    item_pack_uri: AnyResource | None = None
     """Path/URL of the default item pack."""
-    missing_image_uri: Resource = HttpResource.from_uri(
-        "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"
-    )
-    """Path/URL of a placeholder image."""
+    gfx_pack_uri: AnyResource | None = None
+    """Path/URL of independent graphics for item pack."""
     max_image_size: ByteSize = ByteSize(25 * 1024 * 1024)
     """Maximum allowed size of an image fetched from user source."""
     chunk_size: ByteSize = ByteSize(1024 * 1024)
     """Size of a chunk in iterative download."""
-    build_rules: BuildRules = BuildRules.default
-    """Set of rules mech builds must obey."""
     user_input_timeout: float = 180.0
     """Time in seconds after which various forms of user input are disabled."""
 
@@ -50,7 +44,7 @@ class Config:
 
 
 dotenv.load_dotenv(ARGV.dotenv_path)
-CONFIG = MappingParser(
+CONFIG: Final = MappingParser(
     attrs.asdict(ARGV),
     os.environ,
 ).structure(Config)

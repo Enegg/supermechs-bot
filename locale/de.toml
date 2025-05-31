@@ -1,74 +1,39 @@
-[stats.weight]
-in_game = "Gewicht"
-[stats.hit_points]
-in_game = "Lebenspunkte"
-[stats.energy_capacity]
-in_game = "Energie"
-[stats.regeneration]
-in_game = "Regeneration"
-[stats.heat_capacity]
-in_game = "Hitze"
-[stats.cooling]
-in_game = "Abkuehlen"
-[stats.bullets_capacity]
-in_game = "???"
-[stats.rockets_capacity]
-in_game = "???"
-[stats.physical_resistance]
-in_game = "Physischer Widerstand"
-[stats.explosive_resistance]
-in_game = "Explosiver Widerstand"
-[stats.electric_resistance]
-in_game = "Elektrischer Widerstand"
-[stats.physical_damage]
-in_game = "Physischer Schaden"
-[stats.physical_resistance_damage]
-in_game = "Widerstand reduzieren"
-[stats.electric_damage]
-in_game = "Elektrischer Schaden"
-[stats.energy_damage]
-in_game = "Energie Schaden"
-[stats.energy_capacity_damage]
-in_game = "Max Energie Schaden"
-[stats.regeneration_damage]
-in_game = "Regeneration Schaden"
-[stats.electric_resistance_damage]
-in_game = "Widerstand reduzieren"
-[stats.explosive_damage]
-in_game = "Explosiver Schaden"
-[stats.heat_damage]
-in_game = "Hitze Schaden"
-[stats.heat_capacity_damage]
-in_game = "Max Hitze Schaden"
-[stats.cooling_damage]
-in_game = "Abkuehlen Schaden"
-[stats.explosive_resistance_damage]
-in_game = "Widerstand reduzieren"
-[stats.walk]
-in_game = "Geh Distanz"
-[stats.jump]
-in_game = "Sprung Distanz"
-[stats.range]
-in_game = "Reichweite"
-[stats.push]
-in_game = "Zurueckwerfen"
-[stats.pull]
-in_game = "Ziehen"
-[stats.recoil]
-in_game = "Ru:kstoss"
-[stats.advance]
-in_game = "Vorru:cken"
-[stats.retreat]
-in_game = "Ru:ckzug"
-[stats.uses]
-in_game = "Einsaetze"
-[stats.backfire]
-in_game = "Backfire"
-[stats.heat_generation]
-in_game = "Verursachte Hitze"
-[stats.energy_cost]
-in_game = "???"
-[stats.bullets_cost]
-in_game = "???"
-[stats.rockets_cost]
-in_game = "???"
+[stats]
+weight = "Gewicht"
+hit_points = "Lebenspunkte"
+energy_capacity = "Energie"
+energy_regeneration = "Regeneration"
+heat_capacity = "Hitze"
+heat_cooling = "Abkuehlen"
+# bullets_capacity =
+# rockets_capacity =
+physical_resistance = "Physischer Widerstand"
+explosive_resistance = "Explosiver Widerstand"
+electric_resistance = "Elektrischer Widerstand"
+physical_damage = "Physischer Schaden"
+physical_resistance_damage = "Widerstand reduzieren"
+electric_damage = "Elektrischer Schaden"
+energy_damage = "Energie Schaden"
+energy_capacity_damage = "Max Energie Schaden"
+regeneration_damage = "Regeneration Schaden"
+electric_resistance_damage = "Widerstand reduzieren"
+explosive_damage = "Explosiver Schaden"
+heat_damage = "Hitze Schaden"
+heat_capacity_damage = "Max Hitze Schaden"
+cooling_damage = "Abkuehlen Schaden"
+explosive_resistance_damage = "Widerstand reduzieren"
+walk = "Geh Distanz"
+jump = "Sprung Distanz"
+range = "Reichweite"
+push = "Zurueckwerfen"
+pull = "Ziehen"
+recoil = "Ru:kstoss"
+advance = "Vorru:cken"
+retreat = "Ru:ckzug"
+uses = "Einsaetze"
+backfire = "Backfire"
+# repair =
+heat_generation = "Verursachte Hitze"
+# energy_cost =
+# bullets_cost =
+# rockets_cost =

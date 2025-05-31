@@ -1,0 +1,130 @@
+[misc]
+frantic_gifs = [
+    "https://i.imgur.com/Bbbf4AH.mp4",
+    "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
+]
+
+[emojis]
+[emojis.types]
+            torso =  "<:torso:730115680363347968>"
+             legs =   "<:legs:730115699397361827>"
+            drone =  "<:drone:730115574763618394>"
+      side_weapon =  "<:sider:730115747799629940>"
+right_side_weapon =  "<:sider:730115747799629940>"
+ left_side_weapon =  "<:sidel:730115729365663884>"
+       top_weapon =   "<:topr:730115786735091762>"
+ right_top_weapon =   "<:topr:730115786735091762>"
+  left_top_weapon =   "<:topl:730115768431280238>"
+           charge = "<:charge:730115557239685281>"
+         teleport =   "<:tele:730115603683213423>"
+             hook =   "<:hook:730115622347735071>"
+           module = "<:module:730115649866694686>"
+          #  shield =
+              # kit =
+            #  perk =
+
+[emojis.tiers]
+   common = "⚪"
+     rare = "🔵"
+     epic = "🟣"
+legendary = "🟠"
+ mythical = "🟤"
+   divine = "⚪"
+     perk = "🟡"
+
+[emojis.elements]
+    # other =
+ physical = "<:phydmg:725871208830074929>"
+explosive = "<:expdmg:725871223338172448>"
+ electric = "<:eledmg:725871233614479443>"
+ combined = "<:combined:1026853188940349490>"
+
+[emojis.stats]
+                     weight =     "<:weight:725870760484143174>"
+                 hit_points =     "<:health:725870887588462652>"
+            energy_capacity =     "<:energy:725870941883859054>"
+        energy_regeneration =      "<:regen:725871003665825822>"
+              heat_capacity =       "<:heat:725871043767435336>"
+               heat_cooling =    "<:cooling:725871075778363422>"
+           bullets_capacity = "🧰"
+           rockets_capacity = "🧰"
+        physical_resistance =     "<:phyres:725871121051811931>"
+       explosive_resistance =     "<:expres:725871136935772294>"
+        electric_resistance =     "<:eleres:725871146716758077>"
+            physical_damage =     "<:phydmg:725871208830074929>"
+ physical_resistance_damage =  "<:phyresdmg:725871259635679263>"
+            electric_damage =     "<:eledmg:725871233614479443>"
+              energy_damage =     "<:enedmg:725871599517171719>"
+     energy_capacity_damage =  "<:enecapdmg:725871420126789642>"
+        regeneration_damage =   "<:regendmg:725871443815956510>"
+ electric_resistance_damage =  "<:eleresdmg:725871296381976629>"
+           explosive_damage =     "<:expdmg:725871223338172448>"
+                heat_damage =     "<:headmg:725871613639393290>"
+       heat_capacity_damage =  "<:heacapdmg:725871478083551272>"
+             cooling_damage = "<:coolingdmg:725871499281563728>"
+explosive_resistance_damage =  "<:expresdmg:725871281311842314>"
+                       walk =       "<:walk:725871844581834774>"
+                       jump =       "<:jump:725871869793796116>"
+                      range =      "<:range:725871752072134736>"
+                       push =       "<:push:725871716613488843>"
+                       pull =       "<:pull:725871734141616219>"
+                     recoil =     "<:recoil:725871778282340384>"
+                    advance =    "<:advance:725871818115907715>"
+                    retreat =    "<:retreat:725871804236955668>"
+                       uses =       "<:uses:725871917923303688>"
+                   backfire =   "<:backfire:725871901062201404>"
+            heat_generation =     "<:heagen:725871674007879740>"
+                energy_cost =    "<:enecost:725871660237979759>"
+              #  bullets_cost =
+              #  rockets_cost =
+
+[emojis.categories]
+     energy_capacity =   "<:energy:725870941883859054>"
+ energy_regeneration =    "<:regen:725871003665825822>"
+       energy_damage =   "<:enedmg:725871599517171719>"
+       heat_capacity =     "<:heat:725871043767435336>"
+        heat_cooling =  "<:cooling:725871075778363422>"
+         heat_damage =   "<:headmg:725871613639393290>"
+     physical_damage =   "<:phydmg:725871208830074929>"
+    explosive_damage =   "<:expdmg:725871223338172448>"
+     electric_damage =   "<:eledmg:725871233614479443>"
+ physical_resistance =   "<:phyres:725871121051811931>"
+explosive_resistance =   "<:expres:725871136935772294>"
+ electric_resistance =   "<:eleres:725871146716758077>"
+            total_hp =   "<:health:725870887588462652>"
+  backfire_reduction = "<:backfire:725871901062201404>"
+
+
+[icons]
+[icons.types]
+            torso = "https://cdn.discordapp.com/emojis/730115680363347968.png"
+             legs = "https://cdn.discordapp.com/emojis/730115699397361827.png"
+            drone = "https://cdn.discordapp.com/emojis/730115574763618394.png"
+      side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.png"
+right_side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.png"
+ left_side_weapon = "https://cdn.discordapp.com/emojis/730115729365663884.png"
+       top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.png"
+ right_top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.png"
+  left_top_weapon = "https://cdn.discordapp.com/emojis/730115768431280238.png"
+           charge = "https://cdn.discordapp.com/emojis/730115557239685281.png"
+         teleport = "https://cdn.discordapp.com/emojis/730115603683213423.png"
+             hook = "https://cdn.discordapp.com/emojis/730115622347735071.png"
+           module = "https://cdn.discordapp.com/emojis/730115649866694686.png"
+
+
+[colors]
+[colors.tiers]
+   common = 0xB1B1B1
+     rare = 0x55ACEE
+     epic = 0xCC41CC
+legendary = 0xE0A23C
+ mythical = 0xFE6333
+   divine = 0xFFFFFF
+     perk = 0xFFFF33
+
+[colors.elements]
+    other = 0x323232
+ physical = 0xFFB800
+explosive = 0xB71010
+ electric = 0x106ED8
+ combined = 0x211D1D

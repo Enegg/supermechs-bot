@@ -3,7 +3,6 @@ import logging
 from app.disnake_types import CommandInteraction
 from disnake import Event
 
-from app.bridges.telemetry import command_tracker
 from app.plugins_factory import create_plugin
 
 plugin = create_plugin(__name__)
@@ -36,7 +35,6 @@ async def on_slash_command(inter: CommandInteraction, /) -> None:
         command_name,
         extra={"filled_options": inter.filled_options},
     )
-    command_tracker.add_invocation(inter)
 
 
 @plugin.listener(Event.slash_command_completion)

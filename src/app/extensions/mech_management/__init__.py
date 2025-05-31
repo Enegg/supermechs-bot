@@ -1,5 +1,6 @@
 import io
-from itertools import chain, islice
+from collections import abc
+from itertools import islice
 from json import JSONDecodeError
 
 import anyio
@@ -14,20 +15,20 @@ from disnake.utils import MISSING
 
 from app import i18n, ui
 from app.assets import EMOJIS
-from app.bridges.sm_utils import get_item_pack_for
 from app.commands.autocompleters import mech_name_autocomplete
 from app.core import CONFIG
 from app.devtools import debug_footer
 from app.embed_utils import embed_image, sikrit_footer
 from app.models import Player
+from app.models.item import HasStats
 from app.plugins_factory import create_plugin
 from app.text_utils import StringLimits, sanitize_string
 from app.utils import as_binary_unit
 from defer import Defer
 
-from .mech_manager import MechView
+from .mech_manager import MechView, embed_mech
 
-from supermechs.tools import mech_weight
+import dupermechs.all as sm
 
 plugin = create_plugin(__name__)
 
@@ -39,8 +40,9 @@ async def on_load() -> None:
     # wait until API command caches are populated
     await sync.SYNC_FINISHED.wait()
     buffs_command = plugin.bot.get_global_command_named("buffs")
-    assert buffs_command is not None
-    MechView.command_mention = md.command_mention(buffs_command)
+
+    if buffs_command is not None:
+        MechView.buffs_mention = md.command_mention(buffs_command)
 
 
 @plugin.slash_command()
@@ -58,10 +60,44 @@ MECH_SUMMARY_TEMPLATE = f"""\
 """
 
 
+def count_weapons(mech: sm.IMech[object], /) -> int:
+    return (
+        int(mech.side_weapon_1 is not None)
+        + int(mech.side_weapon_2 is not None)
+        + int(mech.side_weapon_3 is not None)
+        + int(mech.side_weapon_4 is not None)
+        + int(mech.top_weapon_1 is not None)
+        + int(mech.top_weapon_2 is not None)
+    )
+
+
+def count_modules(mech: sm.IMech[object], /) -> int:
+    return (
+        int(mech.module_1 is not None)
+        + int(mech.module_2 is not None)
+        + int(mech.module_3 is not None)
+        + int(mech.module_4 is not None)
+        + int(mech.module_5 is not None)
+        + int(mech.module_6 is not None)
+        + int(mech.module_7 is not None)
+        + int(mech.module_8 is not None)
+    )
+
+
+def iter_items[T](mech: sm.IMech[T], /) -> abc.Iterator[T]:
+    for slot in sm.Mech.Slot:
+        if (item := mech[slot]) is not None:
+            yield item
+
+
+def get_weight(mech: sm.IMech[HasStats], /) -> int:
+    return sum(item.stats.weight for item in iter_items(mech))
+
+
 @mech.sub_command()
 async def catalog(inter: CommandInteraction, player: Player) -> None:
     """Catalog of your builds. {{ MECH_BROWSE }}"""  # noqa: D400
-    if not player.builds:
+    if not player.has_builds():
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
     embed = Embed(title="Your builds", color=inter.author.color)
@@ -71,14 +107,14 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
 
     fields: list[tuple[str, str]] = []
 
-    for build in player.builds.values():
+    for build in player.iter_builds():
         mech = build.mech
         value = MECH_SUMMARY_TEMPLATE.format(
             TORSO="no torso" if mech.torso is None else mech.torso.name,
             LEGS="no legs" if mech.legs is None else mech.legs.name,
-            WEAPONS=sum(1 for item in chain(mech.top_weapons(), mech.side_weapons()) if item),
-            MODULES=sum(1 for item in mech.modules() if item),
-            WEIGHT=mech_weight(mech),
+            WEAPONS=count_weapons(mech),
+            MODULES=count_modules(mech),
+            WEIGHT=get_weight(mech),
         )
         fields.append((build.name.unwrap_or("Unnamed Mech"), value))
 
@@ -109,8 +145,6 @@ async def build(
     name:
         The name of an existing build or of one to create. {{ MECH_BUILD_NAME }}
     """  # noqa: D400
-    item_pack = get_item_pack_for(inter)
-
     if name == "":
         build = player.get_recent_or_create_build()
 
@@ -118,7 +152,8 @@ async def build(
         build = player.get_or_create_build(sanitize_string(name))
 
     store = ui.callback_store(inter)
-    view = MechView(store, build, item_pack, player, locale)
+    view = MechView(store, build, player, locale)
+    embed = embed_mech(build, locale)
     file = MISSING
 
     if False:  # FIXME
@@ -129,13 +164,13 @@ async def build(
             url, file = embed_image(image, view.mech_config)
             view.embed.set_image(url)
 
-    sikrit_footer(view.embed, locale)
+    sikrit_footer(embed, locale)
 
     if __debug__:
-        debug_footer(view.embed)
+        debug_footer(embed)
 
     await inter.response.send_message(
-        embed=view.embed, file=file, components=view.paginator.page, ephemeral=True
+        embed=embed, file=file, components=view.paginator.page, ephemeral=True
     )
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
@@ -163,10 +198,10 @@ async def import_(
     # the content type should be application/json,
     # but we may as well just rely on the loader to fail
 
-    default_pack = get_item_pack_for(inter)
     data = await file.read()
+    raise NotImplementedError  # FIXME
     try:
-        mechs, failed = load_mechs(data, default_pack)
+        mechs, failed = load_mechs(data)
 
     except JSONDecodeError as exc:
         raise commands.UserInputError(str(exc)) from exc
@@ -217,17 +252,16 @@ async def export(
         The file format to output data in.\
         Formats other than .json are not supported by WU. {{ MECH_EXPORT_FORMAT }}
     """  # noqa: D400
-    build_count = len(player.builds)
-
-    if build_count == 0:
+    if not player.has_builds():
         return await inter.response.send_message(gettext("export-none"), ephemeral=True)
 
-    default_pack = get_item_pack_for(inter)
-    all_builds = tuple(player.builds.values())
+    all_builds = tuple(player.iter_builds())
 
-    if build_count == 1:
+    raise NotImplementedError  # FIXME
+
+    if len(all_builds) == 1:
         mechs = [all_builds[0].as_mech()]
-        file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
+        file = bytes_to_file(dump_mechs(mechs), "mechs.json")
         return await inter.response.send_message(file=file, ephemeral=True)
 
     unnamed_counter: int = 0
@@ -248,10 +282,10 @@ async def export(
 
     content = None
 
-    if build_count > ComponentLimits.select_options:
+    if len(all_builds) > ComponentLimits.select_options:
         content = gettext(
             "export-items-warning",
-            build_count=build_count,
+            build_count=len(all_builds),
             display_limit=ComponentLimits.select_options,
         )
 
@@ -279,7 +313,7 @@ async def export(
         assert component_inter.values is not None
         mechs = (all_builds[int(i)].as_mech() for i in component_inter.values)
 
-    file = bytes_to_file(dump_mechs(mechs, default_pack.key), "mechs.json")
+    file = bytes_to_file(dump_mechs(mechs), "mechs.json")
     await component_inter.response.edit_message(file=file, components=None)
 
 

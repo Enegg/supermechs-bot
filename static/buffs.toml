@@ -1,0 +1,67 @@
+[energy_capacity]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[energy_regeneration]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[energy_damage]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[heat_capacity]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[heat_cooling]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[heat_damage]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[physical_damage]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[explosive_damage]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[electric_damage]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+
+[physical_resistance]
+type = "%"
+values = [0, 2, 6, 10, 14, 18, 22, 26, 30, 34, 40]
+
+[explosive_resistance]
+type = "%"
+values = [0, 2, 6, 10, 14, 18, 22, 26, 30, 34, 40]
+
+[electric_resistance]
+type = "%"
+values = [0, 2, 6, 10, 14, 18, 22, 26, 30, 34, 40]
+
+[fuel_capacity]
+type = "+"
+values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+[fuel_regeneration]
+type = "%"
+values = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20, 23]
+
+[total_hp]
+type = "+"
+values = [0, 10, 30, 60, 90, 120, 150, 180, 220, 260, 300, 350]
+
+[damage_vs_titans]
+type = "%"
+values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+[backfire_reduction]
+type = "%"
+values = [0, -1, -3, -5, -7, -9, -11, -13, -15, -17, -20]

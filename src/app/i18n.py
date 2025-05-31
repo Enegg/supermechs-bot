@@ -2,7 +2,7 @@ import logging
 from collections import abc
 from functools import partial
 from pathlib import Path
-from typing import Final, NotRequired, Protocol, ReadOnly, Required, TypedDict, cast as type_cast
+from typing import Final, Protocol, ReadOnly, Required, TypedDict, cast as type_cast
 
 import rtoml
 from monads.option import Null, Option, Some
@@ -11,7 +11,7 @@ from disnake import Locale, LocalizationProtocol
 
 from app.typeshed import Pathish
 
-from supermechs.enums import StatName
+from dupermechs.enums import ItemStat
 
 __all__ = ("GetText", "get_embed_tips", "get_gettext", "get_message", "get_stat_name", "load")
 
@@ -61,19 +61,19 @@ def _get[KT](
             value = store[key, FALLBACK_LOCALE]
 
         except KeyError:
-            _LOG.error("Key %s does not exist.", key)
+            _LOG.error("Key %s does not exist", key)
             value = str(key) if default is None else default
+            store[key, FALLBACK_LOCALE] = value
 
         else:
-            _LOG.warning("Key %s does not exist for locale %s.", key, locale)
-            # prevent further logs
+            _LOG.warning("Key %s does not exist for locale %s", key, locale)
             store[key, locale] = value
 
         return value
 
 
 def get_stat_name(locale: Locale, stat: str) -> str:
-    return _get(stats, stat, locale, default=FALLBACK_NAME)
+    return _get(stats, stat, locale)
 
 
 def get_message(locale: Locale, key: str, /, **format_kwargs: object) -> str:
@@ -101,14 +101,8 @@ def get_embed_tips(locale: Locale, /) -> abc.Sequence[str]:
             raise err from None
 
 
-class _StatEntry(TypedDict):
-    in_game: ReadOnly[str]
-    default: ReadOnly[NotRequired[str]]
-    short: ReadOnly[NotRequired[str]]
-
-
 class _LocaleData(TypedDict, total=False):
-    stats: ReadOnly[Required[abc.Mapping[str, _StatEntry]]]
+    stats: ReadOnly[Required[abc.Mapping[str, str]]]
     messages: ReadOnly[abc.Mapping[str, str]]
     commands: ReadOnly[dict[str, str]]
     embed_tips: ReadOnly[abc.Sequence[str]]
@@ -124,8 +118,8 @@ def _load_file(path: Path, /) -> None:
     data = type_cast("_LocaleData", rtoml.loads(path.read_text("utf-8")))
 
     for key, entry in data["stats"].items():
-        stat = StatName[key]
-        stats[stat, locale] = entry.get("default") or entry.get("in_game", FALLBACK_NAME)
+        stat = ItemStat[key]
+        stats[stat, locale] = entry
 
     if messages_data := data.get("messages"):
         for key, message in messages_data.items():
@@ -140,7 +134,11 @@ def _load_file(path: Path, /) -> None:
 
 def load(directory: Pathish, /) -> None:
     for subpath in Path(directory).glob(f"*{FILE_EXT}"):
-        _load_file(subpath)
+        try:
+            _load_file(subpath)
+
+        except Exception as exc:
+            _LOG.error("Failed to load locale:", exc_info=exc)
 
 
 if __name__ == "__main__":
@@ -154,7 +152,7 @@ if __name__ == "__main__":
         for file_path in locale_path.glob(f"*{FILE_EXT}"):
             locale = Locale[file_path.stem]
 
-            for stat in StatName:
+            for stat in ItemStat:
                 if stat.name.endswith("addon"):
                     continue
 
