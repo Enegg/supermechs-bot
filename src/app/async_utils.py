@@ -5,8 +5,6 @@ from typing import Any, cast as type_cast, overload
 import anyio
 import attrs
 
-from discord import InteractionLimits
-
 from app.typeshed import AsyncFunc
 
 
@@ -45,11 +43,6 @@ async def gather[T](*coros: AsyncFunc[[], T]) -> tuple[T, ...]:  # pyright: igno
             tg.start_soon(worker, i, coro)
 
     return tuple(out)
-
-
-def move_on_before_timeout(threshold: float = 0.5, /) -> anyio.CancelScope:
-    """Create a cancel scope which timeouts before interaction response."""
-    return anyio.move_on_after(InteractionLimits.response_timeout - threshold)
 
 
 @attrs.define

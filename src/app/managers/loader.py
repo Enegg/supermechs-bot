@@ -9,10 +9,8 @@ from app.dto.gfx_v3 import GfxPackDto
 from app.dto.pack_v1 import ItemPackDto as ItemPackDtoV1
 from app.dto.pack_v2 import ItemPackDto as ItemPackDtoV2
 from app.dto.pack_v3 import ItemPackDto as ItemPackDtoV3
-from app.mappers.common_gfx import JointsMapping
 from app.mappers.pack_v1 import convert_pack_v1
-from app.mappers.pack_v3 import collect_items, convert_joints
-from app.models.ids import DEFAULT_PACK_ID
+from app.mappers.pack_v3 import collect_items
 from app.models.item_pack import ItemPack
 from app.models.sprite_pack import DynamicSpritePack, SpriteKey
 from resources import HttpResource
@@ -45,15 +43,14 @@ async def load_datapack() -> None:
             pack_v1 = convert_pack_v1(dto)
 
             if dto.legacy:
-                item_pack = ItemPack(id=DEFAULT_PACK_ID, legacy_items=pack_v1.items)
+                item_pack = ItemPack(legacy_items=pack_v1.items)
 
             else:
-                item_pack = ItemPack(id=DEFAULT_PACK_ID, reloaded_items=pack_v1.items)
+                item_pack = ItemPack(reloaded_items=pack_v1.items)
 
             packs.store_item_pack(item_pack)
-            sprite_pack = DynamicSpritePack(id=DEFAULT_PACK_ID, image_resources=pack_v1.images)
-            gfx.store_sprite_pack(DEFAULT_PACK_ID, sprite_pack)
-            gfx.store_joints(DEFAULT_PACK_ID, pack_v1.joints)
+            sprite_pack = DynamicSpritePack(image_resources=pack_v1.images)
+            gfx.store_sprite_pack(sprite_pack)
             return
 
         case "2":
@@ -65,7 +62,6 @@ async def load_datapack() -> None:
             dto = msgspec.json.decode(data, type=ItemPackDtoV3)
             item_groups = collect_items(dto.items)
             item_pack = ItemPack(
-                id=DEFAULT_PACK_ID,
                 reloaded_items=item_groups.reloaded,
                 legacy_items=item_groups.legacy,
                 hidden_items=item_groups.hidden,
@@ -84,7 +80,6 @@ async def load_datapack() -> None:
                 case Ok(gfx_data):
                     gfx_dto = msgspec.json.decode(gfx_data, type=GfxPackDto)
 
-            joints: JointsMapping = {}
             image_resources: dict[SpriteKey, HttpResource] = {}
 
             sprite_table = {(sprite.gfx, sprite.reloaded): sprite for sprite in gfx_dto.sprites}
@@ -101,12 +96,8 @@ async def load_datapack() -> None:
                     sprite_dto.image.replace("%url%", gfx_dto.base_url)
                 )
 
-                if sprite_dto.joint is not msgspec.UNSET:
-                    joints[sprite_key] = convert_joints(sprite_dto.joint)
-
-            sprite_pack = DynamicSpritePack(id=DEFAULT_PACK_ID, image_resources=image_resources)
-            gfx.store_sprite_pack(DEFAULT_PACK_ID, sprite_pack)
-            gfx.store_joints(DEFAULT_PACK_ID, joints)
+            sprite_pack = DynamicSpritePack(image_resources=image_resources)
+            gfx.store_sprite_pack(sprite_pack)
 
         case unknown:
             _LOG.error(f"Unknown data pack version: {unknown}")

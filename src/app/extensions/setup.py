@@ -7,7 +7,7 @@ from discord import AutocompleteReturnType, InteractionLimits
 from discord.extensions import walk_extensions
 from disnake.ext import commands
 
-from app import i18n
+from app import devtools, i18n
 from app.plugins_factory import create_dev_plugin
 from app.utils import format_exception
 
@@ -86,15 +86,6 @@ async def unload(
     await _plugin_helper(inter, ext, plugin.bot.unload_extension, "unload")
 
 
-@plugin.slash_command()
-@commands.is_owner()
-async def shutdown(inter: CommandInteraction) -> None:
-    """Terminates the bot connection."""
-    await inter.response.send_message("I will be back", ephemeral=True)
-    plugin.logger.warning("Bot shutdown initiated")
-    await plugin.bot.close()
-
-
 def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteReturnType:
     if len(input) < 2:  # noqa: PLR2004
         return KNOWN_EXCEPTION_NAMES[: InteractionLimits.autocomplete_options]
@@ -135,10 +126,12 @@ async def force_error(
 
 
 def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:
-    matching: list[str] = []
+    input = input.strip()
 
     if len(input) < 2:  # noqa: PLR2004
-        return matching
+        return []
+
+    matching: list[str] = []
 
     for locale in disnake.Locale:
         if input in locale.name:
@@ -150,23 +143,27 @@ def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturn
     return matching
 
 
-@plugin.slash_command()
+@plugin.slash_command(name="devtools")
 @commands.is_owner()
-async def set_locale(
+async def dev_console(
     inter: CommandInteraction,
     locale_name: str | None = commands.Param(None, name="locale", autocomplete=get_matching_locale),
+    debug_enabled: bool | None = commands.Param(None, name="log-messages"),
 ) -> None:
-    """Override commands' locale.
+    """Toggle various dev settings.
 
     Parameters
     ----------
-    locale: Locale code to override with.
+    locale_name: Locale code to override with.
+    debug_enabled: Toggle logging embed & components structure to stdout.
     """
-    if locale_name is None:
-        i18n.remove_locale_override()
-        msg = "Locale reset"
+    messages: list[str] = []
 
-    else:
+    if locale_name == "none":
+        i18n.remove_locale_override()
+        messages.append("Locale reset")
+
+    elif locale_name is not None:
         try:
             locale = disnake.Locale[locale_name]
 
@@ -176,9 +173,15 @@ async def set_locale(
         else:
             i18n.set_locale_override(locale)
             msg = f"Locale set to {locale_name}"
+        messages.append(msg)
 
+    if debug_enabled is not None:
+        devtools.debug_enabled = debug_enabled
+        messages.append(f"Message logging {'enabled' if debug_enabled else 'disabled'}")
+
+    msg = "\n".join(messages) or "No changes applied."
     plugin.logger.info(msg)
-    await inter.response.send_message(msg)
+    await inter.response.send_message(msg, ephemeral=True)
 
 
 setup, teardown = plugin.create_extension_handlers()

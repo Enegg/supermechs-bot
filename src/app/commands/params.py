@@ -28,12 +28,15 @@ ELEMENT_CHOICES = (
     OptionChoice(Localized("Combined", key="CHOICE_COMB"), ItemElement.combined.name),
     OptionChoice(Localized("Other", key="CHOICE_NONE"), ItemElement.other.name),
 )
-TIER_CHOICES = (
+LEGACY_TIER_CHOICES = (
     OptionChoice(Localized("Common", key="CHOICE_C"), ItemRarity.common.name),
     OptionChoice(Localized("Rare", key="CHOICE_R"), ItemRarity.rare.name),
     OptionChoice(Localized("Epic", key="CHOICE_E"), ItemRarity.epic.name),
     OptionChoice(Localized("Legendary", key="CHOICE_L"), ItemRarity.legendary.name),
     OptionChoice(Localized("Mythical", key="CHOICE_M"), ItemRarity.mythical.name),
+)
+TIER_CHOICES = (
+    *LEGACY_TIER_CHOICES,
     OptionChoice(Localized("Divine", key="CHOICE_D"), ItemRarity.divine.name),
     OptionChoice(Localized("Perk", key="CHOICE_P"), ItemRarity.perk.name),
 )

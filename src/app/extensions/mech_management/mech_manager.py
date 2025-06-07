@@ -10,7 +10,7 @@ from disnake.utils import MISSING
 
 from app import i18n, ui
 from app.assets import COLORS, EMOJIS, get_slot_emoji
-from app.devtools import debug_footer
+from app.devtools import debug_message
 from app.embed_utils import embed_image
 from app.gamerules import ARENA_BONUSES
 from app.managers import packs
@@ -222,7 +222,7 @@ def group_items() -> dict[sm.Item.Type, dict[sm.Item.Element, list[ui.SelectOpti
         type_: {element: list[sm.IItem]() for element in sm.Item.Element} for type_ in sm.Item.Type
     }
 
-    for item in packs.iter_items():
+    for item in packs.get_item_pack().reloaded_items.values():
         item_groups[item.type][item.element].append(item)
 
     for element_dict in item_groups.values():
@@ -403,7 +403,7 @@ class MechView:
             embed.set_image(url)
 
             if __debug__:
-                debug_footer(embed, replace=True)
+                debug_message(embed)
 
             await inter.response.edit_message(
                 embed=embed, file=file, components=self.paginator.page, attachments=[]

@@ -1,71 +1,62 @@
 import logging
 from collections import abc
-from typing import Final, overload
 
-from app.models.ids import DEFAULT_PACK_ID, PackId
 from app.models.item_pack import ItemPack, ItemPackMetadata
 
 import dupermechs.all as sm
 
 _LOG = logging.getLogger("managers")
-
-_item_packs: Final[abc.Mapping[PackId, ItemPack]] = {DEFAULT_PACK_ID: ItemPack(id=DEFAULT_PACK_ID)}
-_metadata: Final[abc.Mapping[PackId, ItemPackMetadata]] = {DEFAULT_PACK_ID: ItemPackMetadata()}
+_item_pack: ItemPack = ItemPack()
 
 
-def get_item_pack(id: PackId = DEFAULT_PACK_ID, /) -> ItemPack:
-    return _item_packs[id]
+def get_item_pack() -> ItemPack:
+    return _item_pack
 
 
-def get_item_pack_metadata(id: PackId = DEFAULT_PACK_ID, /) -> ItemPackMetadata:
-    return _metadata[id]
+def get_item_pack_metadata() -> ItemPackMetadata:
+    return ItemPackMetadata()  # TODO
 
 
-def get_item_by_id(id: sm.Item.Id, /, pack_id: PackId = DEFAULT_PACK_ID) -> sm.IItem:
-    return get_item_pack(pack_id).reloaded_items[id]
+def get_item_by_id(id: sm.Item.Id, /) -> sm.IItem:
+    return _item_pack.reloaded_items[id]
 
 
-def find_first_by_name(name: str, /, *, ignore_case: bool = False) -> sm.IItem | None:
-    if ignore_case:
-        name = name.lower()
+def filter_items(
+    type: str | None = None,
+    element: str | None = None,
+    rarity: str | None = None,
+    legacy: bool = False,
+) -> abc.Iterator[sm.IItem]:
+    filters: list[abc.Callable[[sm.IItem], bool]] = []
 
-        for item in iter_items():
-            if item.name.lower() == name:
-                return item
+    if type is not None:
+        target_type = sm.Item.Type[type]
+        filters.append(lambda item: item.type is target_type)
 
-    else:
-        for item in iter_items():
-            if item.name == name:
-                return item
+    if element is not None:
+        target_element = sm.Item.Element[element]
+        filters.append(lambda item: item.element is target_element)
 
-    return None
+    if rarity is not None:
+        min_tier = sm.Item.Rarity[rarity]
+        filters.append(lambda item: item.stages[0].tier >= min_tier)
 
+    bank = _item_pack.legacy_items if legacy else _item_pack.reloaded_items
 
-def find_items_by_names(*names: str, ignore_case: bool = False) -> list[sm.IItem]:
-    if ignore_case:
-        names = tuple(map(str.lower, names))
-        return [item for item in iter_items() if item.name.lower() in names]
+    if not filters:
+        yield from bank.values()
+        return
 
-    return [item for item in iter_items() if item.name in names]
-
-
-@overload
-def iter_items() -> abc.Iterator[sm.IItem]: ...
-@overload
-def iter_items(*pack_ids: PackId) -> abc.Iterator[sm.IItem]: ...
-def iter_items(pack_id: PackId = DEFAULT_PACK_ID, /, *pack_ids: PackId) -> abc.Iterator[sm.IItem]:
-    yield from get_item_pack(pack_id).reloaded_items.values()
-
-    for pack_id in pack_ids:  # noqa: PLR1704
-        pack = get_item_pack(pack_id)
-        yield from pack.reloaded_items.values()
+    for item in bank.values():
+        if all(f(item) for f in filters):
+            yield item
 
 
 def store_item_pack(pack: ItemPack, /) -> None:
+    global _item_pack
     _LOG.info(
-        "Storing item pack: %d, reloaded=%d, legacy=%d",
-        pack.id,
+        "Storing item pack: reloaded=%d, legacy=%d",
         len(pack.reloaded_items),
         len(pack.legacy_items),
     )
-    _item_packs[pack.id] = pack
+    _item_pack = pack

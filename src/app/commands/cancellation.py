@@ -21,11 +21,11 @@ def is_cancel_button(custom_id: str, /) -> bool:
     return custom_id.startswith(CANCEL_BUTTON_ID)
 
 
-def cancel_button(inter: CommandInteraction, gettext: i18n.GetText) -> ui.ActionButton:
+def cancel_button(inter: CommandInteraction, /) -> ui.ActionButton:
     return ui.ActionButton(
         custom_id=get_cancel_button_id(inter),
         style=ui.ButtonStyle.red,
-        label=gettext("ui-cmd-cancel-button"),
+        label=i18n.get_message(i18n.get_locale(inter), "ui-cmd-cancel-button"),
         emoji="🛑",
     )
 
@@ -35,16 +35,19 @@ async def on_cancel_button(inter: ui.MessageInteraction, /) -> None:
         return
 
     await inter.response.defer()
-    cancel_command_for(parse_cancel_token(inter.data.custom_id))
-    await inter.delete_original_response()
     # NOTE: concrete command classes override .invoke
     # TODO: somehow invoke command callback using MessageInteraction
+    cancel_command_for(parse_cancel_token(inter.data.custom_id))
+    await inter.delete_original_response()
 
 
-async def on_concurrent_command(inter: CommandInteraction) -> None:
-    gettext = i18n.get_gettext(inter.locale)
-    button = cancel_button(inter, gettext)
-    await inter.response.send_message(gettext("command-running"), components=button, ephemeral=True)
+async def on_concurrent_command(inter: CommandInteraction, /) -> None:
+    button = cancel_button(inter)
+    await inter.response.send_message(
+        i18n.get_message(i18n.get_locale(inter), "command-running"),
+        components=button,
+        ephemeral=True,
+    )
 
 
 def setup(bot: Bot, /) -> None:

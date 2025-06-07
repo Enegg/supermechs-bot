@@ -11,7 +11,7 @@ from discord import load_extensions
 from disnake.ext import commands
 
 from app import aio, i18n, paths
-from app.commands import cancellation, exception_handling, injections, telemetry
+from app.commands import cancellation, exception_handling, telemetry
 from app.core import CONFIG, config_logging
 from app.managers import loader
 
@@ -61,7 +61,6 @@ async def main() -> None:
     cancellation.setup(bot)
     exception_handling.setup(bot)
     telemetry.setup(bot)
-    injections.register_injections()
 
     load_extensions(bot.load_extension, "extensions", strict=not CONFIG.indev)
     # bypass call to _schedule_app_command_preparation

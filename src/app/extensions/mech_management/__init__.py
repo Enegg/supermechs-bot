@@ -1,15 +1,9 @@
-import io
 from collections import abc
-from itertools import islice
-from json import JSONDecodeError
-
-import anyio
 
 from app.disnake_types import CommandInteraction
-from discord import ComponentLimits, bytes_to_file, markdown as md
+from discord import markdown as md
 from discord.commands import register_cancellable
-from discord.ui import wait_for_components
-from disnake import Attachment, Embed, Locale
+from disnake import Embed
 from disnake.ext import commands
 from disnake.utils import MISSING
 
@@ -17,13 +11,12 @@ from app import i18n, ui
 from app.assets import EMOJIS
 from app.commands.autocompleters import mech_name_autocomplete
 from app.core import CONFIG
-from app.devtools import debug_footer
+from app.devtools import debug_message
 from app.embed_utils import embed_image, sikrit_footer
-from app.models import Player
+from app.managers import players
 from app.models.item import HasStats
 from app.plugins_factory import create_plugin
 from app.text_utils import StringLimits, sanitize_string
-from app.utils import as_binary_unit
 from defer import Defer
 
 from .mech_manager import MechView, embed_mech
@@ -95,8 +88,10 @@ def get_weight(mech: sm.IMech[HasStats], /) -> int:
 
 
 @mech.sub_command()
-async def catalog(inter: CommandInteraction, player: Player) -> None:
+async def catalog(inter: CommandInteraction) -> None:
     """Catalog of your builds. {{ MECH_BROWSE }}"""  # noqa: D400
+    player = players.get_or_create_player_from_user(inter.author)
+
     if not player.has_builds():
         return await inter.response.send_message("You do not have any builds.", ephemeral=True)
 
@@ -123,7 +118,7 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
         embed.add_field(title, value)
 
     if __debug__:
-        debug_footer(embed)
+        debug_message(embed)
 
     await inter.send(embed=embed, ephemeral=True)
 
@@ -132,8 +127,6 @@ async def catalog(inter: CommandInteraction, player: Player) -> None:
 @mech.sub_command()
 async def build(
     inter: CommandInteraction,
-    locale: Locale,
-    player: Player,
     name: commands.String[str, 1, StringLimits.names] = commands.Param(
         "", autocomplete=mech_name_autocomplete
     ),
@@ -145,6 +138,8 @@ async def build(
     name:
         The name of an existing build or of one to create. {{ MECH_BUILD_NAME }}
     """  # noqa: D400
+    player = players.get_or_create_player_from_user(inter.author)
+
     if name == "":
         if (build := player.recent_build) is None:
             build = player.create_build()
@@ -157,6 +152,7 @@ async def build(
         else:
             build = player.create_build(sanitize_string(name))
 
+    locale = i18n.get_locale(inter)
     store = ui.callback_store(inter)
     view = MechView(store, build, player, locale)
     embed = embed_mech(build, locale)
@@ -173,7 +169,7 @@ async def build(
     sikrit_footer(embed, locale)
 
     if __debug__:
-        debug_footer(embed)
+        debug_message(embed)
 
     await inter.response.send_message(
         embed=embed, file=file, components=view.paginator.page, ephemeral=True
@@ -181,146 +177,6 @@ async def build(
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.user_input_timeout)
-
-
-@mech.sub_command(name="import")
-async def import_(
-    inter: CommandInteraction, gettext: i18n.GetText, player: Player, file: Attachment
-) -> None:
-    """Import mechs from a .JSON file. {{ MECH_IMPORT }}
-
-    Parameters
-    ----------
-    file:
-        A .JSON file as exported from WU. {{ MECH_IMPORT_FILE }}
-    """  # noqa: D400
-    # file size of 64KiB sounds like a pretty beefy amount of mechs
-    MAX_SIZE = 1 << 16
-
-    if file.size > MAX_SIZE:
-        max_size, prefix = as_binary_unit(MAX_SIZE)
-        msg = gettext("import-size-error", size=max_size, unit=prefix + "B")
-        raise commands.UserInputError(msg)
-    # the content type should be application/json,
-    # but we may as well just rely on the loader to fail
-
-    data = await file.read()
-    raise NotImplementedError  # FIXME
-    try:
-        mechs, failed = load_mechs(data)
-
-    except JSONDecodeError as exc:
-        raise commands.UserInputError(str(exc)) from exc
-
-    except DataError as exc:
-        msg = f'{gettext("import-parse-error")}\n{exc}'
-        raise commands.UserInputError(msg) from exc
-
-    except Exception as exc:
-        # holy moly
-        msg = "Parsing failed with unexpected error:"
-        plugin.logger.warning(msg, exc_info=exc)
-        raise commands.UserInputError from exc
-
-    string_builder = io.StringIO()
-
-    if failed:
-        string_builder.write(gettext("import-failed"))
-        string_builder.write("\n")
-        for reason in failed:
-            string_builder.write(f"{reason}\n")
-
-    if mechs:
-        # TODO: warn about overwriting
-        for mech, name in mechs:
-            player.load_build(name, mech)
-        string_builder.write(gettext("import-loaded"))
-        string_builder.write(" ")
-        string_builder.write(", ".join(f"`{name}`" for _, name in mechs))
-
-    else:
-        string_builder.write(gettext("import-none"))
-
-    await inter.response.send_message(string_builder.getvalue(), ephemeral=True)
-
-
-@mech.sub_command()
-async def export(
-    inter: CommandInteraction,
-    player: Player,  # format: typing.Literal["json", "toml"] = "json"
-    gettext: i18n.GetText,
-) -> None:
-    """Export your mechs into a WU-compatible .JSON file. {{ MECH_EXPORT }}
-
-    Parameters
-    ----------
-    format:
-        The file format to output data in.\
-        Formats other than .json are not supported by WU. {{ MECH_EXPORT_FORMAT }}
-    """  # noqa: D400
-    if not player.has_builds():
-        return await inter.response.send_message(gettext("export-none"), ephemeral=True)
-
-    all_builds = tuple(player.iter_builds())
-
-    raise NotImplementedError  # FIXME
-
-    if len(all_builds) == 1:
-        mechs = [all_builds[0].as_mech()]
-        file = bytes_to_file(dump_mechs(mechs), "mechs.json")
-        return await inter.response.send_message(file=file, ephemeral=True)
-
-    unnamed_counter: int = 0
-
-    def get_unnamed() -> str:
-        nonlocal unnamed_counter
-        unnamed_counter += 1
-        return f"Unnamed Mech {unnamed_counter}"
-
-    options = {
-        build.name.unwrap_or_else(get_unnamed): str(i)
-        for i, build in enumerate(islice(all_builds, ComponentLimits.select_options))
-    }
-    mech_select = ui.StringSelect(
-        placeholder=gettext("export-select"), max_values=len(options), options=options
-    )
-    button_all = ui.ActionButton(label=gettext("export-all"))
-
-    content = None
-
-    if len(all_builds) > ComponentLimits.select_options:
-        content = gettext(
-            "export-items-warning",
-            build_count=len(all_builds),
-            display_limit=ComponentLimits.select_options,
-        )
-
-    await inter.response.send_message(
-        content=content,
-        components=[[mech_select], [button_all]],
-        ephemeral=True,
-    )
-    try:
-        with anyio.fail_after(CONFIG.user_input_timeout):
-            component_inter, component = await wait_for_components(
-                mech_select,
-                button_all,
-                client=plugin.bot,
-                user_id=inter.author.id,
-            )
-
-    except TimeoutError:
-        return await inter.delete_original_response()
-
-    if component is button_all:
-        mechs = (build.as_mech() for build in all_builds)
-
-    else:
-        assert component_inter.values is not None
-        mechs = (all_builds[int(i)].as_mech() for i in component_inter.values)
-
-    file = bytes_to_file(dump_mechs(mechs), "mechs.json")
-    await component_inter.response.edit_message(file=file, components=None)
 
 
 setup, teardown = plugin.create_extension_handlers()

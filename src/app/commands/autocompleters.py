@@ -1,15 +1,13 @@
 from collections import abc
 from difflib import SequenceMatcher
 from itertools import islice
-from typing import TYPE_CHECKING, Any, NamedTuple, cast as type_cast
+from typing import TYPE_CHECKING, NamedTuple, cast as type_cast
 
 from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
 
 from app.managers import packs, players
 from app.text_utils import acronym_of, sanitize_string
-
-import dupermechs.all as sm
 
 if TYPE_CHECKING:
     from .params import FilledOptions
@@ -88,37 +86,17 @@ def find_matches(names: abc.Iterable[str], phrase: str) -> list[MatchResult]:
     return results
 
 
-def _get_item_filters(
-    options: abc.Mapping[str, Any], /
-) -> list[abc.Callable[[sm.IItem], bool]]:
-    options = type_cast("FilledOptions", options)
-
-    filters: list[abc.Callable[[sm.IItem], bool]] = []
-
-    if (type_name := options.get("type")) is not None:
-        target_type= sm.Item.Type[type_name]
-        filters.append(lambda item: item.type is target_type)
-
-    if (element_name := options.get("element")) is not None:
-        target_element = sm.Item.Element[element_name]
-        filters.append(lambda item: item.element is target_element)
-
-    if (tier_name := options.get("rarity")) is not None:
-        min_tier = sm.Item.Rarity[tier_name]
-        filters.append(lambda item: item.stages[0].tier >= min_tier)
-
-    return filters
-
-
 def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for type & element."""
-    # TODO: player-chosen item packs
-    filters = _get_item_filters(inter.filled_options)
-    names = (
-        item.name
-        for item in packs.iter_items()
-        if all(func(item) for func in filters)
-    )  # fmt: skip
+    filled_options: FilledOptions = type_cast("FilledOptions", inter.filled_options)
+
+    items = packs.filter_items(
+        type=filled_options.get("type"),
+        element=filled_options.get("element"),
+        rarity=filled_options.get("rarity"),
+        legacy=filled_options.get("legacy", False),
+    )
+    names = (item.name for item in items)
     input = input.strip()
 
     if not input:

@@ -9,7 +9,7 @@ from app import ui
 from app.assets import EMOJIS
 from app.core import CONFIG
 from app.gamerules import ARENA_BONUSES, MAXED_ARENA_SHOP
-from app.models import Player
+from app.managers import players
 from app.plugins_factory import create_plugin
 from app.text_utils import Char
 from defer import Defer
@@ -217,8 +217,9 @@ class ArenaShopView:
 
 @register_cancellable
 @plugin.slash_command()
-async def buffs(inter: CommandInteraction, player: Player) -> None:
+async def buffs(inter: CommandInteraction) -> None:
     """Interactive UI for modifying your arena buffs. {{ ARENA_BUFFS }}"""  # noqa: D400
+    player = players.get_or_create_player_from_user(inter.author)
     store = ui.callback_store(inter)
     view = ArenaShopView(store, player.arena_shop)
 

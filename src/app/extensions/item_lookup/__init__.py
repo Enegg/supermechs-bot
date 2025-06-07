@@ -5,14 +5,15 @@ from monads.result import Err, Ok
 
 from app.disnake_types import CommandInteraction
 from discord import MessageLimits
-from disnake import Embed, File, Locale
+from disnake import Embed, File
 from disnake.ext import commands
 
-from app import ui
+from app import i18n, ui
 from app.assets import COLORS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
+from app.devtools import debug_message
 from app.embed_utils import embed_file_resource, embed_image, sikrit_footer
 from app.managers import gfx, packs
 from app.models.ids import SpriteId
@@ -66,8 +67,7 @@ def get_icon_url(item: sm.IItem, files: abc.MutableSequence[File]) -> str | None
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
-    locale: Locale,
-    item: sm.IItem,
+    name: str = commands.Param(autocomplete=item_name_autocomplete),
     type: str | None = commands.Param(None, choices=TYPE_CHOICES),
     element: str | None = commands.Param(None, choices=ELEMENT_CHOICES),
     rarity: str | None = commands.Param(None, choices=TIER_CHOICES),
@@ -77,6 +77,8 @@ async def item(
 
     Parameters
     ----------
+    name:
+        The name of the item. {{ ITEM_NAME }}
     type:
         Limit suggestions to this type. {{ ITEM_TYPE }}
     element:
@@ -86,23 +88,32 @@ async def item(
     legacy:
         Show legacy items. {{ ITEM_LEGACY }}
     """  # noqa: D400
+    for item in packs.filter_items(type, element, rarity, legacy):
+        if item.name == name:
+            break
+
+    else:
+        msg = i18n.get_message(i18n.get_locale(inter), "unknown-item-name", name=name)
+        raise commands.UserInputError(msg)
+
     files: list[File] = []
     icon_url = get_icon_url(item, files)
 
-    from .item_lookup import ItemUIContext, item_view
+    from .item_lookup import ItemUIContext, get_embed_default, item_view
 
     ctx = ItemUIContext(
         item=item,
-        locale=locale,
+        locale=i18n.get_locale(inter),
         stage_index=len(item.stages) - 1,
         level_index=len(item.stages[-1].levels) - 1,
         icon_url=icon_url,
     )
     store = ui.callback_store(inter)
     layout = item_view(store, ctx)
-    await inter.response.send_message(
-        embed=ctx.get_embed(), files=files, components=layout, ephemeral=True
-    )
+    embed = get_embed_default(ctx)
+    if __debug__:
+        debug_message(embed, layout)
+    await inter.response.send_message(embed=embed, files=files, components=layout, ephemeral=True)
     async with Defer(shield=True) as defer:
         defer(inter.edit_original_response, components=None)
         await store.listen(timeout=CONFIG.user_input_timeout)
@@ -111,27 +122,35 @@ async def item(
 @plugin.slash_command(guild_ids=CONFIG.test_guild_ids)
 async def item_raw(
     inter: CommandInteraction,
-    item: sm.IItem,
+    name: str = commands.Param(autocomplete=item_name_autocomplete),
     type: str | None = commands.Param(None, choices=TYPE_CHOICES),
     element: str | None = commands.Param(None, choices=ELEMENT_CHOICES),
     rarity: str | None = commands.Param(None, choices=TIER_CHOICES),
     legacy: bool = False,
 ) -> None:
-    """Lookup raw item stats. {{ ITEM }}
+    """Lookup raw item stats.
 
     Parameters
     ----------
+    name:
+        The name of the item.
     type:
-        Limit suggestions to this type. {{ ITEM_TYPE }}
+        Limit suggestions to this type.
     element:
-        Limit suggestions to this element. {{ ITEM_ELEMENT }}
+        Limit suggestions to this element.
     rarity:
-        Remove suggestions below this rarity. {{ ITEM_TIER }}
+        Remove suggestions below this rarity.
     legacy:
-        Show legacy items. {{ ITEM_LEGACY }}
-    compact:
-        Compact layout. (broken on mobile) {{ ITEM_COMPACT }}
-    """  # noqa: D400
+        Show legacy items.
+    """
+    for item in packs.filter_items(type, element, rarity, legacy):
+        if item.name == name:
+            break
+
+    else:
+        msg = i18n.get_message(i18n.get_locale(inter), "unknown-item-name", name=name)
+        raise commands.UserInputError(msg)
+
     await inter.response.send_message(f"`{item!r:.{MessageLimits.content - 2}}`", ephemeral=True)
 
 
@@ -146,7 +165,6 @@ def str_elem(element: sm.Item.Element) -> str:
 @plugin.slash_command()
 async def compare(
     inter: CommandInteraction,
-    locale: Locale,
     item_a_name: str = commands.Param(name="item1", autocomplete=item_name_autocomplete),
     item_b_name: str = commands.Param(name="item2", autocomplete=item_name_autocomplete),
 ) -> None:
@@ -159,17 +177,18 @@ async def compare(
     item_b_name:
         Second item to compare. {{ COMPARE_SECOND }}
     """  # noqa: D400
-    item_a = packs.find_first_by_name(item_a_name)
-    item_b = packs.find_first_by_name(item_b_name)
+    locale = i18n.get_locale(inter)
+    item_a = None
+    item_b = None
 
     match item_a, item_b:
         case None, None:
             msg = "Items not found."
             raise commands.UserInputError(msg)
-        case None, _:
+        case None, _:  # pyright: ignore[reportUnnecessaryComparison]
             msg = "Item1 not found."
             raise commands.UserInputError(msg)
-        case _, None:
+        case _, None:  # pyright: ignore[reportUnnecessaryComparison]
             msg = "Item2 not found."
             raise commands.UserInputError(msg)
         case _:

@@ -10,7 +10,6 @@ from PIL import Image
 from app import aio
 from app.async_utils import LockManager
 from app.class_utils import limited_repr
-from app.models.ids import PackId
 from resources import HttpResource
 
 import dupermechs.all as sm
@@ -34,8 +33,7 @@ def resize(image: Image.Image, width: int, height: int) -> Image.Image:
 
 @attrs.frozen
 class StaticSpritePack:
-    id: PackId
-    images: abc.Mapping[SpriteKey, Image.Image] = {}
+    images: abc.Mapping[SpriteKey, Image.Image] = attrs.field(factory=dict, repr=limited_repr)
 
     def get_image(self, key: SpriteKey, /) -> Option[Image.Image]:
         return from_none(self.images.get(key))
@@ -43,7 +41,6 @@ class StaticSpritePack:
 
 @attrs.frozen(kw_only=True)
 class DynamicSpritePack:
-    id: PackId
     type FetchResult = Result[Image.Image, aio.UserHttpReadError | None]
 
     image_resources: abc.Mapping[SpriteKey, HttpResource] = attrs.field(

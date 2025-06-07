@@ -7,10 +7,9 @@ from disnake import Embed, Locale
 
 from app import i18n, ui
 from app.assets import COLORS, EMOJIS
-from app.devtools import debug_footer
+from app.devtools import debug_message
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx
-from app.models.ids import SpriteId
 
 from .helpers import try_shorten
 
@@ -19,9 +18,9 @@ from dupermechs import stats
 from dupermechs.enums import ItemStat
 
 
-def item_transform_range(item: sm.IItem, /, stage: int = -1) -> str:
+def item_transform_range(item: sm.IItem, /, stage_index: int = -1) -> str:
     str_range = [EMOJIS.tiers[stage.tier] for stage in item.stages]
-    str_range[stage] = f"({str_range[stage]})"
+    str_range[stage_index] = f"({str_range[stage_index]})"
     return "".join(str_range)
 
 
@@ -41,6 +40,14 @@ def requires_jump(stats: sm.IItemStats, /) -> bool:
     return stats.advance != 0 or stats.retreat != 0
 
 
+def get_max_stage_index(item: sm.IItem, /) -> int:
+    return len(item.stages) - 1
+
+
+def get_max_level_index(item: sm.IItem, /) -> int:
+    return len(item.stages[-1].levels) - 1
+
+
 @attrs.define(kw_only=True)
 class ItemUIContext:
     item: Final[sm.IItem]
@@ -56,7 +63,7 @@ class ItemUIContext:
         return self.item.stages[self.stage_index]
 
     def get_sprite_url(self) -> str | None:
-        return gfx.get_image_url(SpriteId(self.item.id, self.get_stage().tier))
+        return gfx.get_image_url((self.item.id, self.get_stage().tier))
 
     def get_stats(self) -> sm.IItemStats:
         base_stats = self.get_stage().levels[self.level_index].stats
@@ -70,21 +77,17 @@ class ItemUIContext:
 
         return stats.combine(total)
 
-    def get_max_level(self) -> int:
+    def get_max_level_index_for_stage(self) -> int:
         return len(self.get_stage().levels) - 1
 
     def get_level_options(self) -> abc.Sequence[ui.SelectOption]:
         return [
             ui.SelectOption(
                 label=f"{i18n.get_message(self.locale, 'item-lookup-ui-level-select-label')} {level.level}",
-                value=str(n),
+                value=f"{n:x}",
             )
             for n, level in enumerate(self.get_stage().levels)
         ]
-
-    @property
-    def display_level(self) -> int:
-        return self.level_index + 1
 
     def get_embed(self) -> Embed:
         return get_embed_default(self)
@@ -115,10 +118,19 @@ def get_embed_default(ctx: ItemUIContext, /) -> Embed:
     name_parts.append(ctx.item.type.name.replace("_", " "))
 
     name_parts[0] = name_parts[0].capitalize()
+
+    if ctx.stage_index == get_max_stage_index(ctx.item) and ctx.level_index == get_max_level_index(
+        ctx.item
+    ):
+        power_level_text = "max"
+
+    else:
+        power_level_text = str(ctx.item.stages[ctx.stage_index].levels[ctx.level_index].level)
+
     desc_lines: list[str] = [
         " ".join(name_parts),
         item_transform_range(ctx.item, ctx.stage_index),
-        f"{gettext('item-lookup-power-level')}: **{ctx.get_stage().levels[ctx.level_index].level}**",
+        f"{gettext('item-lookup-power-level')}: **{power_level_text}**",
     ]
     spaced = False
     stats_lines: list[str] = []
@@ -368,7 +380,6 @@ def get_embed_default(ctx: ItemUIContext, /) -> Embed:
         embed.add_field(
             f"{gettext('item-lookup-stats-header')}:", "\n".join(stats_lines), inline=False
         )
-
     return embed
 
 
@@ -377,9 +388,84 @@ def item_view(
     ctx: ItemUIContext,
 ) -> ui.MessageComponents:
     async def respond(inter: ui.MessageInteraction) -> None:
-        await inter.response.edit_message(embed=ctx.get_embed(), components=layout)
+        embed = ctx.get_embed()
+        if __debug__:
+            debug_message(embed, layout)
+        await inter.response.edit_message(embed=embed, components=layout)
 
     gettext = i18n.get_gettext(ctx.locale)
+    layout: ui.MessageComponents = []
+
+    if len(ctx.item.stages) > 1:
+        @store.bind(
+            ui.StringSelect(
+                options=[
+                    ui.SelectOption(
+                        label=gettext(f"tier-{stage.tier.name}").capitalize(),  # noqa: INT001
+                        value=f"{i:x}",
+                        emoji=EMOJIS.tiers[stage.tier],
+                    )
+                    for i, stage in enumerate(ctx.item.stages)
+                ],
+                custom_id=store.make_id(),
+            )
+        )
+        async def tier_select(inter: ui.MessageInteraction) -> None:
+            assert inter.values
+            new_stage = int(inter.values[0], 16)
+            old_stage, ctx.stage_index = ctx.stage_index, new_stage
+            new_options = ctx.get_level_options()
+
+            if new_stage > old_stage:
+                ctx.level_index = 0
+                page = 0
+
+            else:
+                ctx.level_index = ctx.get_max_level_index_for_stage()
+                page = level_select.option_to_page_count(len(new_options)) - 1
+
+            new_options[ctx.level_index].default = True
+            level_select.set_all_options(new_options, page)
+
+            tier_select.options[old_stage].default = False
+            tier_select.options[new_stage].default = True
+            await respond(inter)
+
+        tier_select.options[ctx.stage_index].default = True
+        layout.append([tier_select])
+
+    all_options = ctx.get_level_options()
+    all_options[-1].default = True
+
+    @store.bind(
+        ui.PaginatedSelect(
+            option_up=ui.SelectOption(
+                label=gettext("item-lookup-ui-select-up-label"), value="$1", emoji="🔺"
+            ),
+            option_down=ui.SelectOption(
+                label=gettext("item-lookup-ui-select-down-label"), value="$2", emoji="🔻"
+            ),
+            page=ui.PaginatedSelect.option_to_page_index(ctx.level_index, len(all_options)),
+            all_options=all_options,
+            placeholder=gettext("item-lookup-ui-select-placeholder"),
+            custom_id=store.make_id(),
+        )
+    )
+    async def level_select(inter: ui.MessageInteraction) -> None:
+        assert inter.values
+        value = inter.values[0]
+
+        if level_select.update_on_own_option(value):
+            if __debug__:
+                debug_message(components=layout)
+            return await inter.response.edit_message(components=layout)
+
+        level_select.all_options[ctx.level_index].default = False
+        ctx.level_index = int(value, 16)
+        level_select.all_options[ctx.level_index].default = True
+        await respond(inter)
+
+    layout.append([level_select])
 
     @store.bind(ui.ToggleButton(label=gettext("item-lookup-ui-buffs"), custom_id=store.make_id()))
     async def buff_button(inter: ui.MessageInteraction) -> None:
@@ -388,6 +474,7 @@ def item_view(
         await respond(inter)
 
     button_row = [buff_button]
+    layout.append(button_row)
     item_stats = ctx.get_stats()
 
     if has_damage_spread(item_stats):
@@ -416,73 +503,7 @@ def item_view(
 
         button_row.append(titan_dmg_button)
 
-    all_options = ctx.get_level_options()
-    all_options[-1].default = True
-
-    @store.bind(
-        ui.PaginatedSelect(
-            option_up=ui.SelectOption(
-                label=gettext("item-lookup-ui-select-up-label"), value="$1", emoji="🔺"
-            ),
-            option_down=ui.SelectOption(
-                label=gettext("item-lookup-ui-select-down-label"), value="$2", emoji="🔻"
-            ),
-            page=ui.PaginatedSelect.option_to_page_index(ctx.level_index, len(all_options)),
-            all_options=all_options,
-            placeholder=gettext("item-lookup-ui-select-placeholder"),
-            custom_id=store.make_id(),
-        )
-    )
-    async def level_select(inter: ui.MessageInteraction) -> None:
-        assert inter.values
-        value = inter.values[0]
-
-        if level_select.update_on_own_option(value):
-            return await inter.response.edit_message(components=layout)
-
-        level_select.all_options[ctx.level_index].default = False
-        ctx.level_index = int(value)
-        level_select.all_options[ctx.level_index].default = True
-        await respond(inter)
-
-    @store.bind(
-        ui.StringSelect(
-            options=[
-                ui.SelectOption(
-                    label=gettext(f"tier-{stage.tier.name}").capitalize(),  # noqa: INT001
-                    value=str(i),
-                    emoji=EMOJIS.tiers[stage.tier],
-                )
-                for i, stage in enumerate(ctx.item.stages)
-            ],
-            custom_id=store.make_id(),
-        )
-    )
-    async def tier_select(inter: ui.MessageInteraction) -> None:
-        assert inter.values
-        new_stage = int(inter.values[0])
-        old_stage, ctx.stage_index = ctx.stage_index, new_stage
-        new_options = ctx.get_level_options()
-
-        if new_stage > old_stage:
-            ctx.level_index = 0
-            page = 0
-
-        else:
-            ctx.level_index = ctx.get_max_level()
-            page = level_select.option_to_page_count(len(new_options)) - 1
-
-        new_options[ctx.level_index].default = True
-        level_select.set_all_options(new_options, page)
-
-        tier_select.options[old_stage].default = False
-        tier_select.options[new_stage].default = True
-        await respond(inter)
-
-    tier_select.options[ctx.stage_index].default = True
-
-    layout = [[tier_select], [level_select], button_row]
-    return layout  # noqa: RET504
+    return layout
 
 
 def max_stats(item: sm.IItem, /) -> sm.IItemStats:
@@ -533,7 +554,7 @@ def item_compare_view(
         modify_field_at(2, try_shorten(item_b.name), "\n".join(second_field))
 
         if __debug__:
-            debug_footer(embed)
+            debug_message(embed)
 
     layout = [[buffs_button]]
     return layout  # noqa: RET504 https://github.com/astral-sh/ruff/issues/14052

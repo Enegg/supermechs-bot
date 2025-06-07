@@ -15,7 +15,7 @@ from app.assets import ASSETS, EMOJIS
 from app.async_utils import gather
 from app.commands import telemetry
 from app.core import CONFIG
-from app.devtools import debug_footer
+from app.devtools import debug_message
 from app.managers import packs, players
 from app.plugins_factory import create_plugin
 from app.system import get_ram_usage, get_sloc
@@ -85,7 +85,7 @@ async def info(inter: CommandInteraction) -> None:
 
     item_pack = packs.get_item_pack()
     supermechs_fields = [
-        f"Registered players: {players.player_count()}",
+        f"Registered players: {len(players.PLAYER_MAPPING)}",
         f"Item pack: {pack_key}",
         f"Total items: {len(item_pack.reloaded_items)} reloaded, {len(item_pack.legacy_items)} legacy",
     ]
@@ -106,7 +106,7 @@ async def info(inter: CommandInteraction) -> None:
         .add_field("Performance", "\n".join(perf_fields), inline=False)
     )
     if CONFIG.indev:
-        debug_footer(embed)
+        debug_message(embed, components)
 
     await inter.response.send_message(embed=embed, components=components, ephemeral=True)
 
