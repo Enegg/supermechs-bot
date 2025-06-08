@@ -153,21 +153,18 @@ def parse_component_id(id: str, /) -> tuple[str, ItemLookupUIContext]:
 
 def make_level_options(
     locale: Locale,
-    levels: abc.Sequence[sm.IStageLevel],
-    default_index: int,
+    levels: abc.Iterable[sm.IStageLevel],
+    selected_level_index: int,
     start: int = 0,
-    end: int = ComponentLimits.select_options,
 ) -> list[ui.SelectOption]:
-    options = [
+    return [
         ui.SelectOption(
             label=f"{i18n.get_message(locale, 'item-lookup-ui-level-select-label')} {level.level}",
             value=f"{n}",
+            default=n == selected_level_index,
         )
-        for n, level in enumerate(levels[start : start + end], start=start)
+        for n, level in enumerate(levels, start=start)
     ]
-    if start <= default_index < start + end:
-        options[default_index - start].default = True
-    return options
 
 
 def make_option_up(locale: Locale, /) -> ui.SelectOption:
@@ -267,20 +264,22 @@ def get_item_summary(
 
     elif ctx.levels_page == 1:
         level_options = make_level_options(
-            locale, levels, ctx.level_index, end=ComponentLimits.select_options - 1
+            locale, levels[: ComponentLimits.select_options - 1], ctx.level_index
         )
         level_options.append(make_option_down(locale))
 
     elif ctx.levels_page == total_pages:
         level_options = [make_option_up(locale)]
         offset = (ComponentLimits.select_options - 2) * (ctx.levels_page - 1) + 1
-        level_options += make_level_options(locale, levels, ctx.level_index, start=offset)
+        level_options += make_level_options(locale, levels[offset:], ctx.level_index, offset)
 
     else:
         size = ComponentLimits.select_options - 2
         offset = size * (ctx.levels_page - 1) + 1
         level_options = [make_option_up(locale)]
-        level_options += make_level_options(locale, levels, ctx.level_index, start=offset, end=size)
+        level_options += make_level_options(
+            locale, levels[offset : offset + size], ctx.level_index, offset
+        )
         level_options.append(make_option_down(locale))
 
     layout.append(
