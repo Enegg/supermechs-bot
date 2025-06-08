@@ -47,6 +47,16 @@ class ItemLookupUIContext(NamedTuple):
     damage_vs_titan: bool = False
 
 
+class ComponentIds:
+    __slots__ = ()
+
+    stage_select = "stages"
+    level_select = "levels"
+    buffs_button = "buffs"
+    avg_button = "avg"
+    titan_button = "dvt"
+
+
 @plugin.slash_command()
 async def item(
     inter: CommandInteraction,
@@ -242,7 +252,12 @@ def get_item_summary(
         ]
         stage_options[ctx.stage_index].default = True
         layout.append(
-            [ui.StringSelect(options=stage_options, custom_id=make_component_id("stages", ctx))]
+            [
+                ui.StringSelect(
+                    options=stage_options,
+                    custom_id=make_component_id(ComponentIds.stage_select, ctx),
+                )
+            ]
         )
 
     total_pages = ui.PaginatedSelect.option_to_page_count(len(levels))
@@ -273,7 +288,7 @@ def get_item_summary(
             ui.StringSelect(
                 options=level_options,
                 placeholder=gettext("item-lookup-ui-select-placeholder"),
-                custom_id=make_component_id("levels", ctx),
+                custom_id=make_component_id(ComponentIds.level_select, ctx),
             )
         ]
     )
@@ -281,7 +296,7 @@ def get_item_summary(
         ui.ActionButton(
             label=gettext("item-lookup-ui-buffs"),
             style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
-            custom_id=make_component_id("buffs", ctx),
+            custom_id=make_component_id(ComponentIds.buffs_button, ctx),
         )
     ]
     layout.append(button_row)
@@ -291,7 +306,7 @@ def get_item_summary(
             ui.ActionButton(
                 label=gettext("item-lookup-ui-damage-avg"),
                 style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-                custom_id=make_component_id("avg", ctx),
+                custom_id=make_component_id(ComponentIds.avg_button, ctx),
             )
         )
 
@@ -300,7 +315,7 @@ def get_item_summary(
             ui.ActionButton(
                 label=gettext("item-lookup-ui-damage-vs-titans"),
                 style=ui.ButtonStyle.green if ctx.damage_vs_titan else ui.ButtonStyle.gray,
-                custom_id=make_component_id("dvt", ctx),
+                custom_id=make_component_id(ComponentIds.titan_button, ctx),
             )
         )
 
@@ -543,7 +558,7 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
 
     # NOTE: using __replace__ directly due to copy.replace(**kwargs: Any)
     match component:
-        case "stages":
+        case ComponentIds.stage_select:
             assert inter.values
             [option_value] = inter.values
             new_stage_index = int(option_value, 16)
@@ -559,7 +574,7 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
                     levels_page=ui.PaginatedSelect.option_to_page_count(total_levels),
                 )
 
-        case "levels":
+        case ComponentIds.level_select:
             assert inter.values
             [option_value] = inter.values
 
@@ -572,13 +587,13 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
             else:
                 ctx = ctx.__replace__(level_index=int(option_value))
 
-        case "buffs":
+        case ComponentIds.buffs_button:
             ctx = ctx.__replace__(buffs_enabled=ctx.buffs_enabled ^ True)
 
-        case "avg":
+        case ComponentIds.avg_button:
             ctx = ctx.__replace__(damage_average=ctx.damage_average ^ True)
 
-        case "dvt":
+        case ComponentIds.titan_button:
             ctx = ctx.__replace__(damage_vs_titan=ctx.damage_vs_titan ^ True)
 
         case _:
