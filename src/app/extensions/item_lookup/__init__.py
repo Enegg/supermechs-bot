@@ -3,8 +3,7 @@ from collections import abc
 from typing import NamedTuple
 
 from app.disnake_types import CommandInteraction
-from discord import MessageLimits
-from discord.limits import ComponentLimits
+from discord import ComponentLimits, MessageLimits
 from disnake import Embed, Event, Locale
 from disnake.ext import commands
 
