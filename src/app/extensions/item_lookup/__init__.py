@@ -94,7 +94,7 @@ async def item(
     ctx = ItemLookupUIContext(
         item_id=item.id,
         stage_index=stage_index,
-        level_index=len(levels) - 1,
+        level_index=0 if legacy else len(levels) - 1,
         levels_page=ui.PaginatedSelect.option_to_page_count(len(levels)),
         legacy=legacy,
     )
@@ -329,7 +329,6 @@ def format_stats(
         return f"{emoji} **{value}** {i18n.get_stat_name(locale, stat_key)}"
 
     stats_lines: list[str] = []
-    spaced = False
 
     if item_stats.weight:
         stats_lines.append(fmt(EMOJIS.stats.weight, item_stats.weight, ItemStat.weight))
@@ -505,37 +504,23 @@ def format_stats(
         stats_lines.append(fmt(EMOJIS.stats.uses, item_stats.uses, ItemStat.uses))
     if item_stats.repair:
         stats_lines.append(fmt(EMOJIS.stats.repair, item_stats.repair, ItemStat.repair))
-    spaced = False
+    if stats_lines:
+        stats_lines.append("")
     if item_stats.backfire:
-        if not spaced:
-            stats_lines.append("")
-            spaced = True
         stats_lines.append(fmt(EMOJIS.stats.backfire, item_stats.backfire, ItemStat.backfire))
     if item_stats.heat_generation:
-        if not spaced:
-            stats_lines.append("")
-            spaced = True
         stats_lines.append(
             fmt(EMOJIS.stats.heat_generation, item_stats.heat_generation, ItemStat.heat_generation)
         )
     if item_stats.energy_cost:
-        if not spaced:
-            stats_lines.append("")
-            spaced = True
         stats_lines.append(
             fmt(EMOJIS.stats.energy_cost, item_stats.energy_cost, ItemStat.energy_cost)
         )
     if item_stats.bullets_cost:
-        if not spaced:
-            stats_lines.append("")
-            spaced = True
         stats_lines.append(
             fmt(EMOJIS.stats.bullets_cost, item_stats.bullets_cost, ItemStat.bullets_cost)
         )
     if item_stats.rockets_cost:
-        if not spaced:
-            stats_lines.append("")
-            spaced = True
         stats_lines.append(
             fmt(EMOJIS.stats.rockets_cost, item_stats.rockets_cost, ItemStat.rockets_cost)
         )
@@ -543,6 +528,8 @@ def format_stats(
         stats_lines.append(
             f"{EMOJIS.stats.jump} **{i18n.get_message(locale, 'item-lookup-jump-required')}**"
         )
+    if stats_lines and stats_lines[-1] == "":
+        stats_lines.pop()
 
     return stats_lines
 
