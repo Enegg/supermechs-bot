@@ -1,6 +1,9 @@
 import math
 
+from app.assets import EMOJIS
 from app.text_utils import Char, acronym_of
+
+import dupermechs.all as sm
 
 
 def format_float(num: float, decimals: int) -> str:
@@ -22,7 +25,7 @@ def try_shorten(name: str, limit: int = 16) -> str:
     return name[: limit - 1] + Char.TRIPLE_DOT
 
 
-def format_damage(lo: int, hi: int, /) -> str:
+def format_damage_default(lo: int, hi: int, /) -> str:
     if hi and lo != hi:
         return f"{lo}-{hi}"
 
@@ -51,3 +54,21 @@ def format_range(lo: int, hi: int, /) -> str:
         return str(lo)
 
     return f"{lo}-{hi}"
+
+
+def item_transform_range(item: sm.IItem, /, stage_index: int = -1) -> str:
+    str_range = [EMOJIS.tiers[stage.tier] for stage in item.stages]
+    str_range[stage_index] = f"({str_range[stage_index]})"
+    return "".join(str_range)
+
+
+def has_damage_spread(stats: sm.IItemStats, /) -> bool:
+    return (
+        stats.physical_damage != stats.physical_damage_addon
+        or stats.explosive_damage != stats.explosive_damage_addon
+        or stats.electric_damage != stats.electric_damage_addon
+    )
+
+
+def has_damage(stats: sm.IItemStats, /) -> bool:
+    return stats.physical_damage != 0 or stats.explosive_damage != 0 or stats.electric_damage != 0
