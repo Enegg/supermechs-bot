@@ -6,7 +6,7 @@ from typing import Any, Protocol, override
 import disnake
 from disnake.utils import format_dt
 
-__all__ = ("codeblock", "command_mention", "format_dt", "hyperlink", "strip_codeblock")
+__all__ = ("codeblock", "command_mention", "format_dt", "hyperlink")
 
 
 def hyperlink(text: str, url: str) -> str:
@@ -17,18 +17,6 @@ def hyperlink(text: str, url: str) -> str:
 def codeblock(text: str, lang: str = "") -> str:
     """Return text formatted with a codeblock."""
     return f"```{lang}\n{text}```"
-
-
-def strip_codeblock(text: str, /) -> str:
-    """Return text stripped from codeblock syntax."""
-    text = text.removeprefix("```").removesuffix("```")
-    lang, sep, stripped = text.partition("\n")
-
-    # coffeescript seems to be the longest lang name discord accepts
-    if sep and len(lang) <= len("coffeescript"):
-        return stripped
-
-    return text
 
 
 class Commandish(Protocol):

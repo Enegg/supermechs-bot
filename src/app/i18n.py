@@ -15,7 +15,7 @@ from app.typeshed import Pathish
 
 from dupermechs.enums import ItemStat
 
-__all__ = ("GetText", "get_embed_tips", "get_gettext", "get_message", "get_stat_name", "load")
+__all__ = ("GetText", "get_gettext", "get_message", "get_stat_name", "load")
 
 type LocalePair[KT] = tuple[KT, Locale]
 type LiteralKey = Literal[
@@ -30,27 +30,6 @@ type LiteralKey = Literal[
     "ui-empty-option-label",
     "ui-empty-option-desc",
     "ui-cmd-cancel-button",
-    # import
-    "import-size-error",
-    "import-parse-error",
-    "import-failed",
-    "import-loaded",
-    "import-none",
-    # export
-    "export-none",
-    "export-select",
-    "export-all",
-    "export-items-warning",
-    # mech summary
-    "mech-summary-title",
-    "mech-summary-field",
-    # mech-build
-    "mech-build-no-buffs",
-    "mech-build-ui-select-placeholder",
-    "mech-build-ui-select-up-label",
-    "mech-build-ui-select-up-desc",
-    "mech-build-ui-select-down-label",
-    "mech-build-ui-select-down-desc",
     # item-lookup
     "item-lookup-ui-buffs",
     "item-lookup-ui-damage-avg",
@@ -89,7 +68,6 @@ FILE_EXT = ".toml"
 
 stats: Final[abc.Mapping[LocalePair[str], str]] = {}
 messages: Final[abc.Mapping[LocalePair[LiteralKey | LiteralString], str]] = {}
-embed_tips: Final[abc.Mapping[Locale, abc.Sequence[str]]] = {}
 _command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
 localization_provider: Final = type_cast("LocalizationProtocol", _command_locale)
@@ -148,23 +126,10 @@ def get_gettext(locale: Locale, /) -> GetText:
     return partial(get_message, locale)
 
 
-def get_embed_tips(locale: Locale, /) -> abc.Sequence[str]:
-    try:
-        return embed_tips[locale]
-
-    except KeyError as err:
-        try:
-            return embed_tips[FALLBACK_LOCALE]
-
-        except KeyError:
-            raise err from None
-
-
 class _LocaleData(msgspec.Struct):
     stats: abc.Mapping[str, str]
     messages: abc.Mapping[LiteralKey, str] | msgspec.UnsetType = msgspec.UNSET
     commands: dict[str, str] | msgspec.UnsetType = msgspec.UNSET
-    embed_tips: abc.Sequence[str] | msgspec.UnsetType = msgspec.UNSET
 
 
 def _load_locale_file(path: Path, /) -> None:
@@ -186,9 +151,6 @@ def _load_locale_file(path: Path, /) -> None:
 
     if data.commands is not msgspec.UNSET:
         _command_locale[locale.value] = data.commands
-
-    if data.embed_tips is not msgspec.UNSET:
-        embed_tips[locale] = tuple(data.embed_tips)
 
 
 def load(directory: Pathish, /) -> None:

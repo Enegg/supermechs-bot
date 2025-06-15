@@ -5,13 +5,12 @@ from typing import Protocol, Self
 import attrs
 
 from dupermechs.arenashop import IArenaShop
-from dupermechs.enums import ItemStat, MechStat
+from dupermechs.enums import ItemStat
 
 __all__ = (
     "AnyBonus",
     "FlatBonus",
     "IItemStats",
-    "IMechStats",
     "ItemStats",
     "MultiplierBonus",
     "bonus_damage_vs_titan",
@@ -20,48 +19,6 @@ __all__ = (
     "combine",
     "overload_hp_penalty",
 )
-
-
-class IMechStats(Protocol):
-    @property
-    def weight(self) -> int: ...
-    @property
-    def hit_points(self) -> int: ...
-    @property
-    def energy_capacity(self) -> int: ...
-    @property
-    def energy_regeneration(self) -> int: ...
-    @property
-    def heat_capacity(self) -> int: ...
-    @property
-    def heat_cooling(self) -> int: ...
-    @property
-    def physical_resistance(self) -> int: ...
-    @property
-    def explosive_resistance(self) -> int: ...
-    @property
-    def electric_resistance(self) -> int: ...
-    @property
-    def bullets_capacity(self) -> int: ...
-    @property
-    def rockets_capacity(self) -> int: ...
-
-    def __getitem__(self, stat: MechStat, /) -> int: ...
-    def __replace__(
-        self,
-        *,
-        weight: int = ...,
-        hit_points: int = ...,
-        energy_capacity: int = ...,
-        energy_regeneration: int = ...,
-        heat_capacity: int = ...,
-        heat_cooling: int = ...,
-        physical_resistance: int = ...,
-        explosive_resistance: int = ...,
-        electric_resistance: int = ...,
-        bullets_capacity: int = ...,
-        rockets_capacity: int = ...,
-    ) -> Self: ...
 
 
 class IItemStats(Protocol):
@@ -150,7 +107,7 @@ class IItemStats(Protocol):
     @property
     def rockets_cost(self) -> int: ...
 
-    def __getitem__(self, stat: MechStat | ItemStat, /) -> int: ...
+    def __getitem__(self, stat: ItemStat, /) -> int: ...
     def __replace__(
         self,
         *,
@@ -244,7 +201,7 @@ class ItemStats:
     bullets_cost: int = 0
     rockets_cost: int = 0
 
-    def __getitem__(self, stat: ItemStat | MechStat, /) -> int:
+    def __getitem__(self, stat: ItemStat, /) -> int:
         return getattr(self, stat.name)
 
 
@@ -361,7 +318,7 @@ def bonus_item_stats(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStat
     )
 
 
-def bonus_mech_stats(stats: IMechStats, buffs: IArenaShop[AnyBonus]) -> ItemStats:
+def bonus_mech_stats(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStats:
     return ItemStats(
         energy_capacity=buffs.energy_capacity.apply(stats.energy_capacity),
         energy_regeneration=buffs.energy_regeneration.apply(stats.energy_regeneration),

@@ -11,8 +11,7 @@ from ui_store import CallbackStore as _CallbackStore
 from app import i18n
 
 from .buttons import ActionButton, ToggleButton, UrlButton
-from .helpers import Paginator
-from .selects import PaginatedSelect
+from .selects import option_to_page_count
 
 __all__ = (
     "ActionButton",
@@ -21,8 +20,6 @@ __all__ = (
     "MessageComponents",
     "MessageInteraction",
     "Modal",
-    "PaginatedSelect",
-    "Paginator",
     "SelectOption",
     "StringSelect",
     "TextInput",
@@ -30,6 +27,7 @@ __all__ = (
     "ToggleButton",
     "UrlButton",
     "callback_store",
+    "option_to_page_count",
 )
 
 type CallbackStore = _CallbackStore[MessageInteraction]

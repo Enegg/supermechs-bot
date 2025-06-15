@@ -9,14 +9,17 @@ type LiteralType = Literal[
     "SIDE_WEAPON",
     "TOP_WEAPON",
     "CHARGE_ENGINE",
+    "CHARGE",
     "TELEPORTER",
     "GRAPPLING_HOOK",
+    "HOOK",
     "SHIELD",
     "MODULE",
     "PERK",
     "KIT",
 ]
 type LiteralElement = Literal["OTHER", "PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
+type LiteralTier = Literal["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHICAL", "DIVINE", "PERK"]
 type UInt = Annotated[int, msgspec.Meta(ge=0)]
 type PosInt = Annotated[int, msgspec.Meta(gt=0)]
 type Name = Annotated[str, msgspec.Meta(min_length=3, max_length=32)]
@@ -66,22 +69,3 @@ class ItemStatsDto(msgspec.Struct, kw_only=True):
     hp_per_block: int = msgspec.field(default=0, name="hpPerBlock")
     heat_per_block: int = msgspec.field(default=0, name="heaPerBlock")
     energy_per_block: int = msgspec.field(default=0, name="enePerBlock")
-
-
-class Point2DDto(msgspec.Struct, kw_only=True):
-    x: UInt
-    y: UInt
-
-
-class MixedJointsDto(msgspec.Struct, kw_only=True):
-    x: UInt | msgspec.UnsetType = msgspec.UNSET
-    y: UInt | msgspec.UnsetType = msgspec.UNSET
-    torso: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    leg1: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    leg2: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    side1: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    side2: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    side3: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    side4: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    top1: Point2DDto | msgspec.UnsetType = msgspec.UNSET
-    top2: Point2DDto | msgspec.UnsetType = msgspec.UNSET

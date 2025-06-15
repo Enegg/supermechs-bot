@@ -1,5 +1,4 @@
 from collections import abc
-from typing import NoReturn
 
 import disnake
 from app.disnake_types import CommandInteraction
@@ -12,7 +11,6 @@ from app.plugins_factory import create_dev_plugin
 from app.utils import format_exception
 
 plugin = create_dev_plugin(__name__)
-KNOWN_EXCEPTION_NAMES = tuple(commands.errors.__all__)
 KNOWN_PLUGIN_PATHS = tuple(walk_extensions("extensions"))
 # TODO: CommandLimits.param_options or whatever
 assert len(KNOWN_PLUGIN_PATHS) <= InteractionLimits.autocomplete_options
@@ -84,45 +82,6 @@ async def unload(
     ext: The name of a plugin to perform action on.
     """
     await _plugin_helper(inter, ext, plugin.bot.unload_extension, "unload")
-
-
-def get_matching_exceptions(_: CommandInteraction, input: str) -> AutocompleteReturnType:
-    if len(input) < 2:  # noqa: PLR2004
-        return KNOWN_EXCEPTION_NAMES[: InteractionLimits.autocomplete_options]
-
-    input = input.lower()
-    matching: list[str] = []
-
-    for exc in KNOWN_EXCEPTION_NAMES:
-        if input in exc.lower():
-            matching.append(exc)
-
-            if len(matching) == InteractionLimits.autocomplete_options:
-                break
-
-    return matching
-
-
-@plugin.slash_command(name="raise")
-@commands.is_owner()
-async def force_error(
-    inter: CommandInteraction,
-    exception: str = commands.Param(autocomplete=get_matching_exceptions),
-    message: str = "Exception raised via /raise",
-) -> NoReturn:
-    """Explicitly raises chosen exception.
-
-    Parameters
-    ----------
-    exception: Name of the exception to raise.
-    message: Message passed to the exception.
-    """
-    if exception not in KNOWN_EXCEPTION_NAMES:
-        raise commands.UserInputError("Unknown exception.")  # noqa: TRY003, EM101
-
-    exc: type[commands.CommandError] = getattr(commands.errors, exception)
-    await inter.response.defer()
-    raise exc(message)
 
 
 def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:

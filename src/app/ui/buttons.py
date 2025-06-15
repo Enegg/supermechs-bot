@@ -1,7 +1,7 @@
+import os
 from typing import ClassVar, override
 
 from discord.typeshed import EmojiType
-from discord.ui import random_str
 from disnake import ButtonStyle, ui
 from disnake.utils import MISSING
 
@@ -21,7 +21,7 @@ class ActionButton(ui.Button[None]):
         emoji: EmojiType | None = None,
     ) -> None:
         if custom_id is MISSING:
-            custom_id = random_str()
+            custom_id = os.urandom(16).hex()
         super().__init__(
             style=style, label=label, disabled=disabled, custom_id=custom_id, emoji=emoji
         )

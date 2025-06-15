@@ -52,27 +52,6 @@ ui-cmd-cancel-button = "Zakończ"
 
 unknown-item-name = "Nie odnaleziono przedmiotu '{name}'."
 
-import-size-error = "Maksymalny rozmiar pliku to {size}{unit}."
-import-parse-error = "Niepowodzenie przetwarzania pliku:"
-import-failed = "Niepowodzenia w ładowaniu:"
-import-loaded = "Załadowano mechy:"
-import-none = "Nie załadowano żadnych mechów."
-
-export-none = "Nie masz żadnych mechów do eksportu."
-export-select = "Wybierz mechy do eksportu"
-export-all = "wszystko"
-export-items-warning = "Masz {build_count} mechów. Lista wyboru poniżej może wyświetlić jedynie {display_limit}."
-
-mech-summary-title = 'Wyposażenie mecha "{name}"'
-mech-summary-field = "Podsumowanie:"
-
-mech-build-no-buffs = "Ta funkcja nie będzie miała efektu, gdyż nie ustawiono poziomów bonusów areny.\nMożesz je edytować używając komendy {command_mention}."
-mech-build-ui-select-placeholder = "Wybierz slot"
-mech-build-ui-select-up-label = "Poprzednie przedmioty"
-mech-build-ui-select-up-desc = "Wybierz by zobaczyć poprzednie przedmioty"
-mech-build-ui-select-down-label = "Więcej przedmiotów"
-mech-build-ui-select-down-desc = "Wybierz by zobaczyć więcej przedmiotów"
-
 item-lookup-ui-buffs = "Bonusy"
 item-lookup-ui-damage-avg = "Średnia obrażeń"
 item-lookup-ui-damage-vs-titans = "Obrażenia dla tytanów"
@@ -99,9 +78,6 @@ tier-divine = "boski"
 tier-perk = "dodatek"
 
 [commands]
-ARENA_BUFFS_NAME = "arena-bonusy"
-ARENA_BUFFS_DESCRIPTION = "Menu modyfikacji bonusów areny."
-
 ITEM_NAME = "przedmiot"
 ITEM_DESCRIPTION = "Podgląd przedmiotów i ich statystyk."
 ITEM_NAME_NAME = "nazwa"
@@ -121,29 +97,6 @@ COMPARE_FIRST_NAME = "przedmiot1"
 COMPARE_FIRST_DESCRIPTION = "Pierwszy przedmiot do porównania."
 COMPARE_SECOND_NAME = "przedmiot2"
 COMPARE_SECOND_DESCRIPTION = "Drugi przedmiot do porównania."
-
-MECH_SHOW_NAME = "podgląd"
-MECH_SHOW_DESCRIPTION = "Wyświetla mecha i jego statystyki."
-MECH_SHOW_NAME_NAME = "nazwa"
-MECH_SHOW_NAME_DESCRIPTION = "Nazwa mecha do pokazania. Domyślnie ostanio używany mech."
-
-MECH_BROWSE_NAME = "katalog"
-MECH_BROWSE_DESCRIPTION = "Katalog twoich mechów."
-
-MECH_BUILD_NAME = "buduj"
-MECH_BUILD_DESCRIPTION = "Interfejs tworzenia i modyfikacji mechów."
-MECH_BUILD_NAME_NAME = "nazwa"
-MECH_BUILD_NAME_DESCRIPTION = "Nazwa istniejącego mecha lub do nadania nowemu."
-
-MECH_IMPORT_NAME = "importuj"
-MECH_IMPORT_DESCRIPTION = "importuj mechy z pliku .JSON."
-MECH_IMPORT_FILE_NAME = "plik"
-MECH_IMPORT_FILE_DESCRIPTION = "Plik .JSON w formacie wspieranym przez WU."
-
-MECH_EXPORT_NAME = "eksportuj"
-MECH_EXPORT_DESCRIPTION = "Eksportuj swoje mechy do pliku wspieranego przez WU."
-MECH_EXPORT_FORMAT_NAME = "format"
-MECH_EXPORT_FORMAT_DESCRIPTION = "Format pliku, jaki zostanie załączony; inne niż .json nie są wspieranie przez WU."
 
 CHOICE_TORSO = "Tors"
 CHOICE_LEGS = "Nogi"

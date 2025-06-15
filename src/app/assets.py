@@ -1,7 +1,6 @@
 """Various assets existing on discord side."""
 
 import logging
-import math
 from collections import abc
 from typing import Final
 
@@ -11,11 +10,9 @@ from disnake import Color
 
 from app import paths
 from app.class_utils import MappingParser
-from app.gamerules import BUILD_RULES
 from resources import AnyResource, FileResource
 
 import dupermechs.all as sm
-from dupermechs.enums import MechSlot
 
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS", "get_silhouette")
 
@@ -119,7 +116,7 @@ class StatEmojis:
     bullets_cost: str = NULL_EMOJI
     rockets_cost: str = NULL_EMOJI
 
-    def __getitem__(self, field: sm.enums.ItemStat | sm.enums.MechStat, /) -> str:
+    def __getitem__(self, field: sm.enums.ItemStat, /) -> str:
         return getattr(self, field.name)
 
 
@@ -152,40 +149,6 @@ class Emojis:
     elements: ElementEmojis = attrs.Factory(ElementEmojis)
     stats: StatEmojis = attrs.Factory(StatEmojis)
     categories: CategoryEmojis = attrs.Factory(CategoryEmojis)
-
-    @staticmethod
-    def get_weight_emoji(weight: int, /) -> str:
-        if weight < 0:
-            return "🎈"
-        progress = math.floor(BUILD_RULES.safe_weight * 0.9)
-        if weight < progress:
-            emojis = ("", "▫️", "◽", "◻️", "🔲", "⬜")
-            return emojis[round((len(emojis) - 1) * weight / progress)]
-        if weight < math.floor(BUILD_RULES.safe_weight * 0.99):
-            return "🟦"
-        if weight < BUILD_RULES.safe_weight:
-            return "🟩"
-        if weight == BUILD_RULES.safe_weight:
-            return "✅"
-        if weight <= BUILD_RULES.max_weight:
-            return "🟨"
-        return "⛔"
-
-
-def get_slot_emoji(slot: MechSlot, /) -> str:
-    """Return the emoji representing a slot, with respect to the right & left variants."""
-    if slot is MechSlot.top_weapon_1:
-        return EMOJIS.types.left_top_weapon
-    if slot is MechSlot.top_weapon_2:
-        return EMOJIS.types.right_top_weapon
-    if slot in (MechSlot.side_weapon_1, MechSlot.side_weapon_3):
-        return EMOJIS.types.left_side_weapon
-    if slot in (MechSlot.side_weapon_2, MechSlot.side_weapon_4):
-        return EMOJIS.types.right_side_weapon
-    if slot.name.startswith("module"):
-        return EMOJIS.types.module
-    # TODO: this is the only place using types[]
-    return EMOJIS.types[sm.Item.Type[slot.name]]
 
 
 @attrs.frozen

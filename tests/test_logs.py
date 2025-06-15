@@ -1,7 +1,7 @@
 import logging
 
 from app import paths
-from app.core.logging import config_logging
+from app.core.log import config_logging
 
 config_logging(paths.CONFIG_TOML)
 

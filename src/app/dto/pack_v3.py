@@ -2,7 +2,7 @@ from collections import abc
 
 import msgspec
 
-from .common import ItemStatsDto, LiteralElement, LiteralType, Name, PosInt, UInt
+from .common import ItemStatsDto, LiteralElement, LiteralTier, LiteralType, Name, PosInt, UInt
 
 
 class ItemLevelDto(msgspec.Struct, kw_only=True):
@@ -16,7 +16,7 @@ class ItemLevelDto(msgspec.Struct, kw_only=True):
 
 
 class ItemStageDto(msgspec.Struct, kw_only=True):
-    tier: str
+    tier: LiteralTier
     image: str
     evolution_gold_cost: UInt = 0
     ascension_gold_cost: UInt = 0

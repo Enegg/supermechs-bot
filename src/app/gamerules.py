@@ -1,7 +1,6 @@
 from collections import abc
 from typing import Final
 
-import attrs
 import msgspec
 
 from app import paths
@@ -11,24 +10,6 @@ from app.dto.arena_buffs import ArenaBuffsDto
 import dupermechs.all as sm
 from dupermechs import arenashop
 from dupermechs.stats import AnyBonus, FlatBonus, MultiplierBonus
-
-
-@attrs.frozen
-class BuildRules:
-    safe_weight: int = 1000
-    """The maximum weight of a mech before overload."""
-    overload: int = 10
-    """The maximum extra weight allowed over the max weight."""
-    penalty_per_kg: int = 15
-    """The ratio at which hit points are reduced for each kg of overload."""
-
-    @property
-    def max_weight(self) -> int:
-        """The absolute maximum weight of a mech before it is overweight."""
-        return self.safe_weight + self.overload
-
-
-BUILD_RULES: Final = BuildRules()
 
 
 def _convert_bonus(bonus: arena_buffs.AnyBuffDto, /) -> abc.Sequence[AnyBonus]:

@@ -6,7 +6,7 @@ from app.mappers.common import LETTER_TO_TIER, TIER_TO_MAX_LEVEL, convert_stats
 import dupermechs.all as sm
 
 
-def transform_range_to_tiers(transform_range: str, /) -> abc.Iterator[sm.Item.Rarity]:
+def stats_to_stages(stats_dto: ItemStatsDto, transform_range: str) -> abc.Sequence[sm.Item.Stage]:
     lo, _, hi = transform_range.lower().partition("-")
 
     if not hi:
@@ -15,12 +15,9 @@ def transform_range_to_tiers(transform_range: str, /) -> abc.Iterator[sm.Item.Ra
     lo = LETTER_TO_TIER[lo]
     hi = LETTER_TO_TIER[hi]
 
-    for i in range(lo, hi + 1):
-        yield sm.Item.Rarity(i)
+    Rarity = sm.Item.Rarity
+    tiers = [Rarity(i) for i in range(lo, hi + 1)]
 
-
-def stats_to_stages(stats_dto: ItemStatsDto, transform_range: str) -> abc.Sequence[sm.Item.Stage]:
-    tiers = list(transform_range_to_tiers(transform_range))
     final_level = sm.Item.Stage.Level(
         level=TIER_TO_MAX_LEVEL[tiers[-1]], stats=convert_stats(stats_dto)
     )

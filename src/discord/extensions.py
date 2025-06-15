@@ -1,56 +1,40 @@
 """Utilities related to handling bot extensions."""
 
+import importlib.util
 import logging
+import pkgutil
 from collections import abc
-
-from .pending import find_submodules, walk_modules
 
 __all__ = ("load_extensions",)
 
 _LOG = logging.getLogger("extensions")
 
 
-def walk_extensions(
-    root_module: str,
-    *,
-    package: str | None = None,
-    ignore: abc.Callable[[str], bool] | None = None,
-) -> abc.Iterator[str]:
+def find_submodules(root_module: str, package: str | None = None) -> tuple[abc.Sequence[str], str]:
+    if (spec := importlib.util.find_spec(root_module, package=package)) is None:
+        msg = f"Unable to find root module '{root_module}'"
+        raise ImportError(msg, name=root_module)
+
+    if (paths := spec.submodule_search_locations) is None:
+        msg = f"Module '{root_module}' is not a package"
+        raise ImportError(msg, name=root_module)
+
+    return paths, spec.name
+
+
+def walk_extensions(root_module: str, *, package: str | None = None) -> abc.Iterator[str]:
     paths, name = find_submodules(root_module, package=package)
-    yield from walk_modules(paths, f"{name}.", ignore)
+
+    for _, sub_name, _ in pkgutil.iter_modules(paths, f"{name}."):
+        yield sub_name
 
 
-def _load_extensions(
-    loader: abc.Callable[[str], None], plugins: abc.Iterable[str], *, strict: bool = False
+def load_extensions(
+    loader: abc.Callable[[str], None], root_module: str, *, package: str | None = None
 ) -> None:
-    problems: list[Exception] = []
-
-    for module_name in plugins:
+    for module_name in walk_extensions(root_module, package=package):
         try:
             loader(module_name)
 
         except Exception as exc:
-            problems.append(exc)
-
-    if problems:
-        # TODO: exceptions are raised at walk_modules' import_module
-        msg = "Exceptions during loading:"
-        exc = ExceptionGroup(msg, problems)
-
-        if strict:
-            raise exc
-
-        _LOG.exception("Ignoring exceptions:", exc_info=exc)
-
-
-def load_extensions(
-    loader: abc.Callable[[str], None],
-    root_module: str,
-    *,
-    package: str | None = None,
-    ignore: abc.Callable[[str], bool] | None = None,
-    strict: bool = False,
-) -> None:
-    _load_extensions(
-        loader, walk_extensions(root_module, package=package, ignore=ignore), strict=strict
-    )
+            _LOG.exception(f"Ignoring exception in {module_name}:", exc_info=exc)

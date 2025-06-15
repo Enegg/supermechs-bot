@@ -1,4 +1,6 @@
+import datetime
 from threading import Lock
+from typing import Final
 
 import anyio
 import anyio.to_thread
@@ -7,6 +9,8 @@ import psutil
 from app.typeshed import Pathish
 
 __all__ = ("get_ram_usage", "get_sloc")
+
+BOT_PROCESS: Final = psutil.Process()
 
 
 def _file_sloc(path: Pathish, /) -> int:
@@ -40,6 +44,11 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
     return total
 
 
-def get_ram_usage(pid: int | None = None, /) -> int:
-    """Return the current process RAM utilization, in bytes."""
-    return psutil.Process(pid).memory_info().rss
+def get_ram_usage() -> int:
+    """Return the process RAM utilization, in bytes."""
+    return BOT_PROCESS.memory_info().rss
+
+
+def get_start_dt() -> datetime.datetime:
+    """Return the process start timestamp."""
+    return datetime.datetime.fromtimestamp(BOT_PROCESS.create_time(), tz=datetime.UTC)

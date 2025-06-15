@@ -1,18 +1,16 @@
 import io
 import pathlib
-import random
 from typing import TYPE_CHECKING
 
 import disnake
 from discord import sanitize_filename
 
-from app import i18n
 from resources import FileResource
 
 if TYPE_CHECKING:
     from PIL import Image
 
-__all__ = ("embed_image", "sikrit_footer")
+__all__ = ("embed_file_resource", "embed_image")
 
 FORMAT = "png"
 
@@ -31,9 +29,3 @@ def embed_file_resource(resource: FileResource, /) -> tuple[str, disnake.File]:
     """Create and return a resource File with an attachment url."""
     filename = sanitize_filename(resource.path.name)
     return f"attachment://{filename}", disnake.File(resource.path, filename=filename)
-
-
-def sikrit_footer(embed: disnake.Embed, /, locale: disnake.Locale) -> None:
-    """Randomly set a "tip" footer on an embed."""
-    tips = i18n.get_embed_tips(locale)
-    embed.set_footer(text=random.choice(tips))

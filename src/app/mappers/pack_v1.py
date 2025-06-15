@@ -5,7 +5,6 @@ import msgspec
 
 import app.dto.pack_v1 as dto
 from app.mappers.common import LITERAL_ELEMENT_TO_ENUM, LITERAL_TYPE_TO_ENUM, ItemMapping
-from app.mappers.common_gfx import JointsMapping, convert_joints
 from app.mappers.common_v1_v2 import stats_to_stages
 from app.models.sprite_pack import SpriteKey
 from resources import HttpResource
@@ -39,14 +38,11 @@ def _get_base_url(pack_dto: dto.ItemPackDto, /) -> str:
 class ConversionResult(NamedTuple):
     items: ItemMapping
     images: abc.Mapping[SpriteKey, HttpResource]
-    joints: JointsMapping
 
 
 def convert_pack_v1(pack_dto: dto.ItemPackDto, /) -> ConversionResult:
     items: ItemMapping = {}
     images: abc.Mapping[SpriteKey, HttpResource] = {}
-    joints: JointsMapping = {}
-
     base_url = _get_base_url(pack_dto)
 
     for item_dto in pack_dto.items:
@@ -57,7 +53,4 @@ def convert_pack_v1(pack_dto: dto.ItemPackDto, /) -> ConversionResult:
         if item_dto.image is not msgspec.UNSET:
             images[sprite_key] = HttpResource.from_uri(item_dto.image.replace("%url%", base_url))
 
-        if item_dto.attachment is not msgspec.UNSET:
-            joints[sprite_key] = convert_joints(item_dto.attachment)
-
-    return ConversionResult(items, images, joints)
+    return ConversionResult(items, images)

@@ -3,15 +3,7 @@ from typing import Literal
 
 import msgspec
 
-from .common import (
-    ItemStatsDto,
-    LiteralElement,
-    LiteralType,
-    MixedJointsDto,
-    Name,
-    PosInt,
-    TransformRange,
-)
+from .common import ItemStatsDto, LiteralElement, LiteralType, Name, PosInt, TransformRange
 
 
 class ConfigDto(msgspec.Struct, kw_only=True):
@@ -29,7 +21,7 @@ class ItemDto(msgspec.Struct, kw_only=True):
     element: LiteralElement = "OTHER"
     transform_range: TransformRange = "C"
     stats: ItemStatsDto
-    attachment: MixedJointsDto | msgspec.UnsetType = msgspec.UNSET
+    # attachment
     tags: abc.Sequence[str] = ()
 
 

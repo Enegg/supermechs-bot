@@ -8,7 +8,7 @@ handlers = ["stdout", "file"]
 filters = ["normalize_path"]
 
 [logging.filters.normalize_path]
-"()" = "app.core.logging.get_path_normalizer"
+"()" = "app.core.log.get_path_normalizer"
 
 [logging.formatters.simple]
 format = "{asctime} [{levelname:^8}] [{pathname}:{lineno}] {message}"
@@ -16,7 +16,7 @@ style = "{"
 datefmt = "%Y-%m-%d %H:%M:%S"
 
 [logging.formatters.json]
-"()" = "app.core.logging.JsonFormatter"
+"()" = "app.core.log.JsonFormatter"
 [logging.formatters.json.fmt_keys]
 timestamp = "timestamp"
 level = "levelname"

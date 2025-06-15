@@ -1,9 +1,7 @@
 from collections import abc
 from typing import NamedTuple
 
-from app.dto.gfx_v3 import JointDto
-from app.dto.pack_v3 import ItemDto
-from app.models.joints import Joints
+import app.dto.pack_v3 as dto
 from app.models.sprite_pack import SpriteKey
 
 from .common import (
@@ -13,7 +11,6 @@ from .common import (
     ItemMapping,
     convert_stats,
 )
-from .common_gfx import convert_point_2d
 
 import dupermechs.all as sm
 
@@ -28,7 +25,7 @@ class SpriteData(NamedTuple):
     reloaded: bool
 
 
-def _determine_element(item: ItemDto, /) -> sm.Item.Element:
+def _determine_element(item: dto.ItemDto, /) -> sm.Item.Element:
     if item.element != "OTHER":
         return LITERAL_ELEMENT_TO_ENUM[item.element]
 
@@ -38,7 +35,7 @@ def _determine_element(item: ItemDto, /) -> sm.Item.Element:
     return sm.Item.Element.other
 
 
-def _collect_stages(item: ItemDto, /) -> tuple[abc.Sequence[sm.Item.Stage], SpriteCollection]:
+def _collect_stages(item: dto.ItemDto, /) -> tuple[abc.Sequence[sm.Item.Stage], SpriteCollection]:
     stages: list[sm.Item.Stage] = []
     images: SpriteCollection = []
     id = sm.Item.Id(item.id)
@@ -56,14 +53,18 @@ def _collect_stages(item: ItemDto, /) -> tuple[abc.Sequence[sm.Item.Stage], Spri
             )
             for level_dto in stage_dto.levels
         ]
-        assert levels
+        if not levels:
+            levels.append(sm.Item.Stage.Level(level=1))
+
         stages.append(sm.Item.Stage(tier=tier, levels=tuple(levels)))
 
-    assert stages
+    if not stages:
+        stages.append(sm.Item.Stage(tier=sm.Item.Rarity.common, levels=[sm.Item.Stage.Level()]))
+
     return tuple(stages), images
 
 
-def _convert_item(item: ItemDto, /) -> tuple[sm.Item, SpriteCollection]:
+def _convert_item(item: dto.ItemDto, /) -> tuple[sm.Item, SpriteCollection]:
     stages, images = _collect_stages(item)
     return sm.Item(
         id=sm.Item.Id(item.id),
@@ -81,7 +82,7 @@ class ItemGroups(NamedTuple):
     images: SpriteCollection
 
 
-def collect_items(item_dtos: abc.Sequence[ItemDto], /) -> ItemGroups:
+def collect_items(item_dtos: abc.Sequence[dto.ItemDto], /) -> ItemGroups:
     reloaded_items: ItemMapping = {}
     legacy_items: ItemMapping = {}
     hidden_items: ItemMapping = {}
@@ -102,18 +103,4 @@ def collect_items(item_dtos: abc.Sequence[ItemDto], /) -> ItemGroups:
 
     return ItemGroups(
         reloaded=reloaded_items, legacy=legacy_items, hidden=hidden_items, images=all_images
-    )
-
-
-def convert_joints(joint_dto: JointDto, /) -> Joints:
-    return Joints(
-        torso=convert_point_2d(joint_dto.torso),
-        leg_1=convert_point_2d(joint_dto.leg1),
-        leg_2=convert_point_2d(joint_dto.leg2),
-        side_weapon_1=convert_point_2d(joint_dto.side1),
-        side_weapon_2=convert_point_2d(joint_dto.side2),
-        side_weapon_3=convert_point_2d(joint_dto.side3),
-        side_weapon_4=convert_point_2d(joint_dto.side4),
-        top_weapon_1=convert_point_2d(joint_dto.top1),
-        top_weapon_2=convert_point_2d(joint_dto.top2),
     )

@@ -88,7 +88,7 @@ def format_exception(exc: BaseException, /) -> str:
 
     for frame_summary in tb.stack:
         try:
-            frame_summary.filename = strip_cwd(frame_summary.filename, paths.CWD)
+            frame_summary.filename = strip_cwd(frame_summary.filename)
 
         except ValueError:
             continue
@@ -96,7 +96,7 @@ def format_exception(exc: BaseException, /) -> str:
     return "".join(tb.format())
 
 
-def strip_cwd(path: Pathish, cwd: Pathish | None = None) -> str:
+def strip_cwd(path: Pathish, /) -> str:
     """Make path relative to the cwd. `{cwd}/pth` becomes `pth`.
 
     Raises
@@ -104,7 +104,4 @@ def strip_cwd(path: Pathish, cwd: Pathish | None = None) -> str:
     ValueError
         Path is not within the cwd.
     """
-    if cwd is None:
-        cwd = os.getcwd()  # noqa: PTH109
-
-    return os.path.relpath(path, cwd)
+    return os.path.relpath(path, paths.CWD)

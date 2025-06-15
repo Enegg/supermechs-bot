@@ -1,15 +1,16 @@
 import os
+import pathlib
 from collections import abc
 from typing import Final
 
 import attrs
+import datargs
 import dotenv
 
+from app import paths
 from app.cattrs_utils import ByteSize
 from app.class_utils import MappingParser
 from resources import AnyResource
-
-from .cli import ARGV
 
 __all__ = ("CONFIG",)
 
@@ -43,6 +44,16 @@ class Config:
         return (self.dev_guild_id,)
 
 
+@attrs.define
+class Argv:
+    dotenv_path: pathlib.Path = paths.DEV_ENV
+    indev: bool = __debug__
+    debug_command_sync: bool = __debug__
+
+
+ARGV = datargs.parse(Argv)
+
+
 dotenv.load_dotenv(ARGV.dotenv_path)
 CONFIG: Final = MappingParser(
     attrs.asdict(ARGV),
@@ -51,4 +62,6 @@ CONFIG: Final = MappingParser(
 
 
 if __name__ == "__main__":
-    print(CONFIG)
+    import rich
+
+    rich.print(CONFIG)

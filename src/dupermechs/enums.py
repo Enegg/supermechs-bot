@@ -40,49 +40,6 @@ class ItemRarity(enum.IntEnum):
     perk = enum.auto()
 
 
-class MechSlot(enum.StrEnum):
-    __slots__ = ()
-
-    torso = enum.auto()
-    legs = enum.auto()
-    drone = enum.auto()
-    side_weapon_1 = enum.auto()
-    side_weapon_2 = enum.auto()
-    side_weapon_3 = enum.auto()
-    side_weapon_4 = enum.auto()
-    top_weapon_1 = enum.auto()
-    top_weapon_2 = enum.auto()
-    charge = enum.auto()
-    teleport = enum.auto()
-    hook = enum.auto()
-    shield = enum.auto()
-    perk = enum.auto()
-    module_1 = enum.auto()
-    module_2 = enum.auto()
-    module_3 = enum.auto()
-    module_4 = enum.auto()
-    module_5 = enum.auto()
-    module_6 = enum.auto()
-    module_7 = enum.auto()
-    module_8 = enum.auto()
-
-
-class MechStat(enum.StrEnum):
-    __slots__ = ()
-
-    weight = enum.auto()
-    hit_points = enum.auto()
-    energy_capacity = enum.auto()
-    energy_regeneration = enum.auto()
-    heat_capacity = enum.auto()
-    heat_cooling = enum.auto()
-    physical_resistance = enum.auto()
-    explosive_resistance = enum.auto()
-    electric_resistance = enum.auto()
-    bullets_capacity = enum.auto()
-    rockets_capacity = enum.auto()
-
-
 class ItemStat(enum.StrEnum):
     __slots__ = ()
 

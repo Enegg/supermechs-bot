@@ -10,6 +10,7 @@ from app.dto.pack_v1 import ItemPackDto as ItemPackDtoV1
 from app.dto.pack_v2 import ItemPackDto as ItemPackDtoV2
 from app.dto.pack_v3 import ItemPackDto as ItemPackDtoV3
 from app.mappers.pack_v1 import convert_pack_v1
+from app.mappers.pack_v2 import convert_pack_v2
 from app.mappers.pack_v3 import collect_items
 from app.models.item_pack import ItemPack
 from app.models.sprite_pack import DynamicSpritePack, SpriteKey
@@ -55,7 +56,9 @@ async def load_datapack() -> None:
 
         case "2":
             dto = msgspec.json.decode(data, type=ItemPackDtoV2)
-            _LOG.error("TODO: V2")
+            pack_v2 = convert_pack_v2(dto)
+            item_pack = ItemPack(reloaded_items=pack_v2.items)
+            packs.store_item_pack(item_pack)
             return
 
         case "3":

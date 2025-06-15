@@ -13,7 +13,6 @@ from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
 from app.core import CONFIG
 from app.devtools import debug_message
-from app.embed_utils import sikrit_footer
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from app.plugins_factory import create_plugin
@@ -95,7 +94,7 @@ async def item(
         item_id=item.id,
         stage_index=stage_index,
         level_index=0 if legacy else len(levels) - 1,
-        levels_page=ui.PaginatedSelect.option_to_page_count(len(levels)),
+        levels_page=ui.option_to_page_count(len(levels)),
         legacy=legacy,
     )
     embed, layout = get_item_summary(i18n.get_locale(inter), item, ctx)
@@ -253,7 +252,7 @@ def get_item_summary(
             custom_id=make_component_id(ComponentIds.stage_select, ctx),
         )])  # fmt: skip
 
-    total_pages = ui.PaginatedSelect.option_to_page_count(len(levels))
+    total_pages = ui.option_to_page_count(len(levels))
 
     if total_pages <= 1:
         level_options = make_level_options(locale, levels, ctx.level_index)
@@ -538,7 +537,7 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
                 ctx = ctx.__replace__(
                     stage_index=new_stage_index,
                     level_index=total_levels - 1,
-                    levels_page=ui.PaginatedSelect.option_to_page_count(total_levels),
+                    levels_page=ui.option_to_page_count(total_levels),
                 )
 
         case ComponentIds.level_select:
@@ -674,8 +673,6 @@ async def compare(
         color = inter.author.color
 
     embed = Embed(title=f"{item_a.name} vs {item_b.name}", description=desc, color=color)
-
-    sikrit_footer(embed, locale)
 
     await inter.response.send_message(embed=embed, ephemeral=True)
     return  # FIXME

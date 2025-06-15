@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING, NamedTuple, cast as type_cast
 from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
 
-from app.managers import packs, players
-from app.text_utils import acronym_of, sanitize_string
+from app.managers import packs
+from app.text_utils import acronym_of
 
 if TYPE_CHECKING:
     from .params import FilledOptions
 
-__all__ = ("item_name_autocomplete", "mech_name_autocomplete")
+__all__ = ("item_name_autocomplete",)
 
 
 class MatchResult(NamedTuple):
@@ -105,21 +105,3 @@ def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autocomplet
     matching = find_matches(names, input)
     del matching[InteractionLimits.autocomplete_options :]
     return [result.name for result in matching]
-
-
-def mech_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
-    """Autocomplete for player builds."""
-    player = players.find_player_by_user(inter.author)
-
-    if player is None:
-        return [sanitize_string(input)] if input else []  # cannot send an empty string
-
-    lowercase = input.lower()
-    matching = [
-        build.name for build in player.iter_builds() if build.name.lower().startswith(lowercase)
-    ]
-
-    if not matching and input:
-        return [sanitize_string(input)]
-
-    return matching
