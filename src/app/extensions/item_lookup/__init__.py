@@ -3,14 +3,15 @@ from typing import NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits
-from disnake import Embed, Event, Locale
+from disnake import Color, Event, Locale, MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
 from app.assets import COLORS, EMOJIS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
+from app.commands.mentions import get_mention
 from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
-from app.devtools import debug_message
+from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from app.plugins_factory import create_plugin
@@ -53,8 +54,8 @@ class ComponentIds:
     titan_button = "dvt"
 
 
-@plugin.slash_command()
-async def item(
+@plugin.slash_command(name="item")
+async def item_lookup(
     inter: CommandInteraction,
     name: str = commands.Param(autocomplete=item_name_autocomplete),
     type: str | None = commands.Param(None, choices=TYPE_CHOICES),
@@ -94,14 +95,10 @@ async def item(
         levels_page=ui.option_to_page_count(len(levels)),
         legacy=legacy,
     )
-    embed, layout = get_item_summary(i18n.get_locale(inter), item, ctx)
-    await inter.response.send_message(embed=embed, components=layout, ephemeral=True)
-
-
-def get_item(ctx: ItemLookupUIContext, /) -> sm.IItem:
-    item_pack = packs.get_item_pack()
-    bank = item_pack.legacy_items if ctx.legacy else item_pack.reloaded_items
-    return bank[ctx.item_id]
+    container = get_item_summary(i18n.get_locale(inter), item, ctx)
+    await inter.response.send_message(
+        components=container, flags=MessageFlags(is_components_v2=True)
+    )
 
 
 def get_item_stats(item: sm.IItem, ctx: ItemLookupUIContext, /) -> sm.IItemStats:
@@ -156,10 +153,10 @@ def make_level_options(
     return [
         ui.SelectOption(
             label=f"{i18n.get_message(locale, 'item-lookup-ui-level-select-label')} {level.level}",
-            value=f"{n}",
-            default=n == selected_level_index,
+            value=f"{i}",
+            default=i == selected_level_index,
         )
-        for n, level in enumerate(levels, start=start)
+        for i, level in enumerate(levels, start=start)
     ]
 
 
@@ -175,13 +172,15 @@ def make_option_down(locale: Locale, /) -> ui.SelectOption:
     )
 
 
-def get_item_summary(
-    locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext
-) -> tuple[Embed, ui.MessageComponents]:
+def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -> ui.Container:
     gettext = i18n.get_gettext(locale)
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
+    item_stats = get_item_stats(item, ctx)
     name_parts: list[str] = []
+
+    if ctx.legacy:
+        name_parts.append("legacy")
 
     if item.element is not sm.Item.Element.other:
         name_parts.append(item.element.name)
@@ -189,50 +188,44 @@ def get_item_summary(
     name_parts.append(item.type.name.replace("_", " "))
     name_parts[0] = name_parts[0].capitalize()
 
-    if ctx.stage_index == len(item.stages) - 1 and ctx.level_index == len(levels) - 1:
-        power_level = "max"
-
-    else:
-        power_level = str(levels[ctx.level_index].level)
-
-    desc_lines: list[str] = [
-        " ".join(name_parts),
-        item_transform_range(item, ctx.stage_index),
-        f"{gettext('item-lookup-power-level')}: **{power_level}**",
-    ]
-    item_stats = get_item_stats(item, ctx)
-    stats_lines = format_stats(
-        item_stats, locale, format_damage_average if ctx.damage_average else format_damage_default
+    power_level = (
+        "max"
+        if ctx.stage_index == len(item.stages) - 1 and ctx.level_index == len(levels) - 1
+        else str(levels[ctx.level_index].level)
     )
-    if not stats_lines:
-        desc_lines.append(f"-# {gettext('item-lookup-no-stats')}")
-
-    sprite_url = gfx.get_image_url((item.id, stage.tier))
+    title = ui.TextDisplay(
+        f"### {item.name}\n"
+        f"{' '.join(name_parts)}\n"
+        f"{item_transform_range(item, ctx.stage_index)}\n"
+        f"{gettext('item-lookup-power-level')}: **{power_level}**"
+    )
+    components: list[ui.ContainerChildUIComponent] = []
 
     match get_slot_icon(item.type):
         case HttpResource(url):
-            icon_url = str(url)
+            components.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
 
         case _:
-            icon_url = None
+            components.append(title)
 
-    embed = (
-        Embed(
-            title=item.name,
-            description="\n".join(desc_lines),
-            color=COLORS.elements[item.element],
-        )
-        .set_thumbnail(icon_url)
-        .set_image(sprite_url)
-    )
-    if sprite_url is None:
-        embed.set_footer(text=gettext("item-lookup-no-image"))
-    if stats_lines:
-        embed.add_field(
-            f"{gettext('item-lookup-stats-header')}:", "\n".join(stats_lines), inline=False
-        )
+    if stats_lines := format_stats(item_stats, locale, avg=ctx.damage_average):
+        components.append(ui.Section(
+            ui.TextDisplay(
+                f"**{gettext('item-lookup-stats-header')}:**\n{'\n'.join(stats_lines)}"
+            ),
+            accessory=ui.ActionButton(
+                label=gettext("item-lookup-ui-buffs"),
+                style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
+                custom_id=make_component_id(ComponentIds.buffs_button, ctx),
+            ),
+        ))  # fmt: skip
+    else:
+        components.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
-    layout: ui.MessageComponents = []
+    if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
+        components.append(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
+    else:
+        components.append(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
 
     if len(item.stages) > 1:
         stage_options = [
@@ -240,18 +233,16 @@ def get_item_summary(
                 label=gettext(f"tier-{stage.tier.name}").capitalize(),  # noqa: INT001
                 value=f"{i:x}",
                 emoji=EMOJIS.tiers[stage.tier],
+                default=i == ctx.stage_index,
             )
             for i, stage in enumerate(item.stages)
         ]
-        stage_options[ctx.stage_index].default = True
-        layout.append([ui.StringSelect(
+        components.append(ui.ActionRow(ui.StringSelect(
             options=stage_options,
             custom_id=make_component_id(ComponentIds.stage_select, ctx),
-        )])  # fmt: skip
+        )))  # fmt: skip
 
-    total_pages = ui.option_to_page_count(len(levels))
-
-    if total_pages <= 1:
+    if len(levels) <= ComponentLimits.select_options:
         level_options = make_level_options(locale, levels, ctx.level_index)
 
     elif ctx.levels_page == 1:
@@ -260,7 +251,7 @@ def get_item_summary(
         )
         level_options.append(make_option_down(locale))
 
-    elif ctx.levels_page == total_pages:
+    elif ctx.levels_page == ui.option_to_page_count(len(levels)):
         level_options = [make_option_up(locale)]
         offset = (ComponentLimits.select_options - 2) * (ctx.levels_page - 1) + 1
         level_options += make_level_options(locale, levels[offset:], ctx.level_index, offset)
@@ -274,44 +265,40 @@ def get_item_summary(
         )
         level_options.append(make_option_down(locale))
 
-    layout.append([ui.StringSelect(
+    components.append(ui.ActionRow(ui.StringSelect(
         options=level_options,
         placeholder=gettext("item-lookup-ui-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
-    )])  # fmt: skip
-    button_row: list[ui.ActionButton] = [ui.ActionButton(
-        label=gettext("item-lookup-ui-buffs"),
-        style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
-        custom_id=make_component_id(ComponentIds.buffs_button, ctx),
-    )]  # fmt: skip
-    layout.append(button_row)
+    )))  # fmt: skip
+    button_row: list[ui.ActionButton] = []
 
     if has_damage_spread(item_stats):
-        button_row.append(
-            ui.ActionButton(
-                label=gettext("item-lookup-ui-damage-avg"),
-                style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-                custom_id=make_component_id(ComponentIds.avg_button, ctx),
-            )
-        )
+        button_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-damage-avg"),
+            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
+            custom_id=make_component_id(ComponentIds.avg_button, ctx),
+        ))  # fmt: skip
 
     if has_damage(item_stats):
-        button_row.append(
-            ui.ActionButton(
-                label=gettext("item-lookup-ui-damage-vs-titans"),
-                style=ui.ButtonStyle.green if ctx.damage_vs_titan else ui.ButtonStyle.gray,
-                custom_id=make_component_id(ComponentIds.titan_button, ctx),
-            )
-        )
+        button_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-damage-vs-titans"),
+            style=ui.ButtonStyle.green if ctx.damage_vs_titan else ui.ButtonStyle.gray,
+            custom_id=make_component_id(ComponentIds.titan_button, ctx),
+        ))  # fmt: skip
 
-    return embed, layout
+    if button_row:
+        components.append(ui.ActionRow(*button_row))
+
+    return ui.Container(*components, accent_colour=COLORS.elements[item.element])
 
 
-def format_stats(
-    item_stats: sm.IItemStats, locale: Locale, format_damage: abc.Callable[[int, int], str]
-) -> list[str]:
+def format_stats(item_stats: sm.IItemStats, locale: Locale, *, avg: bool) -> list[str]:
     def fmt(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
         return f"{emoji} **{value}** {i18n.get_stat_name(locale, stat_key)}"
+
+    format_damage: abc.Callable[[int, int], str] = (
+        format_damage_average if avg else format_damage_default
+    )
 
     stats_lines: list[str] = []
     emojis = EMOJIS.stats
@@ -517,7 +504,48 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
 
     component, ctx = parse_component_id(inter.data.custom_id)
     locale = i18n.get_locale(inter)
-    item = get_item(ctx)
+    item_pack = packs.get_item_pack()
+    bank = item_pack.legacy_items if ctx.legacy else item_pack.reloaded_items
+
+    # If the bot (re)starts with a new item pack, and an item-lookup view of an item from previous
+    # pack persists, interaction with it may lead to following scenarios:
+    try:
+        item = bank[ctx.item_id]
+
+    # 1. at "best", the ID is invalid and we simply disable the view:
+    except KeyError:
+        await inter.response.edit_message(components=ui.Container(
+            ui.TextDisplay(
+                "⚠️ This item is no longer available.\n"
+                "-# Hint: the item pack might have been changed. "
+                f"Try searching it with {get_mention('item')} again."
+            ),
+            accent_colour=Color(0xFF0000),
+        ))  # fmt: skip
+        return
+
+    # 2. not great, not terrible: ID is valid and points to the same item, but the data
+    # may contain fewer stages/levels; adjust the indices and hope for the best:
+    if (
+        len(item.stages) < ctx.stage_index
+        or len(item.stages[ctx.stage_index].levels) < ctx.level_index
+    ):
+        valid_stage_index = min(ctx.stage_index, len(item.stages) - 1)
+        valid_level_index = min(ctx.level_index, len(item.stages[valid_stage_index].levels) - 1)
+        ctx = ctx.__replace__(
+            stage_index=valid_stage_index, level_index=valid_level_index, levels_page=0
+        )
+        await inter.response.edit_message(components=get_item_summary(locale, item, ctx))
+        # 3. at worst: the ID is valid but points to a different item;
+        # code-wise, we handle it just fine, but it's likely to confuse the user;
+        # this is indistinguishable from 2. (save for parsing the message and comparing item names and what not),
+        # so lets notify the user just in case
+        await inter.followup.send(
+            "The item view you interacted with was made using a different item pack.\n"
+            "If the item shown has changed, try using the /item command again.",
+            ephemeral=True,
+        )
+        return
 
     # NOTE: using __replace__ directly due to copy.replace(**kwargs: Any)
     match component:
@@ -559,14 +587,13 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
         case ComponentIds.titan_button:
             ctx = ctx.__replace__(damage_vs_titan=ctx.damage_vs_titan ^ True)
 
-        case _:
-            msg = f"Unknown component: {component!r}, {ctx!r}"
-            raise RuntimeError(msg)
+        case unknown_id:
+            plugin.logger.warning("item-lookup - unknown component: %r", unknown_id)
 
-    embed, layout = get_item_summary(locale, item, ctx)
+    container = get_item_summary(locale, item, ctx)
     if __debug__:
-        debug_message(embed, layout)
-    await inter.response.edit_message(embed=embed, components=layout)
+        debug_components(container)
+    await inter.response.edit_message(components=container)
 
 
 setup, teardown = plugin.create_extension_handlers()

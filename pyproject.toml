@@ -11,7 +11,7 @@ dependencies = [
     "attrs >= 23.2.0",
     "cattrs >= 24.1.2",
     "datargs >= 1.1.0",
-    "disnake >= 2.10.1",
+    "disnake @ git+https://github.com/DisnakeDev/disnake@feature/components-v2",
     "disnake-ext-plugins == 0.3.*",
     "orjson >= 3.8.10",
     "pillow == 10.*",

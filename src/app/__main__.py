@@ -11,7 +11,7 @@ from discord import load_extensions
 from disnake.ext import commands
 
 from app import aio, i18n, paths
-from app.commands import exception_handling
+from app.commands import exception_handling, mentions
 from app.core import CONFIG, config_logging
 from app.managers import loader
 
@@ -75,6 +75,7 @@ async def main() -> None:
 
         tg.start_soon(loader.load_datapack)
         tg.start_soon(sync.sync_commands, bot)
+        tg.start_soon(mentions.populate, bot)
         tg.start_soon(bot.connect)
 
 

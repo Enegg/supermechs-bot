@@ -28,3 +28,10 @@ def debug_message(
         parts.append(components_to_dict(components))
 
     rich.print(*parts)
+
+
+def debug_components(components: ui.Container, /) -> None:
+    if not debug_enabled:
+        return
+
+    rich.print(components.to_component_dict())
