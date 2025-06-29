@@ -28,6 +28,7 @@ ELEMENT_CHOICES = (
     OptionChoice(Localized("Combined", key="CHOICE_COMB"), ItemElement.combined.name),
     OptionChoice(Localized("Other", key="CHOICE_NONE"), ItemElement.other.name),
 )
+LEGACY_ELEMENT_CHOICES = (*ELEMENT_CHOICES[:3], ELEMENT_CHOICES[-1])
 LEGACY_TIER_CHOICES = (
     OptionChoice(Localized("Common", key="CHOICE_C"), ItemRarity.common.name),
     OptionChoice(Localized("Rare", key="CHOICE_R"), ItemRarity.rare.name),
@@ -58,4 +59,3 @@ class FilledOptions(TypedDict, total=False, closed=True):
     ]
     element: Literal["physical", "explosive", "electric", "combined", "other"]
     rarity: Literal["common", "rare", "epic", "legendary", "mythical", "divine", "perk"]
-    legacy: bool

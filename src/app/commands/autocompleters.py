@@ -94,7 +94,7 @@ def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autocomplet
         type=filled_options.get("type"),
         element=filled_options.get("element"),
         rarity=filled_options.get("rarity"),
-        legacy=filled_options.get("legacy", False),
+        legacy=inter.application_command.name == "legacy-item",  # HACK
     )
     names = (item.name for item in items)
     input = input.strip()

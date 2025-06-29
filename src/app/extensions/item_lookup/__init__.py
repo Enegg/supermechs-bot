@@ -10,7 +10,13 @@ from app import i18n, ui
 from app.assets import COLORS, EMOJIS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
-from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
+from app.commands.params import (
+    ELEMENT_CHOICES,
+    LEGACY_ELEMENT_CHOICES,
+    LEGACY_TIER_CHOICES,
+    TIER_CHOICES,
+    TYPE_CHOICES,
+)
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
@@ -61,9 +67,8 @@ async def item_lookup(
     type: str | None = commands.Param(None, choices=TYPE_CHOICES),
     element: str | None = commands.Param(None, choices=ELEMENT_CHOICES),
     rarity: str | None = commands.Param(None, choices=TIER_CHOICES),
-    legacy: bool = False,
 ) -> None:
-    """Lookup item stats. {{ ITEM }}
+    """Lookup item info. {{ ITEM }}
 
     Parameters
     ----------
@@ -75,10 +80,8 @@ async def item_lookup(
         Limit suggestions to this element. {{ ITEM_ELEMENT }}
     rarity:
         Remove suggestions below this rarity. {{ ITEM_TIER }}
-    legacy:
-        Show legacy items. {{ ITEM_LEGACY }}
     """  # noqa: D400
-    for item in packs.filter_items(type, element, rarity, legacy):
+    for item in packs.filter_items(type, element, rarity, False):
         if item.name == name:
             break
 
@@ -91,9 +94,8 @@ async def item_lookup(
     ctx = ItemLookupUIContext(
         item_id=item.id,
         stage_index=stage_index,
-        level_index=0 if legacy else len(levels) - 1,
+        level_index=len(levels) - 1,
         levels_page=ui.option_to_page_count(len(levels)),
-        legacy=legacy,
     )
     container = get_item_summary(i18n.get_locale(inter), item, ctx)
     await inter.response.send_message(
@@ -252,18 +254,20 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         level_options.append(make_option_down(locale))
 
     elif ctx.levels_page == ui.option_to_page_count(len(levels)):
-        level_options = [make_option_up(locale)]
         offset = (ComponentLimits.select_options - 2) * (ctx.levels_page - 1) + 1
-        level_options += make_level_options(locale, levels[offset:], ctx.level_index, offset)
+        level_options = [
+            make_option_up(locale),
+            *make_level_options(locale, levels[offset:], ctx.level_index, offset),
+        ]
 
     else:
         size = ComponentLimits.select_options - 2
         offset = size * (ctx.levels_page - 1) + 1
-        level_options = [make_option_up(locale)]
-        level_options += make_level_options(
-            locale, levels[offset : offset + size], ctx.level_index, offset
-        )
-        level_options.append(make_option_down(locale))
+        level_options = [
+            make_option_up(locale),
+            *make_level_options(locale, levels[offset : offset + size], ctx.level_index, offset),
+            make_option_down(locale),
+        ]
 
     components.append(ui.ActionRow(ui.StringSelect(
         options=level_options,
@@ -507,42 +511,43 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
     item_pack = packs.get_item_pack()
     bank = item_pack.legacy_items if ctx.legacy else item_pack.reloaded_items
 
-    # If the bot (re)starts with a new item pack, and an item-lookup view of an item from previous
+    # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
     try:
         item = bank[ctx.item_id]
 
-    # 1. at "best", the ID is invalid and we simply disable the view:
+    # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
     except KeyError:
+        cmd_mention = get_mention("legacy-item" if ctx.legacy else "item")
         await inter.response.edit_message(components=ui.Container(
             ui.TextDisplay(
                 "⚠️ This item is no longer available.\n"
                 "-# Hint: the item pack might have been changed. "
-                f"Try searching it with {get_mention('item')} again."
+                f"Try searching it with {cmd_mention} again."
             ),
             accent_colour=Color(0xFF0000),
         ))  # fmt: skip
         return
 
-    # 2. not great, not terrible: ID is valid and points to the same item, but the data
-    # may contain fewer stages/levels; adjust the indices and hope for the best:
+    # 2. The ID is valid. It may point to the same or a different item; the data may contain fewer stages/levels.
+    # We will assume that if either of the indices doesn't match, it's a different item:
     if (
         len(item.stages) < ctx.stage_index
         or len(item.stages[ctx.stage_index].levels) < ctx.level_index
     ):
         valid_stage_index = min(ctx.stage_index, len(item.stages) - 1)
         valid_level_index = min(ctx.level_index, len(item.stages[valid_stage_index].levels) - 1)
+        # TODO: deduce levels_page from level_index
         ctx = ctx.__replace__(
             stage_index=valid_stage_index, level_index=valid_level_index, levels_page=0
         )
         await inter.response.edit_message(components=get_item_summary(locale, item, ctx))
-        # 3. at worst: the ID is valid but points to a different item;
-        # code-wise, we handle it just fine, but it's likely to confuse the user;
-        # this is indistinguishable from 2. (save for parsing the message and comparing item names and what not),
-        # so lets notify the user just in case
+        # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
+        # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
+        cmd_mention = get_mention("legacy-item" if ctx.legacy else "item")
         await inter.followup.send(
-            "The item view you interacted with was made using a different item pack.\n"
-            "If the item shown has changed, try using the /item command again.",
+            "The summary you've interacted with was made using a different item pack.\n"
+            f"If the item shown has changed, try searching it with {cmd_mention} again.",
             ephemeral=True,
         )
         return
@@ -594,6 +599,48 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
     if __debug__:
         debug_components(container)
     await inter.response.edit_message(components=container)
+
+
+@plugin.slash_command(name="legacy-item")
+async def legacy_item_lookup(
+    inter: CommandInteraction,
+    name: str = commands.Param(autocomplete=item_name_autocomplete),
+    type: str | None = commands.Param(None, choices=TYPE_CHOICES),
+    element: str | None = commands.Param(None, choices=LEGACY_ELEMENT_CHOICES),
+    rarity: str | None = commands.Param(None, choices=LEGACY_TIER_CHOICES),
+) -> None:
+    """Lookup legacy item info.
+
+    Parameters
+    ----------
+    name:
+        The name of the item. {{ ITEM_NAME }}
+    type:
+        Limit suggestions to this type. {{ ITEM_TYPE }}
+    element:
+        Limit suggestions to this element. {{ ITEM_ELEMENT }}
+    rarity:
+        Remove suggestions below this rarity. {{ ITEM_TIER }}
+    """
+    for item in packs.filter_items(type, element, rarity, True):
+        if item.name == name:
+            break
+
+    else:
+        msg = i18n.get_message(i18n.get_locale(inter), "unknown-item-name", name=name)
+        raise commands.UserInputError(msg)
+
+    ctx = ItemLookupUIContext(
+        item_id=item.id,
+        stage_index=0,
+        level_index=0,
+        levels_page=0,
+        legacy=True,
+    )
+    await inter.response.send_message(
+        components=get_item_summary(i18n.get_locale(inter), item, ctx),
+        flags=MessageFlags(is_components_v2=True),
+    )
 
 
 setup, teardown = plugin.create_extension_handlers()

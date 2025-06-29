@@ -5,7 +5,7 @@ from discord import markdown as md
 from disnake import APISlashCommand
 from disnake.ext import commands
 
-type CommandName = Literal["item"]
+type CommandName = Literal["item", "legacy-item"]
 _COMMAND_MENTIONS: Final[abc.Mapping[CommandName, str]] = {}
 
 

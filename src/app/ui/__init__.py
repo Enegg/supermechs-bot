@@ -12,7 +12,6 @@ from disnake import (
     SeparatorSpacingSize as SeparatorSpacing,
     TextInputStyle,
 )
-from disnake.types.components import MediaGalleryItem as MediaGalleryItemPayload
 from disnake.ui import (
     ActionRow,
     Components,
@@ -36,7 +35,9 @@ from .buttons import ActionButton, ToggleButton, UrlButton
 from .selects import option_to_page_count
 
 if TYPE_CHECKING:
+    from disnake.types.components import MediaGalleryItem as _MediaGalleryItemPayload
     from disnake.ui.container import ContainerChildUIComponent as _ContainerChildUIComponent
+
 
 __all__ = (
     "ActionButton",
@@ -70,6 +71,7 @@ __all__ = (
 type CallbackStore = _CallbackStore[MessageInteraction]
 type MessageComponents = Components[MessageUIComponent]
 type ContainerChildUIComponent = _ContainerChildUIComponent
+type MediaGalleryItemPayload = _MediaGalleryItemPayload
 
 def callback_store(base_inter: Interaction, /) -> CallbackStore:
     async def interaction_check(inter: MessageInteraction, /) -> bool:
