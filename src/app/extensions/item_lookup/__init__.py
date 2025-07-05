@@ -113,10 +113,7 @@ def get_item_stats(item: sm.IItem, ctx: ItemLookupUIContext, /) -> sm.IItemStats
     if not ctx.buffs_enabled:
         return base_stats
 
-    total = [base_stats]
-
-    if ctx.buffs_enabled:
-        total.append(stats.bonus_item_stats(base_stats, MAXED_ARENA_BUFFS))
+    total = [base_stats, stats.bonus_item_stats(base_stats, MAXED_ARENA_BUFFS)]
 
     if ctx.damage_vs_titan:
         total.append(stats.bonus_damage_vs_titan(base_stats, MAXED_ARENA_BUFFS))
