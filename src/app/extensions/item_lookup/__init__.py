@@ -37,6 +37,7 @@ from dupermechs import stats
 from dupermechs.enums import ItemStat
 
 plugin = create_plugin(__name__)
+USES_EMOJI_THRESHOLD = 4
 
 
 class ItemLookupUIContext(NamedTuple):
@@ -210,10 +211,14 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         case _:
             components.append(title)
 
-    if stats_lines := format_stats(item_stats, locale, avg=ctx.damage_average):
+    stats_lines, costs_lines = format_stats(item_stats, locale, avg=ctx.damage_average)
+
+    if stats_lines or costs_lines:
+        stats_part = "\n".join(stats_lines)
+        costs_part = "\n".join(costs_lines)
         components.append(ui.Section(
             ui.TextDisplay(
-                f"**{gettext('item-lookup-stats-header')}:**\n{'\n'.join(stats_lines)}"
+                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
             ),
             accessory=ui.ActionButton(
                 label=gettext("item-lookup-ui-buffs"),
@@ -221,6 +226,10 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
                 custom_id=make_component_id(ComponentIds.buffs_button, ctx),
             ),
         ))  # fmt: skip
+        if stats_part and costs_part:
+            components.append(ui.Separator(divider=False))
+            components.append(ui.TextDisplay(costs_part))
+
     else:
         components.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
@@ -241,6 +250,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         ]
         components.append(ui.ActionRow(ui.StringSelect(
             options=stage_options,
+            placeholder="Select tier",
             custom_id=make_component_id(ComponentIds.stage_select, ctx),
         )))  # fmt: skip
 
@@ -283,7 +293,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
             custom_id=make_component_id(ComponentIds.avg_button, ctx),
         ))  # fmt: skip
 
-    if has_damage(item_stats):
+    if not ctx.legacy and has_damage(item_stats):
         button_row.append(ui.ActionButton(
             label=gettext("item-lookup-ui-damage-vs-titans"),
             style=ui.ButtonStyle.green if ctx.damage_vs_titan else ui.ButtonStyle.gray,
@@ -296,7 +306,9 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
     return ui.Container(*components, accent_colour=COLORS.elements[item.element])
 
 
-def format_stats(item_stats: sm.IItemStats, locale: Locale, *, avg: bool) -> list[str]:
+def format_stats(
+    item_stats: sm.IItemStats, locale: Locale, *, avg: bool
+) -> tuple[list[str], list[str]]:
     def fmt(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
         return f"{emoji} **{value}** {i18n.get_stat_name(locale, stat_key)}"
 
@@ -305,6 +317,7 @@ def format_stats(item_stats: sm.IItemStats, locale: Locale, *, avg: bool) -> lis
     )
 
     stats_lines: list[str] = []
+    costs_lines: list[str] = []
     emojis = EMOJIS.stats
 
     if item_stats.weight:
@@ -473,32 +486,28 @@ def format_stats(item_stats: sm.IItemStats, locale: Locale, *, avg: bool) -> lis
         stats_lines.append(fmt(emojis.advance, item_stats.advance, ItemStat.advance))
     if item_stats.retreat:
         stats_lines.append(fmt(emojis.retreat, item_stats.retreat, ItemStat.retreat))
-    if item_stats.uses:
-        stats_lines.append(fmt(emojis.uses, item_stats.uses, ItemStat.uses))
     if item_stats.repair:
         stats_lines.append(fmt(emojis.repair, item_stats.repair, ItemStat.repair))
-    if stats_lines:
-        stats_lines.append("")
+    if item_stats.uses:
+        count = 1 if item_stats.uses > USES_EMOJI_THRESHOLD else item_stats.uses
+        costs_lines.append(fmt(emojis.uses * count, item_stats.uses, ItemStat.uses))
     if item_stats.backfire:
-        stats_lines.append(fmt(emojis.backfire, item_stats.backfire, ItemStat.backfire))
+        costs_lines.append(fmt(emojis.backfire, item_stats.backfire, ItemStat.backfire))
     if item_stats.heat_generation:
-        stats_lines.append(
+        costs_lines.append(
             fmt(emojis.heat_generation, item_stats.heat_generation, ItemStat.heat_generation)
         )
     if item_stats.energy_cost:
-        stats_lines.append(fmt(emojis.energy_cost, item_stats.energy_cost, ItemStat.energy_cost))
+        costs_lines.append(fmt(emojis.energy_cost, item_stats.energy_cost, ItemStat.energy_cost))
     if item_stats.bullets_cost:
-        stats_lines.append(fmt(emojis.bullets_cost, item_stats.bullets_cost, ItemStat.bullets_cost))
+        costs_lines.append(fmt(emojis.bullets_cost, item_stats.bullets_cost, ItemStat.bullets_cost))
     if item_stats.rockets_cost:
-        stats_lines.append(fmt(emojis.rockets_cost, item_stats.rockets_cost, ItemStat.rockets_cost))
+        costs_lines.append(fmt(emojis.rockets_cost, item_stats.rockets_cost, ItemStat.rockets_cost))
     if item_stats.advance or item_stats.retreat:
-        stats_lines.append(
+        costs_lines.append(
             f"{emojis.jump} **{i18n.get_message(locale, 'item-lookup-jump-required')}**"
         )
-    if stats_lines and stats_lines[-1] == "":
-        stats_lines.pop()
-
-    return stats_lines
+    return stats_lines, costs_lines
 
 
 @plugin.listener(Event.message_interaction)
