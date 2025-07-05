@@ -64,8 +64,11 @@ class UrlButton(ui.Button[None]):
 class ToggleButton(ActionButton):
     """A bi-state button."""
 
-    __repr_attributes__: ClassVar[tuple[str, ...]] = (  # pyright: ignore[reportIncompatibleVariableOverride]
-        *ui.Button.__repr_attributes__, "style_on", "style_off", "on"
+    __repr_attributes__: ClassVar[tuple[str, ...]] = (
+        *ui.Button.__repr_attributes__,
+        "style_on",
+        "style_off",
+        "on",
     )
 
     def __init__(
