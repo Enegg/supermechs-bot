@@ -37,7 +37,8 @@ from dupermechs import stats
 from dupermechs.enums import ItemStat
 
 plugin = create_plugin(__name__)
-USES_EMOJI_THRESHOLD = 4
+MAX_EMOJIS = 4
+"""Threshold for multiple emojis shown inline in the stats field."""
 
 
 class ItemLookupUIContext(NamedTuple):
@@ -99,6 +100,8 @@ async def item_lookup(
         levels_page=ui.option_to_page_count(len(levels)),
     )
     container = get_item_summary(i18n.get_locale(inter), item, ctx)
+    if __debug__:
+        debug_components(container)
     await inter.response.send_message(
         components=container, flags=MessageFlags(is_components_v2=True)
     )
@@ -107,7 +110,7 @@ async def item_lookup(
 def get_item_stats(item: sm.IItem, ctx: ItemLookupUIContext, /) -> sm.IItemStats:
     base_stats = item.stages[ctx.stage_index].levels[ctx.level_index].stats
 
-    if not (ctx.buffs_enabled or ctx.damage_vs_titan):
+    if not ctx.buffs_enabled:
         return base_stats
 
     total = [base_stats]
@@ -229,7 +232,6 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         if stats_part and costs_part:
             components.append(ui.Separator(divider=False))
             components.append(ui.TextDisplay(costs_part))
-
     else:
         components.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
@@ -296,7 +298,8 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
     if not ctx.legacy and has_damage(item_stats):
         button_row.append(ui.ActionButton(
             label=gettext("item-lookup-ui-damage-vs-titans"),
-            style=ui.ButtonStyle.green if ctx.damage_vs_titan else ui.ButtonStyle.gray,
+            style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
+            disabled=not ctx.buffs_enabled,
             custom_id=make_component_id(ComponentIds.titan_button, ctx),
         ))  # fmt: skip
 
@@ -477,19 +480,24 @@ def format_stats(
             )
         )
     if item_stats.push:
-        stats_lines.append(fmt(emojis.push, item_stats.push, ItemStat.push))
+        count = 1 if item_stats.push > MAX_EMOJIS else item_stats.push
+        stats_lines.append(fmt(emojis.push * count, item_stats.push, ItemStat.push))
     if item_stats.pull:
-        stats_lines.append(fmt(emojis.pull, item_stats.pull, ItemStat.pull))
+        count = 1 if item_stats.pull > MAX_EMOJIS else item_stats.pull
+        stats_lines.append(fmt(emojis.pull * count, item_stats.pull, ItemStat.pull))
     if item_stats.recoil:
         stats_lines.append(fmt(emojis.recoil, item_stats.recoil, ItemStat.recoil))
     if item_stats.advance:
-        stats_lines.append(fmt(emojis.advance, item_stats.advance, ItemStat.advance))
+        count = 1 if item_stats.advance > MAX_EMOJIS else item_stats.advance
+        stats_lines.append(fmt(emojis.advance * count, item_stats.advance, ItemStat.advance))
     if item_stats.retreat:
-        stats_lines.append(fmt(emojis.retreat, item_stats.retreat, ItemStat.retreat))
+        count = 1 if item_stats.retreat > MAX_EMOJIS else item_stats.retreat
+        stats_lines.append(fmt(emojis.retreat * count, item_stats.retreat, ItemStat.retreat))
     if item_stats.repair:
         stats_lines.append(fmt(emojis.repair, item_stats.repair, ItemStat.repair))
+
     if item_stats.uses:
-        count = 1 if item_stats.uses > USES_EMOJI_THRESHOLD else item_stats.uses
+        count = 1 if item_stats.uses > MAX_EMOJIS else item_stats.uses
         costs_lines.append(fmt(emojis.uses * count, item_stats.uses, ItemStat.uses))
     if item_stats.backfire:
         costs_lines.append(fmt(emojis.backfire, item_stats.backfire, ItemStat.backfire))
@@ -504,9 +512,11 @@ def format_stats(
     if item_stats.rockets_cost:
         costs_lines.append(fmt(emojis.rockets_cost, item_stats.rockets_cost, ItemStat.rockets_cost))
     if item_stats.advance or item_stats.retreat:
-        costs_lines.append(
+        # if item has no costs, don't put jump-required separately
+        (costs_lines or stats_lines).append(
             f"{emojis.jump} **{i18n.get_message(locale, 'item-lookup-jump-required')}**"
         )
+    # TODO: shield stats
     return stats_lines, costs_lines
 
 
@@ -593,13 +603,13 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
                 ctx = ctx.__replace__(level_index=int(option_value))
 
         case ComponentIds.buffs_button:
-            ctx = ctx.__replace__(buffs_enabled=ctx.buffs_enabled ^ True)
+            ctx = ctx.__replace__(buffs_enabled=not ctx.buffs_enabled)
 
         case ComponentIds.avg_button:
-            ctx = ctx.__replace__(damage_average=ctx.damage_average ^ True)
+            ctx = ctx.__replace__(damage_average=not ctx.damage_average)
 
         case ComponentIds.titan_button:
-            ctx = ctx.__replace__(damage_vs_titan=ctx.damage_vs_titan ^ True)
+            ctx = ctx.__replace__(damage_vs_titan=not ctx.damage_vs_titan)
 
         case unknown_id:
             plugin.logger.warning("item-lookup - unknown component: %r", unknown_id)
@@ -646,9 +656,11 @@ async def legacy_item_lookup(
         levels_page=0,
         legacy=True,
     )
+    container = get_item_summary(i18n.get_locale(inter), item, ctx)
+    if __debug__:
+        debug_components(container)
     await inter.response.send_message(
-        components=get_item_summary(i18n.get_locale(inter), item, ctx),
-        flags=MessageFlags(is_components_v2=True),
+        components=container, flags=MessageFlags(is_components_v2=True)
     )
 
 
