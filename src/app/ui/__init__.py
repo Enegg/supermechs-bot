@@ -31,7 +31,7 @@ from ui_store import CallbackStore as _CallbackStore
 
 from app import i18n
 
-from .buttons import ActionButton, ToggleButton, UrlButton
+from .buttons import ActionButton, UrlButton
 from .selects import option_to_page_count
 
 if TYPE_CHECKING:
@@ -60,7 +60,6 @@ __all__ = (
     "TextInput",
     "TextInputStyle",
     "Thumbnail",
-    "ToggleButton",
     "UrlButton",
     "callback_store",
     "media_gallery_item",

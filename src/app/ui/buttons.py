@@ -1,11 +1,21 @@
-import os
-from typing import ClassVar, override
+from typing import Literal, override
 
 from discord.typeshed import EmojiType
 from disnake import ButtonStyle, ui
-from disnake.utils import MISSING
 
-__all__ = ("ActionButton", "ToggleButton", "UrlButton")
+__all__ = ("ActionButton", "UrlButton")
+
+type ActiveButtonStyle = Literal[
+    ButtonStyle.primary,
+    ButtonStyle.secondary,
+    ButtonStyle.success,
+    ButtonStyle.danger,
+    ButtonStyle.blurple,
+    ButtonStyle.grey,
+    ButtonStyle.gray,
+    ButtonStyle.green,
+    ButtonStyle.red,
+]
 
 
 class ActionButton(ui.Button[None]):
@@ -14,14 +24,12 @@ class ActionButton(ui.Button[None]):
     def __init__(
         self,
         *,
-        custom_id: str = MISSING,
-        style: ButtonStyle = ButtonStyle.secondary,
+        custom_id: str,
+        style: ActiveButtonStyle = ButtonStyle.secondary,
         label: str | None = None,
         disabled: bool = False,
         emoji: EmojiType | None = None,
     ) -> None:
-        if custom_id is MISSING:
-            custom_id = os.urandom(16).hex()
         super().__init__(
             style=style, label=label, disabled=disabled, custom_id=custom_id, emoji=emoji
         )
@@ -59,48 +67,3 @@ class UrlButton(ui.Button[None]):
     @url.setter
     def url(self, url: str) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         super().url = url
-
-
-class ToggleButton(ActionButton):
-    """A bi-state button."""
-
-    __repr_attributes__: ClassVar[tuple[str, ...]] = (
-        *ui.Button.__repr_attributes__,
-        "style_on",
-        "style_off",
-        "on",
-    )
-
-    def __init__(
-        self,
-        *,
-        custom_id: str = MISSING,
-        style_off: ButtonStyle = ButtonStyle.gray,
-        style_on: ButtonStyle = ButtonStyle.green,
-        label: str | None = None,
-        disabled: bool = False,
-        emoji: EmojiType | None = None,
-        on: bool = False,
-    ) -> None:
-        super().__init__(
-            style=(style_on if on else style_off),
-            label=label,
-            disabled=disabled,
-            custom_id=custom_id,
-            emoji=emoji,
-        )
-        self.style_off = style_off
-        self.style_on = style_on
-
-    @property
-    def on(self) -> bool:
-        """Whether the button is currently on."""
-        return self.style is self.style_on
-
-    @on.setter
-    def on(self, value: bool) -> None:
-        self.style = self.style_on if value else self.style_off
-
-    def toggle(self) -> None:
-        """Toggles the state of the button between on and off."""
-        self.on ^= True
