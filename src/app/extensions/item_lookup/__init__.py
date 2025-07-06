@@ -680,7 +680,7 @@ async def compare(
     await inter.response.send_message(embed=embed, ephemeral=True)
     return  # FIXME
 
-    from .item_lookup import item_compare_view
+    from .item_lookup import item_compare_view  # noqa: PLC0415
 
     store = ui.callback_store(inter)
     layout = item_compare_view(store, embed, item_a, item_b, locale)

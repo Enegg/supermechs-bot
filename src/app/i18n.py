@@ -203,7 +203,7 @@ def load(directory: Pathish, /) -> None:
 if __name__ == "__main__":
 
     def test_stat_locales() -> None:
-        from app import paths
+        from app import paths  # noqa: PLC0415
 
         load(paths.LOCALE_DIR)
 

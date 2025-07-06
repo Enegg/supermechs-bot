@@ -116,7 +116,7 @@ async def activity(inter: CommandInteraction) -> None:
     """Display command invocation activity."""
     api_commands = (
         inter.bot._connection._global_application_commands  # pyright: ignore[reportPrivateUsage]
-        or inter.bot._connection._guild_application_commands[CONFIG.home_guild_id]  # pyright: ignore[reportPrivateUsage]
+        or inter.bot._connection._guild_application_commands[CONFIG.dev_guild_id]  # pyright: ignore[reportPrivateUsage]
     )
 
     def _get_mention(id: int) -> str:

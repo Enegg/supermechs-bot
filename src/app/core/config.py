@@ -18,7 +18,7 @@ __all__ = ("CONFIG",)
 class Config:
     bot_token: str = attrs.field(repr=lambda _: "***")
     """Discord bot token."""
-    home_guild_id: int
+    dev_guild_id: int
     """ID of a guild dev-only commands will be registered to."""
     indev: bool = __debug__
     """Whether the bot is in development mode."""
@@ -40,7 +40,7 @@ class Config:
     @property
     def test_guild_ids(self) -> abc.Sequence[int]:
         """The IDs of only guilds the bot will register commands in while in dev mode."""
-        return (self.home_guild_id,)
+        return (self.dev_guild_id,)
 
 
 dotenv.load_dotenv(ARGV.dotenv_path)

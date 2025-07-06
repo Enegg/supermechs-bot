@@ -54,7 +54,7 @@ async def main() -> None:
         loop=asyncio.get_running_loop(),
     )
     if CONFIG.indev:
-        bot.get_global_command_named = partial(bot.get_guild_command_named, CONFIG.home_guild_id)
+        bot.get_global_command_named = partial(bot.get_guild_command_named, CONFIG.dev_guild_id)
 
     sync.prevent_delayed_sync(bot)
     i18n.load(paths.LOCALE_DIR)

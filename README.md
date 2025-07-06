@@ -16,22 +16,20 @@
 ## Installation
 1. [Install uv](https://docs.astral.sh/uv/getting-started/installation/#installing-uv)
 2. `uv sync`
-
-## Setup
-- Create a `.env` file from [template](example.env)
-- Ensure the `.venv` is active (`.venv\Scripts\activate`)
-- Run via `python src/app`, or F5
-
+3. Create a `.env` file from [template](example.env)
+4.  Run via `uv run src/app`
+    - in VSCode, F5 runs configured debugger
 
 ## `.env` variables
-| Variable            | Type  | Description                                           |
-| ------------------- | ----- | ----------------------------------------------------- |
-| `BOT_TOKEN`*        | str   | Discord bot token                                     |
-| `HOME_GUILD_ID`*    | int   | ID of a guild dev-only commands will be registered to |
-| `LOGS_CHANNEL_ID`   | int   | ID of a text channel error messages will be sent to   |
-| `DEFAULT_PACK_URI`  | str   | Path/url of the default items pack                    |
-| `MAX_IMAGE_SIZE`    | int** | Max size of an image fetched from user source         |
-| `CHUNK_SIZE`        | int** | Size of a chunk used while requesting data            |
+| Variable          | Type  | Description                                                   |
+| ----------------- | ----- | ------------------------------------------------------------- |
+| `BOT_TOKEN`*      | str   | Discord bot token                                             |
+| `DEV_GUILD_ID`*   | int   | ID of a guild dev-only commands will be registered to         |
+| `LOGS_CHANNEL_ID` | int   | ID of a text channel error messages will be sent to           |
+| `ITEM_PACK_URI`   | str   | Path/url of the items pack. *May* be omitted, but most features won't work |
+| `GFX_PACK_URI`    | str   | Path/url of a graphics pack. Used for item packs in V3 format |
+| `MAX_IMAGE_SIZE`  | int** | Max size of an image fetched from user source                 |
+| `CHUNK_SIZE`      | int** | Size of a chunk used while requesting data                    |
 
 \* required<br>
 \*\* supports binary prefixes (10MiB, 5KiB, etc)

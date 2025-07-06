@@ -40,10 +40,6 @@ build-backend = "pdm.backend"
 [tool.pdm]
 distribution = false
 
-[tool.pdm.dev-dependencies]
-dev = [ "-e app @ file:///${PROJECT_ROOT}" ]
-lint = [ "ruff >= 0.8.2" ]
-
 [tool.pdm.build]
 includes = ["src/app"]
 
@@ -54,9 +50,7 @@ line-length = 100
 target-version = "py313"
 
 [tool.ruff.lint]
-select = [
-    "ALL",
-]
+select = ["ALL"]
 ignore = [
     "FIX", "TD", # todo, fixme
     "ANN401",    # use of Any
@@ -65,7 +59,7 @@ ignore = [
     "BLE001",    # except Exception; reported in places where exceptions are gathered into a group
     "C901",      # complex functions oh no
     "COM812",    # don't require commas
-    "D1",        # don't enforce docstrings for public API
+    "D1",        # don't require docstrings for public API
     "E501",      # line too long; => formatter
     "FBT",       # positional bool params; using inlayHints
     "F821",      # undefined variables; => pyright
@@ -74,12 +68,12 @@ ignore = [
     "N818",      # naming exceptions as *Error
     "PD",        # not using pandas
     "PLR091",    # too many ...
-    "PLW0603",   # lifetime globals are ok
-    "PIE796",    # non-unique enums (that's a job for @unique)
+    "PLW0603",   # use of global; lifetime globals are ok
+    "PIE796",    # non-unique enum members; => @enum.unique
     "PYI041",    # int | float isn't redundant
     "PLC0105",   # T_co / T_contra; don't care
     "PLC0414",   # import foo as foo
-    "RET503",    # "return xyz(...)" where "xyz(...) -> None" is ok
+    "RET503",    # "return xyz(...)" where both return None is ok
     "S101",      # asserts are very useful
     "S311",      # we don't do cryptography
     "SLF001",    # _member access; => pyright
@@ -89,9 +83,6 @@ ignore = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
-
-[tool.ruff.lint.pycodestyle]
-max-line-length = 105
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F403"]  # import *
@@ -136,6 +127,9 @@ allow-dunder-method-names = [
     "__attrs_post_init__",
     "__attrs_init__",
 ]
+
+[tool.ruff.lint.flake8-tidy-imports]
+banned-module-level-imports = ["app.commands.sync"]
 
 
 [tool.pyright]

@@ -8,7 +8,7 @@
             "program": "${file}",
         },
         {
-            "name": "Python: Run Bot",
+            "name": "Run bot",
             "type": "debugpy",
             "request": "launch",
             "program": "src/app",
