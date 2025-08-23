@@ -7,11 +7,14 @@ import disnake
 from app.disnake_types import Interaction, MessageInteraction
 from disnake import (
     ButtonStyle,
+    File as _FileObject,
     MediaGalleryItem,
     SelectOption,
-    SeparatorSpacingSize as SeparatorSpacing,
+    SeparatorSpacing,
     TextInputStyle,
+    UnfurledMediaItem,
 )
+from disnake.components import handle_media_item_input as _handle_media_item_input
 from disnake.ui import (
     ActionRow,
     Components,
@@ -35,7 +38,7 @@ from .buttons import ActionButton, UrlButton
 from .selects import option_to_page_count
 
 if TYPE_CHECKING:
-    from disnake.types.components import MediaGalleryItem as _MediaGalleryItemPayload
+    from disnake.components import MediaItemInput
     from disnake.ui.container import ContainerChildUIComponent as _ContainerChildUIComponent
 
 
@@ -62,6 +65,7 @@ __all__ = (
     "Thumbnail",
     "UrlButton",
     "callback_store",
+    "file",
     "media_gallery_item",
     "option_to_page_count",
     "thumbnail",
@@ -70,7 +74,8 @@ __all__ = (
 type CallbackStore = _CallbackStore[MessageInteraction]
 type MessageComponents = Components[MessageUIComponent]
 type ContainerChildUIComponent = _ContainerChildUIComponent
-type MediaGalleryItemPayload = _MediaGalleryItemPayload
+type MediaConvertible = MediaItemInput | _FileObject
+
 
 def callback_store(base_inter: Interaction, /) -> CallbackStore:
     async def interaction_check(inter: MessageInteraction, /) -> bool:
@@ -86,16 +91,25 @@ def callback_store(base_inter: Interaction, /) -> CallbackStore:
     )
 
 
+def _media(media: MediaConvertible, /) -> UnfurledMediaItem:
+    if isinstance(media, _FileObject):
+        assert media.filename is not None
+        media = f"attachment://{media.filename}"
+
+    return _handle_media_item_input(media)
+
+
 def media_gallery_item(
-    url: str, *, description: str | None = None, spoiler: bool = False
+    media: MediaConvertible, description: str | None = None, *, spoiler: bool = False
 ) -> MediaGalleryItem:
-    payload: MediaGalleryItemPayload = {"media": {"url": url}}
-    if description is not None:
-        payload["description"] = description
-    if spoiler:
-        payload["spoiler"] = True
-    return MediaGalleryItem(payload)
+    return MediaGalleryItem(media=_media(media), description=description, spoiler=spoiler)
 
 
-def thumbnail(url: str, *, description: str | None = None, spoiler: bool = False) -> Thumbnail:
-    return Thumbnail(media={"url": url}, description=description, spoiler=spoiler)
+def thumbnail(
+    media: MediaConvertible, description: str | None = None, *, spoiler: bool = False, id: int = 0
+) -> Thumbnail:
+    return Thumbnail(media=_media(media), description=description, spoiler=spoiler, id=id)
+
+
+def file(media: MediaConvertible, *, spoiler: bool = False, id: int = 0) -> File:
+    return File(file=_media(media), spoiler=spoiler, id=id)

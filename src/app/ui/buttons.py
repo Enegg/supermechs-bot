@@ -29,9 +29,10 @@ class ActionButton(ui.Button[None]):
         label: str | None = None,
         disabled: bool = False,
         emoji: EmojiType | None = None,
+        id: int = 0,
     ) -> None:
         super().__init__(
-            style=style, label=label, disabled=disabled, custom_id=custom_id, emoji=emoji
+            style=style, label=label, disabled=disabled, custom_id=custom_id, emoji=emoji, id=id
         )
 
     @property
@@ -53,8 +54,9 @@ class UrlButton(ui.Button[None]):
         label: str | None = None,
         disabled: bool = False,
         emoji: EmojiType | None = None,
+        id: int = 0,
     ) -> None:
-        super().__init__(label=label, disabled=disabled, url=url, emoji=emoji)
+        super().__init__(label=label, disabled=disabled, url=url, emoji=emoji, id=id)
 
     @property
     @override
