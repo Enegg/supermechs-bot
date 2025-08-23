@@ -3,7 +3,7 @@ from typing import Any, Protocol
 import rich
 
 import disnake
-from disnake.ui.action_row import components_to_dict
+from disnake.ui.action_row import normalize_components_to_dict
 
 from app import ui
 
@@ -27,7 +27,8 @@ def debug_message(
         parts.append(embed.to_dict())
 
     if components:
-        parts.append(components_to_dict(components))
+        component_payload, _ = normalize_components_to_dict(components)
+        parts.append(component_payload)
 
     rich.print(*parts)
 
