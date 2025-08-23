@@ -39,6 +39,8 @@ from dupermechs.enums import ItemStat
 plugin = create_plugin(__name__)
 MAX_EMOJIS = 4
 """Threshold for multiple emojis shown inline in the stats field."""
+COMMON_PK_POWER = 10_000
+RARE_PK_POWER = 50_000
 
 
 class ItemLookupUIContext(NamedTuple):
@@ -175,33 +177,74 @@ def make_option_down(locale: Locale, /) -> ui.SelectOption:
     )
 
 
+def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
+    rare_pks, power = divmod(power, RARE_PK_POWER)
+
+    if power >= RARE_PK_POWER * 0.9:
+        rare_pks += 1
+        common_pks = 0
+
+    else:
+        common_pks, power = divmod(power, COMMON_PK_POWER)
+
+        if power >= COMMON_PK_POWER * 0.8:
+            common_pks += 1
+
+    return common_pks, rare_pks
+
+
 def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -> ui.Container:
     gettext = i18n.get_gettext(locale)
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
-    name_parts: list[str] = []
+    subtitle_parts: list[str] = []
 
     if ctx.legacy:
-        name_parts.append("legacy")
+        subtitle_parts.append("legacy")
 
     if item.element is not sm.Item.Element.other:
-        name_parts.append(item.element.name)
+        subtitle_parts.append(item.element.name)
 
-    name_parts.append(item.type.name.replace("_", " "))
-    name_parts[0] = name_parts[0].capitalize()
+    subtitle_parts.append(item.type.name.replace("_", " "))
+    subtitle_parts[0] = subtitle_parts[0].capitalize()
 
     power_level = (
         "max"
         if ctx.stage_index == len(item.stages) - 1 and ctx.level_index == len(levels) - 1
         else str(levels[ctx.level_index].level)
     )
-    title = ui.TextDisplay(
-        f"### {item.name}\n"
-        f"{' '.join(name_parts)}\n"
-        f"{item_transform_range(item, ctx.stage_index)}\n"
-        f"{gettext('item-lookup-power-level')}: **{power_level}**"
-    )
+    title_lines = [
+        f"### {item.name}",
+        f"*{' '.join(subtitle_parts)}*",
+        item_transform_range(item, ctx.stage_index),
+        f"{gettext('item-lookup-power-level')}: **{power_level}**",
+    ]
+
+    if power_required := levels[ctx.level_index].power_required:
+        # energizing
+        power_line = [
+            f"{gettext('item-lookup-power-required')}: **{power_required:,}**{EMOJIS.stats.energy_capacity}"
+        ]
+
+        if not ctx.legacy:
+            # TODO: Common/Rare power kit emoji
+            common_pks, rare_pks = power_required_as_power_kits(power_required)
+
+            power_kits: list[str] = []
+
+            if rare_pks:
+                power_kits.append(f"**{rare_pks}**×🟦")  # noqa: RUF001
+
+            if common_pks:
+                power_kits.append(f"**{common_pks}**×⬜")  # noqa: RUF001
+
+            if power_kits:
+                power_line.append(f"({' '.join(power_kits)})")
+
+        title_lines.append("".join(power_line))
+
+    title = ui.TextDisplay("\n".join(title_lines))
     components: list[ui.ContainerChildUIComponent] = []
 
     match get_slot_icon(item.type):
@@ -223,6 +266,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
             accessory=ui.ActionButton(
                 label=gettext("item-lookup-ui-buffs"),
                 style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
+                emoji="⚔️",
                 custom_id=make_component_id(ComponentIds.buffs_button, ctx),
             ),
         ))  # fmt: skip
@@ -297,6 +341,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
             label=gettext("item-lookup-ui-damage-vs-titans"),
             style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
             disabled=not ctx.buffs_enabled,
+            emoji=EMOJIS.elements[item.element],
             custom_id=make_component_id(ComponentIds.titan_button, ctx),
         ))  # fmt: skip
 

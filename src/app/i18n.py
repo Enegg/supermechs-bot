@@ -35,6 +35,7 @@ type LiteralKey = Literal[
     "item-lookup-ui-damage-avg",
     "item-lookup-ui-damage-vs-titans",
     "item-lookup-power-level",
+    "item-lookup-power-required",
     "item-lookup-ui-level-select-label",
     "item-lookup-ui-select-placeholder",
     "item-lookup-ui-select-up-label",
