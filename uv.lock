@@ -125,10 +125,15 @@ dependencies = [
 
 [[package]]
 name = "disnake"
-version = "2.11.0a4849+g538fefb4"
-source = { git = "https://github.com/DisnakeDev/disnake?rev=feature%2Fcomponents-v2#538fefb42f915ee0249862aadd1b1d8f9d892cfe" }
+version = "2.11.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/7f/c3d6f636ee1c2926f4ad15e819b9c3f9cb4b476c7c963910ab42cc56c5a0/disnake-2.11.0.tar.gz", hash = "sha256:e5e32556a38842e51f28040d71f0649902e42160e99c44e9a2c0d171244b8674", size = 1099438, upload-time = "2025-09-11T17:39:09.853Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/2b/8a7e60c0772e0eae260256a090b919de1a7f4c0b897e33c34667660efb1e/disnake-2.11.0-py3-none-any.whl", hash = "sha256:50fe5f8bb5c5b568655a9ec48f647645ced9086863e285c2dc7b17424092970b", size = 1162693, upload-time = "2025-09-11T17:39:08.165Z" },
 ]
 
 [[package]]
@@ -476,7 +481,7 @@ requires-dist = [
     { name = "cattrs", specifier = ">=24.1.2" },
     { name = "datargs", specifier = ">=1.1.0" },
     { name = "discord-ui-store", git = "https://github.com/Enegg/discord-ui-store?rev=v0.1.5" },
-    { name = "disnake", git = "https://github.com/DisnakeDev/disnake?rev=feature%2Fcomponents-v2" },
+    { name = "disnake", specifier = ">=2.11.0" },
     { name = "disnake-ext-plugins", specifier = "==0.3.*" },
     { name = "monads", git = "https://github.com/Enegg/py-monads?rev=v0.1.3" },
     { name = "msgspec", specifier = ">=0.19.0" },
