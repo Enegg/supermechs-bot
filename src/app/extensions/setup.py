@@ -3,7 +3,7 @@ from typing import Final, Literal, NamedTuple
 
 import disnake
 from app.disnake_types import CommandInteraction
-from discord import ComponentLimits, text_to_file
+from discord import ComponentLimits, markdown as md, text_to_file
 from discord.extensions import walk_extensions
 from disnake.ext import commands
 
@@ -193,20 +193,16 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
                     plugin.bot.reload_extension(ctx.last_reload_plugin_name)
 
                 except commands.ExtensionFailed as exc:
-                    header = "## ⚠️ An exception occured during reloading:\n```py\n{}```"
+                    error_message.append(
+                        ui.TextDisplay("## ⚠️ An exception occured during reloading:")
+                    )
                     traceback_text = format_exception(exc)
 
-                    if (
-                        len(header) - len("{}") + len(traceback_text)
-                        <= ComponentLimits.text_display_content
-                    ):
-                        error_message.append(ui.TextDisplay(header.format(traceback_text)))
+                    if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
+                        error_message.append(ui.TextDisplay(md.codeblock(traceback_text)))
 
                     else:
                         traceback_file = text_to_file(traceback_text, "traceback.py")
-                        error_message.append(
-                            ui.TextDisplay("## ⚠️ An exception occured during reloading:")
-                        )
                         error_message.append(ui.file(traceback_file))
 
         case _:

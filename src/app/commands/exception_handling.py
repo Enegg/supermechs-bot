@@ -54,7 +54,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     traceback_text = format_exception(exc)
     builder = MessageBuilder()
 
-    if len(traceback_text) + len("```\n```") <= ComponentLimits.text_display_content:
+    if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
         components.append(ui.TextDisplay("\n".join(title_lines)))
         components.append(ui.TextDisplay(md.codeblock(traceback_text)))
 

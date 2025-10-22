@@ -14,9 +14,14 @@ def hyperlink(text: str, url: str) -> str:
     return f"[{text}]({url})"
 
 
-def codeblock(text: str, lang: str = "") -> str:
+def codeblock(text: str, lang: str = "py") -> str:
     """Return text formatted with a codeblock."""
     return f"```{lang}\n{text}```"
+
+
+def codeblock_size(text: str, lang: str = "py") -> int:
+    """Return the total length of a codeblock."""
+    return len(text) + len(lang) + len("```\n```")
 
 
 class Commandish(Protocol):
