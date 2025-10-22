@@ -1,15 +1,17 @@
 from collections import abc
 from enum import Enum, auto
-from typing import Literal, Self, TypedDict
+from typing import TYPE_CHECKING, Literal, Self, TypedDict
 
 import attrs
 
 import disnake
-from disnake import ui
+
+if TYPE_CHECKING:
+    from disnake.ui._types import MessageComponents as _MessageComponents
 
 __all__ = ("EditMode", "MessageBuilder")
 
-type Components = ui.Components[ui.MessageUIComponent]
+type ComponentsV2 = _MessageComponents
 
 
 class EditMode(Enum):
@@ -18,62 +20,29 @@ class EditMode(Enum):
 
 
 class SendParams(TypedDict, total=False):
-    content: str | None
-    embeds: list[disnake.Embed]
     files: list[disnake.File]
-    components: Components
+    allowed_mentions: disnake.AllowedMentions
+    components: ComponentsV2
     flags: disnake.MessageFlags
 
 
 class EditParams(TypedDict, total=False):
-    content: str | None
-    embeds: list[disnake.Embed]
     files: list[disnake.File]
+    allowed_mentions: disnake.AllowedMentions
     attachments: list[disnake.Attachment] | None
-    components: Components
+    components: ComponentsV2
 
 
 @attrs.define(kw_only=True)
 class MessageBuilder:
-    content: str | EditMode = attrs.field(default=EditMode.KEEP, kw_only=False)
-    embeds: list[disnake.Embed] | Literal[EditMode.KEEP] = EditMode.KEEP
     files: list[disnake.File] | Literal[EditMode.KEEP] = EditMode.KEEP
+    allowed_mentions: disnake.AllowedMentions | Literal[EditMode.KEEP] = EditMode.KEEP
     attachments: EditMode = EditMode.KEEP
-    components: Components | Literal[EditMode.KEEP] = EditMode.KEEP
+    components: ComponentsV2 | Literal[EditMode.KEEP] = EditMode.KEEP
 
     @classmethod
     def with_purged_contents(cls) -> Self:
-        return cls(
-            content=EditMode.REMOVE,
-            embeds=[],
-            files=[],
-            attachments=EditMode.REMOVE,
-            components=(),
-        )
-
-    def with_content(self, content: str | EditMode, /) -> Self:
-        self.content = content
-        return self
-
-    def add_embeds(self, *embeds: disnake.Embed) -> Self:
-        if isinstance(self.embeds, EditMode):
-            self.embeds = list(embeds)
-
-        else:
-            self.embeds += embeds
-        return self
-
-    def with_embeds(self, embeds: abc.Iterable[disnake.Embed] | EditMode) -> Self:
-        if not isinstance(embeds, EditMode):
-            self.embeds = list(embeds)
-
-        elif embeds is EditMode.REMOVE:
-            self.embeds = []
-
-        else:
-            self.embeds = embeds
-
-        return self
+        return cls(files=[], attachments=EditMode.REMOVE, components=())
 
     def add_files(self, *files: disnake.File) -> Self:
         if isinstance(self.files, EditMode):
@@ -98,7 +67,7 @@ class MessageBuilder:
         self.attachments = attachments
         return self
 
-    def with_components(self, components: Components | EditMode) -> Self:
+    def with_components(self, components: ComponentsV2 | EditMode) -> Self:
         if components is EditMode.REMOVE:
             components = ()
 
@@ -108,31 +77,25 @@ class MessageBuilder:
     def get_send_params(self) -> SendParams:
         params: SendParams = {}
 
-        if not isinstance(self.content, EditMode):
-            params["content"] = self.content
-
-        if self.embeds is not EditMode.KEEP and self.embeds:
-            params["embeds"] = self.embeds
-
         if self.files is not EditMode.KEEP and self.files:
             params["files"] = self.files
+
+        if self.allowed_mentions is not EditMode.KEEP:
+            params["allowed_mentions"] = self.allowed_mentions
+
+        if self.components is not EditMode.KEEP:
+            params["components"] = self.components
 
         return params
 
     def get_edit_params(self) -> EditParams:
         params: EditParams = {}
 
-        if self.content is EditMode.REMOVE:
-            params["content"] = None
-
-        elif self.content is not EditMode.KEEP:
-            params["content"] = self.content
-
-        if self.embeds is not EditMode.KEEP:
-            params["embeds"] = self.embeds
-
         if self.files is not EditMode.KEEP:
             params["files"] = self.files
+
+        if self.allowed_mentions is not EditMode.KEEP:
+            params["allowed_mentions"] = self.allowed_mentions
 
         if self.attachments is not EditMode.KEEP:
             params["attachments"] = None

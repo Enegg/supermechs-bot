@@ -2,42 +2,38 @@ import logging
 from contextlib import suppress
 
 from app.disnake_types import Bot, CommandInteraction
-from discord import EmbedLimits, markdown as md, text_to_file
+from discord import ComponentLimits, markdown as md, text_to_file
 from discord.message_builder import MessageBuilder
-from disnake import Colour, Embed, Event, HTTPException, InteractionTimedOut
+from disnake import Colour, Event, HTTPException, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
 
-from app import i18n
+from app import i18n, ui
 from app.core import CONFIG
-from app.text_utils import Char
 from app.utils import format_exception
 
 _channel: Messageable | None = None
 _LOG = logging.getLogger("event.command_error")
 
 
-def get_user_error_message(
-    inter: CommandInteraction, exc: commands.CommandError
-) -> MessageBuilder | None:
+def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError) -> str | None:
     gettext = i18n.get_gettext(inter.locale)
-    info = MessageBuilder()
 
     match exc:
         case commands.NotOwner():
-            info.with_content(gettext("command-dev"))
+            info = gettext("command-dev")
 
         case commands.UserInputError() | commands.CheckFailure():
             # TODO: localize (some UserInputErrors are localized)
-            info.with_content(str(exc))
+            info = str(exc)
 
-        case commands.MaxConcurrencyReached() as exc:
+        case commands.MaxConcurrencyReached():
             # TODO: localize
-            info.with_content(str(exc))
+            info = str(exc)
 
         case commands.CommandInvokeError(original=TimeoutError()):
             _LOG.warning("Command %s timed out", inter.application_command.qualified_name)
-            info.with_content(gettext("command-timeout"))
+            info = gettext("command-timeout")
 
         case _:
             info = None
@@ -47,30 +43,36 @@ def get_user_error_message(
 
 def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
     arguments = ", ".join(f"`{option}: {value}`" for option, value in inter.filled_options.items())
-    header = (
-        f"Place: <#{inter.channel_id}>\n"
-        f"User: {inter.author.mention} (`{inter.author.display_name}`)\n"
-        f"Command: {md.command_mention(inter)} {arguments}"
-    )
-    embed = Embed(title="⚠️ Uncaught exception", color=Colour(0xFF0000))
-    builder = MessageBuilder(embeds=[embed])
-    traceback_text = format_exception(exc)
+    components: list[ui.ContainerChildUIComponent] = []
+    title_lines = [
+        "## ⚠️ Uncaught exception",
+        f"Place: <#{inter.channel_id}>",
+        f"User: {inter.author.mention} (`{inter.author.display_name}`)",
+        f"Command: {md.command_mention(inter)} {arguments}",
+    ]
 
-    if len(traceback_text) + 10 > EmbedLimits.description:
-        builder.add_files(text_to_file(traceback_text, "traceback.py"))
-        embed.description = f"{header}\nException: `{type(exc).__name__}: {exc}`"
+    traceback_text = format_exception(exc)
+    builder = MessageBuilder()
+
+    if len(traceback_text) + len("```\n```") <= ComponentLimits.text_display_content:
+        components.append(ui.TextDisplay("\n".join(title_lines)))
+        components.append(ui.TextDisplay(md.codeblock(traceback_text)))
 
     else:
-        embed.description = md.codeblock(traceback_text, "py")
-        embed.add_field(Char.BLANK, header, inline=False)
+        title_lines.append(f"Exception: `{type(exc).__name__}: {exc}`")
+        components.append(ui.TextDisplay("\n".join(title_lines)))
+        file = text_to_file(traceback_text, "traceback.py")
+        builder.add_files(file)
+        components.append(ui.file(file))
 
-    return builder
+    container = ui.Container(*components, accent_colour=Colour(0xFF0000))
+    return builder.with_components(container)
 
 
 async def on_slash_command_error(inter: CommandInteraction, exc: commands.CommandError) -> None:
-    if (builder := get_user_error_message(inter, exc)) is not None:
+    if (msg := get_user_error_message(inter, exc)) is not None:
         with suppress(InteractionTimedOut):
-            await inter.send(**builder.get_send_params(), ephemeral=True)
+            await inter.send(msg, ephemeral=True)
         return
 
     error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
