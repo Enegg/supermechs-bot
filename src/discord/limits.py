@@ -40,10 +40,10 @@ class MessageLimits(enum.IntEnum):
 class ComponentLimits(enum.IntEnum):
     """Limits imposed on UI components."""
 
-    row_width = 5
-    """Maximum total width of components within an action row."""
     custom_id = 100
     """Maximum length of a component's custom id."""
+    buttons_in_row = 5
+    """Maximum number of buttons within an action row."""
     button_label = 80
     """Maximum length of a button's label."""
     select_options = 25
@@ -56,12 +56,18 @@ class ComponentLimits(enum.IntEnum):
     """Maximum length of a select's option's value."""
     select_option_description = 100
     """Maximum length of a select's option's description."""
-    text_input_label = 45
-    """Maximum length of a modal's text input's label."""
+    text_display_content = 4000
+    """Maximum length of a text display's content."""
     text_input_value = 4000
     """Maximum length of a modal's text input's value."""
     text_input_placeholder = 100
     """Maximum length of a modal's text input's placeholder."""
+    media_description = 1024
+    """Maximum length of a media component's description."""
+    gallery_items = 10
+    """Maximum range of items a MediaGallery can have."""
+    label_label = 45
+    """Maximum length of a Label's label."""
 
 
 class InteractionLimits(enum.IntEnum):

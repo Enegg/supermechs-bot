@@ -4,7 +4,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import disnake
-from app.disnake_types import Interaction, MessageInteraction
+from app.disnake_types import Interaction, MessageInteraction, ModalInteraction
 from disnake import (
     ButtonStyle,
     File as _FileObject,
@@ -17,11 +17,10 @@ from disnake import (
 from disnake.components import handle_media_item_input as _handle_media_item_input
 from disnake.ui import (
     ActionRow,
-    Components,
     Container,
     File,
+    Label,
     MediaGallery,
-    MessageUIComponent,
     Modal,
     Section,
     Separator,
@@ -39,6 +38,7 @@ from .selects import option_to_page_count
 
 if TYPE_CHECKING:
     from disnake.components import MediaItemInput
+    from disnake.ui._types import MessageComponents as _MessageComponents
     from disnake.ui.container import ContainerChildUIComponent as _ContainerChildUIComponent
 
 
@@ -49,11 +49,13 @@ __all__ = (
     "CallbackStore",
     "Container",
     "File",
+    "Label",
     "MediaGallery",
     "MediaGalleryItem",
     "MessageComponents",
     "MessageInteraction",
     "Modal",
+    "ModalInteraction",
     "Section",
     "SelectOption",
     "Separator",
@@ -72,7 +74,7 @@ __all__ = (
 )
 
 type CallbackStore = _CallbackStore[MessageInteraction]
-type MessageComponents = Components[MessageUIComponent]
+type MessageComponents = _MessageComponents
 type ContainerChildUIComponent = _ContainerChildUIComponent
 type MediaConvertible = MediaItemInput | _FileObject
 
