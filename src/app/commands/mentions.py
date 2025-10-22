@@ -19,7 +19,7 @@ def get_mention(name: CommandName, /) -> str:
 
 
 async def populate(bot: commands.InteractionBot, /) -> None:
-    from . import sync
+    from . import sync  # noqa: PLC0415
 
     await sync.SYNC_FINISHED.wait()
 

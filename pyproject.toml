@@ -105,7 +105,7 @@ section-order = [
 discord = ["disnake", "discord", "ui_store", "disnake_plugins", "app.disnake_types"]
 
 [tool.ruff.lint.flake8-type-checking]
-exempt-modules = ["typing", "typing_extensions"]
+exempt-modules = ["typing", "typing_extensions", "collections.abc"]
 
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["id", "format", "input", "type"]
