@@ -24,13 +24,20 @@ right_side_weapon =  "<:sider:730115747799629940>"
             #  perk =
 
 [emojis.tiers]
-   common = "⚪"
-     rare = "🔵"
-     epic = "🟣"
-legendary = "🟠"
- mythical = "🟤"
-   divine = "⚪"
-     perk = "🟡"
+          common =           "<:circle_common:1430252827170705449>"
+            rare =             "<:circle_rare:1430252834338766999>"
+            epic =             "<:circle_epic:1430252829376774155>"
+       legendary =        "<:circle_legendary:1430253303584784426>"
+        mythical =         "<:circle_mythical:1430252831356489898>"
+          divine =           "<:circle_divine:1430252828152299702>"
+            perk =             "<:circle_perk:1430252832665112596>"
+   common_hollow =    "<:hollow_circle_common:1430252835559182366>"
+     rare_hollow =      "<:hollow_circle_rare:1430252844640108554>"
+     epic_hollow =      "<:hollow_circle_epic:1430252838474481859>"
+legendary_hollow = "<:hollow_circle_legendary:1430252840005402645>"
+ mythical_hollow =  "<:hollow_circle_mythical:1430252841569882192>"
+   divine_hollow =    "<:hollow_circle_divine:1430252836976853052>"
+     perk_hollow =      "<:hollow_circle_perk:1430252843624956025>"
 
 [emojis.elements]
     # other =
@@ -39,6 +46,17 @@ explosive = "<:expdmg:725871223338172448>"
  electric = "<:eledmg:725871233614479443>"
  combined = "<:combined:1026853188940349490>"
 
+[emojis.cards]
+   common =    "<:card_common:1430257776851943514>"
+     rare =      "<:card_rare:1430257785555386530>"
+     epic =      "<:card_epic:1430257779192627358>"
+legendary = "<:card_legendary:1430257780379484260>"
+ mythical =  "<:card_mythical:1430257781927317604>"
+
+[emojis.power_kits]
+common = "<:power_kit_10k:1430355888647966820>"
+  rare = "<:power_kit_50k:1430355890472615976>"
+
 [emojis.stats]
                      weight =     "<:weight:725870760484143174>"
                  hit_points =     "<:health:725870887588462652>"
@@ -46,8 +64,8 @@ explosive = "<:expdmg:725871223338172448>"
         energy_regeneration =      "<:regen:725871003665825822>"
               heat_capacity =       "<:heat:725871043767435336>"
                heat_cooling =    "<:cooling:725871075778363422>"
-           bullets_capacity = "🧰"
-           rockets_capacity = "🧰"
+           bullets_capacity =    "<:bullets:1430271130597462257>"
+           rockets_capacity =    "<:rockets:1430271133218902268>"
         physical_resistance =     "<:phyres:725871121051811931>"
        explosive_resistance =     "<:expres:725871136935772294>"
         electric_resistance =     "<:eleres:725871146716758077>"
@@ -73,10 +91,11 @@ explosive_resistance_damage =  "<:expresdmg:725871281311842314>"
                     retreat =    "<:retreat:725871804236955668>"
                        uses =       "<:uses:725871917923303688>"
                    backfire =   "<:backfire:725871901062201404>"
+                     repair =     "<:repair:1430271131922726954>"
             heat_generation =     "<:heagen:725871674007879740>"
                 energy_cost =    "<:enecost:725871660237979759>"
-              #  bullets_cost =
-              #  rockets_cost =
+               bullets_cost =    "<:bullets:1430271130597462257>"
+               rockets_cost =    "<:rockets:1430271133218902268>"
 
 [emojis.categories]
      energy_capacity =   "<:energy:725870941883859054>"
@@ -97,19 +116,19 @@ explosive_resistance =   "<:expres:725871136935772294>"
 
 [icons]
 [icons.types]
-            torso = "https://cdn.discordapp.com/emojis/730115680363347968.png"
-             legs = "https://cdn.discordapp.com/emojis/730115699397361827.png"
-            drone = "https://cdn.discordapp.com/emojis/730115574763618394.png"
-      side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.png"
-right_side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.png"
- left_side_weapon = "https://cdn.discordapp.com/emojis/730115729365663884.png"
-       top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.png"
- right_top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.png"
-  left_top_weapon = "https://cdn.discordapp.com/emojis/730115768431280238.png"
-           charge = "https://cdn.discordapp.com/emojis/730115557239685281.png"
-         teleport = "https://cdn.discordapp.com/emojis/730115603683213423.png"
-             hook = "https://cdn.discordapp.com/emojis/730115622347735071.png"
-           module = "https://cdn.discordapp.com/emojis/730115649866694686.png"
+            torso = "https://cdn.discordapp.com/emojis/730115680363347968.webp"
+             legs = "https://cdn.discordapp.com/emojis/730115699397361827.webp"
+            drone = "https://cdn.discordapp.com/emojis/730115574763618394.webp"
+      side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
+right_side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
+ left_side_weapon = "https://cdn.discordapp.com/emojis/730115729365663884.webp"
+       top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
+ right_top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
+  left_top_weapon = "https://cdn.discordapp.com/emojis/730115768431280238.webp"
+           charge = "https://cdn.discordapp.com/emojis/730115557239685281.webp"
+         teleport = "https://cdn.discordapp.com/emojis/730115603683213423.webp"
+             hook = "https://cdn.discordapp.com/emojis/730115622347735071.webp"
+           module = "https://cdn.discordapp.com/emojis/730115649866694686.webp"
 
 
 [colors]

@@ -57,8 +57,8 @@ def format_range(lo: int, hi: int, /) -> str:
 
 
 def item_transform_range(item: sm.IItem, /, stage_index: int = -1) -> str:
-    str_range = [EMOJIS.tiers[stage.tier] for stage in item.stages]
-    str_range[stage_index] = f"({str_range[stage_index]})"
+    str_range: list[str] = [EMOJIS.tiers.get_hollow(stage.tier) for stage in item.stages]
+    str_range[stage_index] = EMOJIS.tiers[item.stages[stage_index].tier]
     return "".join(str_range)
 
 

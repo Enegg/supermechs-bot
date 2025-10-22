@@ -1,5 +1,5 @@
 from collections import abc
-from typing import NamedTuple
+from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits
@@ -41,6 +41,7 @@ MAX_EMOJIS = 4
 """Threshold for multiple emojis shown inline in the stats field."""
 COMMON_PK_POWER = 10_000
 RARE_PK_POWER = 50_000
+LEGACY_PK_POWER = 76_800
 
 
 class ItemLookupUIContext(NamedTuple):
@@ -57,11 +58,15 @@ class ItemLookupUIContext(NamedTuple):
 class ComponentIds:
     __slots__ = ()
 
-    stage_select = "stages"
-    level_select = "levels"
-    buffs_button = "buffs"
-    avg_button = "avg"
-    titan_button = "dvt"
+    prefix: Final = "item-lookup"
+
+    stage_select: Final = "stages"
+    level_select: Final = "levels"
+    buffs_button: Final = "buffs"
+    avg_button: Final = "avg"
+    titan_button: Final = "dvt"
+
+    type AnyId = Literal["stages", "levels", "buffs", "avg", "dvt"]
 
 
 @plugin.slash_command(name="item")
@@ -123,15 +128,12 @@ def get_item_stats(item: sm.IItem, ctx: ItemLookupUIContext, /) -> sm.IItemStats
     return stats.combine(total)
 
 
-def make_component_id(
-    component: str,
-    ctx: ItemLookupUIContext,
-) -> str:
+def make_component_id(component: str, ctx: ItemLookupUIContext) -> str:
     flags = ctx.damage_average | ctx.buffs_enabled << 1 | ctx.damage_vs_titan << 2 | ctx.legacy << 3
-    return f"item-lookup:{component}:{ctx.item_id:x}:{ctx.stage_index}:{ctx.level_index}:{ctx.levels_page}:{flags:x}"
+    return f"{ComponentIds.prefix}:{component}:{ctx.item_id:x}:{ctx.stage_index}:{ctx.level_index}:{ctx.levels_page}:{flags:x}"
 
 
-def parse_component_id(id: str, /) -> tuple[str, ItemLookupUIContext]:
+def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, ItemLookupUIContext]:
     _, component, item_id, stage_index, level_index, levels_page, flags = id.split(":", 6)
     flags = int(flags, 16)
     return (
@@ -193,6 +195,15 @@ def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
     return common_pks, rare_pks
 
 
+def power_required_as_legacy_power_kits(power: int, /) -> int:
+    legacy_pks, power = divmod(power, LEGACY_PK_POWER)
+
+    if power >= LEGACY_PK_POWER * 0.9:
+        legacy_pks += 1
+
+    return legacy_pks
+
+
 def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -> ui.Container:
     gettext = i18n.get_gettext(locale)
     stage = item.stages[ctx.stage_index]
@@ -214,10 +225,17 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         if ctx.stage_index == len(item.stages) - 1 and ctx.level_index == len(levels) - 1
         else str(levels[ctx.level_index].level)
     )
+
+    if ctx.legacy:
+        card_emoji = EMOJIS.cards[item.stages[0].tier]
+        transform_range = card_emoji if card_emoji is not None else EMOJIS.tiers[stage.tier]
+    else:
+        transform_range = f"-# {item_transform_range(item, ctx.stage_index)}"
+
     title_lines = [
-        f"### {item.name}",
+        f"## {item.name}",
         f"*{' '.join(subtitle_parts)}*",
-        item_transform_range(item, ctx.stage_index),
+        transform_range,
         f"{gettext('item-lookup-power-level')}: **{power_level}**",
     ]
 
@@ -226,18 +244,22 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         power_line = [
             f"{gettext('item-lookup-power-required')}: **{power_required:,}**{EMOJIS.stats.energy_capacity}"
         ]
+        if ctx.legacy:
+            legacy_pks = power_required_as_legacy_power_kits(power_required)
 
-        if not ctx.legacy:
-            # TODO: Common/Rare power kit emoji
+            if legacy_pks:
+                power_line.append(f"(**{legacy_pks}**×{EMOJIS.power_kits.rare})")  # noqa: RUF001
+
+        else:
             common_pks, rare_pks = power_required_as_power_kits(power_required)
 
             power_kits: list[str] = []
 
             if rare_pks:
-                power_kits.append(f"**{rare_pks}**×🟦")  # noqa: RUF001
+                power_kits.append(f"**{rare_pks}**×{EMOJIS.power_kits.rare}")  # noqa: RUF001
 
             if common_pks:
-                power_kits.append(f"**{common_pks}**×⬜")  # noqa: RUF001
+                power_kits.append(f"**{common_pks}**×{EMOJIS.power_kits.common}")  # noqa: RUF001
 
             if power_kits:
                 power_line.append(f"({' '.join(power_kits)})")
@@ -564,7 +586,7 @@ def format_stats(
 
 @plugin.listener(Event.message_interaction)
 async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
-    if not inter.data.custom_id.startswith("item-lookup"):
+    if not inter.data.custom_id.startswith(ComponentIds.prefix):
         return
 
     component, ctx = parse_component_id(inter.data.custom_id)
@@ -653,8 +675,8 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
         case ComponentIds.titan_button:
             ctx = ctx.__replace__(damage_vs_titan=not ctx.damage_vs_titan)
 
-        case unknown_id:
-            plugin.logger.warning("item-lookup - unknown component: %r", unknown_id)
+        case _:
+            plugin.logger.warning("item-lookup - unknown component: %r", component)
 
     container = get_item_summary(locale, item, ctx)
     if __debug__:

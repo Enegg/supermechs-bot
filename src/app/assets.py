@@ -14,7 +14,7 @@ from resources import AnyResource, FileResource
 
 import dupermechs.all as sm
 
-__all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS", "get_silhouette")
+__all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 
 _LOG = logging.getLogger(__name__)
 NULL_EMOJI: Final[str] = "❔"
@@ -66,9 +66,39 @@ class TierEmojis:
     mythical: str = NULL_EMOJI
     divine: str = NULL_EMOJI
     perk: str = NULL_EMOJI
+    common_hollow: str = NULL_EMOJI
+    rare_hollow: str = NULL_EMOJI
+    epic_hollow: str = NULL_EMOJI
+    legendary_hollow: str = NULL_EMOJI
+    mythical_hollow: str = NULL_EMOJI
+    divine_hollow: str = NULL_EMOJI
+    perk_hollow: str = NULL_EMOJI
 
     def __getitem__(self, field: sm.Item.Rarity, /) -> str:
         return getattr(self, field.name)
+
+    def get_hollow(self, field: sm.Item.Rarity, /) -> str:
+        return getattr(self, f"{field.name}_hollow")
+
+
+@attrs.frozen
+class CardEmojis:
+    common: str = NULL_EMOJI
+    rare: str = NULL_EMOJI
+    epic: str = NULL_EMOJI
+    legendary: str = NULL_EMOJI
+    mythical: str = NULL_EMOJI
+
+    def __getitem__(self, field: sm.Item.Rarity, /) -> str | None:
+        if field in (sm.Item.Rarity.divine, sm.Item.Rarity.perk):
+            return None
+        return getattr(self, field.name)
+
+
+@attrs.frozen
+class PowerKitEmojis:
+    common: str = NULL_EMOJI
+    rare: str = NULL_EMOJI
 
 
 @attrs.frozen
@@ -147,6 +177,8 @@ class Emojis:
     types: TypeEmojis = attrs.Factory(TypeEmojis)
     tiers: TierEmojis = attrs.Factory(TierEmojis)
     elements: ElementEmojis = attrs.Factory(ElementEmojis)
+    cards: CardEmojis = attrs.Factory(CardEmojis)
+    power_kits: PowerKitEmojis = attrs.Factory(PowerKitEmojis)
     stats: StatEmojis = attrs.Factory(StatEmojis)
     categories: CategoryEmojis = attrs.Factory(CategoryEmojis)
 
@@ -207,29 +239,6 @@ EMOJIS = _PARSER.structure(Emojis, "emojis")
 ICONS = _PARSER.structure(Icons, "icons")
 COLORS = _PARSER.structure(Colors, "colors")
 del _PARSER
-
-
-_SILHOUETTES: Final[abc.Mapping[sm.Item.Type, FileResource]] = {}
-
-
-def _populate_silhouettes() -> None:
-    for path in paths.SILHOUETTES_DIR.iterdir():
-        try:
-            type = sm.Item.Type[path.stem.lower()]
-
-        except KeyError:
-            _LOG.error("%s is not a valid silhouette", path)
-
-        else:
-            _SILHOUETTES[type] = FileResource(path)
-
-
-_populate_silhouettes()
-del _populate_silhouettes
-
-
-def get_silhouette[T](type: sm.Item.Type, /, default: T = None) -> FileResource | T:
-    return _SILHOUETTES.get(type, default)
 
 
 def get_slot_icon(type: sm.Item.Type, /) -> AnyResource | None:
