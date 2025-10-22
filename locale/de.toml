@@ -1,3 +1,8 @@
+[meta]
+flag_emoji = "🇩🇪"
+english_name = "German"
+local_name = "Deutsch"
+
 [stats]
 weight = "Gewicht"
 hit_points = "Lebenspunkte"

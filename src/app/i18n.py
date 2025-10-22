@@ -11,6 +11,7 @@ from monads.option import Null, Option, Some
 from app.disnake_types import HasLocale
 from disnake import Locale, LocalizationProtocol
 
+from app.class_utils import unset_to_option
 from app.typeshed import Pathish
 
 from dupermechs.enums import ItemStat
@@ -69,6 +70,7 @@ FILE_EXT = ".toml"
 
 stats: Final[abc.Mapping[LocalePair[str], str]] = {}
 messages: Final[abc.Mapping[LocalePair[LiteralKey | LiteralString], str]] = {}
+locale_info: Final[abc.Mapping[Locale, "LocaleInfo"]] = {}
 _command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
 localization_provider: Final = type_cast("LocalizationProtocol", _command_locale)
@@ -127,10 +129,25 @@ def get_gettext(locale: Locale, /) -> GetText:
     return partial(get_message, locale)
 
 
+class _LocaleMeta(msgspec.Struct):
+    english_name: str
+    local_name: str
+    flag_emoji: str | msgspec.UnsetType = msgspec.UNSET
+    region: str | msgspec.UnsetType = msgspec.UNSET
+
+
 class _LocaleData(msgspec.Struct):
+    meta: _LocaleMeta
     stats: abc.Mapping[str, str]
     messages: abc.Mapping[LiteralKey, str] | msgspec.UnsetType = msgspec.UNSET
     commands: dict[str, str] | msgspec.UnsetType = msgspec.UNSET
+
+
+class LocaleInfo(msgspec.Struct):
+    english_name: str
+    local_name: str
+    flag_emoji: Option[str] = Null.null
+    region: Option[str] = Null.null
 
 
 def _load_locale_file(path: Path, /) -> None:
@@ -152,6 +169,13 @@ def _load_locale_file(path: Path, /) -> None:
 
     if data.commands is not msgspec.UNSET:
         _command_locale[locale.value] = data.commands
+
+    locale_info[locale] = LocaleInfo(
+        english_name=data.meta.english_name,
+        local_name=data.meta.local_name,
+        flag_emoji=unset_to_option(data.meta.flag_emoji),
+        region=unset_to_option(data.meta.region),
+    )
 
 
 def load(directory: Pathish, /) -> None:

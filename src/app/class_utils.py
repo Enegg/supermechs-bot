@@ -5,7 +5,9 @@ from typing import Any, Self
 
 import attrs
 import cattrs
+import msgspec
 import rtoml
+from monads.option import Null, Option, Some
 
 from app.cattrs_utils import CONVERTER
 from app.typeshed import Pathish
@@ -48,3 +50,8 @@ class MappingParser:
         path = pathlib.Path(path)
         config = loader(path.read_text(encoding="utf-8"))
         return cls(config)
+
+
+def unset_to_option[T](v: T | msgspec.UnsetType, /) -> Option[T]:
+    """Return `Null.null` for `msgspec.UNSET`, `Some(T)` otherwise."""
+    return Null.null if v is msgspec.UNSET else Some(v)

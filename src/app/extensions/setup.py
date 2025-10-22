@@ -1,146 +1,230 @@
 from collections import abc
+from typing import Final, Literal, NamedTuple
 
 import disnake
 from app.disnake_types import CommandInteraction
-from discord import AutocompleteReturnType, InteractionLimits
+from discord import ComponentLimits, text_to_file
 from discord.extensions import walk_extensions
 from disnake.ext import commands
 
-from app import devtools, i18n
+from app import devtools, i18n, paths, ui
 from app.plugins_factory import create_dev_plugin
 from app.utils import format_exception
 
 plugin = create_dev_plugin(__name__)
-KNOWN_PLUGIN_PATHS = tuple(walk_extensions("extensions"))
-# TODO: CommandLimits.param_options or whatever
-assert len(KNOWN_PLUGIN_PATHS) <= InteractionLimits.autocomplete_options
+KNOWN_PLUGIN_PATHS = tuple(walk_extensions(paths.PLUGINS_PACKAGE))
+assert 1 <= len(KNOWN_PLUGIN_PATHS) <= ComponentLimits.select_options
 
 recently_loaded_plugin: str | None = None
 
 
-@plugin.slash_command(name="plugin")
-@commands.is_owner()
-async def plugin_(inter: CommandInteraction) -> None:
-    del inter
+class ComponentIds:
+    __slots__ = ()
+
+    prefix: Final = "dev-console"
+
+    locale_select: Final = "locale"
+    debug_button: Final = "debug"
+    reset_button: Final = "reset"
+    plugin_select: Final = "plugins"
+    reload_button: Final = "reload"
+    cmd_sync_button: Final = "cmdsync"
+
+    type AnyId = Literal["locale", "debug", "reset", "plugins", "reload", "cmdsync"]
 
 
-async def _plugin_helper(
-    inter: CommandInteraction, plugin: str | None, func: abc.Callable[[str], None], action: str
-) -> None:
-    global recently_loaded_plugin
-    plugin = plugin or recently_loaded_plugin
-
-    if plugin is None:
-        return await inter.response.send_message("No extension cached.", ephemeral=True)
-
-    try:
-        func(plugin)
-
-    except commands.ExtensionError as exc:
-        traceback_text = f"An exception occurred:\n```py\n{format_exception(exc)}```"
-        await inter.response.send_message(traceback_text, ephemeral=True)
-
-    else:
-        recently_loaded_plugin = plugin
-        await inter.response.send_message(f"{action.title()}ed `{plugin}`", ephemeral=True)
+class DevtoolsUIContext(NamedTuple):
+    last_reload_plugin_name: str | None = None
 
 
-@plugin_.sub_command()
-async def load(
-    inter: CommandInteraction, ext: str | None = commands.Param(None, choices=KNOWN_PLUGIN_PATHS)
-) -> None:
-    """Load a plugin.
-
-    Parameters
-    ----------
-    ext: The name of a plugin to perform action on.
-    """
-    await _plugin_helper(inter, ext, plugin.bot.load_extension, "load")
+def make_component_id(component: str, ctx: DevtoolsUIContext) -> str:
+    plugin_name = "$none" if ctx.last_reload_plugin_name is None else ctx.last_reload_plugin_name
+    return f"{ComponentIds.prefix}:{component}:{plugin_name}"
 
 
-@plugin_.sub_command()
-async def reload(
-    inter: CommandInteraction, ext: str | None = commands.Param(None, choices=KNOWN_PLUGIN_PATHS)
-) -> None:
-    """Reload a plugin.
-
-    Parameters
-    ----------
-    ext: The name of a plugin to perform action on.
-    """
-    await _plugin_helper(inter, ext, plugin.bot.reload_extension, "reload")
+def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, DevtoolsUIContext]:
+    _, component, plugin_name = id.split(":", 2)
+    ctx = DevtoolsUIContext(last_reload_plugin_name=None if plugin_name == "$none" else plugin_name)
+    return component, ctx
 
 
-@plugin_.sub_command()
-async def unload(
-    inter: CommandInteraction, ext: str | None = commands.Param(None, choices=KNOWN_PLUGIN_PATHS)
-) -> None:
-    """Unload a plugin.
+def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
+    components: list[ui.ContainerChildUIComponent] = []
+    components.append(ui.TextDisplay("# Developer Console"))
 
-    Parameters
-    ----------
-    ext: The name of a plugin to perform action on.
-    """
-    await _plugin_helper(inter, ext, plugin.bot.unload_extension, "unload")
-
-
-def get_matching_locale(_: CommandInteraction, input: str) -> AutocompleteReturnType:
-    input = input.strip()
-
-    if len(input) < 2:  # noqa: PLR2004
-        return []
-
-    matching: list[str] = []
-
-    for locale in disnake.Locale:
-        if input in locale.name:
-            matching.append(locale.name)
-
-            if len(matching) == InteractionLimits.autocomplete_options:
-                break
-
-    return matching
+    current_override = i18n.locale_override.unwrap_or(None)
+    locale_options = [
+        ui.SelectOption(
+            label="None",
+            value="$none",
+            description="Select to remove the override",
+            emoji="🏴‍☠️",
+            default=current_override is None,
+        )
+    ]
+    locale_options += [
+        ui.SelectOption(
+            label=(
+                info.region
+                .map(lambda region, info=info: f"{info.english_name} - {region}")
+                .unwrap_or(info.english_name)
+            ),
+            value=locale.name,
+            description=info.local_name,
+            emoji=info.flag_emoji.unwrap_or(None),
+            default=locale is current_override,
+        )
+        for locale, info in i18n.locale_info.items()
+    ]  # fmt: skip
+    components.append(ui.TextDisplay("## Locale override"))
+    components.append(ui.ActionRow(ui.StringSelect(
+        custom_id=make_component_id(ComponentIds.locale_select, ctx),
+        placeholder="Select locale",
+        options=locale_options,
+    )))  # fmt: skip
+    plugin_options = [
+        ui.SelectOption(label=plugin_name, default=plugin_name == ctx.last_reload_plugin_name)
+        for plugin_name in KNOWN_PLUGIN_PATHS
+    ]
+    components.append(ui.TextDisplay("## Plugins"))
+    components.append(ui.ActionRow(ui.StringSelect(
+        custom_id=make_component_id(ComponentIds.plugin_select, ctx),
+        placeholder="Select plugin to reload",
+        options=plugin_options,
+    )))  # fmt: skip
+    components.append(ui.ActionRow(
+        ui.ActionButton(
+            custom_id=make_component_id(ComponentIds.reload_button, ctx),
+            style=ui.ButtonStyle.gray,
+            label="Reload plugin",
+            disabled=ctx.last_reload_plugin_name is None,
+            emoji="🏗️",
+        ),
+        ui.ActionButton(
+            custom_id=make_component_id(ComponentIds.cmd_sync_button, ctx),
+            style=ui.ButtonStyle.gray,
+            label="Sync commands",
+            emoji="💱",
+        )
+    ))  # fmt: skip
+    components.append(ui.Separator(divider=True))
+    components.append(ui.ActionRow(
+        ui.ActionButton(
+            custom_id=make_component_id(ComponentIds.debug_button, ctx),
+            style=ui.ButtonStyle.green if devtools.debug_enabled else ui.ButtonStyle.gray,
+            label="Debug components",
+            emoji="🗒️",
+        ),
+        ui.ActionButton(
+            custom_id=make_component_id(ComponentIds.reset_button, ctx),
+            style=ui.ButtonStyle.red,
+            label="Reset",
+            emoji="🔙",
+        ),
+    ))  # fmt: skip
+    return ui.Container(*components)
 
 
 @plugin.slash_command(name="devtools")
 @commands.is_owner()
-async def dev_console(
-    inter: CommandInteraction,
-    locale_name: str | None = commands.Param(None, name="locale", autocomplete=get_matching_locale),
-    debug_enabled: bool | None = commands.Param(None, name="log-messages"),
-) -> None:
-    """Toggle various dev settings.
+async def dev_console(inter: CommandInteraction) -> None:
+    """Open developer console."""
+    ctx = DevtoolsUIContext(last_reload_plugin_name=recently_loaded_plugin)
+    components = create_console(ctx)
+    await inter.response.send_message(
+        components=components, flags=disnake.MessageFlags(is_components_v2=True)
+    )
 
-    Parameters
-    ----------
-    locale_name: Locale code to override with.
-    debug_enabled: Toggle logging embed & components structure to stdout.
-    """
-    messages: list[str] = []
 
-    if locale_name == "none":
-        i18n.remove_locale_override()
-        messages.append("Locale reset")
+@plugin.listener(disnake.Event.message_interaction)
+async def on_console_interaction(inter: ui.MessageInteraction) -> None:
+    if not inter.data.custom_id.startswith(ComponentIds.prefix):
+        return
 
-    elif locale_name is not None:
-        try:
-            locale = disnake.Locale[locale_name]
+    if not await plugin.bot.is_owner(inter.author):
+        await inter.response.send_message("You cannot use this.", ephemeral=True)
+        return
 
-        except KeyError:
-            msg = f"Unknown locale: {locale_name}"
+    component, ctx = parse_component_id(inter.data.custom_id)
+    error_message: abc.Sequence[ui.ContainerChildUIComponent] = []
+    traceback_file: disnake.File = disnake.utils.MISSING
 
-        else:
-            i18n.set_locale_override(locale)
-            msg = f"Locale set to {locale_name}"
-        messages.append(msg)
+    match component:
+        case ComponentIds.locale_select:
+            assert inter.values
+            [option_value] = inter.values
 
-    if debug_enabled is not None:
-        devtools.debug_enabled = debug_enabled
-        messages.append(f"Message logging {'enabled' if debug_enabled else 'disabled'}")
+            if option_value == "$none":
+                i18n.remove_locale_override()
 
-    msg = "\n".join(messages) or "No changes applied."
-    plugin.logger.info(msg)
-    await inter.response.send_message(msg, ephemeral=True)
+            else:
+                i18n.set_locale_override(disnake.Locale[option_value])
+
+        case ComponentIds.debug_button:
+            devtools.debug_enabled ^= True
+
+        case ComponentIds.reset_button:
+            i18n.remove_locale_override()
+            devtools.debug_enabled = False
+
+        case ComponentIds.plugin_select:
+            assert inter.values
+            [option_value] = inter.values
+
+            if option_value not in KNOWN_PLUGIN_PATHS:
+                error_message.append(ui.TextDisplay("Selected plugin is no longer available."))
+
+            else:
+                global recently_loaded_plugin
+                recently_loaded_plugin = option_value
+                ctx = ctx.__replace__(last_reload_plugin_name=option_value)
+
+        case ComponentIds.cmd_sync_button:
+            from app.commands import sync
+
+            await sync.sync_commands(plugin.bot)
+
+        case ComponentIds.reload_button:
+            if ctx.last_reload_plugin_name is None:
+                error_message.append(ui.TextDisplay("Cannot reload, no cached plugin."))
+
+            else:
+                try:
+                    plugin.bot.reload_extension(ctx.last_reload_plugin_name)
+
+                except commands.ExtensionFailed as exc:
+                    header = "## ⚠️ An exception occured during reloading:\n```py\n{}```"
+                    traceback_text = format_exception(exc)
+
+                    if (
+                        len(header) - len("{}") + len(traceback_text)
+                        <= ComponentLimits.text_display_content
+                    ):
+                        error_message.append(ui.TextDisplay(header.format(traceback_text)))
+
+                    else:
+                        traceback_file = text_to_file(traceback_text, "traceback.py")
+                        error_message.append(
+                            ui.TextDisplay("## ⚠️ An exception occured during reloading:")
+                        )
+                        error_message.append(ui.file(traceback_file))
+
+        case _:
+            error_message.append(ui.TextDisplay("Unknown component"))
+            plugin.logger.warning("%s - unknown component: %r", dev_console.name, component)
+
+    components = create_console(ctx)
+    if __debug__:
+        devtools.debug_components(components)
+    await inter.response.edit_message(components=components)
+
+    if error_message:
+        error_components = ui.Container(*error_message, accent_colour=disnake.Colour(0xFF0000))
+        await inter.followup.send(
+            file=traceback_file,
+            components=error_components,
+            flags=disnake.MessageFlags(is_components_v2=True, ephemeral=True),
+        )
 
 
 setup, teardown = plugin.create_extension_handlers()

@@ -60,7 +60,7 @@ async def main() -> None:
     i18n.load(paths.LOCALE_DIR)
     exception_handling.setup(bot)
 
-    load_extensions(bot.load_extension, "extensions")
+    load_extensions(bot.load_extension, paths.PLUGINS_PACKAGE)
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, CONFIG.bot_token)
 

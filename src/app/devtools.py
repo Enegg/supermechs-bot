@@ -1,5 +1,3 @@
-from typing import Any, Protocol
-
 import rich
 
 import disnake
@@ -33,12 +31,9 @@ def debug_message(
     rich.print(*parts)
 
 
-class ComponentStructure(Protocol):
-    def to_component_dict(self) -> dict[str, Any]: ...
-
-
-def debug_components(components: ComponentStructure, /) -> None:
+def debug_components(components: ui.MessageComponents, /) -> None:
     if not debug_enabled:
         return
 
-    rich.print(components.to_component_dict())
+    component_payload, _ = normalize_components_to_dict(components)
+    rich.print(component_payload)

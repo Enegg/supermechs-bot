@@ -1,7 +1,6 @@
 from collections import abc
 
 import msgspec
-from monads.option import Null, Option, Some
 
 from app.dto.common import ItemStatsDto, LiteralElement, LiteralTier, LiteralType
 
@@ -114,7 +113,3 @@ def get_unset_fields(fields: abc.Mapping[str, object | msgspec.UnsetType], /) ->
 
 def get_set_fields(fields: abc.Mapping[str, object | msgspec.UnsetType], /) -> list[str]:
     return [field for field, value in fields.items() if value is not msgspec.UNSET]
-
-
-def unset_to_option[T](v: T | msgspec.UnsetType, /) -> Option[T]:
-    return Null.null if v is msgspec.UNSET else Some(v)

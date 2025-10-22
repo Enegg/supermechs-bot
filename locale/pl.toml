@@ -1,3 +1,8 @@
+[meta]
+flag_emoji = "🇵🇱"
+english_name = "Polish"
+local_name = "Polski"
+
 [stats]
 weight = "Waga"
 hit_points = "Punkty wytrzymałości"

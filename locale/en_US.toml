@@ -1,3 +1,9 @@
+[meta]
+flag_emoji = "🇺🇸"
+english_name = "English"
+local_name = "English"
+region = "United States"
+
 [stats]
 weight = "Weight"
 hit_points = "Hit points"
