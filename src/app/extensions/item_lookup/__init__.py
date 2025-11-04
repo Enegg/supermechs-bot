@@ -1,3 +1,4 @@
+import logging
 from collections import abc
 from typing import Final, Literal, NamedTuple
 
@@ -10,46 +11,30 @@ from app import i18n, ui
 from app.assets import COLORS, EMOJIS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
-from app.commands.params import (
-    ELEMENT_CHOICES,
-    LEGACY_ELEMENT_CHOICES,
-    LEGACY_TIER_CHOICES,
-    TIER_CHOICES,
-    TYPE_CHOICES,
-)
+from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from app.plugins_factory import create_plugin
 from resources import HttpResource
 
-from .helpers import (
-    format_damage_average,
-    format_damage_default,
-    format_range,
-    has_damage,
-    has_damage_spread,
-    item_transform_range,
-)
+from . import legacy_lookup
+from .helpers import format_stats, has_damage, has_damage_spread, item_transform_range
 
 import dupermechs.all as sm
 from dupermechs import stats
-from dupermechs.enums import ItemStat
 
 plugin = create_plugin(__name__)
-MAX_EMOJIS = 4
-"""Threshold for multiple emojis shown inline in the stats field."""
+
 COMMON_PK_POWER = 10_000
 RARE_PK_POWER = 50_000
-LEGACY_PK_POWER = 76_800
 
 
-class ItemLookupUIContext(NamedTuple):
+class UIContext(NamedTuple):
     item_id: sm.Item.Id
     stage_index: int
     level_index: int
     levels_page: int
-    legacy: bool = False
     damage_average: bool = False
     buffs_enabled: bool = False
     damage_vs_titan: bool = False
@@ -100,7 +85,7 @@ async def item_lookup(
 
     stage_index = len(item.stages) - 1
     levels = item.stages[stage_index].levels
-    ctx = ItemLookupUIContext(
+    ctx = UIContext(
         item_id=item.id,
         stage_index=stage_index,
         level_index=len(levels) - 1,
@@ -114,7 +99,10 @@ async def item_lookup(
     )
 
 
-def get_item_stats(item: sm.IItem, ctx: ItemLookupUIContext, /) -> sm.IItemStats:
+plugin.slash_command(name="legacy-item")(legacy_lookup.legacy_item_lookup)
+
+
+def get_item_stats(item: sm.IItem, ctx: UIContext, /) -> sm.IItemStats:
     base_stats = item.stages[ctx.stage_index].levels[ctx.level_index].stats
 
     if not ctx.buffs_enabled:
@@ -128,17 +116,17 @@ def get_item_stats(item: sm.IItem, ctx: ItemLookupUIContext, /) -> sm.IItemStats
     return stats.combine(total)
 
 
-def make_component_id(component: str, ctx: ItemLookupUIContext) -> str:
-    flags = ctx.damage_average | ctx.buffs_enabled << 1 | ctx.damage_vs_titan << 2 | ctx.legacy << 3
+def make_component_id(component: str, ctx: UIContext) -> str:
+    flags = ctx.damage_average | ctx.buffs_enabled << 1 | ctx.damage_vs_titan << 2
     return f"{ComponentIds.prefix}:{component}:{ctx.item_id:x}:{ctx.stage_index}:{ctx.level_index}:{ctx.levels_page}:{flags:x}"
 
 
-def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, ItemLookupUIContext]:
+def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, UIContext]:
     _, component, item_id, stage_index, level_index, levels_page, flags = id.split(":", 6)
     flags = int(flags, 16)
     return (
         component,
-        ItemLookupUIContext(
+        UIContext(
             item_id=sm.Item.Id(int(item_id, 16)),
             stage_index=int(stage_index),
             level_index=int(level_index),
@@ -146,7 +134,6 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, ItemLookup
             damage_average=flags & 1 == 1,
             buffs_enabled=flags >> 1 & 1 == 1,
             damage_vs_titan=flags >> 2 & 1 == 1,
-            legacy=flags >> 3 & 1 == 1,
         ),
     )
 
@@ -159,8 +146,8 @@ def make_level_options(
 ) -> list[ui.SelectOption]:
     return [
         ui.SelectOption(
-            label=f"{i18n.get_message(locale, 'item-lookup-ui-level-select-label')} {level.level}",
-            value=f"{i}",
+            label=i18n.get_message(locale, "item-lookup-ui-level-select-label", level=level.level),
+            value=str(i),
             default=i == selected_level_index,
         )
         for i, level in enumerate(levels, start=start)
@@ -195,24 +182,12 @@ def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
     return common_pks, rare_pks
 
 
-def power_required_as_legacy_power_kits(power: int, /) -> int:
-    legacy_pks, power = divmod(power, LEGACY_PK_POWER)
-
-    if power >= LEGACY_PK_POWER * 0.9:
-        legacy_pks += 1
-
-    return legacy_pks
-
-
-def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -> ui.Container:
+def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Container:
     gettext = i18n.get_gettext(locale)
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
     subtitle_parts: list[str] = []
-
-    if ctx.legacy:
-        subtitle_parts.append("legacy")
 
     if item.element is not sm.Item.Element.other:
         subtitle_parts.append(item.element.name)
@@ -226,16 +201,10 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         else str(levels[ctx.level_index].level)
     )
 
-    if ctx.legacy:
-        card_emoji = EMOJIS.cards[item.stages[0].tier]
-        transform_range = card_emoji if card_emoji is not None else EMOJIS.tiers[stage.tier]
-    else:
-        transform_range = f"-# {item_transform_range(item, ctx.stage_index)}"
-
     title_lines = [
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}*",
-        transform_range,
+        f"-# {item_transform_range(item, ctx.stage_index)}",
         f"{gettext('item-lookup-power-level')}: **{power_level}**",
     ]
 
@@ -244,25 +213,18 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
         power_line = [
             f"{gettext('item-lookup-power-required')}: **{power_required:,}**{EMOJIS.stats.energy_capacity}"
         ]
-        if ctx.legacy:
-            legacy_pks = power_required_as_legacy_power_kits(power_required)
+        common_pks, rare_pks = power_required_as_power_kits(power_required)
 
-            if legacy_pks:
-                power_line.append(f"(**{legacy_pks}**×{EMOJIS.power_kits.rare})")  # noqa: RUF001
+        power_kits: list[str] = []
 
-        else:
-            common_pks, rare_pks = power_required_as_power_kits(power_required)
+        if rare_pks:
+            power_kits.append(f"**{rare_pks}**×{EMOJIS.power_kits.rare}")  # noqa: RUF001
 
-            power_kits: list[str] = []
+        if common_pks:
+            power_kits.append(f"**{common_pks}**×{EMOJIS.power_kits.common}")  # noqa: RUF001
 
-            if rare_pks:
-                power_kits.append(f"**{rare_pks}**×{EMOJIS.power_kits.rare}")  # noqa: RUF001
-
-            if common_pks:
-                power_kits.append(f"**{common_pks}**×{EMOJIS.power_kits.common}")  # noqa: RUF001
-
-            if power_kits:
-                power_line.append(f"({' '.join(power_kits)})")
+        if power_kits:
+            power_line.append(f"({' '.join(power_kits)})")
 
         title_lines.append("".join(power_line))
 
@@ -358,7 +320,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
             custom_id=make_component_id(ComponentIds.avg_button, ctx),
         ))  # fmt: skip
 
-    if not ctx.legacy and has_damage(item_stats):
+    if has_damage(item_stats):
         button_row.append(ui.ActionButton(
             label=gettext("item-lookup-ui-damage-vs-titans"),
             style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
@@ -373,240 +335,33 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: ItemLookupUIContext) -
     return ui.Container(*components, accent_colour=COLORS.elements[item.element])
 
 
-def format_stats(
-    item_stats: sm.IItemStats, locale: Locale, *, avg: bool
-) -> tuple[list[str], list[str]]:
-    def fmt(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
-        return f"{emoji} **{value}** {i18n.get_stat_name(locale, stat_key)}"
-
-    format_damage: abc.Callable[[int, int], str] = (
-        format_damage_average if avg else format_damage_default
-    )
-
-    stats_lines: list[str] = []
-    costs_lines: list[str] = []
-    emojis = EMOJIS.stats
-
-    if item_stats.weight:
-        stats_lines.append(fmt(emojis.weight, item_stats.weight, ItemStat.weight))
-    if item_stats.hit_points:
-        stats_lines.append(fmt(emojis.hit_points, item_stats.hit_points, ItemStat.hit_points))
-    if item_stats.energy_capacity:
-        stats_lines.append(
-            fmt(emojis.energy_capacity, item_stats.energy_capacity, ItemStat.energy_capacity)
-        )
-    if item_stats.energy_regeneration:
-        stats_lines.append(
-            fmt(
-                emojis.energy_regeneration,
-                item_stats.energy_regeneration,
-                ItemStat.energy_regeneration,
-            )
-        )
-    if item_stats.heat_capacity:
-        stats_lines.append(
-            fmt(emojis.heat_capacity, item_stats.heat_capacity, ItemStat.heat_capacity)
-        )
-    if item_stats.heat_cooling:
-        stats_lines.append(fmt(emojis.heat_cooling, item_stats.heat_cooling, ItemStat.heat_cooling))
-    if item_stats.physical_resistance:
-        stats_lines.append(
-            fmt(
-                emojis.physical_resistance,
-                item_stats.physical_resistance,
-                ItemStat.physical_resistance,
-            )
-        )
-    if item_stats.explosive_resistance:
-        stats_lines.append(
-            fmt(
-                emojis.explosive_resistance,
-                item_stats.explosive_resistance,
-                ItemStat.explosive_resistance,
-            )
-        )
-    if item_stats.electric_resistance:
-        stats_lines.append(
-            fmt(
-                emojis.electric_resistance,
-                item_stats.electric_resistance,
-                ItemStat.electric_resistance,
-            )
-        )
-    if item_stats.bullets_capacity:
-        stats_lines.append(
-            fmt(
-                emojis.bullets_capacity,
-                item_stats.bullets_capacity,
-                ItemStat.bullets_capacity,
-            )
-        )
-    if item_stats.rockets_capacity:
-        stats_lines.append(
-            fmt(
-                emojis.rockets_capacity,
-                item_stats.rockets_capacity,
-                ItemStat.rockets_capacity,
-            )
-        )
-    if item_stats.physical_damage:
-        stats_lines.append(
-            fmt(
-                emojis.physical_damage,
-                format_damage(item_stats.physical_damage, item_stats.physical_damage_addon),
-                ItemStat.physical_damage,
-            )
-        )
-    if item_stats.physical_resistance_damage:
-        stats_lines.append(
-            fmt(
-                emojis.physical_resistance_damage,
-                item_stats.physical_resistance_damage,
-                ItemStat.physical_resistance_damage,
-            )
-        )
-    if item_stats.electric_damage:
-        stats_lines.append(
-            fmt(
-                emojis.electric_damage,
-                format_damage(item_stats.electric_damage, item_stats.electric_damage_addon),
-                ItemStat.electric_damage,
-            )
-        )
-    if item_stats.energy_damage:
-        stats_lines.append(
-            fmt(emojis.energy_damage, item_stats.energy_damage, ItemStat.energy_damage)
-        )
-    if item_stats.energy_capacity_damage:
-        stats_lines.append(
-            fmt(
-                emojis.energy_capacity_damage,
-                item_stats.energy_capacity_damage,
-                ItemStat.energy_capacity_damage,
-            )
-        )
-    if item_stats.regeneration_damage:
-        stats_lines.append(
-            fmt(
-                emojis.regeneration_damage,
-                item_stats.regeneration_damage,
-                ItemStat.regeneration_damage,
-            )
-        )
-    if item_stats.electric_resistance_damage:
-        stats_lines.append(
-            fmt(
-                emojis.electric_resistance_damage,
-                item_stats.electric_resistance_damage,
-                ItemStat.electric_resistance_damage,
-            )
-        )
-    if item_stats.explosive_damage:
-        stats_lines.append(
-            fmt(
-                emojis.explosive_damage,
-                format_damage(item_stats.explosive_damage, item_stats.explosive_damage_addon),
-                ItemStat.explosive_damage,
-            )
-        )
-    if item_stats.heat_damage:
-        stats_lines.append(fmt(emojis.heat_damage, item_stats.heat_damage, ItemStat.heat_damage))
-    if item_stats.heat_capacity_damage:
-        stats_lines.append(
-            fmt(
-                emojis.heat_capacity_damage,
-                item_stats.heat_capacity_damage,
-                ItemStat.heat_capacity_damage,
-            )
-        )
-    if item_stats.cooling_damage:
-        stats_lines.append(
-            fmt(emojis.cooling_damage, item_stats.cooling_damage, ItemStat.cooling_damage)
-        )
-    if item_stats.explosive_resistance_damage:
-        stats_lines.append(
-            fmt(
-                emojis.explosive_resistance_damage,
-                item_stats.explosive_resistance_damage,
-                ItemStat.explosive_resistance_damage,
-            )
-        )
-    if item_stats.walk:
-        stats_lines.append(fmt(emojis.walk, item_stats.walk, ItemStat.walk))
-    if item_stats.jump:
-        stats_lines.append(fmt(emojis.jump, item_stats.jump, ItemStat.jump))
-    if item_stats.range:
-        stats_lines.append(
-            fmt(
-                emojis.range,
-                format_range(item_stats.range, item_stats.range_addon),
-                ItemStat.range,
-            )
-        )
-    if item_stats.push:
-        count = 1 if item_stats.push > MAX_EMOJIS else item_stats.push
-        stats_lines.append(fmt(emojis.push * count, item_stats.push, ItemStat.push))
-    if item_stats.pull:
-        count = 1 if item_stats.pull > MAX_EMOJIS else item_stats.pull
-        stats_lines.append(fmt(emojis.pull * count, item_stats.pull, ItemStat.pull))
-    if item_stats.recoil:
-        stats_lines.append(fmt(emojis.recoil, item_stats.recoil, ItemStat.recoil))
-    if item_stats.advance:
-        count = 1 if item_stats.advance > MAX_EMOJIS else item_stats.advance
-        stats_lines.append(fmt(emojis.advance * count, item_stats.advance, ItemStat.advance))
-    if item_stats.retreat:
-        count = 1 if item_stats.retreat > MAX_EMOJIS else item_stats.retreat
-        stats_lines.append(fmt(emojis.retreat * count, item_stats.retreat, ItemStat.retreat))
-    if item_stats.repair:
-        stats_lines.append(fmt(emojis.repair, item_stats.repair, ItemStat.repair))
-
-    if item_stats.uses:
-        count = 1 if item_stats.uses > MAX_EMOJIS else item_stats.uses
-        costs_lines.append(fmt(emojis.uses * count, item_stats.uses, ItemStat.uses))
-    if item_stats.backfire:
-        costs_lines.append(fmt(emojis.backfire, item_stats.backfire, ItemStat.backfire))
-    if item_stats.heat_generation:
-        costs_lines.append(
-            fmt(emojis.heat_generation, item_stats.heat_generation, ItemStat.heat_generation)
-        )
-    if item_stats.energy_cost:
-        costs_lines.append(fmt(emojis.energy_cost, item_stats.energy_cost, ItemStat.energy_cost))
-    if item_stats.bullets_cost:
-        costs_lines.append(fmt(emojis.bullets_cost, item_stats.bullets_cost, ItemStat.bullets_cost))
-    if item_stats.rockets_cost:
-        costs_lines.append(fmt(emojis.rockets_cost, item_stats.rockets_cost, ItemStat.rockets_cost))
-    if item_stats.advance or item_stats.retreat:
-        # if item has no costs, don't put jump-required separately
-        (costs_lines or stats_lines).append(
-            f"{emojis.jump} **{i18n.get_message(locale, 'item-lookup-jump-required')}**"
-        )
-    # TODO: shield stats
-    return stats_lines, costs_lines
-
-
 @plugin.listener(Event.message_interaction)
-async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
-    if not inter.data.custom_id.startswith(ComponentIds.prefix):
-        return
+async def on_lookup_interaction(inter: ui.MessageInteraction) -> None:
+    if inter.data.custom_id.startswith(ComponentIds.prefix):
+        await on_reloaded_lookup_interaction(inter, plugin.logger)
 
+    elif inter.data.custom_id.startswith(legacy_lookup.ComponentIds.prefix):
+        await legacy_lookup.on_legacy_lookup_interaction(inter, plugin.logger)
+
+
+async def on_reloaded_lookup_interaction(
+    inter: ui.MessageInteraction, logger: logging.Logger
+) -> None:
     component, ctx = parse_component_id(inter.data.custom_id)
     locale = i18n.get_locale(inter)
     item_pack = packs.get_item_pack()
-    bank = item_pack.legacy_items if ctx.legacy else item_pack.reloaded_items
-
     # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
     try:
-        item = bank[ctx.item_id]
+        item = item_pack.reloaded_items[ctx.item_id]
 
     # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
     except KeyError:
-        cmd_mention = get_mention("legacy-item" if ctx.legacy else "item")
         await inter.response.edit_message(components=ui.Container(
             ui.TextDisplay(
                 "⚠️ This item is no longer available.\n"
                 "-# Hint: the item pack might have been changed. "
-                f"Try searching it with {cmd_mention} again."
+                f"Try searching it with {get_mention('item')} again."
             ),
             accent_colour=Color(0xFF0000),
         ))  # fmt: skip
@@ -627,10 +382,9 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
         await inter.response.edit_message(components=get_item_summary(locale, item, ctx))
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
-        cmd_mention = get_mention("legacy-item" if ctx.legacy else "item")
         await inter.followup.send(
             "The summary you've interacted with was made using a different item pack.\n"
-            f"If the item shown has changed, try searching it with {cmd_mention} again.",
+            f"If the item shown has changed, try searching it with {get_mention('item')} again.",
             ephemeral=True,
         )
         return
@@ -676,56 +430,12 @@ async def on_item_lookup_interaction(inter: ui.MessageInteraction) -> None:
             ctx = ctx.__replace__(damage_vs_titan=not ctx.damage_vs_titan)
 
         case _:
-            plugin.logger.warning("item-lookup - unknown component: %r", component)
+            plugin.logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
     container = get_item_summary(locale, item, ctx)
     if __debug__:
         debug_components(container)
     await inter.response.edit_message(components=container)
-
-
-@plugin.slash_command(name="legacy-item")
-async def legacy_item_lookup(
-    inter: CommandInteraction,
-    name: str = commands.Param(autocomplete=item_name_autocomplete),
-    type: str | None = commands.Param(None, choices=TYPE_CHOICES),
-    element: str | None = commands.Param(None, choices=LEGACY_ELEMENT_CHOICES),
-    rarity: str | None = commands.Param(None, choices=LEGACY_TIER_CHOICES),
-) -> None:
-    """Lookup legacy item info.
-
-    Parameters
-    ----------
-    name:
-        The name of the item. {{ ITEM_NAME }}
-    type:
-        Limit suggestions to this type. {{ ITEM_TYPE }}
-    element:
-        Limit suggestions to this element. {{ ITEM_ELEMENT }}
-    rarity:
-        Remove suggestions below this rarity. {{ ITEM_TIER }}
-    """
-    for item in packs.filter_items(type, element, rarity, True):
-        if item.name == name:
-            break
-
-    else:
-        msg = i18n.get_message(i18n.get_locale(inter), "unknown-item-name", name=name)
-        raise commands.UserInputError(msg)
-
-    ctx = ItemLookupUIContext(
-        item_id=item.id,
-        stage_index=0,
-        level_index=0,
-        levels_page=0,
-        legacy=True,
-    )
-    container = get_item_summary(i18n.get_locale(inter), item, ctx)
-    if __debug__:
-        debug_components(container)
-    await inter.response.send_message(
-        components=container, flags=MessageFlags(is_components_v2=True)
-    )
 
 
 setup, teardown = plugin.create_extension_handlers()
