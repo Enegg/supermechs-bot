@@ -82,6 +82,24 @@ def has_damage(stats: sm.IItemStats, /) -> bool:
     return stats.physical_damage != 0 or stats.explosive_damage != 0 or stats.electric_damage != 0
 
 
+def has_buff_affected_stats(stats: sm.IItemStats, /) -> bool:
+    return (
+        stats.energy_capacity != 0
+        or stats.energy_regeneration != 0
+        or stats.energy_damage != 0
+        or stats.heat_capacity != 0
+        or stats.heat_cooling != 0
+        or stats.heat_damage != 0
+        or stats.physical_damage != 0
+        or stats.explosive_damage != 0
+        or stats.electric_damage != 0
+        or stats.physical_resistance != 0
+        or stats.explosive_resistance != 0
+        or stats.electric_resistance != 0
+        or stats.backfire != 0
+    )
+
+
 def format_stats(
     item_stats: sm.IItemStats, locale: Locale, *, avg: bool
 ) -> tuple[list[str], list[str]]:
@@ -290,4 +308,5 @@ def format_stats(
             f"{emojis.jump} **{i18n.get_message(locale, 'item-lookup-jump-required')}**"
         )
     # TODO: shield stats
+    # TODO: POWER_KIT boost_power
     return stats_lines, costs_lines

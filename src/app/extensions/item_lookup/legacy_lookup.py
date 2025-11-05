@@ -16,7 +16,7 @@ from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from resources import HttpResource
 
-from .helpers import format_stats, has_damage_spread
+from .helpers import format_float, format_stats, has_buff_affected_stats, has_damage_spread
 
 import dupermechs.all as sm
 from dupermechs import stats
@@ -80,6 +80,66 @@ async def legacy_item_lookup(
     )
 
 
+async def on_legacy_lookup_interaction(
+    inter: ui.MessageInteraction, logger: logging.Logger
+) -> None:
+    component, ctx = parse_component_id(inter.data.custom_id)
+    locale = i18n.get_locale(inter)
+    item_pack = packs.get_item_pack()
+    # If the bot (re)starts with a new item pack, and a summary of an item from previous
+    # pack persists, interaction with it may lead to following scenarios:
+    try:
+        item = item_pack.legacy_items[ctx.item_id]
+
+    # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
+    except KeyError:
+        await inter.response.edit_message(components=ui.Container(
+            ui.TextDisplay(
+                "⚠️ This item is no longer available.\n"
+                "-# Hint: the item pack might have been changed. "
+                f"Try searching it with {get_mention("legacy-item")} again."
+            ),
+            accent_colour=Color(0xFF0000),
+        ))  # fmt: skip
+        return
+
+    # 2. The ID is valid. It may point to the same or a different item; the data may contain fewer levels.
+    # We will assume that if the index doesn't match, it's a different item:
+    if len(item.stages[0].levels) < ctx.level_index:
+        valid_level_index = min(ctx.level_index, len(item.stages[0].levels) - 1)
+        ctx = ctx.__replace__(level_index=valid_level_index)
+        await inter.response.edit_message(components=get_item_summary(locale, item, ctx))
+        # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
+        # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
+        await inter.followup.send(
+            "The summary you've interacted with was made using a different item pack.\n"
+            f"If the item shown has changed, try searching it with {get_mention('legacy-item')} again.",
+            ephemeral=True,
+        )
+        return
+
+    # NOTE: using __replace__ directly due to copy.replace(**kwargs: Any)
+    match component:
+        case ComponentIds.level_select:
+            assert inter.values
+            [option_value] = inter.values
+            ctx = ctx.__replace__(level_index=int(option_value))
+
+        case ComponentIds.buffs_button:
+            ctx = ctx.__replace__(buffs_enabled=not ctx.buffs_enabled)
+
+        case ComponentIds.avg_button:
+            ctx = ctx.__replace__(damage_average=not ctx.damage_average)
+
+        case _:
+            logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
+
+    container = get_item_summary(locale, item, ctx)
+    if __debug__:
+        debug_components(container)
+    await inter.response.edit_message(components=container)
+
+
 def get_item_stats(item: sm.IItem, ctx: UIContext, /) -> sm.IItemStats:
     base_stats = item.stages[0].levels[ctx.level_index].stats
 
@@ -123,6 +183,8 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     levels = item.stages[0].levels
     assert len(levels) <= ComponentLimits.select_options  # TODO: guard this better
     item_stats = get_item_stats(item, ctx)
+
+    # ------------------------------------- title, description -------------------------------------
     subtitle_parts: list[str] = ["Legacy"]
 
     if item.element is not sm.Item.Element.other:
@@ -133,22 +195,28 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     power_level = (
         "max" if ctx.level_index == len(levels) - 1 else str(levels[ctx.level_index].level)
     )
+    tier_emoji = emoji if (emoji := EMOJIS.cards[tier]) is not None else EMOJIS.tiers[tier]
     title_lines = [
         f"## {item.name}",
-        f"*{' '.join(subtitle_parts)}*",
-        emoji if (emoji := EMOJIS.cards[tier]) is not None else EMOJIS.tiers[tier],
+        f"*{' '.join(subtitle_parts)}* {tier_emoji}",
         f"{gettext('item-lookup-power-level')}: **{power_level}**",
     ]
 
     if power_required := levels[ctx.level_index].power_required:
+        if power_required >= 1000 and power_required % 100 == 0:  # noqa: PLR2004
+            power_str = format_float(power_required / 1000, 1) + "k"
+
+        else:
+            power_str = f"{power_required:,}"
+
         # energizing
         power_line = [
-            f"{gettext('item-lookup-power-required')}: **{power_required:,}**{EMOJIS.stats.energy_capacity}"
+            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stats.energy_capacity}"
         ]
         legacy_pks = power_required_as_legacy_power_kits(power_required)
 
         if legacy_pks:
-            power_line.append(f"(**{legacy_pks}**×{EMOJIS.power_kits.rare})")  # noqa: RUF001
+            power_line.append(f"(**{legacy_pks}**×{EMOJIS.power_kits.common})")  # noqa: RUF001
 
         title_lines.append("".join(power_line))
 
@@ -162,21 +230,22 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
         case _:
             components.append(title)
 
+    # ------------------------------------------- stats --------------------------------------------
     stats_lines, costs_lines = format_stats(item_stats, locale, avg=ctx.damage_average)
 
+    if (
+        item.type is sm.Item.Type.kit
+        and not stats_lines
+        and (boost_power := levels[ctx.level_index].power_contribution)
+    ):
+        stats_lines.append(
+            f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
+        )
     if stats_lines or costs_lines:
         stats_part = "\n".join(stats_lines)
         costs_part = "\n".join(costs_lines)
-        components.append(ui.Section(
-            ui.TextDisplay(
-                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
-            ),
-            accessory=ui.ActionButton(
-                label=gettext("item-lookup-ui-buffs"),
-                style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
-                emoji="⚔️",
-                custom_id=make_component_id(ComponentIds.buffs_button, ctx),
-            ),
+        components.append(ui.TextDisplay(
+            f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
         ))  # fmt: skip
         if stats_part and costs_part:
             components.append(ui.Separator(divider=False))
@@ -184,11 +253,34 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     else:
         components.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
+    # ------------------------------------------ buttons -------------------------------------------
+    buttons_row: list[ui.ActionButton] = []
+
+    if has_buff_affected_stats(item_stats):
+        buttons_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-buffs"),
+            style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
+            emoji="⚔️",
+            custom_id=make_component_id(ComponentIds.buffs_button, ctx),
+        ))  # fmt: skip
+    if has_damage_spread(item_stats):
+        buttons_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-damage-avg"),
+            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
+            emoji=EMOJIS.elements[item.element],
+            custom_id=make_component_id(ComponentIds.avg_button, ctx),
+        ))  # fmt: skip
+
+    if buttons_row:
+        components.append(ui.ActionRow(*buttons_row))
+
+    # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, tier))) is not None:
         components.append(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
         components.append(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
 
+    # ---------------------------------------- level select ----------------------------------------
     components.append(ui.ActionRow(ui.StringSelect(
         options=[
             ui.SelectOption(
@@ -201,77 +293,5 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
         placeholder=gettext("item-lookup-ui-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
-    button_row: list[ui.ActionButton] = []
-
-    if has_damage_spread(item_stats):
-        button_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-damage-avg"),
-            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            custom_id=make_component_id(ComponentIds.avg_button, ctx),
-        ))  # fmt: skip
-
-    if button_row:
-        components.append(ui.ActionRow(*button_row))
 
     return ui.Container(*components, accent_colour=COLORS.elements[item.element])
-
-
-async def on_legacy_lookup_interaction(
-    inter: ui.MessageInteraction, logger: logging.Logger
-) -> None:
-    component, ctx = parse_component_id(inter.data.custom_id)
-    locale = i18n.get_locale(inter)
-    item_pack = packs.get_item_pack()
-    # If the bot (re)starts with a new item pack, and a summary of an item from previous
-    # pack persists, interaction with it may lead to following scenarios:
-    try:
-        item = item_pack.legacy_items[ctx.item_id]
-
-    # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
-    except KeyError:
-        await inter.response.edit_message(components=ui.Container(
-            ui.TextDisplay(
-                "⚠️ This item is no longer available.\n"
-                "-# Hint: the item pack might have been changed. "
-                f"Try searching it with {get_mention("legacy-item")} again."
-            ),
-            accent_colour=Color(0xFF0000),
-        ))  # fmt: skip
-        return
-
-    # 2. The ID is valid. It may point to the same or a different item; the data may contain fewer stages/levels.
-    # We will assume that if either of the indices doesn't match, it's a different item:
-    if len(item.stages[0].levels) < ctx.level_index:
-        valid_level_index = min(ctx.level_index, len(item.stages[0].levels) - 1)
-        # TODO: deduce levels_page from level_index
-        ctx = ctx.__replace__(level_index=valid_level_index)
-        await inter.response.edit_message(components=get_item_summary(locale, item, ctx))
-        # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
-        # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
-        await inter.followup.send(
-            "The summary you've interacted with was made using a different item pack.\n"
-            f"If the item shown has changed, try searching it with {get_mention('legacy-item')} again.",
-            ephemeral=True,
-        )
-        return
-
-    # NOTE: using __replace__ directly due to copy.replace(**kwargs: Any)
-    match component:
-        case ComponentIds.level_select:
-            assert inter.values
-            [option_value] = inter.values
-            ctx = ctx.__replace__(level_index=int(option_value))
-
-        case ComponentIds.buffs_button:
-            ctx = ctx.__replace__(buffs_enabled=not ctx.buffs_enabled)
-
-        case ComponentIds.avg_button:
-            ctx = ctx.__replace__(damage_average=not ctx.damage_average)
-
-        case _:
-            logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
-
-    container = get_item_summary(locale, item, ctx)
-    if __debug__:
-        debug_components(container)
-    await inter.response.edit_message(components=container)

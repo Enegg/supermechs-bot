@@ -17,7 +17,14 @@ from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from resources import HttpResource
 
-from .helpers import format_stats, has_damage, has_damage_spread, item_transform_range
+from .helpers import (
+    format_float,
+    format_stats,
+    has_buff_affected_stats,
+    has_damage,
+    has_damage_spread,
+    item_transform_range,
+)
 
 import dupermechs.all as sm
 from dupermechs import stats
@@ -273,6 +280,8 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
+
+    # ------------------------------------- title, description -------------------------------------
     subtitle_parts: list[str] = []
 
     if item.element is not sm.Item.Element.other:
@@ -295,9 +304,15 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     ]
 
     if power_required := levels[ctx.level_index].power_required:
+        if power_required >= 1000 and power_required % 100 == 0:  # noqa: PLR2004
+            power_str = format_float(power_required / 1000, 1) + "k"
+
+        else:
+            power_str = f"{power_required:,}"
+
         # energizing
         power_line = [
-            f"{gettext('item-lookup-power-required')}: **{power_required:,}**{EMOJIS.stats.energy_capacity}"
+            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stats.energy_capacity}"
         ]
         common_pks, rare_pks = power_required_as_power_kits(power_required)
 
@@ -324,21 +339,22 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
         case _:
             components.append(title)
 
+    # ------------------------------------------- stats --------------------------------------------
     stats_lines, costs_lines = format_stats(item_stats, locale, avg=ctx.damage_average)
 
+    if (
+        not stats_lines
+        and item.type is sm.Item.Type.kit
+        and (boost_power := levels[ctx.level_index].power_contribution)
+    ):
+        stats_lines.append(
+            f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
+        )
     if stats_lines or costs_lines:
         stats_part = "\n".join(stats_lines)
         costs_part = "\n".join(costs_lines)
-        components.append(ui.Section(
-            ui.TextDisplay(
-                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
-            ),
-            accessory=ui.ActionButton(
-                label=gettext("item-lookup-ui-buffs"),
-                style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
-                emoji="⚔️",
-                custom_id=make_component_id(ComponentIds.buffs_button, ctx),
-            ),
+        components.append(ui.TextDisplay(
+            f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
         ))  # fmt: skip
         if stats_part and costs_part:
             components.append(ui.Separator(divider=False))
@@ -346,11 +362,41 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     else:
         components.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
+    # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
         components.append(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
         components.append(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
 
+    # ------------------------------------------ buttons -------------------------------------------
+    button_row: list[ui.ActionButton] = []
+
+    if has_buff_affected_stats(item_stats):
+        button_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-buffs"),
+            style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
+            emoji="⚔️",
+            custom_id=make_component_id(ComponentIds.buffs_button, ctx),
+        ))  # fmt: skip
+    if has_damage_spread(item_stats):
+        button_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-damage-avg"),
+            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
+            emoji=EMOJIS.elements[item.element],
+            custom_id=make_component_id(ComponentIds.avg_button, ctx),
+        ))  # fmt: skip
+    if has_damage(item_stats):
+        button_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-damage-vs-titans"),
+            style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
+            disabled=not ctx.buffs_enabled,
+            emoji=EMOJIS.elements[item.element],
+            custom_id=make_component_id(ComponentIds.titan_button, ctx),
+        ))  # fmt: skip
+    if button_row:
+        components.append(ui.ActionRow(*button_row))
+
+    # ---------------------------------------- stage select ----------------------------------------
     if len(item.stages) > 1:
         stage_options = [
             ui.SelectOption(
@@ -367,6 +413,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
             custom_id=make_component_id(ComponentIds.stage_select, ctx),
         )))  # fmt: skip
 
+    # ---------------------------------------- level select ----------------------------------------
     if len(levels) <= ComponentLimits.select_options:
         level_options = make_level_options(locale, levels, ctx.level_index)
 
@@ -397,25 +444,5 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
         placeholder=gettext("item-lookup-ui-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
-    button_row: list[ui.ActionButton] = []
-
-    if has_damage_spread(item_stats):
-        button_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-damage-avg"),
-            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            custom_id=make_component_id(ComponentIds.avg_button, ctx),
-        ))  # fmt: skip
-
-    if has_damage(item_stats):
-        button_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-damage-vs-titans"),
-            style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
-            disabled=not ctx.buffs_enabled,
-            emoji=EMOJIS.elements[item.element],
-            custom_id=make_component_id(ComponentIds.titan_button, ctx),
-        ))  # fmt: skip
-
-    if button_row:
-        components.append(ui.ActionRow(*button_row))
 
     return ui.Container(*components, accent_colour=COLORS.elements[item.element])

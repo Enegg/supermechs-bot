@@ -57,6 +57,8 @@ type LiteralKey = Literal[
     "tier-mythical",
     "tier-divine",
     "tier-perk",
+    # other
+    "boost-power",
 ]
 
 
