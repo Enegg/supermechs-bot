@@ -1,8 +1,8 @@
-import http
 import io
 import logging
 import pathlib
-from typing import Any, Final
+from http import HTTPMethod as HTTPMethod, HTTPStatus as HTTPStatus
+from typing import Any, Final, Self
 
 import aiohttp
 import anyio
@@ -53,27 +53,24 @@ def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
     return session
 
 
-async def read_path(path: Pathish, /) -> bytes:
+async def read_path(path: Pathish, /) -> Result[bytes, OSError]:
     path = pathlib.Path(path)
     _LOG.info("Open path=%s", path)
-    return await anyio.to_thread.run_sync(path.read_bytes)
 
-
-async def read_file(resource: FileResource, /) -> Result[bytes, OSError]:
     try:
-        return Ok(await read_path(resource.path))
+        return Ok(await anyio.to_thread.run_sync(path.read_bytes))
 
     except OSError as exc:
         return Err(exc)
 
 
-def _log_request(url: yarl.URL, method: http.HTTPMethod) -> None:
+def _log_request(url: yarl.URL, method: HTTPMethod) -> None:
     _LOG.info("Request method=%s url=%s", method, url)
 
 
 def _log_response(response: aiohttp.ClientResponse, /) -> None:
     _LOG.log(
-        logging.INFO if response.status == http.HTTPStatus.OK else logging.WARNING,
+        logging.INFO if response.status == HTTPStatus.OK else logging.WARNING,
         "Response method=%s url=%s status=%d type=%s length=%s (%s%sB)",
         response.method,
         response.url,
@@ -92,17 +89,21 @@ class ContentTooLarge(OSError):
 
 @attrs.define(auto_exc=True)
 class ResponseNotOk(OSError):
-    status: int
+    status: HTTPStatus
+
+    @classmethod
+    def from_response(cls, response: aiohttp.ClientResponse, /) -> Self:
+        return cls(HTTPStatus(response.status))
 
 
-async def read_http(resource: HttpResource, /) -> Result[bytes, HttpReadError]:
-    _log_request(resource.url, http.HTTPMethod.GET)
+async def read_http(url: yarl.URL, /) -> Result[bytes, HttpReadError]:
+    _log_request(url, HTTPMethod.GET)
 
-    async with session.get(resource.url) as response:
+    async with session.get(url) as response:
         _log_response(response)
 
-        if response.status != http.HTTPStatus.OK:
-            return Err(ResponseNotOk(response.status))
+        if response.status != HTTPStatus.OK:
+            return Err(ResponseNotOk.from_response(response))
 
         try:
             content = await response.content.read()
@@ -114,18 +115,18 @@ async def read_http(resource: HttpResource, /) -> Result[bytes, HttpReadError]:
 
 
 async def read_user_http(
-    resource: HttpResource,
+    url: yarl.URL,
     /,
     max_size: int = CONFIG.max_image_size,
     chunk_size: int = CONFIG.chunk_size,
 ) -> Result[io.BytesIO, UserHttpReadError]:
-    _log_request(resource.url, http.HTTPMethod.GET)
+    _log_request(url, HTTPMethod.GET)
 
-    async with session.get(resource.url) as response:
+    async with session.get(url) as response:
         _log_response(response)
 
-        if response.status != http.HTTPStatus.OK:
-            return Err(ResponseNotOk(response.status))
+        if response.status != HTTPStatus.OK:
+            return Err(ResponseNotOk.from_response(response))
 
         if response.content_length is not None and response.content_length > max_size:
             return Err(ContentTooLarge(response.content_length, max_size))
@@ -145,11 +146,11 @@ async def read_user_http(
 async def read_resource(resource: AnyResource, /) -> Result[bytes, HttpReadError | OSError]:
     match resource:
         case FileResource():
-            return await read_file(resource)
+            return await read_path(resource.path)
 
         case HttpResource():
-            return await read_http(resource)
+            return await read_http(resource.url)
 
 
 async def read_user_resource(resource: HttpResource, /) -> Result[io.BytesIO, UserHttpReadError]:
-    return await read_user_http(resource)
+    return await read_user_http(resource.url)
