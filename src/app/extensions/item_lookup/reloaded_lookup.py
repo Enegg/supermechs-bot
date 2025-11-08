@@ -400,7 +400,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     if len(item.stages) > 1:
         stage_options = [
             ui.SelectOption(
-                label=gettext(f"tier-{stage.tier.name}").capitalize(),  # noqa: INT001
+                label=gettext.get_tier_name(stage.tier).capitalize(),
                 value=f"{i:x}",
                 emoji=EMOJIS.tiers[stage.tier],
                 default=i == ctx.stage_index,

@@ -1,10 +1,10 @@
 import logging
 import typing
 from collections import abc
-from functools import partial
 from pathlib import Path
-from typing import Final, Literal, LiteralString, Protocol, cast as type_cast
+from typing import Final, Literal, cast as type_cast
 
+import attrs
 import msgspec
 from monads.option import Null, Option, Some
 
@@ -14,7 +14,7 @@ from disnake import Locale, LocalizationProtocol
 from app.class_utils import unset_to_option
 from app.typeshed import Pathish
 
-from dupermechs.enums import ItemStat
+from dupermechs.enums import ItemRarity, ItemStat
 
 __all__ = ("GetText", "get_gettext", "get_message", "get_stat_name", "load")
 
@@ -62,16 +62,12 @@ type LiteralKey = Literal[
 ]
 
 
-class GetText(Protocol):
-    def __call__(self, key: LiteralKey | LiteralString, /, **format_kwargs: object) -> str: ...
-
-
 _LOG = logging.getLogger(__name__)
 FALLBACK_LOCALE = Locale.en_US
 FILE_EXT = ".toml"
 
 stats: Final[abc.Mapping[LocalePair[str], str]] = {}
-messages: Final[abc.Mapping[LocalePair[LiteralKey | LiteralString], str]] = {}
+messages: Final[abc.Mapping[LocalePair[LiteralKey], str]] = {}
 locale_info: Final[abc.Mapping[Locale, "LocaleInfo"]] = {}
 _command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
@@ -94,6 +90,20 @@ def remove_locale_override() -> None:
     locale_override = Null.null
 
 
+@attrs.define
+class GetText:
+    locale: Locale
+
+    def __call__(self, key: LiteralKey, /, **format_kwargs: object) -> str:
+        return get_message(self.locale, key, **format_kwargs)
+
+    def get_stat_name(self, stat: ItemStat, /) -> str:
+        return _get(stats, stat, self.locale)
+
+    def get_tier_name(self, tier: ItemRarity, /) -> str:
+        return get_message(self.locale, f"tier-{tier.name}")  # pyright: ignore[reportArgumentType]
+
+
 def _get[KT](store: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Locale) -> str:
     try:
         return store[key, locale]
@@ -114,11 +124,11 @@ def _get[KT](store: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Lo
         return value
 
 
-def get_stat_name(locale: Locale, stat: str) -> str:
+def get_stat_name(locale: Locale, stat: ItemStat) -> str:
     return _get(stats, stat, locale)
 
 
-def get_message(locale: Locale, key: LiteralKey | LiteralString, /, **format_kwargs: object) -> str:
+def get_message(locale: Locale, key: LiteralKey, /, **format_kwargs: object) -> str:
     msg = _get(messages, key, locale)
 
     if format_kwargs:
@@ -128,7 +138,7 @@ def get_message(locale: Locale, key: LiteralKey | LiteralString, /, **format_kwa
 
 
 def get_gettext(locale: Locale, /) -> GetText:
-    return partial(get_message, locale)
+    return GetText(locale)
 
 
 class _LocaleMeta(msgspec.Struct):
