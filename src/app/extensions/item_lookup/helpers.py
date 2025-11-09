@@ -46,8 +46,8 @@ def format_range(lo: int, hi: int, /) -> str:
 
 
 def item_transform_range(item: sm.Item, /, stage_index: int = -1) -> str:
-    str_range: list[str] = [EMOJIS.get_tier(stage.tier, hollow=True) for stage in item.stages]
-    str_range[stage_index] = EMOJIS.get_tier(item.stages[stage_index].tier)
+    str_range: list[str] = [str(EMOJIS.get_tier(stage.tier, hollow=True)) for stage in item.stages]
+    str_range[stage_index] = str(EMOJIS.get_tier(item.stages[stage_index].tier))
     return "".join(str_range)
 
 
@@ -92,7 +92,7 @@ def format_stats(
         return f"{emoji} **{value}** {gettext.get_stat_name(stat_key)}"
 
     def fmt(value: int | str, stat_key: ItemStat, /) -> str:
-        return fmte(EMOJIS.get_stat(stat_key), value, stat_key)
+        return fmte(EMOJIS.get_stat(stat_key).mention, value, stat_key)
 
     format_damage: abc.Callable[[int, int], str] = (
         format_damage_average if avg else format_damage_default
@@ -178,24 +178,28 @@ def format_stats(
         )
     if item_stats.push:
         count = 1 if item_stats.push > MAX_EMOJIS else item_stats.push
-        stats_lines.append(fmte(EMOJIS.stat_push * count, item_stats.push, ItemStat.push))
+        stats_lines.append(fmte(str(EMOJIS.stat_push) * count, item_stats.push, ItemStat.push))
     if item_stats.pull:
         count = 1 if item_stats.pull > MAX_EMOJIS else item_stats.pull
-        stats_lines.append(fmte(EMOJIS.stat_pull * count, item_stats.pull, ItemStat.pull))
+        stats_lines.append(fmte(str(EMOJIS.stat_pull) * count, item_stats.pull, ItemStat.pull))
     if item_stats.recoil:
         stats_lines.append(fmt(item_stats.recoil, ItemStat.recoil))
     if item_stats.advance:
         count = 1 if item_stats.advance > MAX_EMOJIS else item_stats.advance
-        stats_lines.append(fmte(EMOJIS.stat_advance * count, item_stats.advance, ItemStat.advance))
+        stats_lines.append(
+            fmte(str(EMOJIS.stat_advance) * count, item_stats.advance, ItemStat.advance)
+        )
     if item_stats.retreat:
         count = 1 if item_stats.retreat > MAX_EMOJIS else item_stats.retreat
-        stats_lines.append(fmte(EMOJIS.stat_retreat * count, item_stats.retreat, ItemStat.retreat))
+        stats_lines.append(
+            fmte(str(EMOJIS.stat_retreat) * count, item_stats.retreat, ItemStat.retreat)
+        )
     if item_stats.repair:
         stats_lines.append(fmt(item_stats.repair, ItemStat.repair))
     if item_stats.block_percent_points:
         stats_lines.append(
             fmte(
-                EMOJIS.stat_shield_absorption,
+                str(EMOJIS.stat_shield_absorption),
                 f"{item_stats.block_percent_points}%",
                 ItemStat.block_percent_points,
             )
@@ -211,7 +215,7 @@ def format_stats(
 
     if item_stats.uses:
         count = 1 if item_stats.uses > MAX_EMOJIS else item_stats.uses
-        costs_lines.append(fmte(EMOJIS.stat_uses * count, item_stats.uses, ItemStat.uses))
+        costs_lines.append(fmte(str(EMOJIS.stat_uses) * count, item_stats.uses, ItemStat.uses))
     if item_stats.backfire:
         costs_lines.append(fmt(item_stats.backfire, ItemStat.backfire))
     if item_stats.heat_generation:

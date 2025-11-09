@@ -265,7 +265,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         buttons_row.append(ui.ActionButton(
             label=gettext("item-lookup-ui-damage-avg"),
             style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            emoji=EMOJIS.get_element(item.element),
+            emoji=EMOJIS.get_element(item.element).to_partial(),
             custom_id=make_component_id(ComponentIds.avg_button, ctx),
         ))  # fmt: skip
 

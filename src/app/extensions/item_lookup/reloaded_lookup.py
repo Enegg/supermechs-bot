@@ -375,7 +375,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         button_row.append(ui.ActionButton(
             label=gettext("item-lookup-ui-damage-avg"),
             style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            emoji=EMOJIS.get_element(item.element),
+            emoji=EMOJIS.get_element(item.element).to_partial(),
             custom_id=make_component_id(ComponentIds.avg_button, ctx),
         ))  # fmt: skip
     if has_damage(item_stats):
@@ -383,7 +383,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             label=gettext("item-lookup-ui-damage-vs-titans"),
             style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
             disabled=not ctx.buffs_enabled,
-            emoji=EMOJIS.get_element(item.element),
+            emoji=EMOJIS.get_element(item.element).to_partial(),
             custom_id=make_component_id(ComponentIds.titan_button, ctx),
         ))  # fmt: skip
     if button_row:
@@ -396,7 +396,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 ui.SelectOption(
                     label=gettext.get_tier_name(stage.tier).capitalize(),
                     value=f"{i:x}",
-                    emoji=EMOJIS.get_tier(stage.tier),
+                    emoji=EMOJIS.get_tier(stage.tier).to_partial(),
                     default=i == ctx.stage_index,
                 )
                 for i, stage in enumerate(item.stages)

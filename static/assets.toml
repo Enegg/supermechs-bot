@@ -23,20 +23,20 @@ item_slot_module            = "<:module:730115649866694686>"
 # item_slot_kit               =
 # item_slot_perk              =
 
-tier_common           =           "<:circle_common:1430252827170705449>"
-tier_rare             =             "<:circle_rare:1430252834338766999>"
-tier_epic             =             "<:circle_epic:1430252829376774155>"
-tier_legendary        =        "<:circle_legendary:1430253303584784426>"
-tier_mythical         =         "<:circle_mythical:1430252831356489898>"
-tier_divine           =           "<:circle_divine:1430252828152299702>"
-tier_perk             =             "<:circle_perk:1430252832665112596>"
-tier_common_hollow    =    "<:hollow_circle_common:1430252835559182366>"
-tier_rare_hollow      =      "<:hollow_circle_rare:1430252844640108554>"
-tier_epic_hollow      =      "<:hollow_circle_epic:1430252838474481859>"
-tier_legendary_hollow = "<:hollow_circle_legendary:1430252840005402645>"
-tier_mythical_hollow  =  "<:hollow_circle_mythical:1430252841569882192>"
-tier_divine_hollow    =    "<:hollow_circle_divine:1430252836976853052>"
-tier_perk_hollow      =      "<:hollow_circle_perk:1430252843624956025>"
+tier_common           =      "<:tier_common:1430252827170705449>"
+tier_rare             =        "<:tier_rare:1430252834338766999>"
+tier_epic             =        "<:tier_epic:1430252829376774155>"
+tier_legendary        =   "<:tier_legendary:1430253303584784426>"
+tier_mythical         =    "<:tier_mythical:1430252831356489898>"
+tier_divine           =      "<:tier_divine:1430252828152299702>"
+tier_perk             =        "<:tier_perk:1430252832665112596>"
+tier_common_hollow    =    "<:tier_common_o:1430252835559182366>"
+tier_rare_hollow      =      "<:tier_rare_o:1430252844640108554>"
+tier_epic_hollow      =      "<:tier_epic_o:1430252838474481859>"
+tier_legendary_hollow = "<:tier_legendary_o:1430252840005402645>"
+tier_mythical_hollow  =  "<:tier_mythical_o:1430252841569882192>"
+tier_divine_hollow    =    "<:tier_divine_o:1430252836976853052>"
+tier_perk_hollow      =      "<:tier_perk_o:1430252843624956025>"
 
 # element_other     =
 element_physical  =   "<:phydmg:725871208830074929>"
@@ -109,20 +109,21 @@ buff_total_hp             =   "<:health:725870887588462652>"
 buff_backfire_reduction   = "<:backfire:725871901062201404>"
 
 
-[icons]
-item_slot_torso             = "https://cdn.discordapp.com/emojis/730115680363347968.webp"
-item_slot_legs              = "https://cdn.discordapp.com/emojis/730115699397361827.webp"
-item_slot_drone             = "https://cdn.discordapp.com/emojis/730115574763618394.webp"
-item_slot_side_weapon       = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
-mech_slot_right_side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
-mech_slot_left_side_weapon  = "https://cdn.discordapp.com/emojis/730115729365663884.webp"
-item_slot_top_weapon        = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
-mech_slot_right_top_weapon  = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
-mech_slot_left_top_weapon   = "https://cdn.discordapp.com/emojis/730115768431280238.webp"
-item_slot_charge            = "https://cdn.discordapp.com/emojis/730115557239685281.webp"
-item_slot_teleport          = "https://cdn.discordapp.com/emojis/730115603683213423.webp"
-item_slot_hook              = "https://cdn.discordapp.com/emojis/730115622347735071.webp"
-item_slot_module            = "https://cdn.discordapp.com/emojis/730115649866694686.webp"
+[icon_overrides]
+# this section defaults to emojis
+# item_slot_torso             =
+# item_slot_legs              =
+# item_slot_drone             =
+# item_slot_side_weapon       =
+# mech_slot_right_side_weapon =
+# mech_slot_left_side_weapon  =
+# item_slot_top_weapon        =
+# mech_slot_right_top_weapon  =
+# mech_slot_left_top_weapon   =
+# item_slot_charge            =
+# item_slot_teleport          =
+# item_slot_hook              =
+# item_slot_module            =
 # item_slot_shield            =
 # item_slot_kit               =
 # item_slot_perk              =
