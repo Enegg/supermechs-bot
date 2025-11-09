@@ -107,7 +107,7 @@ async def info(inter: CommandInteraction) -> None:
         components.append(ui.ActionRow(ui.UrlButton(
             url=oauth_url(bot.user.id, scopes=("bot", "applications.commands")),
             label="Invite me!",
-            emoji=EMOJIS.slots.drone,
+            emoji=EMOJIS.item_slot_drone,
         )))  # fmt: skip
 
     if CONFIG.indev:

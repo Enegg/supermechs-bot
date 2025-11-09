@@ -4,147 +4,125 @@ frantic_gifs = [
     "https://i.gyazo.com/8f85e9df5d3b1ed16b3c81dc3bccc3e9.mp4",
 ]
 
+
 [emojis]
-[emojis.slots]
-            torso =  "<:torso:730115680363347968>"
-             legs =   "<:legs:730115699397361827>"
-            drone =  "<:drone:730115574763618394>"
-      side_weapon =  "<:sider:730115747799629940>"
-right_side_weapon =  "<:sider:730115747799629940>"
- left_side_weapon =  "<:sidel:730115729365663884>"
-       top_weapon =   "<:topr:730115786735091762>"
- right_top_weapon =   "<:topr:730115786735091762>"
-  left_top_weapon =   "<:topl:730115768431280238>"
-           charge = "<:charge:730115557239685281>"
-         teleport =   "<:tele:730115603683213423>"
-             hook =   "<:hook:730115622347735071>"
-           module = "<:module:730115649866694686>"
-          #  shield =
-              # kit =
-            #  perk =
+item_slot_torso             =  "<:torso:730115680363347968>"
+item_slot_legs              =   "<:legs:730115699397361827>"
+item_slot_drone             =  "<:drone:730115574763618394>"
+item_slot_side_weapon       =  "<:sider:730115747799629940>"
+mech_slot_right_side_weapon =  "<:sider:730115747799629940>"
+mech_slot_left_side_weapon  =  "<:sidel:730115729365663884>"
+item_slot_top_weapon        =   "<:topr:730115786735091762>"
+mech_slot_right_top_weapon  =   "<:topr:730115786735091762>"
+mech_slot_left_top_weapon   =   "<:topl:730115768431280238>"
+item_slot_charge            = "<:charge:730115557239685281>"
+item_slot_teleport          =   "<:tele:730115603683213423>"
+item_slot_hook              =   "<:hook:730115622347735071>"
+item_slot_module            = "<:module:730115649866694686>"
+# item_slot_shield            =
+# item_slot_kit               =
+# item_slot_perk              =
 
-[emojis.tiers]
-          common =           "<:circle_common:1430252827170705449>"
-            rare =             "<:circle_rare:1430252834338766999>"
-            epic =             "<:circle_epic:1430252829376774155>"
-       legendary =        "<:circle_legendary:1430253303584784426>"
-        mythical =         "<:circle_mythical:1430252831356489898>"
-          divine =           "<:circle_divine:1430252828152299702>"
-            perk =             "<:circle_perk:1430252832665112596>"
-   common_hollow =    "<:hollow_circle_common:1430252835559182366>"
-     rare_hollow =      "<:hollow_circle_rare:1430252844640108554>"
-     epic_hollow =      "<:hollow_circle_epic:1430252838474481859>"
-legendary_hollow = "<:hollow_circle_legendary:1430252840005402645>"
- mythical_hollow =  "<:hollow_circle_mythical:1430252841569882192>"
-   divine_hollow =    "<:hollow_circle_divine:1430252836976853052>"
-     perk_hollow =      "<:hollow_circle_perk:1430252843624956025>"
+tier_common           =           "<:circle_common:1430252827170705449>"
+tier_rare             =             "<:circle_rare:1430252834338766999>"
+tier_epic             =             "<:circle_epic:1430252829376774155>"
+tier_legendary        =        "<:circle_legendary:1430253303584784426>"
+tier_mythical         =         "<:circle_mythical:1430252831356489898>"
+tier_divine           =           "<:circle_divine:1430252828152299702>"
+tier_perk             =             "<:circle_perk:1430252832665112596>"
+tier_common_hollow    =    "<:hollow_circle_common:1430252835559182366>"
+tier_rare_hollow      =      "<:hollow_circle_rare:1430252844640108554>"
+tier_epic_hollow      =      "<:hollow_circle_epic:1430252838474481859>"
+tier_legendary_hollow = "<:hollow_circle_legendary:1430252840005402645>"
+tier_mythical_hollow  =  "<:hollow_circle_mythical:1430252841569882192>"
+tier_divine_hollow    =    "<:hollow_circle_divine:1430252836976853052>"
+tier_perk_hollow      =      "<:hollow_circle_perk:1430252843624956025>"
 
-[emojis.elements]
-    # other =
- physical = "<:phydmg:725871208830074929>"
-explosive = "<:expdmg:725871223338172448>"
- electric = "<:eledmg:725871233614479443>"
- combined = "<:combined:1026853188940349490>"
+# element_other     =
+element_physical  =   "<:phydmg:725871208830074929>"
+element_explosive =   "<:expdmg:725871223338172448>"
+element_electric  =   "<:eledmg:725871233614479443>"
+element_combined  = "<:combined:1026853188940349490>"
 
-[emojis.cards]
-   common =    "<:card_common:1430257776851943514>"
-     rare =      "<:card_rare:1430257785555386530>"
-     epic =      "<:card_epic:1430257779192627358>"
-legendary = "<:card_legendary:1430257780379484260>"
- mythical =  "<:card_mythical:1430257781927317604>"
+card_common    =    "<:card_common:1430257776851943514>"
+card_rare      =      "<:card_rare:1430257785555386530>"
+card_epic      =      "<:card_epic:1430257779192627358>"
+card_legendary = "<:card_legendary:1430257780379484260>"
+card_mythical  =  "<:card_mythical:1430257781927317604>"
 
-[emojis.power_kits]
-common = "<:power_kit_10k:1430355888647966820>"
-  rare = "<:power_kit_50k:1430355890472615976>"
+power_kit_common = "<:power_kit_10k:1430355888647966820>"
+power_kit_rare   = "<:power_kit_50k:1430355890472615976>"
 
-[emojis.stats]
-                     weight =     "<:weight:725870760484143174>"
-                 hit_points =     "<:health:725870887588462652>"
-            energy_capacity =     "<:energy:725870941883859054>"
-        energy_regeneration =      "<:regen:725871003665825822>"
-              heat_capacity =       "<:heat:725871043767435336>"
-               heat_cooling =    "<:cooling:725871075778363422>"
-           bullets_capacity =    "<:bullets:1430271130597462257>"
-           rockets_capacity =    "<:rockets:1430271133218902268>"
-        physical_resistance =     "<:phyres:725871121051811931>"
-       explosive_resistance =     "<:expres:725871136935772294>"
-        electric_resistance =     "<:eleres:725871146716758077>"
-            physical_damage =     "<:phydmg:725871208830074929>"
- physical_resistance_damage =  "<:phyresdmg:725871259635679263>"
-            electric_damage =     "<:eledmg:725871233614479443>"
-              energy_damage =     "<:enedmg:725871599517171719>"
-     energy_capacity_damage =  "<:enecapdmg:725871420126789642>"
-        regeneration_damage =   "<:regendmg:725871443815956510>"
- electric_resistance_damage =  "<:eleresdmg:725871296381976629>"
-           explosive_damage =     "<:expdmg:725871223338172448>"
-                heat_damage =     "<:headmg:725871613639393290>"
-       heat_capacity_damage =  "<:heacapdmg:725871478083551272>"
-             cooling_damage = "<:coolingdmg:725871499281563728>"
-explosive_resistance_damage =  "<:expresdmg:725871281311842314>"
-                       walk =       "<:walk:725871844581834774>"
-                       jump =       "<:jump:725871869793796116>"
-                      range =      "<:range:725871752072134736>"
-                       push =       "<:push:725871716613488843>"
-                       pull =       "<:pull:725871734141616219>"
-                     recoil =     "<:recoil:725871778282340384>"
-                    advance =    "<:advance:725871818115907715>"
-                    retreat =    "<:retreat:725871804236955668>"
-                       uses =       "<:uses:725871917923303688>"
-                   backfire =   "<:backfire:725871901062201404>"
-                     repair =     "<:repair:1430271131922726954>"
-            heat_generation =     "<:heagen:725871674007879740>"
-                energy_cost =    "<:enecost:725871660237979759>"
-               bullets_cost =    "<:bullets:1430271130597462257>"
-               rockets_cost =    "<:rockets:1430271133218902268>"
-          shield_absorbtion = "🛡️"
+stat_weight                      =     "<:weight:725870760484143174>"
+stat_hit_points                  =     "<:health:725870887588462652>"
+stat_energy_capacity             =     "<:energy:725870941883859054>"
+stat_energy_regeneration         =      "<:regen:725871003665825822>"
+stat_heat_capacity               =       "<:heat:725871043767435336>"
+stat_heat_cooling                =    "<:cooling:725871075778363422>"
+stat_bullets_capacity            =    "<:bullets:1430271130597462257>"
+stat_rockets_capacity            =    "<:rockets:1430271133218902268>"
+stat_physical_resistance         =     "<:phyres:725871121051811931>"
+stat_explosive_resistance        =     "<:expres:725871136935772294>"
+stat_electric_resistance         =     "<:eleres:725871146716758077>"
+stat_physical_damage             =     "<:phydmg:725871208830074929>"
+stat_physical_resistance_damage  =  "<:phyresdmg:725871259635679263>"
+stat_electric_damage             =     "<:eledmg:725871233614479443>"
+stat_energy_damage               =     "<:enedmg:725871599517171719>"
+stat_energy_capacity_damage      =  "<:enecapdmg:725871420126789642>"
+stat_regeneration_damage         =   "<:regendmg:725871443815956510>"
+stat_electric_resistance_damage  =  "<:eleresdmg:725871296381976629>"
+stat_explosive_damage            =     "<:expdmg:725871223338172448>"
+stat_heat_damage                 =     "<:headmg:725871613639393290>"
+stat_heat_capacity_damage        =  "<:heacapdmg:725871478083551272>"
+stat_cooling_damage              = "<:coolingdmg:725871499281563728>"
+stat_explosive_resistance_damage =  "<:expresdmg:725871281311842314>"
+stat_walk                        =       "<:walk:725871844581834774>"
+stat_jump                        =       "<:jump:725871869793796116>"
+stat_range                       =      "<:range:725871752072134736>"
+stat_push                        =       "<:push:725871716613488843>"
+stat_pull                        =       "<:pull:725871734141616219>"
+stat_recoil                      =     "<:recoil:725871778282340384>"
+stat_advance                     =    "<:advance:725871818115907715>"
+stat_retreat                     =    "<:retreat:725871804236955668>"
+stat_uses                        =       "<:uses:725871917923303688>"
+stat_backfire                    =   "<:backfire:725871901062201404>"
+stat_repair                      =     "<:repair:1430271131922726954>"
+stat_heat_generation             =     "<:heagen:725871674007879740>"
+stat_energy_cost                 =    "<:enecost:725871660237979759>"
+stat_bullets_cost                =    "<:bullets:1430271130597462257>"
+stat_rockets_cost                =    "<:rockets:1430271133218902268>"
+stat_shield_absorption           = "🛡️"
 
-[emojis.categories]
-     energy_capacity =   "<:energy:725870941883859054>"
- energy_regeneration =    "<:regen:725871003665825822>"
-       energy_damage =   "<:enedmg:725871599517171719>"
-       heat_capacity =     "<:heat:725871043767435336>"
-        heat_cooling =  "<:cooling:725871075778363422>"
-         heat_damage =   "<:headmg:725871613639393290>"
-     physical_damage =   "<:phydmg:725871208830074929>"
-    explosive_damage =   "<:expdmg:725871223338172448>"
-     electric_damage =   "<:eledmg:725871233614479443>"
- physical_resistance =   "<:phyres:725871121051811931>"
-explosive_resistance =   "<:expres:725871136935772294>"
- electric_resistance =   "<:eleres:725871146716758077>"
-            total_hp =   "<:health:725870887588462652>"
-  backfire_reduction = "<:backfire:725871901062201404>"
+buff_energy_capacity      =   "<:energy:725870941883859054>"
+buff_energy_regeneration  =    "<:regen:725871003665825822>"
+buff_energy_damage        =   "<:enedmg:725871599517171719>"
+buff_heat_capacity        =     "<:heat:725871043767435336>"
+buff_heat_cooling         =  "<:cooling:725871075778363422>"
+buff_heat_damage          =   "<:headmg:725871613639393290>"
+buff_physical_damage      =   "<:phydmg:725871208830074929>"
+buff_explosive_damage     =   "<:expdmg:725871223338172448>"
+buff_electric_damage      =   "<:eledmg:725871233614479443>"
+buff_physical_resistance  =   "<:phyres:725871121051811931>"
+buff_explosive_resistance =   "<:expres:725871136935772294>"
+buff_electric_resistance  =   "<:eleres:725871146716758077>"
+buff_total_hp             =   "<:health:725870887588462652>"
+buff_backfire_reduction   = "<:backfire:725871901062201404>"
 
 
 [icons]
-[icons.slots]
-            torso = "https://cdn.discordapp.com/emojis/730115680363347968.webp"
-             legs = "https://cdn.discordapp.com/emojis/730115699397361827.webp"
-            drone = "https://cdn.discordapp.com/emojis/730115574763618394.webp"
-      side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
-right_side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
- left_side_weapon = "https://cdn.discordapp.com/emojis/730115729365663884.webp"
-       top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
- right_top_weapon = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
-  left_top_weapon = "https://cdn.discordapp.com/emojis/730115768431280238.webp"
-           charge = "https://cdn.discordapp.com/emojis/730115557239685281.webp"
-         teleport = "https://cdn.discordapp.com/emojis/730115603683213423.webp"
-             hook = "https://cdn.discordapp.com/emojis/730115622347735071.webp"
-           module = "https://cdn.discordapp.com/emojis/730115649866694686.webp"
-
-
-[colors]
-[colors.tiers]
-   common = 0xB1B1B1
-     rare = 0x55ACEE
-     epic = 0xCC41CC
-legendary = 0xE0A23C
- mythical = 0xFE6333
-   divine = 0xFFFFFF
-     perk = 0xFFFF33
-
-[colors.elements]
-    other = 0x323232
- physical = 0xFFB800
-explosive = 0xB71010
- electric = 0x106ED8
- combined = 0x211D1D
+item_slot_torso             = "https://cdn.discordapp.com/emojis/730115680363347968.webp"
+item_slot_legs              = "https://cdn.discordapp.com/emojis/730115699397361827.webp"
+item_slot_drone             = "https://cdn.discordapp.com/emojis/730115574763618394.webp"
+item_slot_side_weapon       = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
+mech_slot_right_side_weapon = "https://cdn.discordapp.com/emojis/730115747799629940.webp"
+mech_slot_left_side_weapon  = "https://cdn.discordapp.com/emojis/730115729365663884.webp"
+item_slot_top_weapon        = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
+mech_slot_right_top_weapon  = "https://cdn.discordapp.com/emojis/730115786735091762.webp"
+mech_slot_left_top_weapon   = "https://cdn.discordapp.com/emojis/730115768431280238.webp"
+item_slot_charge            = "https://cdn.discordapp.com/emojis/730115557239685281.webp"
+item_slot_teleport          = "https://cdn.discordapp.com/emojis/730115603683213423.webp"
+item_slot_hook              = "https://cdn.discordapp.com/emojis/730115622347735071.webp"
+item_slot_module            = "https://cdn.discordapp.com/emojis/730115649866694686.webp"
+# item_slot_shield            =
+# item_slot_kit               =
+# item_slot_perk              =

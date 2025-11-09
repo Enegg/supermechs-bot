@@ -7,7 +7,7 @@ from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import COLORS, EMOJIS, get_slot_icon
+from app.assets import COLORS, EMOJIS, ICONS
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
@@ -193,7 +193,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     power_level = (
         "max" if ctx.level_index == len(levels) - 1 else str(levels[ctx.level_index].level)
     )
-    tier_emoji = emoji if (emoji := EMOJIS.cards[tier]) is not None else EMOJIS.tiers[tier]
+    tier_emoji = emoji if (emoji := EMOJIS.get_card(tier)) is not None else EMOJIS.get_tier(tier)
     title_lines = [
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}* {tier_emoji}",
@@ -209,19 +209,19 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
         # energizing
         power_line = [
-            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stats.energy_capacity}"
+            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_energy_capacity}"
         ]
         legacy_pks = power_required_as_legacy_power_kits(power_required)
 
         if legacy_pks:
-            power_line.append(f"(**{legacy_pks}**×{EMOJIS.power_kits.common})")  # noqa: RUF001
+            power_line.append(f"(**{legacy_pks}**×{EMOJIS.power_kit_common})")  # noqa: RUF001
 
         title_lines.append("".join(power_line))
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container = ui.Container(accent_colour=COLORS.elements[item.element])
+    container = ui.Container(accent_colour=COLORS.get_element(item.element))
 
-    match get_slot_icon(item.slot_id):
+    match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):
             container.children.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
 
@@ -237,7 +237,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         and (boost_power := levels[ctx.level_index].power_contribution)
     ):
         stats_lines.append(
-            f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
+            f"{EMOJIS.stat_energy_capacity} **{boost_power}** {gettext('boost-power')}"
         )
     if stats_lines or costs_lines:
         stats_part = "\n".join(stats_lines)
@@ -265,7 +265,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         buttons_row.append(ui.ActionButton(
             label=gettext("item-lookup-ui-damage-avg"),
             style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            emoji=EMOJIS.elements[item.element],
+            emoji=EMOJIS.get_element(item.element),
             custom_id=make_component_id(ComponentIds.avg_button, ctx),
         ))  # fmt: skip
 
