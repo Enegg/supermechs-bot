@@ -1,4 +1,4 @@
-from typing import Literal, override
+from typing import TYPE_CHECKING, Literal, override
 
 from discord.typeshed import EmojiType
 from disnake import ButtonStyle, ui
@@ -10,6 +10,8 @@ type ActiveButtonStyle = Literal[
     ButtonStyle.secondary,
     ButtonStyle.success,
     ButtonStyle.danger,
+    # microsoft/pyright#11100
+    # DisnakeDev/disnake#1473
     ButtonStyle.blurple,
     ButtonStyle.grey,
     ButtonStyle.gray,
@@ -35,13 +37,13 @@ class ActionButton(ui.Button[None]):
             style=style, label=label, disabled=disabled, custom_id=custom_id, emoji=emoji, id=id
         )
 
-    @property
-    @override
-    def custom_id(self) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Component's unique identifier."""
-        custom_id = super().custom_id
-        assert custom_id is not None
-        return custom_id
+    if TYPE_CHECKING:
+
+        @property
+        @override
+        def custom_id(self) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
+            """The ID of the button that gets received during an interaction."""
+            ...
 
 
 class UrlButton(ui.Button[None]):
@@ -58,14 +60,10 @@ class UrlButton(ui.Button[None]):
     ) -> None:
         super().__init__(label=label, disabled=disabled, url=url, emoji=emoji, id=id)
 
-    @property
-    @override
-    def url(self) -> str:
-        """The URL this button sends you to."""
-        url = super().url
-        assert url is not None
-        return url
+    if TYPE_CHECKING:
 
-    @url.setter
-    def url(self, url: str) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
-        super().url = url
+        @property
+        @override
+        def url(self) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
+            """The URL this button sends you to."""
+            ...
