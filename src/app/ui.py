@@ -1,10 +1,11 @@
 """Extension of the library provided UI kit."""
 
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, override
 
 import disnake
 from app.disnake_types import Interaction, MessageInteraction, ModalInteraction
+from discord import ComponentLimits, EmojiType
 from disnake import (
     ButtonStyle,
     File as _FileObject,
@@ -13,6 +14,7 @@ from disnake import (
     SeparatorSpacing,
     TextInputStyle,
     UnfurledMediaItem,
+    ui,
 )
 from disnake.components import handle_media_item_input as _handle_media_item_input
 from disnake.ui import (
@@ -32,9 +34,6 @@ from disnake.ui import (
 from ui_store import CallbackStore as _CallbackStore
 
 from app import i18n
-
-from .buttons import ActionButton, UrlButton
-from .selects import option_to_page_count
 
 if TYPE_CHECKING:
     from disnake.components import MediaItemInput
@@ -77,6 +76,19 @@ type CallbackStore = _CallbackStore[MessageInteraction]
 type MessageComponents = _MessageComponents
 type ContainerChildUIComponent = _ContainerChildUIComponent
 type MediaConvertible = MediaItemInput | _FileObject
+type ActiveButtonStyle = Literal[
+    ButtonStyle.primary,
+    ButtonStyle.secondary,
+    ButtonStyle.success,
+    ButtonStyle.danger,
+    # microsoft/pyright#11100
+    # DisnakeDev/disnake#1473
+    ButtonStyle.blurple,
+    ButtonStyle.grey,
+    ButtonStyle.gray,
+    ButtonStyle.green,
+    ButtonStyle.red,
+]
 
 
 def callback_store(base_inter: Interaction, /) -> CallbackStore:
@@ -115,3 +127,66 @@ def thumbnail(
 
 def file(media: MediaConvertible, *, spoiler: bool = False, id: int = 0) -> File:
     return File(file=_media(media), spoiler=spoiler, id=id)
+
+
+def option_to_page_count(options: int, /) -> int:
+    if options <= ComponentLimits.select_options:
+        return 1
+
+    first_and_last_page = (ComponentLimits.select_options - 1) * 2
+
+    if options <= first_and_last_page:
+        # fits on two pages, add one of up/down option on each
+        return 2
+
+    size = ComponentLimits.select_options - 2
+    return 2 + (options - first_and_last_page + size - 1) // size
+
+
+class ActionButton(ui.Button[None]):
+    """Represents an interactive button."""
+
+    def __init__(
+        self,
+        *,
+        custom_id: str,
+        style: ActiveButtonStyle = ButtonStyle.secondary,
+        label: str | None = None,
+        disabled: bool = False,
+        emoji: EmojiType | None = None,
+        id: int = 0,
+    ) -> None:
+        super().__init__(
+            style=style, label=label, disabled=disabled, custom_id=custom_id, emoji=emoji, id=id
+        )
+
+    if TYPE_CHECKING:
+
+        @property
+        @override
+        def custom_id(self) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
+            """The ID of the button that gets received during an interaction."""
+            ...
+
+
+class UrlButton(ui.Button[None]):
+    """Represents a dummy button with a link."""
+
+    def __init__(
+        self,
+        *,
+        url: str,
+        label: str | None = None,
+        disabled: bool = False,
+        emoji: EmojiType | None = None,
+        id: int = 0,
+    ) -> None:
+        super().__init__(label=label, disabled=disabled, url=url, emoji=emoji, id=id)
+
+    if TYPE_CHECKING:
+
+        @property
+        @override
+        def url(self) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
+            """The URL this button sends you to."""
+            ...
