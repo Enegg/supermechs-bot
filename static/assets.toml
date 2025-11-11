@@ -19,9 +19,9 @@ item_slot_charge            = "<:charge:730115557239685281>"
 item_slot_teleport          =   "<:tele:730115603683213423>"
 item_slot_hook              =   "<:hook:730115622347735071>"
 item_slot_module            = "<:module:730115649866694686>"
-# item_slot_shield            =
-# item_slot_kit               =
-# item_slot_perk              =
+item_slot_shield            = "<:shield:1437226022549328073>"
+item_slot_kit               =    "<:kit:1437225259341189286>"
+item_slot_perk              =   "<:perk:1437218417609539726>"
 
 tier_common           =      "<:tier_common:1430252827170705449>"
 tier_rare             =        "<:tier_rare:1430252834338766999>"
