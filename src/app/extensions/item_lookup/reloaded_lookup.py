@@ -396,7 +396,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 ui.SelectOption(
                     label=gettext.get_tier_name(stage.tier).capitalize(),
                     value=f"{i:x}",
-                    emoji=EMOJIS.get_tier(stage.tier).to_partial(),
+                    emoji=EMOJIS.get_tier(stage.tier, hollow=i != ctx.stage_index).to_partial(),
                     default=i == ctx.stage_index,
                 )
                 for i, stage in enumerate(item.stages)
