@@ -13,7 +13,7 @@ from app.utils import format_exception
 
 plugin = create_dev_plugin(__name__)
 KNOWN_PLUGIN_PATHS = tuple(walk_extensions(paths.PLUGINS_PACKAGE))
-assert 1 <= len(KNOWN_PLUGIN_PATHS) <= ComponentLimits.select_options
+assert 1 <= len(KNOWN_PLUGIN_PATHS) <= ComponentLimits.string_select_options
 
 recently_loaded_plugin: str | None = None
 

@@ -181,7 +181,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
     gettext = i18n.get_gettext(locale)
     tier = item.stages[0].tier
     levels = item.stages[0].levels
-    assert len(levels) <= ComponentLimits.select_options  # TODO: guard this better
+    assert len(levels) <= ComponentLimits.string_select_options  # TODO: guard this better
     item_stats = get_item_stats(item, ctx)
 
     # ------------------------------------- title, description -------------------------------------

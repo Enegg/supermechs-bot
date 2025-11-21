@@ -130,16 +130,16 @@ def file(media: MediaConvertible, *, spoiler: bool = False, id: int = 0) -> File
 
 
 def option_to_page_count(options: int, /) -> int:
-    if options <= ComponentLimits.select_options:
+    if options <= ComponentLimits.string_select_options:
         return 1
 
-    first_and_last_page = (ComponentLimits.select_options - 1) * 2
+    first_and_last_page = (ComponentLimits.string_select_options - 1) * 2
 
     if options <= first_and_last_page:
         # fits on two pages, add one of up/down option on each
         return 2
 
-    size = ComponentLimits.select_options - 2
+    size = ComponentLimits.string_select_options - 2
     return 2 + (options - first_and_last_page + size - 1) // size
 
 

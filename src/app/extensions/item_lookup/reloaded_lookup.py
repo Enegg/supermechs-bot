@@ -414,24 +414,24 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
         )))  # fmt: skip
 
     # ---------------------------------------- level select ----------------------------------------
-    if len(levels) <= ComponentLimits.select_options:
+    if len(levels) <= ComponentLimits.string_select_options:
         level_options = make_level_options(locale, levels, ctx.level_index)
 
     elif ctx.levels_page == 1:
         level_options = make_level_options(
-            locale, levels[: ComponentLimits.select_options - 1], ctx.level_index
+            locale, levels[: ComponentLimits.string_select_options - 1], ctx.level_index
         )
         level_options.append(make_option_down(locale))
 
     elif ctx.levels_page == ui.option_to_page_count(len(levels)):
-        offset = (ComponentLimits.select_options - 2) * (ctx.levels_page - 1) + 1
+        offset = (ComponentLimits.string_select_options - 2) * (ctx.levels_page - 1) + 1
         level_options = [
             make_option_up(locale),
             *make_level_options(locale, levels[offset:], ctx.level_index, offset),
         ]
 
     else:
-        size = ComponentLimits.select_options - 2
+        size = ComponentLimits.string_select_options - 2
         offset = size * (ctx.levels_page - 1) + 1
         level_options = [
             make_option_up(locale),
