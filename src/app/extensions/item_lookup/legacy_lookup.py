@@ -3,7 +3,7 @@ from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits
-from disnake import Color, Locale, MessageFlags
+from disnake import Color, MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
@@ -63,16 +63,18 @@ async def legacy_item_lookup(
     rarity:
         Remove suggestions below this rarity. {{ ITEM_TIER }}
     """
+    gettext = i18n.get_gettext(inter)
+
     for item in packs.filter_items(type, element, rarity, True):
         if item.name == name:
             break
 
     else:
-        msg = i18n.get_message(i18n.get_locale(inter), "unknown-item-name", name=name)
+        msg = gettext("unknown-item-name", name=name)
         raise commands.UserInputError(msg)
 
     ctx = UIContext(item_id=item.id, level_index=0)
-    container = get_item_summary(i18n.get_locale(inter), item, ctx)
+    container = get_item_summary(gettext, item, ctx)
     if __debug__:
         debug_components(container)
     await inter.response.send_message(
@@ -84,7 +86,7 @@ async def on_legacy_lookup_interaction(
     inter: ui.MessageInteraction, logger: logging.Logger
 ) -> None:
     component, ctx = parse_component_id(inter.data.custom_id)
-    locale = i18n.get_locale(inter)
+    gettext = i18n.get_gettext(inter)
     item_pack = packs.get_item_pack()
     # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
@@ -95,9 +97,7 @@ async def on_legacy_lookup_interaction(
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
             ui.TextDisplay(
-                "⚠️ This item is no longer available.\n"
-                "-# Hint: the item pack might have been changed. "
-                f"Try searching it with {get_mention("legacy-item")} again."
+                gettext("item-lookup-item-not-available", command=get_mention("legacy-item"))
             ),
             accent_colour=Color(0xFF0000),
         ))  # fmt: skip
@@ -108,12 +108,11 @@ async def on_legacy_lookup_interaction(
     if len(item.stages[0].levels) < ctx.level_index:
         valid_level_index = min(ctx.level_index, len(item.stages[0].levels) - 1)
         ctx = ctx.__replace__(level_index=valid_level_index)
-        await inter.response.edit_message(components=get_item_summary(locale, item, ctx))
+        await inter.response.edit_message(components=get_item_summary(gettext, item, ctx))
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
-            "The summary you've interacted with was made using a different item pack.\n"
-            f"If the item shown has changed, try searching it with {get_mention('legacy-item')} again.",
+            gettext("item-lookup-item-changed-info", command=get_mention("legacy-item")),
             ephemeral=True,
         )
         return
@@ -134,7 +133,7 @@ async def on_legacy_lookup_interaction(
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(locale, item, ctx)
+    container = get_item_summary(gettext, item, ctx)
     if __debug__:
         debug_components(container)
     await inter.response.edit_message(components=container)
@@ -177,8 +176,7 @@ def power_required_as_legacy_power_kits(power: int, /) -> int:
     return legacy_pks
 
 
-def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Container:
-    gettext = i18n.get_gettext(locale)
+def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> ui.Container:
     tier = item.stages[0].tier
     levels = item.stages[0].levels
     assert len(levels) <= ComponentLimits.string_select_options  # TODO: guard this better
@@ -231,7 +229,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
             components.append(title)
 
     # ------------------------------------------- stats --------------------------------------------
-    stats_lines, costs_lines = format_stats(item_stats, locale, avg=ctx.damage_average)
+    stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
 
     if (
         item.type is sm.Item.Type.kit
@@ -290,7 +288,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
             )
             for i, level in enumerate(levels)
         ],
-        placeholder=gettext("item-lookup-ui-select-placeholder"),
+        placeholder=gettext("item-lookup-ui-level-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
 

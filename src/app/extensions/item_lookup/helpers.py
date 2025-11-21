@@ -1,8 +1,6 @@
 import math
 from collections import abc
 
-from disnake import Locale
-
 from app import i18n
 from app.assets import EMOJIS
 
@@ -84,10 +82,10 @@ def has_buff_affected_stats(stats: sm.IItemStats, /) -> bool:
 
 
 def format_stats(
-    item_stats: sm.IItemStats, locale: Locale, *, avg: bool
+    item_stats: sm.IItemStats, gettext: i18n.GetText, *, avg: bool
 ) -> tuple[list[str], list[str]]:
     def fmt(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
-        return f"{emoji} **{value}** {i18n.get_stat_name(locale, stat_key)}"
+        return f"{emoji} **{value}** {gettext.get_stat_name(stat_key)}"
 
     format_damage: abc.Callable[[int, int], str] = (
         format_damage_average if avg else format_damage_default
@@ -288,7 +286,7 @@ def format_stats(
     if item_stats.advance or item_stats.retreat:
         # if item has no costs, don't put jump-required separately
         (costs_lines or stats_lines).append(
-            f"{emojis.jump} **{i18n.get_message(locale, 'item-lookup-jump-required')}**"
+            f"{emojis.jump} **{gettext('item-lookup-jump-required')}**"
         )
     # TODO: shield stats
     # TODO: POWER_KIT boost_power

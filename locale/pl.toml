@@ -1,4 +1,4 @@
-[meta]
+[metadata]
 flag_emoji = "🇵🇱"
 english_name = "Polish"
 local_name = "Polski"
@@ -63,13 +63,16 @@ item-lookup-ui-damage-vs-titans = "dla tytanów"
 item-lookup-power-level = "Poziom"
 item-lookup-power-required = "Wymagana moc"
 item-lookup-ui-level-select-label = "Poziom {level}"
-item-lookup-ui-select-placeholder = "Wybierz poziom"
+item-lookup-ui-level-select-placeholder = "Wybierz poziom"
+item-lookup-ui-tier-select-placeholder = "Wybierz rzadkość"
 item-lookup-ui-select-up-label = "Poprzednie poziomy"
 item-lookup-ui-select-down-label = "Następne poziomy"
 item-lookup-jump-required = "Wymagana zdolność skoku"
 item-lookup-no-stats = "Brak statystyk do pokazania"
-item-lookup-no-image = "Podgląd niedostępny"
+item-lookup-no-image = "Obraz niedostępny"
 item-lookup-stats-header = "Statystyki"
+item-lookup-item-not-available = "⚠️ Ten przedmiot nie jest dłużej dostępny.\n-# Wskazówka: paczka przedmiotów mogła ulec zmianie. Spróbuj wyszukać ten przedmiot ponownie za pomocą {command}."
+item-lookup-item-changed-info = "Podsumowanie które kliknięto wyświetlało przedmiot z innej paczki przedmiotów.\nJeżeli przedmiot uległ zmianie, spróbuj wyszukać go ponownie za pomocą {command}."
 
 item-compare-ui-buffs = "Bonusy"
 item-compare-jump-required = "Wymagana zdolność skoku"
@@ -81,9 +84,9 @@ tier-epic = "epicki"
 tier-legendary = "legendarny"
 tier-mythical = "mityczny"
 tier-divine = "boski"
-tier-perk = "dodatek"
+tier-perk = "dodatek"  # as in-app
 
-# boost-power = "?"
+# boost-power = "?"  # app does not have this translated
 
 [commands]
 ITEM_NAME = "przedmiot"

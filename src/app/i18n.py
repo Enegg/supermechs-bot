@@ -2,13 +2,12 @@ import logging
 import typing
 from collections import abc
 from pathlib import Path
-from typing import Final, Literal, cast as type_cast
+from typing import Final, Literal, Protocol, cast as type_cast
 
 import attrs
 import msgspec
 from monads.option import Null, Option, Some
 
-from app.disnake_types import HasLocale
 from disnake import Locale, LocalizationProtocol
 
 from app.class_utils import unset_to_option
@@ -16,7 +15,7 @@ from app.typeshed import Pathish
 
 from dupermechs.enums import ItemRarity, ItemStat
 
-__all__ = ("GetText", "get_gettext", "get_message", "get_stat_name", "load")
+__all__ = ("GetText", "Locale", "get_gettext", "get_message", "load")
 
 type LocalePair[KT] = tuple[KT, Locale]
 type LiteralKey = Literal[
@@ -24,7 +23,7 @@ type LiteralKey = Literal[
     "command-running",
     "command-timeout",
     "command-error",
-    "unknown-item-name",
+    "unknown-item-name",  # {name}
     # ui
     "ui-disallowed",
     "ui-quit",
@@ -37,14 +36,17 @@ type LiteralKey = Literal[
     "item-lookup-ui-damage-vs-titans",
     "item-lookup-power-level",
     "item-lookup-power-required",
-    "item-lookup-ui-level-select-label",
-    "item-lookup-ui-select-placeholder",
+    "item-lookup-ui-level-select-label",  # {level}
+    "item-lookup-ui-level-select-placeholder",
+    "item-lookup-ui-tier-select-placeholder",
     "item-lookup-ui-select-up-label",
     "item-lookup-ui-select-down-label",
     "item-lookup-jump-required",
     "item-lookup-no-stats",
     "item-lookup-no-image",
     "item-lookup-stats-header",
+    "item-lookup-item-not-available",  # {command}
+    "item-lookup-item-changed-info",  # {command}
     # item-compare
     "item-compare-ui-buffs",
     "item-compare-jump-required",
@@ -76,10 +78,6 @@ localization_provider: Final = type_cast("LocalizationProtocol", _command_locale
 locale_override: Option[Locale] = Null.null
 
 
-def get_locale(inter: HasLocale, /) -> Locale:
-    return locale_override.unwrap_or(inter.locale)
-
-
 def set_locale_override(locale: Locale) -> None:
     global locale_override
     locale_override = Some(locale)
@@ -88,6 +86,11 @@ def set_locale_override(locale: Locale) -> None:
 def remove_locale_override() -> None:
     global locale_override
     locale_override = Null.null
+
+
+class HasLocale(Protocol):
+    @property
+    def locale(self) -> Locale: ...
 
 
 @attrs.define
@@ -103,6 +106,19 @@ class GetText:
     def get_tier_name(self, tier: ItemRarity, /) -> str:
         return get_message(self.locale, f"tier-{tier.name}")  # pyright: ignore[reportArgumentType]
 
+    # messages with template fields
+    def unknown_item_name(self, name: str) -> str:
+        return self("unknown-item-name", name=name)
+
+    def item_lookup_ui_level_select_label(self, level: int) -> str:
+        return self("item-lookup-ui-level-select-label", level=level)
+
+    def item_lookup_item_not_available(self, command: str) -> str:
+        return self("item-lookup-item-not-available", command=command)
+
+    def item_lookup_item_changed_info(self, command: str) -> str:
+        return self("item-lookup-item-changed-info", command=command)
+
 
 def _get[KT](store: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Locale) -> str:
     try:
@@ -115,17 +131,13 @@ def _get[KT](store: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Lo
         except KeyError:
             _LOG.error("Key %s does not exist", key)
             value = str(key)
-            store[key, FALLBACK_LOCALE] = value
+            store[key, locale] = store[key, FALLBACK_LOCALE] = value
 
         else:
             _LOG.warning("Locale %s has no key %r", locale, key)
             store[key, locale] = value
 
         return value
-
-
-def get_stat_name(locale: Locale, stat: ItemStat) -> str:
-    return _get(stats, stat, locale)
 
 
 def get_message(locale: Locale, key: LiteralKey, /, **format_kwargs: object) -> str:
@@ -137,19 +149,19 @@ def get_message(locale: Locale, key: LiteralKey, /, **format_kwargs: object) -> 
     return msg
 
 
-def get_gettext(locale: Locale, /) -> GetText:
-    return GetText(locale)
+def get_gettext(inter: HasLocale, /) -> GetText:
+    return GetText(locale_override.unwrap_or(inter.locale))
 
 
-class _LocaleMeta(msgspec.Struct):
+class _LocaleMetadata(msgspec.Struct):
     english_name: str
     local_name: str
     flag_emoji: str | msgspec.UnsetType = msgspec.UNSET
     region: str | msgspec.UnsetType = msgspec.UNSET
 
 
-class _LocaleData(msgspec.Struct):
-    meta: _LocaleMeta
+class _LocaleFileStruct(msgspec.Struct):
+    metadata: _LocaleMetadata
     stats: abc.Mapping[str, str]
     messages: abc.Mapping[LiteralKey, str] | msgspec.UnsetType = msgspec.UNSET
     commands: dict[str, str] | msgspec.UnsetType = msgspec.UNSET
@@ -163,13 +175,11 @@ class LocaleInfo(msgspec.Struct):
 
 
 def _load_locale_file(path: Path, /) -> None:
-    if not path.is_file():
-        msg = f"Path {path} is not a file"
-        raise FileNotFoundError(msg)
+    # precondition: path.suffix equals FILE_EXT
 
     locale = Locale[path.stem]
     _LOG.info("Loading locale for %s", locale)
-    data = msgspec.toml.decode(path.read_bytes(), type=_LocaleData)
+    data = msgspec.toml.decode(path.read_bytes(), type=_LocaleFileStruct)
 
     for key, entry in data.stats.items():
         stat = ItemStat[key]
@@ -183,10 +193,10 @@ def _load_locale_file(path: Path, /) -> None:
         _command_locale[locale.value] = data.commands
 
     locale_info[locale] = LocaleInfo(
-        english_name=data.meta.english_name,
-        local_name=data.meta.local_name,
-        flag_emoji=unset_to_option(data.meta.flag_emoji),
-        region=unset_to_option(data.meta.region),
+        english_name=data.metadata.english_name,
+        local_name=data.metadata.local_name,
+        flag_emoji=unset_to_option(data.metadata.flag_emoji),
+        region=unset_to_option(data.metadata.region),
     )
 
 

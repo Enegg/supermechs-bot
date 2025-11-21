@@ -1,4 +1,4 @@
-[meta]
+[metadata]
 flag_emoji = "🇬🇧"
 english_name = "English"
 local_name = "English"
@@ -64,13 +64,16 @@ item-lookup-ui-damage-vs-titans = "vs titans"
 item-lookup-power-level = "Power level"
 item-lookup-power-required = "Power required"
 item-lookup-ui-level-select-label = "Level {level}"
-item-lookup-ui-select-placeholder = "Select level"
+item-lookup-ui-level-select-placeholder = "Select level"
+item-lookup-ui-tier-select-placeholder = "Select tier"
 item-lookup-ui-select-up-label = "Previous levels"
 item-lookup-ui-select-down-label = "Next levels"
 item-lookup-jump-required = "Jumping required"
 item-lookup-no-stats = "No stats to show"
 item-lookup-no-image = "Image not available"
 item-lookup-stats-header = "Stats"
+item-lookup-item-not-available = "⚠️ This item is no longer available.\n-# Hint: the item pack might have been changed. Try searching it with {command} again."
+item-lookup-item-changed-info = "The summary you've interacted with was made using a different item pack.\nIf the item shown has changed, try searching it with {command} again."
 
 item-compare-ui-buffs = "Buffs"
 item-compare-jump-required = "Jumping required"

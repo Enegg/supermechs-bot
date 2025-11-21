@@ -4,7 +4,7 @@ from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits
-from disnake import Color, Locale, MessageFlags
+from disnake import Color, MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
@@ -77,12 +77,14 @@ async def item_lookup(
     rarity:
         Remove suggestions below this rarity. {{ ITEM_TIER }}
     """  # noqa: D400
+    gettext = i18n.get_gettext(inter)
+
     for item in packs.filter_items(type, element, rarity, False):
         if item.name == name:
             break
 
     else:
-        msg = i18n.get_message(i18n.get_locale(inter), "unknown-item-name", name=name)
+        msg = gettext("unknown-item-name", name=name)
         raise commands.UserInputError(msg)
 
     stage_index = len(item.stages) - 1
@@ -93,7 +95,7 @@ async def item_lookup(
         level_index=len(levels) - 1,
         levels_page=ui.option_to_page_count(len(levels)),
     )
-    container = get_item_summary(i18n.get_locale(inter), item, ctx)
+    container = get_item_summary(gettext, item, ctx)
     if __debug__:
         debug_components(container)
     await inter.response.send_message(
@@ -105,7 +107,7 @@ async def on_reloaded_lookup_interaction(
     inter: ui.MessageInteraction, logger: logging.Logger
 ) -> None:
     component, ctx = parse_component_id(inter.data.custom_id)
-    locale = i18n.get_locale(inter)
+    gettext = i18n.get_gettext(inter)
     item_pack = packs.get_item_pack()
     # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
@@ -115,11 +117,7 @@ async def on_reloaded_lookup_interaction(
     # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
-            ui.TextDisplay(
-                "⚠️ This item is no longer available.\n"
-                "-# Hint: the item pack might have been changed. "
-                f"Try searching it with {get_mention('item')} again."
-            ),
+            ui.TextDisplay(gettext("item-lookup-item-not-available", command=get_mention("item"))),
             accent_colour=Color(0xFF0000),
         ))  # fmt: skip
         return
@@ -136,12 +134,11 @@ async def on_reloaded_lookup_interaction(
         ctx = ctx.__replace__(
             stage_index=valid_stage_index, level_index=valid_level_index, levels_page=0
         )
-        await inter.response.edit_message(components=get_item_summary(locale, item, ctx))
+        await inter.response.edit_message(components=get_item_summary(gettext, item, ctx))
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
-            "The summary you've interacted with was made using a different item pack.\n"
-            f"If the item shown has changed, try searching it with {get_mention('item')} again.",
+            gettext("item-lookup-item-changed-info", command=get_mention("item")),
             ephemeral=True,
         )
         return
@@ -189,7 +186,7 @@ async def on_reloaded_lookup_interaction(
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(locale, item, ctx)
+    container = get_item_summary(gettext, item, ctx)
     if __debug__:
         debug_components(container)
     await inter.response.edit_message(components=container)
@@ -232,14 +229,14 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, UIContext]
 
 
 def make_level_options(
-    locale: Locale,
+    gettext: i18n.GetText,
     levels: abc.Iterable[sm.IStageLevel],
     selected_level_index: int,
     start: int = 0,
 ) -> list[ui.SelectOption]:
     return [
         ui.SelectOption(
-            label=i18n.get_message(locale, "item-lookup-ui-level-select-label", level=level.level),
+            label=gettext("item-lookup-ui-level-select-label", level=level.level),
             value=str(i),
             default=i == selected_level_index,
         )
@@ -247,15 +244,13 @@ def make_level_options(
     ]
 
 
-def make_option_up(locale: Locale, /) -> ui.SelectOption:
-    return ui.SelectOption(
-        label=i18n.get_message(locale, "item-lookup-ui-select-up-label"), value="$u", emoji="🔺"
-    )
+def make_option_up(gettext: i18n.GetText, /) -> ui.SelectOption:
+    return ui.SelectOption(label=gettext("item-lookup-ui-select-up-label"), value="$u", emoji="🔺")
 
 
-def make_option_down(locale: Locale, /) -> ui.SelectOption:
+def make_option_down(gettext: i18n.GetText, /) -> ui.SelectOption:
     return ui.SelectOption(
-        label=i18n.get_message(locale, "item-lookup-ui-select-down-label"), value="$d", emoji="🔻"
+        label=gettext("item-lookup-ui-select-down-label"), value="$d", emoji="🔻"
     )
 
 
@@ -275,8 +270,7 @@ def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
     return common_pks, rare_pks
 
 
-def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Container:
-    gettext = i18n.get_gettext(locale)
+def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> ui.Container:
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
@@ -340,7 +334,7 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
             components.append(title)
 
     # ------------------------------------------- stats --------------------------------------------
-    stats_lines, costs_lines = format_stats(item_stats, locale, avg=ctx.damage_average)
+    stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
 
     if (
         not stats_lines
@@ -409,39 +403,39 @@ def get_item_summary(locale: Locale, item: sm.IItem, ctx: UIContext) -> ui.Conta
         ]
         components.append(ui.ActionRow(ui.StringSelect(
             options=stage_options,
-            placeholder="Select tier",
+            placeholder=gettext("item-lookup-ui-tier-select-placeholder"),
             custom_id=make_component_id(ComponentIds.stage_select, ctx),
         )))  # fmt: skip
 
     # ---------------------------------------- level select ----------------------------------------
     if len(levels) <= ComponentLimits.string_select_options:
-        level_options = make_level_options(locale, levels, ctx.level_index)
+        level_options = make_level_options(gettext, levels, ctx.level_index)
 
     elif ctx.levels_page == 1:
         level_options = make_level_options(
-            locale, levels[: ComponentLimits.string_select_options - 1], ctx.level_index
+            gettext, levels[: ComponentLimits.string_select_options - 1], ctx.level_index
         )
-        level_options.append(make_option_down(locale))
+        level_options.append(make_option_down(gettext))
 
     elif ctx.levels_page == ui.option_to_page_count(len(levels)):
         offset = (ComponentLimits.string_select_options - 2) * (ctx.levels_page - 1) + 1
         level_options = [
-            make_option_up(locale),
-            *make_level_options(locale, levels[offset:], ctx.level_index, offset),
+            make_option_up(gettext),
+            *make_level_options(gettext, levels[offset:], ctx.level_index, offset),
         ]
 
     else:
         size = ComponentLimits.string_select_options - 2
         offset = size * (ctx.levels_page - 1) + 1
         level_options = [
-            make_option_up(locale),
-            *make_level_options(locale, levels[offset : offset + size], ctx.level_index, offset),
-            make_option_down(locale),
+            make_option_up(gettext),
+            *make_level_options(gettext, levels[offset : offset + size], ctx.level_index, offset),
+            make_option_down(gettext),
         ]
 
     components.append(ui.ActionRow(ui.StringSelect(
         options=level_options,
-        placeholder=gettext("item-lookup-ui-select-placeholder"),
+        placeholder=gettext("item-lookup-ui-level-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
 

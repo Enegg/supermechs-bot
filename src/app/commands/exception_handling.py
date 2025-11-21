@@ -17,7 +17,7 @@ _LOG = logging.getLogger("event.command_error")
 
 
 def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError) -> str | None:
-    gettext = i18n.get_gettext(inter.locale)
+    gettext = i18n.get_gettext(inter)
 
     match exc:
         case commands.NotOwner():
