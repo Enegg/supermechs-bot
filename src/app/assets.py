@@ -189,23 +189,23 @@ class Icons:
 class Colors:
     __slots__ = ()
 
-    tier_common: Final[Color] = Color.from_hex("#B1B1B1")
-    tier_rare: Final[Color] = Color.from_hex("#55ACEE")
-    tier_epic: Final[Color] = Color.from_hex("#CC41CC")
-    tier_legendary: Final[Color] = Color.from_hex("#E0A23C")
-    tier_mythical: Final[Color] = Color.from_hex("#FE6333")
-    tier_divine: Final[Color] = Color.from_hex("#FFFFFF")
-    tier_perk: Final[Color] = Color.from_hex("#FFFF33")
+    tier_common: Final = Color.from_hex("#B1B1B1")
+    tier_rare: Final = Color.from_hex("#55ACEE")
+    tier_epic: Final = Color.from_hex("#CC41CC")
+    tier_legendary: Final = Color.from_hex("#E0A23C")
+    tier_mythical: Final = Color.from_hex("#FE6333")
+    tier_divine: Final = Color.from_hex("#FFFFFF")
+    tier_perk: Final = Color.from_hex("#FFFF33")
 
     @classmethod
     def get_tier(cls, field: sm.Item.Rarity, /) -> Color:
         return getattr(cls, "tier_" + field.name)
 
-    element_other: Final[Color] = Color.from_hex("#323232")
-    element_physical: Final[Color] = Color.from_hex("#FFB800")
-    element_explosive: Final[Color] = Color.from_hex("#B71010")
-    element_electric: Final[Color] = Color.from_hex("#106ED8")
-    element_combined: Final[Color] = Color.from_hex("#211D1D")
+    element_other: Final = Color.from_hex("#323232")
+    element_physical: Final = Color.from_hex("#FFB800")
+    element_explosive: Final = Color.from_hex("#B71010")
+    element_electric: Final = Color.from_hex("#106ED8")
+    element_combined: Final = Color.from_hex("#211D1D")
 
     @classmethod
     def get_element(cls, field: sm.Item.Element, /) -> Color:
