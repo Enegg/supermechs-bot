@@ -16,9 +16,9 @@ import dupermechs.all as sm
 
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 
-NULL_EMOJI: Final[AnyEmoji] = UnicodeEmoji("❔")
-NULL_COLOR: Final[Color] = Color(0)
-MISSING_IMAGE: Final[FileResource] = FileResource(paths.MISSING_PNG)
+NULL_EMOJI: Final = UnicodeEmoji("❔")
+NULL_COLOR: Final = Color.default()
+MISSING_IMAGE: Final = FileResource(paths.MISSING_PNG)
 
 
 @attrs.frozen
@@ -211,9 +211,9 @@ class Colors:
     def get_element(cls, field: sm.Item.Element, /) -> Color:
         return getattr(cls, "element_" + field.name)
 
-    error: Final[Color] = Color.from_hex("#FF0000")
-    warning: Final[Color] = Color.from_hex("#FFBB00")
-    info: Final[Color] = Color.from_hex("#0088FF")
+    error: Final = Color.from_hex("#FF0000")
+    warning: Final = Color.from_hex("#FFBB00")
+    info: Final = Color.from_hex("#0088FF")
 
 
 @attrs.frozen
