@@ -24,6 +24,11 @@ def codeblock_size(text: str, lang: str = "py") -> int:
     return len(text) + len(lang) + len("```\n```")
 
 
+def channel_mention(channel_id: int, /) -> str:
+    """Return a string mentioning a channel."""
+    return f"<#{channel_id}>"
+
+
 class Commandish(Protocol):
     @property
     def id(self) -> int: ...

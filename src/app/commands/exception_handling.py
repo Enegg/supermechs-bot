@@ -47,7 +47,7 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     container = ui.Container(accent_colour=COLORS.error)
     title_lines = [
         "## ⚠️ Uncaught exception",
-        f"Place: <#{inter.channel_id}>",
+        f"Place: {md.channel_mention(inter.channel_id)}",
         f"User: {inter.author.mention} (`{inter.author.display_name}`)",
         f"Command: {md.command_mention(inter)} {arguments}",
     ]
