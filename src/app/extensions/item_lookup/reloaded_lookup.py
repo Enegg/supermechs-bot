@@ -4,7 +4,7 @@ from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits
-from disnake import Color, MessageFlags
+from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
@@ -118,7 +118,7 @@ async def on_reloaded_lookup_interaction(
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
             ui.TextDisplay(gettext("item-lookup-item-not-available", command=get_mention("item"))),
-            accent_colour=Color(0xFF0000),
+            accent_colour=COLORS.error,
         ))  # fmt: skip
         return
 
@@ -324,14 +324,14 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
         title_lines.append("".join(power_line))
 
     title = ui.TextDisplay("\n".join(title_lines))
-    components: list[ui.ContainerChildUIComponent] = []
+    container = ui.Container(accent_colour=COLORS.elements[item.element])
 
     match get_slot_icon(item.type):
         case HttpResource(url):
-            components.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
+            container.children.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
 
         case _:
-            components.append(title)
+            container.children.append(title)
 
     # ------------------------------------------- stats --------------------------------------------
     stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
@@ -347,20 +347,20 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     if stats_lines or costs_lines:
         stats_part = "\n".join(stats_lines)
         costs_part = "\n".join(costs_lines)
-        components.append(ui.TextDisplay(
+        container.children.append(ui.TextDisplay(
             f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
         ))  # fmt: skip
         if stats_part and costs_part:
-            components.append(ui.Separator(divider=False))
-            components.append(ui.TextDisplay(costs_part))
+            container.children.append(ui.Separator(divider=False))
+            container.children.append(ui.TextDisplay(costs_part))
     else:
-        components.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
+        container.children.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
     # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
-        components.append(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
+        container.children.append(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
-        components.append(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
+        container.children.append(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
 
     # ------------------------------------------ buttons -------------------------------------------
     button_row: list[ui.ActionButton] = []
@@ -388,21 +388,20 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
             custom_id=make_component_id(ComponentIds.titan_button, ctx),
         ))  # fmt: skip
     if button_row:
-        components.append(ui.ActionRow(*button_row))
+        container.children.append(ui.ActionRow(*button_row))
 
     # ---------------------------------------- stage select ----------------------------------------
     if len(item.stages) > 1:
-        stage_options = [
-            ui.SelectOption(
-                label=gettext.get_tier_name(stage.tier).capitalize(),
-                value=f"{i:x}",
-                emoji=EMOJIS.tiers[stage.tier],
-                default=i == ctx.stage_index,
-            )
-            for i, stage in enumerate(item.stages)
-        ]
-        components.append(ui.ActionRow(ui.StringSelect(
-            options=stage_options,
+        container.children.append(ui.ActionRow(ui.StringSelect(
+            options=[
+                ui.SelectOption(
+                    label=gettext.get_tier_name(stage.tier).capitalize(),
+                    value=f"{i:x}",
+                    emoji=EMOJIS.tiers[stage.tier],
+                    default=i == ctx.stage_index,
+                )
+                for i, stage in enumerate(item.stages)
+            ],
             placeholder=gettext("item-lookup-ui-tier-select-placeholder"),
             custom_id=make_component_id(ComponentIds.stage_select, ctx),
         )))  # fmt: skip
@@ -433,10 +432,10 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
             make_option_down(gettext),
         ]
 
-    components.append(ui.ActionRow(ui.StringSelect(
+    container.children.append(ui.ActionRow(ui.StringSelect(
         options=level_options,
         placeholder=gettext("item-lookup-ui-level-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
 
-    return ui.Container(*components, accent_colour=COLORS.elements[item.element])
+    return container

@@ -4,11 +4,12 @@ from contextlib import suppress
 from app.disnake_types import Bot, CommandInteraction
 from discord import ComponentLimits, markdown as md, text_to_file
 from discord.message_builder import MessageBuilder
-from disnake import Colour, Event, HTTPException, InteractionTimedOut
+from disnake import Event, HTTPException, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
 
 from app import i18n, ui
+from app.assets import COLORS
 from app.core import CONFIG
 from app.utils import format_exception
 
@@ -43,7 +44,7 @@ def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError
 
 def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
     arguments = ", ".join(f"`{option}: {value}`" for option, value in inter.filled_options.items())
-    components: list[ui.ContainerChildUIComponent] = []
+    container = ui.Container(accent_colour=COLORS.error)
     title_lines = [
         "## ⚠️ Uncaught exception",
         f"Place: <#{inter.channel_id}>",
@@ -55,17 +56,16 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     builder = MessageBuilder()
 
     if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
-        components.append(ui.TextDisplay("\n".join(title_lines)))
-        components.append(ui.TextDisplay(md.codeblock(traceback_text)))
+        container.children.append(ui.TextDisplay("\n".join(title_lines)))
+        container.children.append(ui.TextDisplay(md.codeblock(traceback_text)))
 
     else:
         title_lines.append(f"Exception: `{type(exc).__name__}: {exc}`")
-        components.append(ui.TextDisplay("\n".join(title_lines)))
+        container.children.append(ui.TextDisplay("\n".join(title_lines)))
         file = text_to_file(traceback_text, "traceback.py")
         builder.add_files(file)
-        components.append(ui.file(file))
+        container.children.append(ui.file(file))
 
-    container = ui.Container(*components, accent_colour=Colour(0xFF0000))
     return builder.with_components(container)
 
 
