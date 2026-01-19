@@ -5,7 +5,7 @@ import datetime as dt
 import http
 import os
 import pathlib
-import tkinter as tk
+import sys
 from collections import abc
 from tkinter import filedialog
 
@@ -63,8 +63,7 @@ def get_config() -> Config:
             token = os.environ[ENV_KEY]
 
         except KeyError:
-            msg = f"{ENV_KEY} not in env and --token not specified"
-            raise OSError(msg) from None
+            sys.exit(f"{ENV_KEY} not in env and --token not specified")
 
     config = Config(token.strip(), overwrite=ns.overwrite, purge=ns.purge)
 
@@ -111,8 +110,6 @@ def file_modified_at(file: pathlib.Path, /) -> dt.datetime:
 
 
 def main() -> None:
-    root = tk.Tk()
-    root.withdraw()
     file_paths = filedialog.askopenfilenames(
         title="Select emojis to upload",
         filetypes=[("png", "*.png")],
