@@ -15,7 +15,7 @@ __all__ = ("Defer",)
 # by them. Consequently, something like a CancelledError from within the block won't be propagated.
 
 
-@final  # typing and injections would surely break
+@final
 @attrs.define
 class Defer[RetT: (object, abc.Awaitable[object])]:
     """Context manager replicating Golang's `defer` statement.
@@ -31,20 +31,23 @@ class Defer[RetT: (object, abc.Awaitable[object])]:
     Parameters
     ----------
     shield: bool, optional
-        When used in an `async with` block, this parameter controls whether the deferred calls
+        When used in an `async with` block, controls whether the deferred calls
         should be shielded from cancellation.
     """
 
     shield: bool = attrs.field(default=False, kw_only=True)
     deferred: list[abc.Callable[[], RetT]] = attrs.field(factory=list, init=False)
 
+    type SyncDefer = Defer[object]
+    type AsyncDefer = Defer[abc.Awaitable[object]]
+
     def __call__[**P](self, f: abc.Callable[P, RetT], /, *args: P.args, **kwargs: P.kwargs) -> None:
         self.deferred.append(partial(f, *args, **kwargs) if args or kwargs else f)
 
-    def __enter__(self: "Defer[object]") -> "Defer[object]":
+    def __enter__(self: SyncDefer) -> SyncDefer:
         return self
 
-    def __exit__(self: "Defer[object]", *_: object) -> None:
+    def __exit__(self: SyncDefer, *_: object) -> None:
         unwind_excs: list[Exception] = []
 
         while self.deferred:
@@ -60,11 +63,11 @@ class Defer[RetT: (object, abc.Awaitable[object])]:
             msg = "Exceptions while unwinding defer block:"
             raise ExceptionGroup(msg, unwind_excs)
 
-    async def __aenter__(self: "Defer[abc.Awaitable[object]]") -> "Defer[abc.Awaitable[object]]":
+    async def __aenter__(self: AsyncDefer) -> AsyncDefer:
         await anyio.lowlevel.checkpoint_if_cancelled()
         return self
 
-    async def __aexit__(self: "Defer[abc.Awaitable[object]]", *_: object) -> None:
+    async def __aexit__(self: AsyncDefer, *_: object) -> None:
         unwind_excs: list[Exception] = []
 
         with anyio.CancelScope(shield=True) if self.shield else nullcontext():
