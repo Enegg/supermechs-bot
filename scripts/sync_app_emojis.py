@@ -6,7 +6,6 @@ import http
 import os
 import pathlib
 import sys
-from collections import abc
 from tkinter import filedialog
 
 import anyio
@@ -129,7 +128,7 @@ def main() -> None:
     anyio.run(amain_wrapper, file_paths)
 
 
-async def amain(defer: Defer[abc.Awaitable[object]], files: list[pathlib.Path]) -> None:
+async def amain(defer: Defer.AsyncDefer, files: list[pathlib.Path]) -> None:
     client = disnake.http.HTTPClient(loop=asyncio.get_running_loop())
 
     # populates __session and token
