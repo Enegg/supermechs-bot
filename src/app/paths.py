@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 CWD = Path.cwd()
@@ -10,3 +11,5 @@ CONFIG_TOML = Path("config.toml")
 DEV_ENV = Path("dev.env")
 PROD_ENV = Path("prod.env")
 PLUGINS_PACKAGE = "extensions"
+MISSIONS_TOML = Path(os.environ["MISSIONS_TOML"])
+MISSION_IMAGES_DIR = Path(os.environ["MISSION_IMAGES_DIR"])
