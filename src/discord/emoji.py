@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from typing import Literal, override
 
 import msgspec
@@ -65,7 +65,7 @@ class CustomEmoji(msgspec.Struct):
         return self.mention
 
     @property
-    def created_at(self: disnake.abc.Snowflake) -> datetime.datetime:
+    def created_at(self: disnake.abc.Snowflake) -> dt.datetime:
         return snowflake_time(self.id)
 
     @property
