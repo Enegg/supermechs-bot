@@ -43,31 +43,41 @@ class ComponentLimits:
     custom_id: Final = 100
     """Maximum length of a component's custom id."""
     action_row_buttons: Final = 5
-    """Maximum number of buttons within an action row."""
+    """Maximum number of buttons within an :class:`~disnake.ui.ActionRow`."""
     button_label: Final = 80
-    """Maximum length of a Button's label."""
+    """Maximum length of a :class:`~disnake.ui.Button`'s label."""
     string_select_options: Final = 25
-    """Maximum number of SelectOptions in a StringSelect."""
+    """Maximum number of :class:`~disnake.SelectOption` s in a :class:`~disnake.ui.StringSelect`."""
     select_placeholder: Final = 150
-    """Maximum length of a Select's placeholder."""
+    """Maximum length of a select's placeholder."""
     select_option_label: Final = 100
-    """Maximum length of a SelectOption's label."""
+    """Maximum length of a :class:`~disnake.SelectOption`'s label."""
     select_option_value: Final = 100
-    """Maximum length of a SelectOption's value."""
+    """Maximum length of a :class:`~disnake.SelectOption`'s value."""
     select_option_description: Final = 100
-    """Maximum length of a SelectOption's description."""
+    """Maximum length of a :class:`~disnake.SelectOption`'s description."""
     text_display_content: Final = 4000
-    """Maximum length of a TextDisplay's content."""
+    """Maximum length of a :class:`~disnake.ui.TextDisplay`'s content."""
     text_input_value: Final = 4000
-    """Maximum length of a TextInput's value."""
+    """Maximum length of a :class:`~disnake.ui.TextInput`'s value."""
     text_input_placeholder: Final = 100
-    """Maximum length of a TextInput's placeholder."""
+    """Maximum length of a :class:`~disnake.ui.TextInput`'s placeholder."""
     media_description: Final = 1024
     """Maximum length of a media component's description."""
     gallery_items: Final = 10
-    """Maximum number of items a MediaGallery can have."""
+    """Maximum number of items a :class:`~disnake.ui.MediaGallery` can have."""
     label_label: Final = 45
-    """Maximum length of a Label's label."""
+    """Maximum length of a :class:`~disnake.ui.Label`'s label."""
+    radio_group_options: Final = 10
+    """Maximum number of :class:`~disnake.GroupOption` s in a :class:`~disnake.ui.RadioGroup`."""
+    checkbox_group_options: Final = 10
+    """Maximum number of :class:`~disnake.GroupOption` s in a :class:`~disnake.ui.CheckboxGroup`."""
+    group_option_value: Final = 100
+    """Maximum length of a :class:`~disnake.GroupOption`'s value."""
+    group_option_label: Final = 100
+    """Maximum length of a :class:`~disnake.GroupOption`'s label."""
+    group_option_description: Final = 100
+    """Maximum length of a :class:`~disnake.GroupOption`'s description."""
 
 
 class InteractionLimits:

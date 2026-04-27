@@ -223,17 +223,12 @@ class ElementColors:
         return getattr(self, field.name)
 
 
-# TODO: DisnakeDev/disnake#1487
-def color_from_hex_code(hex_string: str, /) -> Color:
-    return Color(int(hex_string.removeprefix("#"), 16))
-
-
 @attrs.frozen
 class Colors:
     elements: ElementColors = attrs.Factory(ElementColors)
-    error: ClassVar = color_from_hex_code("#FF0000")
-    warning: ClassVar = color_from_hex_code("#FFBB00")
-    info: ClassVar = color_from_hex_code("#0088FF")
+    error: ClassVar = Color.from_hex("#FF0000")
+    warning: ClassVar = Color.from_hex("#FFBB00")
+    info: ClassVar = Color.from_hex("#0088FF")
 
 
 @attrs.frozen
