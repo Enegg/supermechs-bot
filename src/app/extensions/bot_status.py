@@ -1,4 +1,3 @@
-import datetime
 import random
 import sys
 from functools import partial
@@ -18,7 +17,7 @@ from app.core import CONFIG
 from app.devtools import debug_components
 from app.managers import packs
 from app.plugins_factory import create_plugin
-from app.system import get_ram_usage, get_sloc, get_start_dt
+from app.system import BOT_PROCESS, get_ram_usage, get_sloc
 from app.utils import as_binary_unit
 from resources import HttpResource
 
@@ -26,7 +25,6 @@ plugin = create_plugin(__name__)
 
 python_version: Final = ".".join(map(str, sys.version_info[:3]))
 disnake_url: Final = "https://github.com/DisnakeDev/disnake"
-started_at: datetime.datetime = get_start_dt()
 
 
 class _BotInfo(NamedTuple):
@@ -97,7 +95,7 @@ async def info(inter: CommandInteraction) -> None:
     bytes_, prefix = as_binary_unit(get_ram_usage())
     container.children.append(ui.TextDisplay(
         "**Performance**\n"
-        f"Started: {md.format_dt(started_at, 'R')}\n"
+        f"Started: {md.format_dt(BOT_PROCESS.create_time(), 'R')}\n"
         f"Latency: {round(bot.latency * 1000)}ms\n"
         f"RAM usage: {bytes_}{prefix}B"
     ))  # fmt: skip
