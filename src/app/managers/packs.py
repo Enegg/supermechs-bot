@@ -22,16 +22,16 @@ def get_item_by_id(id: sm.Item.Id, /) -> sm.IItem:
 
 
 def filter_items(
-    type: str | None = None,
+    slot: str | None = None,
     element: str | None = None,
     rarity: str | None = None,
     legacy: bool = False,
 ) -> abc.Iterator[sm.IItem]:
     filters: list[abc.Callable[[sm.IItem], bool]] = []
 
-    if type is not None:
-        target_type = sm.Item.Type[type]
-        filters.append(lambda item: item.type is target_type)
+    if slot is not None:
+        target_slot = sm.Item.Slot[slot]
+        filters.append(lambda item: item.slot_id is target_slot)
 
     if element is not None:
         target_element = sm.Item.Element[element]

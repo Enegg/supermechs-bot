@@ -1,7 +1,7 @@
 import enum
 
 
-class ItemType(enum.Enum):
+class ItemSlot(enum.Enum):
     __slots__ = ()
 
     torso = enum.auto()

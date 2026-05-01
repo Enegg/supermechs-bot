@@ -6,8 +6,8 @@ from app.models.sprite_pack import SpriteKey
 
 from .common import (
     LITERAL_ELEMENT_TO_ENUM,
+    LITERAL_SLOT_TO_ENUM,
     LITERAL_TIER_TO_ENUM,
-    LITERAL_TYPE_TO_ENUM,
     ItemMapping,
     convert_stats,
 )
@@ -69,7 +69,7 @@ def _convert_item(item: dto.ItemDto, /) -> tuple[sm.Item, SpriteCollection]:
     return sm.Item(
         id=sm.Item.Id(item.id),
         name=item.name,
-        type=LITERAL_TYPE_TO_ENUM[item.type],
+        slot_id=LITERAL_SLOT_TO_ENUM[item.slot_id],
         element=_determine_element(item),
         stages=stages,
     ), images

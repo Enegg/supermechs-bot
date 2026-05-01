@@ -11,7 +11,7 @@ from app import i18n, ui
 from app.assets import COLORS, EMOJIS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
-from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
+from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
@@ -60,7 +60,7 @@ class ComponentIds:
 async def item_lookup(
     inter: CommandInteraction,
     name: str = commands.Param(autocomplete=item_name_autocomplete),
-    type: str | None = commands.Param(None, choices=TYPE_CHOICES),
+    slot: str | None = commands.Param(None, choices=SLOT_CHOICES),
     element: str | None = commands.Param(None, choices=ELEMENT_CHOICES),
     rarity: str | None = commands.Param(None, choices=TIER_CHOICES),
 ) -> None:
@@ -70,8 +70,8 @@ async def item_lookup(
     ----------
     name:
         The name of the item. {{ ITEM_NAME }}
-    type:
-        Limit suggestions to this type. {{ ITEM_TYPE }}
+    slot:
+        Limit suggestions to this item slot. {{ ITEM_SLOT }}
     element:
         Limit suggestions to this element. {{ ITEM_ELEMENT }}
     rarity:
@@ -79,7 +79,7 @@ async def item_lookup(
     """  # noqa: D400
     gettext = i18n.get_gettext(inter)
 
-    for item in packs.filter_items(type, element, rarity, False):
+    for item in packs.filter_items(slot, element, rarity, False):
         if item.name == name:
             break
 
@@ -281,7 +281,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     if item.element is not sm.Item.Element.other:
         subtitle_parts.append(item.element.name)
 
-    subtitle_parts.append(item.type.name.replace("_", " "))
+    subtitle_parts.append(item.slot_id.name.replace("_", " "))
     subtitle_parts[0] = subtitle_parts[0].capitalize()
 
     power_level = (
@@ -326,7 +326,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     title = ui.TextDisplay("\n".join(title_lines))
     container = ui.Container(accent_colour=COLORS.elements[item.element])
 
-    match get_slot_icon(item.type):
+    match get_slot_icon(item.slot_id):
         case HttpResource(url):
             container.children.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
 
@@ -338,7 +338,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
 
     if (
         not stats_lines
-        and item.type is sm.Item.Type.kit
+        and item.slot_id is sm.Item.Slot.kit
         and (boost_power := levels[ctx.level_index].power_contribution)
     ):
         stats_lines.append(

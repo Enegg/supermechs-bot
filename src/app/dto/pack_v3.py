@@ -2,7 +2,7 @@ from collections import abc
 
 import msgspec
 
-from .common import ItemStatsDto, LiteralElement, LiteralTier, LiteralType, Name, PosInt, UInt
+from .common import ItemStatsDto, LiteralElement, LiteralSlot, LiteralTier, Name, PosInt, UInt
 
 
 class ItemLevelDto(msgspec.Struct, kw_only=True):
@@ -26,7 +26,7 @@ class ItemStageDto(msgspec.Struct, kw_only=True):
 class ItemDto(msgspec.Struct, kw_only=True):
     id: PosInt
     name: Name
-    type: LiteralType
+    slot_id: LiteralSlot = msgspec.field(name="type")
     element: LiteralElement
     subtype: str | msgspec.UnsetType = msgspec.UNSET
     is_deprecated: bool = False

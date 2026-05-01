@@ -5,7 +5,7 @@ frantic_gifs = [
 ]
 
 [emojis]
-[emojis.types]
+[emojis.slots]
             torso =  "<:torso:730115680363347968>"
              legs =   "<:legs:730115699397361827>"
             drone =  "<:drone:730115574763618394>"
@@ -115,7 +115,7 @@ explosive_resistance =   "<:expres:725871136935772294>"
 
 
 [icons]
-[icons.types]
+[icons.slots]
             torso = "https://cdn.discordapp.com/emojis/730115680363347968.webp"
              legs = "https://cdn.discordapp.com/emojis/730115699397361827.webp"
             drone = "https://cdn.discordapp.com/emojis/730115574763618394.webp"

@@ -104,11 +104,11 @@ def find_matches(names: abc.Iterable[str], phrase: str) -> list[MatchResult]:
 
 
 def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
-    """Autocomplete for items with regard for type & element."""
+    """Autocomplete for items with regard for slot & element."""
     filled_options: FilledOptions = type_cast("FilledOptions", inter.filled_options)
 
     items = packs.filter_items(
-        type=filled_options.get("type"),
+        slot=filled_options.get("slot"),
         element=filled_options.get("element"),
         rarity=filled_options.get("rarity"),
         legacy=inter.application_command.name == "legacy-item",  # HACK

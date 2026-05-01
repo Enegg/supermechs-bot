@@ -1,7 +1,7 @@
 from typing import NamedTuple
 
 import app.dto.pack_v2 as dto
-from app.mappers.common import LITERAL_ELEMENT_TO_ENUM, LITERAL_TYPE_TO_ENUM, ItemMapping
+from app.mappers.common import LITERAL_ELEMENT_TO_ENUM, LITERAL_SLOT_TO_ENUM, ItemMapping
 from app.mappers.common_v1_v2 import stats_to_stages
 
 import dupermechs.all as sm
@@ -11,7 +11,7 @@ def convert_item(item: dto.ItemDto, /) -> sm.Item:
     return sm.Item(
         id=sm.Item.Id(item.id),
         name=item.name,
-        type=LITERAL_TYPE_TO_ENUM[item.type],
+        slot_id=LITERAL_SLOT_TO_ENUM[item.slot_id],
         element=LITERAL_ELEMENT_TO_ENUM[item.element],
         stages=stats_to_stages(item.stats, item.transform_range),
     )

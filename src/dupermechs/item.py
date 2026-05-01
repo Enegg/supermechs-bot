@@ -3,7 +3,7 @@ from typing import NewType, Protocol
 
 import attrs
 
-from dupermechs.enums import ItemElement, ItemRarity, ItemType
+from dupermechs.enums import ItemElement, ItemRarity, ItemSlot
 from dupermechs.stats import IItemStats, ItemStats
 
 __all__ = ("IItem", "IItemStage", "IStageLevel", "Item")
@@ -36,7 +36,7 @@ class IItem(Protocol):
     @property
     def name(self) -> str: ...
     @property
-    def type(self) -> ItemType: ...
+    def slot_id(self) -> ItemSlot: ...
     @property
     def element(self) -> ItemElement: ...
     @property
@@ -62,13 +62,13 @@ class ItemStage:
 @attrs.frozen(kw_only=True)
 class Item:
     Id = ItemId
-    Type = ItemType
+    Slot = ItemSlot
     Element = ItemElement
     Rarity = ItemRarity
     Stage = ItemStage
 
     id: ItemId
     name: str
-    type: ItemType
+    slot_id: ItemSlot
     element: ItemElement
     stages: abc.Sequence[ItemStage]

@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 import msgspec
 
-type LiteralType = Literal[
+type LiteralSlot = Literal[
     "TORSO",
     "LEGS",
     "DRONE",

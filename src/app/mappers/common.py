@@ -2,27 +2,27 @@ from collections import abc
 
 import msgspec
 
-from app.dto.common import ItemStatsDto, LiteralElement, LiteralTier, LiteralType
+from app.dto.common import ItemStatsDto, LiteralElement, LiteralSlot, LiteralTier
 
 import dupermechs.all as sm
 
 type ItemMapping = abc.Mapping[sm.Item.Id, sm.Item]
 
-LITERAL_TYPE_TO_ENUM: abc.Mapping[LiteralType, sm.Item.Type] = {
-    "TORSO": sm.Item.Type.torso,
-    "LEGS": sm.Item.Type.legs,
-    "DRONE": sm.Item.Type.drone,
-    "SIDE_WEAPON": sm.Item.Type.side_weapon,
-    "TOP_WEAPON": sm.Item.Type.top_weapon,
-    "CHARGE_ENGINE": sm.Item.Type.charge,
-    "CHARGE": sm.Item.Type.charge,
-    "TELEPORTER": sm.Item.Type.teleport,
-    "GRAPPLING_HOOK": sm.Item.Type.hook,
-    "HOOK": sm.Item.Type.hook,
-    "SHIELD": sm.Item.Type.shield,
-    "MODULE": sm.Item.Type.module,
-    "PERK": sm.Item.Type.perk,
-    "KIT": sm.Item.Type.kit,
+LITERAL_SLOT_TO_ENUM: abc.Mapping[LiteralSlot, sm.Item.Slot] = {
+    "TORSO": sm.Item.Slot.torso,
+    "LEGS": sm.Item.Slot.legs,
+    "DRONE": sm.Item.Slot.drone,
+    "SIDE_WEAPON": sm.Item.Slot.side_weapon,
+    "TOP_WEAPON": sm.Item.Slot.top_weapon,
+    "CHARGE_ENGINE": sm.Item.Slot.charge,
+    "CHARGE": sm.Item.Slot.charge,
+    "TELEPORTER": sm.Item.Slot.teleport,
+    "GRAPPLING_HOOK": sm.Item.Slot.hook,
+    "HOOK": sm.Item.Slot.hook,
+    "SHIELD": sm.Item.Slot.shield,
+    "MODULE": sm.Item.Slot.module,
+    "PERK": sm.Item.Slot.perk,
+    "KIT": sm.Item.Slot.kit,
 }
 LITERAL_ELEMENT_TO_ENUM: abc.Mapping[LiteralElement, sm.Item.Element] = {
     "OTHER": sm.Item.Element.other,

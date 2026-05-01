@@ -23,7 +23,7 @@ MISSING_IMAGE: Final[FileResource] = FileResource(paths.MISSING_PNG)
 
 
 @attrs.frozen
-class TypeEmojis:
+class SlotEmojis:
     torso: str = NULL_EMOJI
     legs: str = NULL_EMOJI
     drone: str = NULL_EMOJI
@@ -41,7 +41,7 @@ class TypeEmojis:
     perk: str = NULL_EMOJI
     kit: str = NULL_EMOJI
 
-    def __getitem__(self, field: sm.Item.Type, /) -> str:
+    def __getitem__(self, field: sm.Item.Slot, /) -> str:
         return getattr(self, field.name)
 
 
@@ -174,7 +174,7 @@ class CategoryEmojis:
 
 @attrs.frozen
 class Emojis:
-    types: TypeEmojis = attrs.Factory(TypeEmojis)
+    slots: SlotEmojis = attrs.Factory(SlotEmojis)
     tiers: TierEmojis = attrs.Factory(TierEmojis)
     elements: ElementEmojis = attrs.Factory(ElementEmojis)
     cards: CardEmojis = attrs.Factory(CardEmojis)
@@ -184,7 +184,7 @@ class Emojis:
 
 
 @attrs.frozen
-class TypeIcons:
+class SlotIcons:
     torso: AnyResource | None = None
     legs: AnyResource | None = None
     drone: AnyResource | None = None
@@ -202,13 +202,13 @@ class TypeIcons:
     perk: AnyResource | None = None
     kit: AnyResource | None = None
 
-    def __getitem__(self, field: sm.Item.Type, /) -> AnyResource | None:
+    def __getitem__(self, field: sm.Item.Slot, /) -> AnyResource | None:
         return getattr(self, field.name)
 
 
 @attrs.frozen
 class Icons:
-    types: TypeIcons = attrs.Factory(TypeIcons)
+    slots: SlotIcons = attrs.Factory(SlotIcons)
 
 
 @attrs.frozen
@@ -244,11 +244,11 @@ COLORS = _PARSER.structure(Colors, "colors")
 del _PARSER
 
 
-def get_slot_icon(type: sm.Item.Type, /) -> AnyResource | None:
-    if type is sm.Item.Type.side_weapon:
-        return ICONS.types.right_side_weapon
+def get_slot_icon(slot: sm.Item.Slot, /) -> AnyResource | None:
+    if slot is sm.Item.Slot.side_weapon:
+        return ICONS.slots.right_side_weapon
 
-    if type is sm.Item.Type.top_weapon:
-        return ICONS.types.right_top_weapon
+    if slot is sm.Item.Slot.top_weapon:
+        return ICONS.slots.right_top_weapon
 
-    return ICONS.types[type]
+    return ICONS.slots[slot]
