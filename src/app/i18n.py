@@ -104,7 +104,7 @@ class GetText:
         return _get(stats, stat, self.locale)
 
     def get_tier_name(self, tier: ItemRarity, /) -> str:
-        return get_message(self.locale, f"tier-{tier.name}")  # pyright: ignore[reportArgumentType]
+        return get_message(self.locale, "tier-" + tier.name)
 
     # messages with template fields
     def unknown_item_name(self, name: str) -> str:

@@ -53,14 +53,18 @@ def item_transform_range(item: sm.IItem, /, stage_index: int = -1) -> str:
 
 def has_damage_spread(stats: sm.IItemStats, /) -> bool:
     return (
-        stats.physical_damage != stats.physical_damage_addon
-        or stats.explosive_damage != stats.explosive_damage_addon
-        or stats.electric_damage != stats.electric_damage_addon
+        stats.physical_damage_min != stats.physical_damage_max
+        or stats.explosive_damage_min != stats.explosive_damage_max
+        or stats.electric_damage_min != stats.electric_damage_max
     )
 
 
 def has_damage(stats: sm.IItemStats, /) -> bool:
-    return stats.physical_damage != 0 or stats.explosive_damage != 0 or stats.electric_damage != 0
+    return (
+        stats.physical_damage_min != 0
+        or stats.explosive_damage_min != 0
+        or stats.electric_damage_min != 0
+    )
 
 
 def has_buff_affected_stats(stats: sm.IItemStats, /) -> bool:
@@ -71,9 +75,9 @@ def has_buff_affected_stats(stats: sm.IItemStats, /) -> bool:
         or stats.heat_capacity != 0
         or stats.heat_cooling != 0
         or stats.heat_damage != 0
-        or stats.physical_damage != 0
-        or stats.explosive_damage != 0
-        or stats.electric_damage != 0
+        or stats.physical_damage_min != 0
+        or stats.explosive_damage_min != 0
+        or stats.electric_damage_min != 0
         or stats.physical_resistance != 0
         or stats.explosive_resistance != 0
         or stats.electric_resistance != 0
@@ -157,11 +161,11 @@ def format_stats(
                 ItemStat.rockets_capacity,
             )
         )
-    if item_stats.physical_damage:
+    if item_stats.physical_damage_min:
         stats_lines.append(
             fmt(
                 emojis.physical_damage,
-                format_damage(item_stats.physical_damage, item_stats.physical_damage_addon),
+                format_damage(item_stats.physical_damage_min, item_stats.physical_damage_max),
                 ItemStat.physical_damage,
             )
         )
@@ -173,11 +177,11 @@ def format_stats(
                 ItemStat.physical_resistance_damage,
             )
         )
-    if item_stats.electric_damage:
+    if item_stats.electric_damage_min:
         stats_lines.append(
             fmt(
                 emojis.electric_damage,
-                format_damage(item_stats.electric_damage, item_stats.electric_damage_addon),
+                format_damage(item_stats.electric_damage_min, item_stats.electric_damage_max),
                 ItemStat.electric_damage,
             )
         )
@@ -209,11 +213,11 @@ def format_stats(
                 ItemStat.electric_resistance_damage,
             )
         )
-    if item_stats.explosive_damage:
+    if item_stats.explosive_damage_min:
         stats_lines.append(
             fmt(
                 emojis.explosive_damage,
-                format_damage(item_stats.explosive_damage, item_stats.explosive_damage_addon),
+                format_damage(item_stats.explosive_damage_min, item_stats.explosive_damage_max),
                 ItemStat.explosive_damage,
             )
         )
@@ -243,11 +247,11 @@ def format_stats(
         stats_lines.append(fmt(emojis.walk, item_stats.walk, ItemStat.walk))
     if item_stats.jump:
         stats_lines.append(fmt(emojis.jump, item_stats.jump, ItemStat.jump))
-    if item_stats.range:
+    if item_stats.range_min:
         stats_lines.append(
             fmt(
                 emojis.range,
-                format_range(item_stats.range, item_stats.range_addon),
+                format_range(item_stats.range_min, item_stats.range_max),
                 ItemStat.range,
             )
         )
