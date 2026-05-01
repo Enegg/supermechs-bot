@@ -21,7 +21,7 @@ def _convert_bonus(bonus: arena_buffs.AnyBuffDto, /) -> abc.Sequence[AnyBonus]:
             return MultiplierBonus.from_percentages(*values)
 
 
-def _load_arena_buffs() -> arenashop.IArenaShopBonuses[AnyBonus]:
+def _load_arena_buffs() -> arenashop.ArenaShopBonuses[AnyBonus]:
     raw = paths.BUFFS_TOML.read_bytes()
     dto: ArenaBuffsDto = msgspec.toml.decode(raw, type=ArenaBuffsDto)
 
@@ -47,7 +47,7 @@ def _load_arena_buffs() -> arenashop.IArenaShopBonuses[AnyBonus]:
 
 
 ARENA_BONUSES: Final = _load_arena_buffs()
-MAXED_ARENA_SHOP: Final[arenashop.IArenaShopLevels] = arenashop.ArenaShop.maxed(ARENA_BONUSES)
-MAXED_ARENA_BUFFS: Final[arenashop.IArenaShop[AnyBonus]] = arenashop.bind_levels(
+MAXED_ARENA_SHOP: Final[arenashop.ArenaShopLevels] = arenashop.ArenaShop.maxed(ARENA_BONUSES)
+MAXED_ARENA_BUFFS: Final[arenashop.ArenaShop[AnyBonus]] = arenashop.bind_levels(
     MAXED_ARENA_SHOP, ARENA_BONUSES
 )

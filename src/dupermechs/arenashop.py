@@ -1,63 +1,11 @@
 from collections import abc
-from typing import Any, Protocol
+from typing import Any
 
 import attrs
 
 from dupermechs.enums import ArenaShopCategory
 
-__all__ = (
-    "ArenaShop",
-    "ArenaShopBonuses",
-    "ArenaShopLevels",
-    "IArenaShop",
-    "IArenaShopBonuses",
-    "IArenaShopLevels",
-    "bind_levels",
-)
-
-
-class IArenaShop[T](Protocol):
-    @property
-    def energy_capacity(self) -> T: ...
-    @property
-    def energy_regeneration(self) -> T: ...
-    @property
-    def energy_damage(self) -> T: ...
-    @property
-    def heat_capacity(self) -> T: ...
-    @property
-    def heat_cooling(self) -> T: ...
-    @property
-    def heat_damage(self) -> T: ...
-    @property
-    def physical_damage(self) -> T: ...
-    @property
-    def explosive_damage(self) -> T: ...
-    @property
-    def electric_damage(self) -> T: ...
-    @property
-    def physical_resistance(self) -> T: ...
-    @property
-    def explosive_resistance(self) -> T: ...
-    @property
-    def electric_resistance(self) -> T: ...
-    @property
-    def fuel_capacity(self) -> T: ...
-    @property
-    def fuel_regeneration(self) -> T: ...
-    @property
-    def total_hp(self) -> T: ...
-    @property
-    def damage_vs_titans(self) -> T: ...
-    @property
-    def backfire_reduction(self) -> T: ...
-
-    def __getitem__(self, category: ArenaShopCategory, /) -> T: ...
-
-
-type IArenaShopLevels = IArenaShop[int]
-type IArenaShopBonuses[T] = IArenaShop[abc.Sequence[T]]
-
+__all__ = ("ArenaShop", "ArenaShopBonuses", "ArenaShopLevels", "bind_levels")
 
 type ArenaShopLevels = ArenaShop[int]
 type ArenaShopBonuses[T] = ArenaShop[abc.Sequence[T]]
@@ -114,7 +62,7 @@ class ArenaShop[T]:
         )
 
     @classmethod
-    def maxed(cls, bonuses: IArenaShopBonuses[Any], /) -> ArenaShopLevels:
+    def maxed(cls, bonuses: ArenaShopBonuses[Any], /) -> ArenaShopLevels:
         return ArenaShop(
             energy_capacity=len(bonuses.energy_capacity) - 1,
             energy_regeneration=len(bonuses.energy_regeneration) - 1,
@@ -136,7 +84,7 @@ class ArenaShop[T]:
         )
 
 
-def bind_levels[T](levels: IArenaShopLevels, bonuses: IArenaShopBonuses[T]) -> ArenaShop[T]:
+def bind_levels[T](levels: ArenaShopLevels, bonuses: ArenaShopBonuses[T]) -> ArenaShop[T]:
     return ArenaShop(
         energy_capacity=bonuses.energy_capacity[levels.energy_capacity],
         energy_regeneration=bonuses.energy_regeneration[levels.energy_regeneration],

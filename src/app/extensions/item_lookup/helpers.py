@@ -45,13 +45,13 @@ def format_range(lo: int, hi: int, /) -> str:
     return f"{lo}-{hi}"
 
 
-def item_transform_range(item: sm.IItem, /, stage_index: int = -1) -> str:
+def item_transform_range(item: sm.Item, /, stage_index: int = -1) -> str:
     str_range: list[str] = [EMOJIS.tiers.get_hollow(stage.tier) for stage in item.stages]
     str_range[stage_index] = EMOJIS.tiers[item.stages[stage_index].tier]
     return "".join(str_range)
 
 
-def has_damage_spread(stats: sm.IItemStats, /) -> bool:
+def has_damage_spread(stats: sm.ItemStats, /) -> bool:
     return (
         stats.physical_damage_min != stats.physical_damage_max
         or stats.explosive_damage_min != stats.explosive_damage_max
@@ -59,7 +59,7 @@ def has_damage_spread(stats: sm.IItemStats, /) -> bool:
     )
 
 
-def has_damage(stats: sm.IItemStats, /) -> bool:
+def has_damage(stats: sm.ItemStats, /) -> bool:
     return (
         stats.physical_damage_min != 0
         or stats.explosive_damage_min != 0
@@ -67,7 +67,7 @@ def has_damage(stats: sm.IItemStats, /) -> bool:
     )
 
 
-def has_buff_affected_stats(stats: sm.IItemStats, /) -> bool:
+def has_buff_affected_stats(stats: sm.ItemStats, /) -> bool:
     return (
         stats.energy_capacity != 0
         or stats.energy_regeneration != 0
@@ -86,7 +86,7 @@ def has_buff_affected_stats(stats: sm.IItemStats, /) -> bool:
 
 
 def format_stats(
-    item_stats: sm.IItemStats, gettext: i18n.GetText, *, avg: bool
+    item_stats: sm.ItemStats, gettext: i18n.GetText, *, avg: bool
 ) -> tuple[list[str], list[str]]:
     def fmt(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
         return f"{emoji} **{value}** {gettext.get_stat_name(stat_key)}"

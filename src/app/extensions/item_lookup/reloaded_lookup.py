@@ -193,7 +193,7 @@ async def on_reloaded_lookup_interaction(
     await inter.response.edit_message(components=container)
 
 
-def get_item_stats(item: sm.IItem, ctx: UIContext, /) -> sm.IItemStats:
+def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
     base_stats = item.stages[ctx.stage_index].levels[ctx.level_index].stats
 
     if not ctx.buffs_enabled:
@@ -231,7 +231,7 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, UIContext]
 
 def make_level_options(
     gettext: i18n.GetText,
-    levels: abc.Iterable[sm.IStageLevel],
+    levels: abc.Iterable[sm.Item.Stage.Level],
     selected_level_index: int,
     start: int = 0,
 ) -> list[ui.SelectOption]:
@@ -271,7 +271,7 @@ def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
     return common_pks, rare_pks
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> ui.Container:
+def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)

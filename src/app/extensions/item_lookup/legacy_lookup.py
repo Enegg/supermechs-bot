@@ -139,7 +139,7 @@ async def on_legacy_lookup_interaction(
     await inter.response.edit_message(components=container)
 
 
-def get_item_stats(item: sm.IItem, ctx: UIContext, /) -> sm.IItemStats:
+def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
     base_stats = item.stages[0].levels[ctx.level_index].stats
 
     if not ctx.buffs_enabled:
@@ -176,7 +176,7 @@ def power_required_as_legacy_power_kits(power: int, /) -> int:
     return legacy_pks
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> ui.Container:
+def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
     tier = item.stages[0].tier
     levels = item.stages[0].levels
     assert len(levels) <= ComponentLimits.string_select_options  # TODO: guard this better
