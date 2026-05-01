@@ -57,7 +57,7 @@ async def load_datapack() -> None:
         case "2":
             dto = msgspec.json.decode(data, type=ItemPackDtoV2)
             pack_v2 = convert_pack_v2(dto)
-            item_pack = ItemPack(reloaded_items=pack_v2.items)
+            item_pack = ItemPack(reloaded_items=pack_v2)
             packs.store_item_pack(item_pack)
             return
 

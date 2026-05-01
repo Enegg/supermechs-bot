@@ -14,7 +14,6 @@ from monads.result import Err, Ok, Result
 
 import disnake.http
 
-from app.core import CONFIG
 from app.typeshed import Pathish
 from app.utils import as_binary_unit
 from resources import AnyResource, FileResource, HttpResource
@@ -117,8 +116,8 @@ async def read_http(url: yarl.URL, /) -> Result[bytes, HttpReadError]:
 async def read_user_http(
     url: yarl.URL,
     /,
-    max_size: int = CONFIG.max_image_size,
-    chunk_size: int = CONFIG.chunk_size,
+    max_size: int = 25 * 1024 * 1024,
+    chunk_size: int = 1024 * 1024,
 ) -> Result[io.BytesIO, UserHttpReadError]:
     _log_request(url, HTTPMethod.GET)
 

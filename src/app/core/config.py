@@ -8,7 +8,6 @@ import datargs
 import dotenv
 
 from app import paths
-from app.cattrs_utils import ByteSize
 from app.class_utils import MappingParser
 from resources import AnyResource
 
@@ -31,10 +30,6 @@ class Config:
     """Path/URL of the default item pack."""
     gfx_pack_uri: AnyResource | None = None
     """Path/URL of independent graphics for item pack."""
-    max_image_size: ByteSize = ByteSize(25 * 1024 * 1024)
-    """Maximum allowed size of an image fetched from user source."""
-    chunk_size: ByteSize = ByteSize(1024 * 1024)
-    """Size of a chunk in iterative download."""
     user_input_timeout: float = 180.0
     """Time in seconds after which various forms of user input are disabled."""
 

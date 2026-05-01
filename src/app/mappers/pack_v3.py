@@ -3,7 +3,6 @@ from collections import abc
 from typing import NamedTuple
 
 import app.dto.pack_v3 as dto
-from app.models.sprite_pack import SpriteKey
 
 from .common import (
     LITERAL_ELEMENT_TO_ENUM,
@@ -16,7 +15,6 @@ from .common import (
 
 import dupermechs.all as sm
 
-type ImageMapping = abc.Mapping[SpriteKey, str]
 type SpriteCollection = abc.Sequence[SpriteData]
 
 
@@ -56,25 +54,6 @@ def _collect_stages(item: dto.ItemDto, /) -> tuple[abc.Sequence[sm.Item.Stage], 
     return tuple(stages), images
 
 
-def _convert_item(item: dto.ItemDto, /) -> tuple[sm.Item, SpriteCollection]:
-    stages, images = _collect_stages(item)
-
-    if item.released_at:
-        release_date = dt.datetime.fromtimestamp(item.released_at, tz=dt.UTC)
-    else:
-        release_date = None
-
-    return sm.Item(
-        id=sm.Item.Id(item.id),
-        name=item.name,
-        slot_id=LITERAL_SLOT_TO_ENUM[item.slot_id],
-        element=LITERAL_ELEMENT_TO_ENUM[item.element],
-        subtype=LITERAL_SUBTYPE_TO_ENUM[item.subtype],
-        stages=stages,
-        release_date=release_date,
-    ), images
-
-
 class ItemGroups(NamedTuple):
     reloaded: ItemMapping
     legacy: ItemMapping
@@ -89,8 +68,21 @@ def collect_items(item_dtos: abc.Sequence[dto.ItemDto], /) -> ItemGroups:
     all_images: SpriteCollection = []
 
     for item_dto in item_dtos:
-        item, images = _convert_item(item_dto)
+        stages, images = _collect_stages(item_dto)
         all_images += images
+        item = sm.Item(
+            id=sm.Item.Id(item_dto.id),
+            name=item_dto.name,
+            slot_id=LITERAL_SLOT_TO_ENUM[item_dto.slot_id],
+            element=LITERAL_ELEMENT_TO_ENUM[item_dto.element],
+            subtype=LITERAL_SUBTYPE_TO_ENUM[item_dto.subtype],
+            stages=stages,
+            release_date=(
+                dt.datetime.fromtimestamp(item_dto.released_at, tz=dt.UTC)
+                if item_dto.released_at
+                else None
+            ),
+        )
 
         if item_dto.hidden:
             hidden_items[item.id] = item

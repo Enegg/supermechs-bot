@@ -3,5 +3,4 @@
 from .extensions import *
 from .files import *
 from .limits import *
-from .markdown import *
 from .typeshed import *

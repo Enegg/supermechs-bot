@@ -1,6 +1,5 @@
 """Various assets existing on discord side."""
 
-import logging
 from collections import abc
 from typing import ClassVar, Final
 
@@ -16,7 +15,6 @@ import dupermechs.all as sm
 
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 
-_LOG = logging.getLogger(__name__)
 NULL_EMOJI: Final[str] = "❔"
 NULL_COLOR: Final[Color] = Color(0)
 MISSING_IMAGE: Final[FileResource] = FileResource(paths.MISSING_PNG)
