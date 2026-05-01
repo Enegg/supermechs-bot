@@ -1,7 +1,7 @@
 # https://www.youtube.com/watch?v=9L77QExPmI0
 # TODO (3.12): QueueHandler/QueueListener
 import copy
-import datetime
+import datetime as dt
 import io
 import logging
 import logging.config
@@ -88,9 +88,7 @@ class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         base_fields = {
             "message": record.getMessage(),
-            "timestamp": datetime.datetime.fromtimestamp(
-                record.created, tz=datetime.UTC
-            ).isoformat(),
+            "timestamp": dt.datetime.fromtimestamp(record.created, tz=dt.UTC).isoformat(),
         }
         if record.exc_info is not None:
             base_fields["exc_info"] = self.formatException(record.exc_info)
