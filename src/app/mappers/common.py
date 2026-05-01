@@ -2,7 +2,7 @@ from collections import abc
 
 import msgspec
 
-from app.dto.common import ItemStatsDto, LiteralElement, LiteralSlot, LiteralTier
+from app.dto.common import ItemStatsDto, LiteralElement, LiteralSlot, LiteralSubtype, LiteralTier
 
 import dupermechs.all as sm
 
@@ -30,6 +30,19 @@ LITERAL_ELEMENT_TO_ENUM: abc.Mapping[LiteralElement, sm.Item.Element] = {
     "EXPLOSIVE": sm.Item.Element.explosive,
     "ELECTRIC": sm.Item.Element.electric,
     "COMBINED": sm.Item.Element.combined,
+}
+LITERAL_SUBTYPE_TO_ENUM: abc.Mapping[LiteralSubtype | msgspec.UnsetType, sm.Item.Subtype] = {
+    "POWER_KIT": sm.Item.Subtype.power_kit,
+    "COLOR_KIT": sm.Item.Subtype.color_kit,
+    "TRANSFORM_RELIC": sm.Item.Subtype.transform_relic,
+    "ASCENSION_RELIC": sm.Item.Subtype.ascension_relic,
+    "TORSO_PERK": sm.Item.Subtype.torso_perk,
+    "GIANT_PERK": sm.Item.Subtype.giant_perk,
+    "TINY_PERK": sm.Item.Subtype.tiny_perk,
+    "HAT_PERK": sm.Item.Subtype.hat_perk,
+    "SHOTS_PERK": sm.Item.Subtype.shot_perk,
+    "MELEE_WEAPON": sm.Item.Subtype.none,
+    msgspec.UNSET: sm.Item.Subtype.none,
 }
 LITERAL_TIER_TO_ENUM: abc.Mapping[LiteralTier, sm.Item.Rarity] = {
     "COMMON": sm.Item.Rarity.common,
@@ -104,6 +117,10 @@ def convert_stats(stats: ItemStatsDto, /) -> sm.ItemStats:
         energy_cost=stats.energy_cost,
         bullets_cost=stats.bullets_cost,
         rockets_cost=stats.rockets_cost,
+        hit_points_per_block=stats.hp_per_block,
+        heat_per_block=stats.heat_per_block,
+        energy_per_block=stats.energy_per_block,
+        block_percent_points=stats.absorb_ratio,
     )
 
 

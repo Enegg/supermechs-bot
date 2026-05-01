@@ -4,7 +4,7 @@ from typing import NewType, Protocol
 
 import attrs
 
-from dupermechs.enums import ItemElement, ItemRarity, ItemSlot
+from dupermechs.enums import ItemElement, ItemRarity, ItemSlot, ItemSubtype
 from dupermechs.stats import IItemStats, ItemStats
 
 __all__ = ("IItem", "IItemStage", "IStageLevel", "Item")
@@ -41,6 +41,8 @@ class IItem(Protocol):
     @property
     def element(self) -> ItemElement: ...
     @property
+    def subtype(self) -> ItemSubtype: ...
+    @property
     def stages(self) -> abc.Sequence[IItemStage]: ...
     @property
     def release_date(self) -> dt.datetime | None: ...
@@ -69,10 +71,12 @@ class Item:
     Element = ItemElement
     Rarity = ItemRarity
     Stage = ItemStage
+    Subtype = ItemSubtype
 
     id: ItemId
     name: str
     slot_id: ItemSlot
     element: ItemElement
     stages: abc.Sequence[ItemStage]
+    subtype: ItemSubtype = ItemSubtype.none
     release_date: dt.datetime | None = None

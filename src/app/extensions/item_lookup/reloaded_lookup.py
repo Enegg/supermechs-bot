@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 from collections import abc
 from typing import Final, Literal, NamedTuple
@@ -334,27 +335,25 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
             container.children.append(title)
 
     # ------------------------------------------- stats --------------------------------------------
-    stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
-
-    if (
-        not stats_lines
-        and item.slot_id is sm.Item.Slot.kit
-        and (boost_power := levels[ctx.level_index].power_contribution)
-    ):
-        stats_lines.append(
-            f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
-        )
-    if stats_lines or costs_lines:
-        stats_part = "\n".join(stats_lines)
-        costs_part = "\n".join(costs_lines)
+    if item.subtype is sm.Item.Subtype.power_kit:
+        boost_power = levels[ctx.level_index].power_contribution
         container.children.append(ui.TextDisplay(
-            f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
+                f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
         ))  # fmt: skip
-        if stats_part and costs_part:
-            container.children.append(ui.Separator(divider=False))
-            container.children.append(ui.TextDisplay(costs_part))
     else:
-        container.children.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
+        stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
+
+        if stats_lines or costs_lines:
+            stats_part = "\n".join(stats_lines)
+            costs_part = "\n".join(costs_lines)
+            container.children.append(ui.TextDisplay(
+                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
+            ))  # fmt: skip
+            if stats_part and costs_part:
+                container.children.append(ui.Separator(divider=False))
+                container.children.append(ui.TextDisplay(costs_part))
+        else:
+            container.children.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
     # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
@@ -438,9 +437,11 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
 
+    # ---------------------------------------- release date ----------------------------------------
     if item.release_date is not None:
+        when = "Released" if item.release_date < dt.datetime.now(tz=dt.UTC) else "Releases"
         container.children.append(ui.TextDisplay(
-            f"-# Released {md.format_dt(item.release_date, "R")}"
+            f"-# {when} {md.format_dt(item.release_date, "R")}"
         ))  # fmt: skip
 
     return container

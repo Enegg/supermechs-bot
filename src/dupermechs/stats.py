@@ -106,6 +106,14 @@ class IItemStats(Protocol):
     def bullets_cost(self) -> int: ...
     @property
     def rockets_cost(self) -> int: ...
+    @property
+    def hit_points_per_block(self) -> int: ...
+    @property
+    def energy_per_block(self) -> int: ...
+    @property
+    def heat_per_block(self) -> int: ...
+    @property
+    def block_percent_points(self) -> int: ...
 
     def __getitem__(self, stat: ItemStat, /) -> int: ...
     def __replace__(
@@ -153,6 +161,10 @@ class IItemStats(Protocol):
         energy_cost: int = ...,
         bullets_cost: int = ...,
         rockets_cost: int = ...,
+        hit_points_per_block: int = ...,
+        energy_per_block: int = ...,
+        heat_per_block: int = ...,
+        block_percent_points: int = ...,
     ) -> Self: ...
 
 
@@ -200,6 +212,10 @@ class ItemStats:
     energy_cost: int = 0
     bullets_cost: int = 0
     rockets_cost: int = 0
+    hit_points_per_block: int = 0
+    energy_per_block: int = 0
+    heat_per_block: int = 0
+    block_percent_points: int = 0
 
     def __getitem__(self, stat: ItemStat, /) -> int:
         return getattr(self, stat.name)
@@ -251,6 +267,10 @@ def combine(parts: abc.Iterable[IItemStats], /) -> ItemStats:
         total.energy_cost += part.energy_cost
         total.bullets_cost += part.bullets_cost
         total.rockets_cost += part.rockets_cost
+        total.hit_points_per_block += part.hit_points_per_block
+        total.energy_per_block += part.energy_per_block
+        total.heat_per_block += part.heat_per_block
+        total.block_percent_points += part.block_percent_points
 
     return total
 

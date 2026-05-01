@@ -145,6 +145,7 @@ class StatEmojis:
     energy_cost: str = NULL_EMOJI
     bullets_cost: str = NULL_EMOJI
     rockets_cost: str = NULL_EMOJI
+    shield_absorbtion: str = NULL_EMOJI
 
     def __getitem__(self, field: sm.enums.ItemStat, /) -> str:
         return getattr(self, field.name)

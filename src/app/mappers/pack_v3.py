@@ -8,6 +8,7 @@ from app.models.sprite_pack import SpriteKey
 from .common import (
     LITERAL_ELEMENT_TO_ENUM,
     LITERAL_SLOT_TO_ENUM,
+    LITERAL_SUBTYPE_TO_ENUM,
     LITERAL_TIER_TO_ENUM,
     ItemMapping,
     convert_stats,
@@ -24,16 +25,6 @@ class SpriteData(NamedTuple):
     image: str
     tier: sm.Item.Rarity
     reloaded: bool
-
-
-def _determine_element(item: dto.ItemDto, /) -> sm.Item.Element:
-    if item.element != "OTHER":
-        return LITERAL_ELEMENT_TO_ENUM[item.element]
-
-    if item.subtype == "energyHeat":
-        return sm.Item.Element.combined
-
-    return sm.Item.Element.other
 
 
 def _collect_stages(item: dto.ItemDto, /) -> tuple[abc.Sequence[sm.Item.Stage], SpriteCollection]:
@@ -77,7 +68,8 @@ def _convert_item(item: dto.ItemDto, /) -> tuple[sm.Item, SpriteCollection]:
         id=sm.Item.Id(item.id),
         name=item.name,
         slot_id=LITERAL_SLOT_TO_ENUM[item.slot_id],
-        element=_determine_element(item),
+        element=LITERAL_ELEMENT_TO_ENUM[item.element],
+        subtype=LITERAL_SUBTYPE_TO_ENUM[item.subtype],
         stages=stages,
         release_date=release_date,
     ), images

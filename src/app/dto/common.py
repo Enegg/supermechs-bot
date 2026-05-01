@@ -20,6 +20,18 @@ type LiteralSlot = Literal[
 ]
 type LiteralElement = Literal["OTHER", "PHYSICAL", "EXPLOSIVE", "ELECTRIC", "COMBINED"]
 type LiteralTier = Literal["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHICAL", "DIVINE", "PERK"]
+type LiteralSubtype = Literal[
+    "POWER_KIT",
+    "COLOR_KIT",
+    "TRANSFORM_RELIC",
+    "ASCENSION_RELIC",
+    "TORSO_PERK",
+    "GIANT_PERK",
+    "TINY_PERK",
+    "HAT_PERK",
+    "SHOTS_PERK",
+    "MELEE_WEAPON",
+]
 type UInt = Annotated[int, msgspec.Meta(ge=0)]
 type PosInt = Annotated[int, msgspec.Meta(gt=0)]
 type Name = Annotated[str, msgspec.Meta(min_length=3, max_length=32)]

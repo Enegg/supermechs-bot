@@ -271,6 +271,22 @@ def format_stats(
         stats_lines.append(fmt(emojis.retreat * count, item_stats.retreat, ItemStat.retreat))
     if item_stats.repair:
         stats_lines.append(fmt(emojis.repair, item_stats.repair, ItemStat.repair))
+    if item_stats.block_percent_points:
+        stats_lines.append(
+            fmt(
+                emojis.shield_absorbtion,
+                f"{item_stats.block_percent_points}%",
+                ItemStat.block_percent_points,
+            )
+        )
+    if item_stats.heat_per_block and item_stats.hit_points_per_block:
+        stats_lines.append(
+            f"{emojis.heat_generation} **{item_stats.heat_per_block}** Heat per {emojis.hit_points} **{item_stats.hit_points_per_block}** damage blocked"
+        )
+    if item_stats.energy_per_block and item_stats.hit_points_per_block:
+        stats_lines.append(
+            f"{emojis.energy_cost} **{item_stats.energy_per_block}** Energy per {emojis.hit_points} **{item_stats.hit_points_per_block}** damage blocked"
+        )
 
     if item_stats.uses:
         count = 1 if item_stats.uses > MAX_EMOJIS else item_stats.uses
@@ -292,6 +308,4 @@ def format_stats(
         (costs_lines or stats_lines).append(
             f"{emojis.jump} **{gettext('item-lookup-jump-required')}**"
         )
-    # TODO: shield stats
-    # TODO: POWER_KIT boost_power
     return stats_lines, costs_lines
