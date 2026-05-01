@@ -119,6 +119,7 @@ extend-immutable-calls = [
 
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
 datetime = "dt"
+"discord.markdown" = "md"
 "dupermechs.all" = "sm"
 
 [tool.ruff.lint.pylint]

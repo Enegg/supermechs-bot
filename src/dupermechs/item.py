@@ -1,3 +1,4 @@
+import datetime as dt
 from collections import abc
 from typing import NewType, Protocol
 
@@ -41,6 +42,8 @@ class IItem(Protocol):
     def element(self) -> ItemElement: ...
     @property
     def stages(self) -> abc.Sequence[IItemStage]: ...
+    @property
+    def release_date(self) -> dt.datetime | None: ...
 
 
 @attrs.define(kw_only=True)
@@ -72,3 +75,4 @@ class Item:
     slot_id: ItemSlot
     element: ItemElement
     stages: abc.Sequence[ItemStage]
+    release_date: dt.datetime | None = None

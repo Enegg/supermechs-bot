@@ -1,3 +1,4 @@
+import datetime as dt
 from collections import abc
 from typing import NamedTuple
 
@@ -66,12 +67,19 @@ def _collect_stages(item: dto.ItemDto, /) -> tuple[abc.Sequence[sm.Item.Stage], 
 
 def _convert_item(item: dto.ItemDto, /) -> tuple[sm.Item, SpriteCollection]:
     stages, images = _collect_stages(item)
+
+    if item.released_at:
+        release_date = dt.datetime.fromtimestamp(item.released_at, tz=dt.UTC)
+    else:
+        release_date = None
+
     return sm.Item(
         id=sm.Item.Id(item.id),
         name=item.name,
         slot_id=LITERAL_SLOT_TO_ENUM[item.slot_id],
         element=_determine_element(item),
         stages=stages,
+        release_date=release_date,
     ), images
 
 

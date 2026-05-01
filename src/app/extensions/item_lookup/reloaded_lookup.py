@@ -3,7 +3,7 @@ from collections import abc
 from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
-from discord import ComponentLimits
+from discord import ComponentLimits, markdown as md
 from disnake import MessageFlags
 from disnake.ext import commands
 
@@ -437,5 +437,10 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
         placeholder=gettext("item-lookup-ui-level-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
+
+    if item.release_date is not None:
+        container.children.append(ui.TextDisplay(
+            f"-# Released {md.format_dt(item.release_date, "R")}"
+        ))  # fmt: skip
 
     return container
