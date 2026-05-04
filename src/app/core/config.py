@@ -1,15 +1,16 @@
+import argparse
 import os
 import pathlib
+import types
 from collections import abc
 from typing import Final
 
 import attrs
-import datargs
 import dotenv
 
 from app import paths
 from app.class_utils import MappingParser
-from resources import AnyResource
+from resources import AnyResource, from_uri
 
 __all__ = ("CONFIG",)
 
@@ -27,9 +28,9 @@ class Config:
     logs_channel_id: int | None = None
     """ID of a text channel log messages will be sent to."""
     item_pack_uri: AnyResource | None = None
-    """Path/URL of the default item pack."""
+    """Path/URL of an item pack."""
     gfx_pack_uri: AnyResource | None = None
-    """Path/URL of independent graphics for item pack."""
+    """Path/URL of a graphics pack."""
     user_input_timeout: float = 180.0
     """Time in seconds after which various forms of user input are disabled."""
 
@@ -39,22 +40,51 @@ class Config:
         return (self.dev_guild_id,)
 
 
-@attrs.define
-class Argv:
-    dotenv_path: pathlib.Path = paths.DEV_ENV
-    indev: bool = __debug__
-    debug_command_sync: bool = __debug__
+def get_config() -> Config:
+    _parser = argparse.ArgumentParser("supermechs-bot")
+    _parser.add_argument("--token", action="store", default="", help="Bot token to use.")
+    _parser.add_argument(
+        "--env",
+        action="store",
+        type=pathlib.Path,
+        default=paths.DEV_ENV,
+        help=f"Path to a .env file. Default: {paths.DEV_ENV}",
+    )
+    _parser.add_argument(
+        "--dev-guild",
+        dest="dev_guild_id",
+        action="store",
+        type=int,
+        default=argparse.SUPPRESS,
+        help="ID of a guild dev-only commands will be registered to.",
+        metavar="ID",
+    )
+    _parser.add_argument(
+        "--item-pack",
+        dest="item_pack_uri",
+        action="store",
+        type=from_uri,
+        default=argparse.SUPPRESS,
+        help="Path/URL of an item pack.",
+        metavar="URI",
+    )
+    _parser.add_argument(
+        "--gfx-pack",
+        dest="gfx_pack_uri",
+        action="store",
+        type=from_uri,
+        default=argparse.SUPPRESS,
+        help="Path/URL of a graphics pack.",
+        metavar="URI",
+    )
+
+    ns = _parser.parse_args(namespace=types.SimpleNamespace())
+    assert isinstance(ns.env, pathlib.Path)
+    dotenv.load_dotenv(ns.env)
+    return MappingParser(vars(ns), os.environ).structure(Config)
 
 
-ARGV = datargs.parse(Argv)
-
-
-dotenv.load_dotenv(ARGV.dotenv_path)
-CONFIG: Final = MappingParser(
-    attrs.asdict(ARGV),
-    os.environ,
-).structure(Config)
-
+CONFIG: Final = get_config()
 
 if __name__ == "__main__":
     import rich
