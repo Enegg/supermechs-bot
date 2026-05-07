@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Final, NamedTuple, cast as type_cast
 from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
 
+from app.core import AppState
 from app.managers import packs
 
 if TYPE_CHECKING:
@@ -137,6 +138,7 @@ def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autocomplet
     filled_options: FilledOptions = type_cast("FilledOptions", inter.filled_options)
 
     items = packs.filter_items(
+        AppState.item_pack,
         slot=filled_options.get("slot"),
         element=filled_options.get("element"),
         rarity=filled_options.get("rarity"),

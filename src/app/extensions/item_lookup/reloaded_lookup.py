@@ -12,6 +12,7 @@ from app.assets import COLORS, EMOJIS, ICONS
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
+from app.core import AppState
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
@@ -79,7 +80,7 @@ async def item_lookup(
     """  # noqa: D400
     gettext = i18n.get_gettext(inter)
 
-    for item in packs.filter_items(slot, element, rarity, False):
+    for item in packs.filter_items(AppState.item_pack, slot, element, rarity, False):
         if item.name == name:
             break
 
@@ -108,7 +109,7 @@ async def on_reloaded_lookup_interaction(
 ) -> None:
     component, ctx = parse_component_id(inter.data.custom_id)
     gettext = i18n.get_gettext(inter)
-    item_pack = packs.get_item_pack()
+    item_pack = AppState.item_pack
     # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
     try:

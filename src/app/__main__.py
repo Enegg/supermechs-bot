@@ -12,7 +12,7 @@ from disnake.ext import commands
 
 from app import aio, i18n, paths
 from app.commands import exception_handling, mentions
-from app.core import CONFIG, config_logging
+from app.core import CONFIG, AppState, config_logging
 from app.managers import loader
 
 _LOG = logging.getLogger("main")
@@ -38,13 +38,13 @@ async def main() -> None:
     config_logging(paths.CONFIG_TOML)
     disnake.VoiceClient.warn_nacl = False
 
-    bot = commands.InteractionBot(
+    AppState.bot = bot = commands.InteractionBot(
         # NOTE: guilds provides things like Interaction.me,
         # which is typed as -> Member | ClientUser, but can actually be None
         intents=disnake.Intents(guilds=True),
         activity=disnake.Game("SuperMechs"),
         allowed_mentions=disnake.AllowedMentions.none(),
-        localization_provider=i18n.localization_provider,
+        localization_provider=AppState.I18n.localization_provider,
         test_guilds=CONFIG.test_guild_ids if CONFIG.indev else None,
         command_sync_flags=commands.CommandSyncFlags(
             sync_commands_debug=CONFIG.debug_command_sync,
@@ -70,13 +70,21 @@ async def main() -> None:
     else:
         _LOG.info(f"{CONFIG.logs_channel_id=}, channel logging disabled")
 
-    async with aio.client_session(bot.http), anyio.create_task_group() as tg:
+    async with (
+        aio.client_session(bot.http) as AppState.http_session,
+        anyio.create_task_group() as tg,
+    ):
         setup_signal_handler(bot, tg)
 
         if CONFIG.item_pack_uri is None:
             _LOG.warning(f"{CONFIG.item_pack_uri=}, item pack not configured")
         else:
-            tg.start_soon(loader.load_datapack, CONFIG.item_pack_uri, CONFIG.gfx_pack_uri)
+            tg.start_soon(
+                loader.load_datapack,
+                CONFIG.item_pack_uri,
+                CONFIG.gfx_pack_uri,
+                AppState.http_session,
+            )
 
         tg.start_soon(sync.sync_commands, bot)
         tg.start_soon(mentions.populate, bot)

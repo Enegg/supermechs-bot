@@ -6,16 +6,15 @@ from discord import ComponentLimits, markdown as md, text_to_file
 from discord.extensions import walk_extensions
 from disnake.ext import commands
 
-from app import devtools, i18n, paths, ui
+from app import devtools, paths, ui
 from app.assets import COLORS
+from app.core import AppState
 from app.plugins_factory import create_dev_plugin
 from app.utils import format_exception
 
 plugin = create_dev_plugin(__name__)
 KNOWN_PLUGIN_PATHS = tuple(walk_extensions(paths.PLUGINS_PACKAGE))
 assert 1 <= len(KNOWN_PLUGIN_PATHS) <= ComponentLimits.string_select_options
-
-recently_loaded_plugin: str | None = None
 
 
 class ComponentIds:
@@ -52,7 +51,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
     container, add_component = ui.container()
     add_component(ui.TextDisplay("# Developer Console"))
 
-    current_override = i18n.locale_override.unwrap_or(None)
+    current_override = AppState.I18n.locale_override.unwrap_or(None)
     locale_options = [
         ui.SelectOption(
             label="None",
@@ -74,7 +73,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
             emoji=info.flag_emoji.unwrap_or(None),
             default=locale is current_override,
         )
-        for locale, info in i18n.locale_info.items()
+        for locale, info in AppState.I18n.locale_info.items()
     ]  # fmt: skip
     add_component(ui.TextDisplay("## Locale override"))
     add_component(ui.ActionRow(ui.StringSelect(
@@ -110,7 +109,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
     add_component(ui.ActionRow(
         ui.ActionButton(
             custom_id=make_component_id(ComponentIds.debug_button, ctx),
-            style=ui.ButtonStyle.green if devtools.debug_enabled else ui.ButtonStyle.gray,
+            style=ui.ButtonStyle.green if AppState.debug_log_components else ui.ButtonStyle.gray,
             label="Debug components",
             emoji="🗒️",
         ),
@@ -128,7 +127,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
 @commands.is_owner()
 async def dev_console(inter: CommandInteraction) -> None:
     """Open developer console."""
-    ctx = DevtoolsUIContext(last_reload_plugin_name=recently_loaded_plugin)
+    ctx = DevtoolsUIContext(last_reload_plugin_name=AppState.recently_loaded_plugin)
     components = create_console(ctx)
     await inter.response.send_message(
         components=components, flags=disnake.MessageFlags(is_components_v2=True)
@@ -140,7 +139,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
     if not inter.data.custom_id.startswith(ComponentIds.prefix):
         return
 
-    if not await plugin.bot.is_owner(inter.author):
+    if not await AppState.bot.is_owner(inter.author):
         await inter.response.send_message("You cannot use this.", ephemeral=True)
         return
 
@@ -154,17 +153,17 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
             [option_value] = inter.values
 
             if option_value == "$none":
-                i18n.remove_locale_override()
+                AppState.I18n.remove_locale_override()
 
             else:
-                i18n.set_locale_override(disnake.Locale[option_value])
+                AppState.I18n.set_locale_override(disnake.Locale[option_value])
 
         case ComponentIds.debug_button:
-            devtools.debug_enabled ^= True
+            AppState.debug_log_components ^= True
 
         case ComponentIds.reset_button:
-            i18n.remove_locale_override()
-            devtools.debug_enabled = False
+            AppState.I18n.remove_locale_override()
+            AppState.debug_log_components = False
 
         case ComponentIds.plugin_select:
             assert inter.values
@@ -176,14 +175,13 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
                 )
 
             else:
-                global recently_loaded_plugin
-                recently_loaded_plugin = option_value
+                AppState.recently_loaded_plugin = option_value
                 ctx = ctx.__replace__(last_reload_plugin_name=option_value)
 
         case ComponentIds.cmd_sync_button:
             from app.commands import sync
 
-            await sync.sync_commands(plugin.bot)
+            await sync.sync_commands(AppState.bot)
 
         case ComponentIds.reload_button:
             if ctx.last_reload_plugin_name is None:
@@ -191,7 +189,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
 
             else:
                 try:
-                    plugin.bot.reload_extension(ctx.last_reload_plugin_name)
+                    AppState.bot.reload_extension(ctx.last_reload_plugin_name)
 
                 except commands.ExtensionFailed as exc:
                     error_container.children.append(

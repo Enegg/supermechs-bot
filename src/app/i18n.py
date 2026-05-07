@@ -2,15 +2,16 @@ import logging
 import typing
 from collections import abc
 from pathlib import Path
-from typing import Final, Literal, Protocol, cast as type_cast
+from typing import Literal, Protocol
 
 import attrs
 import msgspec
-from monads.option import Null, Option, Some
 
-from disnake import Locale, LocalizationProtocol
+from disnake import Locale
 
 from app.class_utils import unset_to_option
+from app.core import AppState
+from app.core.state import LocaleInfo
 from app.typeshed import Pathish
 
 from supermechs.enums import ItemRarity, ItemStat
@@ -62,29 +63,9 @@ type LiteralKey = Literal[
     "boost-power",
 ]
 
-
 _LOG = logging.getLogger(__name__)
 FALLBACK_LOCALE = Locale.en_US
 FILE_EXT = ".toml"
-
-stats: Final[abc.Mapping[LocalePair[str], str]] = {}
-messages: Final[abc.Mapping[LocalePair[LiteralKey], str]] = {}
-locale_info: Final[abc.Mapping[Locale, "LocaleInfo"]] = {}
-_command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
-# provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
-localization_provider: Final = type_cast("LocalizationProtocol", _command_locale)
-
-locale_override: Option[Locale] = Null.null
-
-
-def set_locale_override(locale: Locale) -> None:
-    global locale_override
-    locale_override = Some(locale)
-
-
-def remove_locale_override() -> None:
-    global locale_override
-    locale_override = Null.null
 
 
 class HasLocale(Protocol):
@@ -100,33 +81,33 @@ class GetText:
         return get_message(self.locale, key, **format_kwargs)
 
     def get_stat_name(self, stat: ItemStat, /) -> str:
-        return _get(stats, stat, self.locale)
+        return _get(AppState.I18n.stats, stat, self.locale)
 
     def get_tier_name(self, tier: ItemRarity, /) -> str:
         return get_message(self.locale, "tier-" + tier.name)
 
 
-def _get[KT](store: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Locale) -> str:
+def _get[KT](mapping: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Locale) -> str:
     try:
-        return store[key, locale]
+        return mapping[key, locale]
 
     except KeyError:
         try:
-            value = store[key, FALLBACK_LOCALE]
+            value = mapping[key, FALLBACK_LOCALE]
 
         except KeyError:
             _LOG.error("Key %s does not exist", key)
-            value = store[key, locale] = store[key, FALLBACK_LOCALE] = str(key)
+            value = mapping[key, locale] = mapping[key, FALLBACK_LOCALE] = str(key)
 
         else:
             _LOG.warning("Locale %s has no key %r", locale, key)
-            store[key, locale] = value
+            mapping[key, locale] = value
 
         return value
 
 
 def get_message(locale: Locale, key: LiteralKey, /, **format_kwargs: object) -> str:
-    msg = _get(messages, key, locale)
+    msg = _get(AppState.I18n.messages, key, locale)
 
     if format_kwargs:
         return msg.format_map(format_kwargs)
@@ -135,7 +116,7 @@ def get_message(locale: Locale, key: LiteralKey, /, **format_kwargs: object) -> 
 
 
 def get_gettext(inter: HasLocale, /) -> GetText:
-    return GetText(locale_override.unwrap_or(inter.locale))
+    return GetText(AppState.I18n.locale_override.unwrap_or(inter.locale))
 
 
 class _LocaleMetadata(msgspec.Struct):
@@ -152,13 +133,6 @@ class _LocaleFileStruct(msgspec.Struct):
     commands: dict[str, str] | msgspec.UnsetType = msgspec.UNSET
 
 
-class LocaleInfo(msgspec.Struct):
-    english_name: str
-    local_name: str
-    flag_emoji: Option[str] = Null.null
-    region: Option[str] = Null.null
-
-
 def _load_locale_file(path: Path, /) -> None:
     # precondition: path.suffix equals FILE_EXT
 
@@ -168,16 +142,16 @@ def _load_locale_file(path: Path, /) -> None:
 
     for key, entry in data.stats.items():
         stat = ItemStat[key]
-        stats[stat, locale] = entry
+        AppState.I18n.stats[stat, locale] = entry
 
     if data.messages is not msgspec.UNSET:
         for key, message in data.messages.items():
-            messages[key, locale] = message
+            AppState.I18n.messages[key, locale] = message
 
     if data.commands is not msgspec.UNSET:
-        _command_locale[locale.value] = data.commands
+        AppState.I18n.command_locale[locale.value] = data.commands
 
-    locale_info[locale] = LocaleInfo(
+    AppState.I18n.locale_info[locale] = LocaleInfo(
         english_name=data.metadata.english_name,
         local_name=data.metadata.local_name,
         flag_emoji=unset_to_option(data.metadata.flag_emoji),
@@ -210,14 +184,14 @@ if __name__ == "__main__":
                     continue
 
                 try:
-                    stats[stat, locale]
+                    AppState.I18n.stats[stat, locale]
 
                 except KeyError:
                     missing.append(stat.name)
 
             for key in typing.get_args(LiteralKey.__value__):
                 try:
-                    messages[key, locale]
+                    AppState.I18n.messages[key, locale]
 
                 except KeyError:
                     missing.append(key)

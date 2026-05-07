@@ -221,9 +221,14 @@ class Assets:
     frantic_gifs: abc.Sequence[str]
 
 
-_PARSER = MappingParser.from_path(paths.ASSETS_TOML)
-ASSETS = _PARSER.structure(Assets, "misc")
-EMOJIS = _PARSER.structure(Emojis, "emojis")
-ICONS = _PARSER.structure(Icons, "icon_overrides")
-COLORS = Colors()
-del _PARSER
+def load_assets() -> tuple[Assets, Emojis, Icons, Colors]:
+    parser = MappingParser.from_path(paths.ASSETS_TOML)
+    assets = parser.structure(Assets, "misc")
+    emojis = parser.structure(Emojis, "emojis")
+    icons = parser.structure(Icons, "icon_overrides")
+    colors = parser.structure(Colors, "colors")
+
+    return assets, emojis, icons, colors
+
+
+ASSETS, EMOJIS, ICONS, COLORS = load_assets()

@@ -3,6 +3,7 @@ import logging
 from app.disnake_types import CommandInteraction
 from disnake import Event
 
+from app.core import AppState
 from app.plugins_factory import create_plugin
 
 plugin = create_plugin(__name__)
@@ -11,10 +12,10 @@ _LOG = logging.getLogger("event")
 
 @plugin.listener(Event.ready)
 async def on_ready() -> None:
-    limit = plugin.bot.session_start_limit
+    limit = AppState.bot.session_start_limit
     assert limit is not None
     _LOG.info(
-        f"Username: {plugin.bot.user.name};"
+        f"Username: {AppState.bot.user.name};"
         f" Session #{limit.total - limit.remaining}/{limit.total}"
         f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
     )

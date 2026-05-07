@@ -1,23 +1,16 @@
 import logging
 from collections import abc
 
+from app.core import AppState
 from app.models.item_pack import ItemPack
 
 import supermechs.all as sm
 
 _LOG = logging.getLogger("managers")
-_item_pack: ItemPack = ItemPack()
-
-
-def get_item_pack() -> ItemPack:
-    return _item_pack
-
-
-def get_item_by_id(id: sm.Item.Id, /) -> sm.Item:
-    return _item_pack.reloaded_items[id]
 
 
 def filter_items(
+    item_pack: ItemPack,
     slot: str | None = None,
     element: str | None = None,
     rarity: str | None = None,
@@ -37,7 +30,7 @@ def filter_items(
         min_tier = sm.Item.Rarity[rarity]
         filters.append(lambda item: item.stages[0].tier >= min_tier)
 
-    bank = _item_pack.legacy_items if legacy else _item_pack.reloaded_items
+    bank = item_pack.legacy_items if legacy else item_pack.reloaded_items
 
     if not filters:
         yield from bank.values()
@@ -49,10 +42,9 @@ def filter_items(
 
 
 def store_item_pack(pack: ItemPack, /) -> None:
-    global _item_pack
     _LOG.info(
         "Storing item pack: reloaded=%d, legacy=%d",
         len(pack.reloaded_items),
         len(pack.legacy_items),
     )
-    _item_pack = pack
+    AppState.item_pack = pack
