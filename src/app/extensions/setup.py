@@ -196,7 +196,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
 
                 except commands.ExtensionFailed as exc:
                     error_container.children.append(
-                        ui.TextDisplay("## ⚠️ An exception occured during reloading:")
+                        ui.TextDisplay("## ⚠️ An exception occurred during reloading:")
                     )
                     traceback_text = format_exception(exc)
 
