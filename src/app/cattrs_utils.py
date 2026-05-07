@@ -27,10 +27,10 @@ CONVERTER.register_structure_hook_func(lambda x: x is AnyResource, _structure_re
 
 
 def _structure_emoji(value: str, cls: type) -> AnyEmoji:
-    parial_emoji = PartialEmoji.from_str(value)
-    if parial_emoji.id is None:
-        return UnicodeEmoji(parial_emoji.name)
-    return CustomEmoji(parial_emoji.id, parial_emoji.name, parial_emoji.animated)
+    partial_emoji = PartialEmoji.from_str(value)
+    if partial_emoji.id is None:
+        return UnicodeEmoji(partial_emoji.name)
+    return CustomEmoji(partial_emoji.id, partial_emoji.name, partial_emoji.animated)
 
 
 CONVERTER.register_structure_hook_func(lambda x: x is AnyEmoji, _structure_emoji)
