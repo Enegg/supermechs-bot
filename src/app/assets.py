@@ -266,8 +266,14 @@ def _parse_emojis() -> Emojis:
     return CONVERTER.structure(data, Emojis)
 
 
-_PARSER = MappingParser.from_path(paths.ASSETS_TOML)
-ASSETS = _PARSER.structure(Assets, "misc")
-ICONS = _PARSER.structure(Icons, "icon_overrides")
-del _PARSER
-EMOJIS = _parse_emojis()
+def load_assets() -> tuple[Assets, Emojis, Icons]:
+    parser = MappingParser.from_path(paths.ASSETS_TOML)
+    assets = parser.structure(Assets, "misc")
+    icons = parser.structure(Icons, "icon_overrides")
+
+    emojis = _parse_emojis()
+
+    return assets, emojis, icons
+
+
+ASSETS, EMOJIS, ICONS = load_assets()
