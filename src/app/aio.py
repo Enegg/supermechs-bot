@@ -1,7 +1,7 @@
 import logging
 import pathlib
 from http import HTTPMethod as HTTPMethod, HTTPStatus as HTTPStatus
-from typing import Any, Final, Self
+from typing import Any, Self
 
 import aiohttp
 import anyio
@@ -9,6 +9,7 @@ import anyio.to_thread
 import attrs
 import orjson
 import yarl
+from aiohttp import ClientSession as HTTPSession
 from monads.result import Err, Ok, Result
 
 import disnake.http
@@ -19,15 +20,11 @@ from resources import AnyResource, FileResource, HttpResource
 
 _LOG = logging.getLogger("io")
 
-session: Final[aiohttp.ClientSession]
-"""Global HTTP session. Access via `from app import aio; aio.session`"""
-
 type HttpReadError = aiohttp.ClientError | ResponseNotOk
 
 
-def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
+def client_session(client: disnake.http.HTTPClient, /) -> HTTPSession:
     """Create a client session with client's connector & proxy."""
-    global session
 
     # .venv/Lib/site-packages/aiohttp/payload.py:396
     # aiohttp wants dumps(Any) -> str, then encodes it
@@ -41,13 +38,12 @@ def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
     def _dumps(obj: object, /) -> Any:
         return _MockStr(orjson.dumps(obj))
 
-    session = aiohttp.ClientSession(
+    return HTTPSession(
         connector=client.connector,
         connector_owner=client.connector is None,
         timeout=aiohttp.ClientTimeout(total=30),
         json_serialize=_dumps,
     )
-    return session
 
 
 async def read_path(path: Pathish, /) -> Result[bytes, OSError]:
@@ -87,7 +83,7 @@ class ResponseNotOk(OSError):
         return cls(HTTPStatus(response.status))
 
 
-async def read_http(url: yarl.URL, /) -> Result[bytes, HttpReadError]:
+async def read_http(url: yarl.URL, /, session: HTTPSession) -> Result[bytes, HttpReadError]:
     _log_request(url, HTTPMethod.GET)
 
     async with session.get(url) as response:
@@ -105,10 +101,12 @@ async def read_http(url: yarl.URL, /) -> Result[bytes, HttpReadError]:
     return Ok(content)
 
 
-async def read_resource(resource: AnyResource, /) -> Result[bytes, HttpReadError | OSError]:
+async def read_resource(
+    resource: AnyResource, /, session: HTTPSession
+) -> Result[bytes, HttpReadError | OSError]:
     match resource:
         case FileResource():
             return await read_path(resource.path)
 
         case HttpResource():
-            return await read_http(resource.url)
+            return await read_http(resource.url, session)
