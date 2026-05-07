@@ -34,8 +34,10 @@ def safe_decode[T](data: abc.Buffer | str, /, *, type: type[T]) -> T | None:
         return None
 
 
-async def load_datapack(item_pack_uri: AnyResource, gfx_pack_uri: AnyResource | None, /) -> None:
-    match await aio.read_resource(item_pack_uri):
+async def load_datapack(
+    item_pack_uri: AnyResource, gfx_pack_uri: AnyResource | None, /, session: aio.HTTPSession
+) -> None:
+    match await aio.read_resource(item_pack_uri, session):
         case Err(exc):
             _LOG.error(f"Could not read {item_pack_uri.uri}:", exc_info=exc)
             return
@@ -94,14 +96,16 @@ async def load_datapack(item_pack_uri: AnyResource, gfx_pack_uri: AnyResource | 
                 _LOG.warning(f"{gfx_pack_uri=}, graphics pack not configured")
 
             else:
-                await load_gfx_v3(gfx_pack_uri, item_groups.images)
+                await load_gfx_v3(gfx_pack_uri, item_groups.images, session)
 
         case unknown:
             _LOG.error(f"Unknown data pack version: {unknown}")
 
 
-async def load_gfx_v3(gfx_pack_uri: AnyResource, images: SpriteCollection) -> None:
-    match await aio.read_resource(gfx_pack_uri):
+async def load_gfx_v3(
+    gfx_pack_uri: AnyResource, images: SpriteCollection, session: aio.HTTPSession
+) -> None:
+    match await aio.read_resource(gfx_pack_uri, session):
         case Err(exc):
             _LOG.error(f"Could not read {gfx_pack_uri.uri}:", exc_info=exc)
             return

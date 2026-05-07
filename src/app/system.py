@@ -1,5 +1,4 @@
 from threading import Lock
-from typing import Final
 
 import anyio
 import anyio.to_thread
@@ -8,8 +7,6 @@ import psutil
 from app.typeshed import Pathish
 
 __all__ = ("get_ram_usage", "get_sloc")
-
-BOT_PROCESS: Final = psutil.Process()
 
 
 def _file_sloc(path: Pathish, /) -> int:
@@ -43,6 +40,6 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
     return total
 
 
-def get_ram_usage() -> int:
-    """Return the process RAM utilization, in bytes."""
-    return BOT_PROCESS.memory_info().rss
+def get_ram_usage(process: psutil.Process, /) -> int:
+    """Return a process' RAM utilization, in bytes."""
+    return process.memory_info().rss

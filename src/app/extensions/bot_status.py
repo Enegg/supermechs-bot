@@ -1,22 +1,21 @@
 import random
 import sys
 from functools import partial
-from typing import Final, NamedTuple
+from typing import Final
 
-import disnake
 from app.disnake_types import CommandInteraction
-from discord import NullUser, markdown as md
+from discord import markdown as md
 from disnake import __version__ as disnake_version
 from disnake.utils import oauth_url
 
 from app import ui
 from app.assets import ASSETS, EMOJIS
 from app.async_utils import gather
-from app.core import CONFIG
+from app.core import CONFIG, AppState
+from app.core.state import BotUserInfo
 from app.devtools import debug_components
-from app.managers import packs
 from app.plugins_factory import create_plugin
-from app.system import BOT_PROCESS, get_ram_usage, get_sloc
+from app.system import get_ram_usage, get_sloc
 from app.utils import as_binary_unit
 from resources import HttpResource
 
@@ -26,29 +25,18 @@ python_version: Final = ".".join(map(str, sys.version_info[:3]))
 disnake_url: Final = "https://github.com/DisnakeDev/disnake"
 
 
-class _BotInfo(NamedTuple):
-    owner: disnake.abc.User = NullUser()
-    team: disnake.Team | None = None
-    app_sloc: int = 0
-    bot_public: bool = False
-
-
-_bot_info: _BotInfo = _BotInfo()
-
-
 @plugin.load_hook(post=True)
 async def _() -> None:
-    global _bot_info
     app_info, app_sloc = await gather(
-        plugin.bot.application_info,
+        AppState.bot.application_info,
         partial(get_sloc, "src"),
     )
-    _bot_info = _BotInfo(
+    AppState.bot_user_info = BotUserInfo(
         owner=app_info.owner,
         team=app_info.team,
-        app_sloc=app_sloc,
         bot_public=app_info.bot_public,
     )
+    AppState.app_sloc = app_sloc
 
 
 @plugin.slash_command(name="frantic")
@@ -61,13 +49,11 @@ async def slash_frantic(inter: CommandInteraction) -> None:
 @plugin.slash_command(name="info")
 async def slash_info(inter: CommandInteraction) -> None:
     """Display information about the bot."""
-    bot = plugin.bot
-
     components: ui.MessageComponents = []
     container, add_component = ui.container(accent_color=inter.me.color)
     components.append(container)
 
-    if (team := _bot_info.team) is not None:
+    if (team := AppState.bot_user_info.team) is not None:
         # when an app is team-owned, .owner is a pseudo-user that represents the team
         # and doesn't really have any useful attributes
         assert team.owner_id is not None  # TODO: disnake#1630
@@ -78,15 +64,15 @@ async def slash_info(inter: CommandInteraction) -> None:
             else:
                 developer_line += f" and {len(team.members)} others"
     else:
-        developer_line = f"Developer: {_bot_info.owner.mention}"
+        developer_line = f"Developer: {AppState.bot_user_info.owner.mention}"
 
     add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
             "**General**\n"
             f"{developer_line}\n"
-            f"Created: {md.format_dt(bot.user.created_at, 'R')}\n"
-            f"Servers: {len(bot.guilds)}"
+            f"Created: {md.format_dt(AppState.bot.user.created_at, 'R')}\n"
+            f"Servers: {len(AppState.bot.guilds)}"
         ),
         accessory=ui.thumbnail(inter.me.display_avatar),
     ))  # fmt: skip
@@ -96,7 +82,7 @@ async def slash_info(inter: CommandInteraction) -> None:
     if isinstance(CONFIG.item_pack_uri, HttpResource):
         pack_key = md.hyperlink(pack_key, CONFIG.item_pack_uri.uri)
 
-    item_pack = packs.get_item_pack()
+    item_pack = AppState.item_pack
     add_component(ui.TextDisplay(
         "**SuperMechs**\n"
         f"Item pack: {pack_key}\n"
@@ -106,19 +92,19 @@ async def slash_info(inter: CommandInteraction) -> None:
         "**Backend**\n"
         f"Python version: {python_version}\n"
         f"Discord library: {md.hyperlink('disnake', disnake_url)} {disnake_version}\n"
-        f"Lines of code: {_bot_info.app_sloc}"
+        f"Lines of code: {AppState.app_sloc}"
     ))  # fmt: skip
-    bytes_, prefix = as_binary_unit(get_ram_usage())
+    bytes_, prefix = as_binary_unit(get_ram_usage(AppState.app_process))
     add_component(ui.TextDisplay(
         "**Performance**\n"
-        f"Started: {md.format_dt(BOT_PROCESS.create_time(), 'R')}\n"
-        f"Latency: {round(bot.latency * 1000)}ms\n"
+        f"Started: {md.format_dt(AppState.app_process.create_time(), 'R')}\n"
+        f"Latency: {round(AppState.bot.latency * 1000)}ms\n"
         f"RAM usage: {bytes_}{prefix}B"
     ))  # fmt: skip
 
-    if _bot_info.bot_public:
+    if AppState.bot_user_info.bot_public:
         components.append(ui.ActionRow(ui.UrlButton(
-            url=oauth_url(bot.user.id, scopes=("bot", "applications.commands")),
+            url=oauth_url(AppState.bot.user.id, scopes=("bot", "applications.commands")),
             label="Invite me!",
             emoji=EMOJIS.item_slot_drone.to_partial(),
         )))  # fmt: skip
