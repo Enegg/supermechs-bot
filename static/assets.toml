@@ -5,7 +5,7 @@ frantic_gifs = [
 ]
 
 [emojis]
-[emojis.types]
+[emojis.slots]
             torso =  "<:torso:730115680363347968>"
              legs =   "<:legs:730115699397361827>"
             drone =  "<:drone:730115574763618394>"
@@ -96,6 +96,7 @@ explosive_resistance_damage =  "<:expresdmg:725871281311842314>"
                 energy_cost =    "<:enecost:725871660237979759>"
                bullets_cost =    "<:bullets:1430271130597462257>"
                rockets_cost =    "<:rockets:1430271133218902268>"
+          shield_absorbtion = "🛡️"
 
 [emojis.categories]
      energy_capacity =   "<:energy:725870941883859054>"
@@ -115,7 +116,7 @@ explosive_resistance =   "<:expres:725871136935772294>"
 
 
 [icons]
-[icons.types]
+[icons.slots]
             torso = "https://cdn.discordapp.com/emojis/730115680363347968.webp"
              legs = "https://cdn.discordapp.com/emojis/730115699397361827.webp"
             drone = "https://cdn.discordapp.com/emojis/730115574763618394.webp"

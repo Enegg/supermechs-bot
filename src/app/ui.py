@@ -9,18 +9,22 @@ from discord import ComponentLimits, EmojiType
 from disnake import (
     ButtonStyle,
     File as _FileObject,
+    GroupOption,
     MediaGalleryItem,
     SelectOption,
     SeparatorSpacing,
     TextInputStyle,
     UnfurledMediaItem,
-    ui,
 )
 from disnake.components import handle_media_item_input as _handle_media_item_input
 from disnake.ui import (
     ActionRow,
+    Button as _Button,
+    Checkbox,
+    CheckboxGroup,
     Container,
     File,
+    FileUpload,
     Label,
     MediaGallery,
     Modal,
@@ -38,16 +42,18 @@ from app import i18n
 if TYPE_CHECKING:
     from disnake.components import MediaItemInput
     from disnake.ui._types import MessageComponents as _MessageComponents
-    from disnake.ui.container import ContainerChildUIComponent as _ContainerChildUIComponent
-
 
 __all__ = (
     "ActionButton",
     "ActionRow",
     "ButtonStyle",
     "CallbackStore",
+    "Checkbox",
+    "CheckboxGroup",
     "Container",
     "File",
+    "FileUpload",
+    "GroupOption",
     "Label",
     "MediaGallery",
     "MediaGalleryItem",
@@ -74,20 +80,12 @@ __all__ = (
 
 type CallbackStore = _CallbackStore[MessageInteraction]
 type MessageComponents = _MessageComponents
-type ContainerChildUIComponent = _ContainerChildUIComponent
 type MediaConvertible = MediaItemInput | _FileObject
-type ActiveButtonStyle = Literal[
+type ActionButtonStyle = Literal[
     ButtonStyle.primary,
     ButtonStyle.secondary,
     ButtonStyle.success,
     ButtonStyle.danger,
-    # microsoft/pyright#11100
-    # DisnakeDev/disnake#1473
-    ButtonStyle.blurple,
-    ButtonStyle.grey,
-    ButtonStyle.gray,
-    ButtonStyle.green,
-    ButtonStyle.red,
 ]
 
 
@@ -143,14 +141,14 @@ def option_to_page_count(options: int, /) -> int:
     return 2 + (options - first_and_last_page + size - 1) // size
 
 
-class ActionButton(ui.Button[None]):
+class ActionButton(_Button[None]):
     """Represents an interactive button."""
 
     def __init__(
         self,
         *,
         custom_id: str,
-        style: ActiveButtonStyle = ButtonStyle.secondary,
+        style: ActionButtonStyle = ButtonStyle.secondary,
         label: str | None = None,
         disabled: bool = False,
         emoji: EmojiType | None = None,
@@ -169,7 +167,7 @@ class ActionButton(ui.Button[None]):
             ...
 
 
-class UrlButton(ui.Button[None]):
+class UrlButton(_Button[None]):
     """Represents a dummy button with a link."""
 
     def __init__(

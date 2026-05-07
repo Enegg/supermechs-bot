@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from threading import Lock
 from typing import Final
 
@@ -49,6 +49,6 @@ def get_ram_usage() -> int:
     return BOT_PROCESS.memory_info().rss
 
 
-def get_start_dt() -> datetime.datetime:
+def get_start_dt() -> dt.datetime:
     """Return the process start timestamp."""
-    return datetime.datetime.fromtimestamp(BOT_PROCESS.create_time(), tz=datetime.UTC)
+    return dt.datetime.fromtimestamp(BOT_PROCESS.create_time(), tz=dt.UTC)

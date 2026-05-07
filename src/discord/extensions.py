@@ -5,12 +5,12 @@ import logging
 import pkgutil
 from collections import abc
 
-__all__ = ("load_extensions",)
+__all__ = ("load_extensions", "walk_extensions")
 
 _LOG = logging.getLogger("extensions")
 
 
-def find_submodules(root_module: str, package: str | None = None) -> tuple[abc.Sequence[str], str]:
+def walk_extensions(root_module: str, *, package: str | None = None) -> abc.Iterator[str]:
     if (spec := importlib.util.find_spec(root_module, package=package)) is None:
         msg = f"Unable to find root module '{root_module}'"
         raise ImportError(msg, name=root_module)
@@ -19,13 +19,7 @@ def find_submodules(root_module: str, package: str | None = None) -> tuple[abc.S
         msg = f"Module '{root_module}' is not a package"
         raise ImportError(msg, name=root_module)
 
-    return paths, spec.name
-
-
-def walk_extensions(root_module: str, *, package: str | None = None) -> abc.Iterator[str]:
-    paths, name = find_submodules(root_module, package=package)
-
-    for _, sub_name, _ in pkgutil.iter_modules(paths, f"{name}."):
+    for _, sub_name, _ in pkgutil.iter_modules(paths, f"{spec.name}."):
         yield sub_name
 
 

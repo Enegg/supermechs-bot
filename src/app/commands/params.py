@@ -4,22 +4,22 @@ from typing_extensions import TypedDict
 
 from disnake import Localized, OptionChoice
 
-from dupermechs.enums import ItemElement, ItemRarity, ItemType
+from dupermechs.enums import ItemElement, ItemRarity, ItemSlot
 
-__all__ = ("ELEMENT_CHOICES", "TYPE_CHOICES")
+__all__ = ("ELEMENT_CHOICES", "SLOT_CHOICES")
 
-TYPE_CHOICES = (
-    OptionChoice(Localized("Torso", key="CHOICE_TORSO"), ItemType.torso.name),
-    OptionChoice(Localized("Legs", key="CHOICE_LEGS"), ItemType.legs.name),
-    OptionChoice(Localized("Drone", key="CHOICE_DRONE"), ItemType.drone.name),
-    OptionChoice(Localized("Side weapon", key="CHOICE_SIDE_WEAPON"), ItemType.side_weapon.name),
-    OptionChoice(Localized("Top weapon", key="CHOICE_TOP_WEAPON"), ItemType.top_weapon.name),
-    OptionChoice(Localized("Teleport", key="CHOICE_TELEPORT"), ItemType.teleport.name),
-    OptionChoice(Localized("Charge Engine", key="CHOICE_CHARGE"), ItemType.charge.name),
-    OptionChoice(Localized("Grappling Hook", key="CHOICE_HOOK"), ItemType.hook.name),
-    OptionChoice(Localized("Shield", key="CHOICE_SHIELD"), ItemType.shield.name),
-    OptionChoice(Localized("Module", key="CHOICE_MODULE"), ItemType.module.name),
-    OptionChoice(Localized("Perk", key="CHOICE_PERK"), ItemType.perk.name),
+SLOT_CHOICES = (
+    OptionChoice(Localized("Torso", key="CHOICE_TORSO"), ItemSlot.torso.name),
+    OptionChoice(Localized("Legs", key="CHOICE_LEGS"), ItemSlot.legs.name),
+    OptionChoice(Localized("Drone", key="CHOICE_DRONE"), ItemSlot.drone.name),
+    OptionChoice(Localized("Side weapon", key="CHOICE_SIDE_WEAPON"), ItemSlot.side_weapon.name),
+    OptionChoice(Localized("Top weapon", key="CHOICE_TOP_WEAPON"), ItemSlot.top_weapon.name),
+    OptionChoice(Localized("Teleport", key="CHOICE_TELEPORT"), ItemSlot.teleport.name),
+    OptionChoice(Localized("Charge Engine", key="CHOICE_CHARGE"), ItemSlot.charge.name),
+    OptionChoice(Localized("Grappling Hook", key="CHOICE_HOOK"), ItemSlot.hook.name),
+    OptionChoice(Localized("Shield", key="CHOICE_SHIELD"), ItemSlot.shield.name),
+    OptionChoice(Localized("Module", key="CHOICE_MODULE"), ItemSlot.module.name),
+    OptionChoice(Localized("Perk", key="CHOICE_PERK"), ItemSlot.perk.name),
 )
 ELEMENT_CHOICES = (
     OptionChoice(Localized("Physical", key="CHOICE_PHYS"), ItemElement.physical.name),
@@ -44,7 +44,7 @@ TIER_CHOICES = (
 
 
 class FilledOptions(TypedDict, total=False, closed=True):
-    type: Literal[
+    slot: Literal[
         "torso",
         "legs",
         "drone",

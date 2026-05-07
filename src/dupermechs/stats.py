@@ -1,16 +1,15 @@
 import math
 from collections import abc
-from typing import Protocol, Self
+from typing import Self
 
 import attrs
 
-from dupermechs.arenashop import IArenaShop
+from dupermechs.arenashop import ArenaShop
 from dupermechs.enums import ItemStat
 
 __all__ = (
     "AnyBonus",
     "FlatBonus",
-    "IItemStats",
     "ItemStats",
     "MultiplierBonus",
     "bonus_damage_vs_titan",
@@ -19,141 +18,6 @@ __all__ = (
     "combine",
     "overload_hp_penalty",
 )
-
-
-class IItemStats(Protocol):
-    @property
-    def weight(self) -> int: ...
-    @property
-    def hit_points(self) -> int: ...
-    @property
-    def energy_capacity(self) -> int: ...
-    @property
-    def energy_regeneration(self) -> int: ...
-    @property
-    def heat_capacity(self) -> int: ...
-    @property
-    def heat_cooling(self) -> int: ...
-    @property
-    def physical_resistance(self) -> int: ...
-    @property
-    def explosive_resistance(self) -> int: ...
-    @property
-    def electric_resistance(self) -> int: ...
-    @property
-    def bullets_capacity(self) -> int: ...
-    @property
-    def rockets_capacity(self) -> int: ...
-    @property
-    def walk(self) -> int: ...
-    @property
-    def jump(self) -> int: ...
-    @property
-    def physical_damage(self) -> int: ...
-    @property
-    def physical_damage_addon(self) -> int: ...
-    @property
-    def physical_resistance_damage(self) -> int: ...
-    @property
-    def electric_damage(self) -> int: ...
-    @property
-    def electric_damage_addon(self) -> int: ...
-    @property
-    def energy_damage(self) -> int: ...
-    @property
-    def energy_capacity_damage(self) -> int: ...
-    @property
-    def regeneration_damage(self) -> int: ...
-    @property
-    def electric_resistance_damage(self) -> int: ...
-    @property
-    def explosive_damage(self) -> int: ...
-    @property
-    def explosive_damage_addon(self) -> int: ...
-    @property
-    def heat_damage(self) -> int: ...
-    @property
-    def heat_capacity_damage(self) -> int: ...
-    @property
-    def cooling_damage(self) -> int: ...
-    @property
-    def explosive_resistance_damage(self) -> int: ...
-    @property
-    def range(self) -> int: ...
-    @property
-    def range_addon(self) -> int: ...
-    @property
-    def push(self) -> int: ...
-    @property
-    def pull(self) -> int: ...
-    @property
-    def recoil(self) -> int: ...
-    @property
-    def advance(self) -> int: ...
-    @property
-    def retreat(self) -> int: ...
-    @property
-    def uses(self) -> int: ...
-    @property
-    def backfire(self) -> int: ...
-    @property
-    def repair(self) -> int: ...
-    @property
-    def heat_generation(self) -> int: ...
-    @property
-    def energy_cost(self) -> int: ...
-    @property
-    def bullets_cost(self) -> int: ...
-    @property
-    def rockets_cost(self) -> int: ...
-
-    def __getitem__(self, stat: ItemStat, /) -> int: ...
-    def __replace__(
-        self,
-        *,
-        weight: int = ...,
-        hit_points: int = ...,
-        energy_capacity: int = ...,
-        energy_regeneration: int = ...,
-        heat_capacity: int = ...,
-        heat_cooling: int = ...,
-        physical_resistance: int = ...,
-        explosive_resistance: int = ...,
-        electric_resistance: int = ...,
-        bullets_capacity: int = ...,
-        rockets_capacity: int = ...,
-        walk: int = ...,
-        jump: int = ...,
-        physical_damage: int = ...,
-        physical_damage_addon: int = ...,
-        physical_resistance_damage: int = ...,
-        electric_damage: int = ...,
-        electric_damage_addon: int = ...,
-        energy_damage: int = ...,
-        energy_capacity_damage: int = ...,
-        regeneration_damage: int = ...,
-        electric_resistance_damage: int = ...,
-        explosive_damage: int = ...,
-        explosive_damage_addon: int = ...,
-        heat_damage: int = ...,
-        heat_capacity_damage: int = ...,
-        cooling_damage: int = ...,
-        explosive_resistance_damage: int = ...,
-        range: int = ...,  # noqa: A002
-        range_addon: int = ...,
-        push: int = ...,
-        pull: int = ...,
-        recoil: int = ...,
-        advance: int = ...,
-        retreat: int = ...,
-        uses: int = ...,
-        backfire: int = ...,
-        repair: int = ...,
-        heat_generation: int = ...,
-        energy_cost: int = ...,
-        bullets_cost: int = ...,
-        rockets_cost: int = ...,
-    ) -> Self: ...
 
 
 @attrs.define(kw_only=True)
@@ -171,23 +35,23 @@ class ItemStats:
     rockets_capacity: int = 0
     walk: int = 0
     jump: int = 0
-    physical_damage: int = 0
-    physical_damage_addon: int = 0
+    physical_damage_min: int = 0
+    physical_damage_max: int = 0
     physical_resistance_damage: int = 0
-    electric_damage: int = 0
-    electric_damage_addon: int = 0
+    electric_damage_min: int = 0
+    electric_damage_max: int = 0
     energy_damage: int = 0
     energy_capacity_damage: int = 0
     regeneration_damage: int = 0
     electric_resistance_damage: int = 0
-    explosive_damage: int = 0
-    explosive_damage_addon: int = 0
+    explosive_damage_min: int = 0
+    explosive_damage_max: int = 0
     heat_damage: int = 0
     heat_capacity_damage: int = 0
     cooling_damage: int = 0
     explosive_resistance_damage: int = 0
-    range: int = 0
-    range_addon: int = 0
+    range_min: int = 0
+    range_max: int = 0
     push: int = 0
     pull: int = 0
     recoil: int = 0
@@ -200,12 +64,16 @@ class ItemStats:
     energy_cost: int = 0
     bullets_cost: int = 0
     rockets_cost: int = 0
+    hit_points_per_block: int = 0
+    energy_per_block: int = 0
+    heat_per_block: int = 0
+    block_percent_points: int = 0
 
     def __getitem__(self, stat: ItemStat, /) -> int:
         return getattr(self, stat.name)
 
 
-def combine(parts: abc.Iterable[IItemStats], /) -> ItemStats:
+def combine(parts: abc.Iterable[ItemStats], /) -> ItemStats:
     total = ItemStats()
 
     for part in parts:
@@ -222,23 +90,23 @@ def combine(parts: abc.Iterable[IItemStats], /) -> ItemStats:
         total.rockets_capacity += part.rockets_capacity
         total.walk += part.walk
         total.jump += part.jump
-        total.physical_damage += part.physical_damage
-        total.physical_damage_addon += part.physical_damage_addon
+        total.physical_damage_min += part.physical_damage_min
+        total.physical_damage_max += part.physical_damage_max
         total.physical_resistance_damage += part.physical_resistance_damage
-        total.electric_damage += part.electric_damage
-        total.electric_damage_addon += part.electric_damage_addon
+        total.electric_damage_min += part.electric_damage_min
+        total.electric_damage_max += part.electric_damage_max
         total.energy_damage += part.energy_damage
         total.energy_capacity_damage += part.energy_capacity_damage
         total.regeneration_damage += part.regeneration_damage
         total.electric_resistance_damage += part.electric_resistance_damage
-        total.explosive_damage += part.explosive_damage
-        total.explosive_damage_addon += part.explosive_damage_addon
+        total.explosive_damage_min += part.explosive_damage_min
+        total.explosive_damage_max += part.explosive_damage_max
         total.heat_damage += part.heat_damage
         total.heat_capacity_damage += part.heat_capacity_damage
         total.cooling_damage += part.cooling_damage
         total.explosive_resistance_damage += part.explosive_resistance_damage
-        total.range += part.range
-        total.range_addon += part.range_addon
+        total.range_min += part.range_min
+        total.range_max += part.range_max
         total.push += part.push
         total.pull += part.pull
         total.recoil += part.recoil
@@ -251,6 +119,10 @@ def combine(parts: abc.Iterable[IItemStats], /) -> ItemStats:
         total.energy_cost += part.energy_cost
         total.bullets_cost += part.bullets_cost
         total.rockets_cost += part.rockets_cost
+        total.hit_points_per_block += part.hit_points_per_block
+        total.energy_per_block += part.energy_per_block
+        total.heat_per_block += part.heat_per_block
+        total.block_percent_points += part.block_percent_points
 
     return total
 
@@ -297,7 +169,7 @@ class MultiplierBonus:
 type AnyBonus = FlatBonus | MultiplierBonus
 
 
-def bonus_item_stats(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStats:
+def bonus_item_stats(stats: ItemStats, buffs: ArenaShop[AnyBonus]) -> ItemStats:
     return ItemStats(
         energy_capacity=buffs.energy_capacity.apply(stats.energy_capacity),
         energy_regeneration=buffs.energy_regeneration.apply(stats.energy_regeneration),
@@ -305,12 +177,12 @@ def bonus_item_stats(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStat
         heat_capacity=buffs.heat_capacity.apply(stats.heat_capacity),
         heat_cooling=buffs.heat_cooling.apply(stats.heat_cooling),
         heat_damage=buffs.heat_damage.apply(stats.heat_damage),
-        physical_damage=buffs.physical_damage.apply(stats.physical_damage),
-        physical_damage_addon=buffs.physical_damage.apply(stats.physical_damage_addon),
-        explosive_damage=buffs.explosive_damage.apply(stats.explosive_damage),
-        explosive_damage_addon=buffs.explosive_damage.apply(stats.explosive_damage_addon),
-        electric_damage=buffs.electric_damage.apply(stats.electric_damage),
-        electric_damage_addon=buffs.electric_damage.apply(stats.electric_damage_addon),
+        physical_damage_min=buffs.physical_damage.apply(stats.physical_damage_min),
+        physical_damage_max=buffs.physical_damage.apply(stats.physical_damage_max),
+        explosive_damage_min=buffs.explosive_damage.apply(stats.explosive_damage_min),
+        explosive_damage_max=buffs.explosive_damage.apply(stats.explosive_damage_max),
+        electric_damage_min=buffs.electric_damage.apply(stats.electric_damage_min),
+        electric_damage_max=buffs.electric_damage.apply(stats.electric_damage_max),
         physical_resistance=buffs.physical_resistance.apply(stats.physical_resistance),
         explosive_resistance=buffs.explosive_resistance.apply(stats.explosive_resistance),
         electric_resistance=buffs.electric_resistance.apply(stats.electric_resistance),
@@ -318,7 +190,7 @@ def bonus_item_stats(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStat
     )
 
 
-def bonus_mech_stats(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStats:
+def bonus_mech_stats(stats: ItemStats, buffs: ArenaShop[AnyBonus]) -> ItemStats:
     return ItemStats(
         energy_capacity=buffs.energy_capacity.apply(stats.energy_capacity),
         energy_regeneration=buffs.energy_regeneration.apply(stats.energy_regeneration),
@@ -331,14 +203,14 @@ def bonus_mech_stats(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStat
     )
 
 
-def bonus_damage_vs_titan(stats: IItemStats, buffs: IArenaShop[AnyBonus]) -> ItemStats:
+def bonus_damage_vs_titan(stats: ItemStats, buffs: ArenaShop[AnyBonus]) -> ItemStats:
     return ItemStats(
-        physical_damage=buffs.damage_vs_titans.apply(stats.physical_damage),
-        physical_damage_addon=buffs.damage_vs_titans.apply(stats.physical_damage_addon),
-        explosive_damage=buffs.damage_vs_titans.apply(stats.explosive_damage),
-        explosive_damage_addon=buffs.damage_vs_titans.apply(stats.explosive_damage_addon),
-        electric_damage=buffs.damage_vs_titans.apply(stats.electric_damage),
-        electric_damage_addon=buffs.damage_vs_titans.apply(stats.electric_damage_addon),
+        physical_damage_min=buffs.damage_vs_titans.apply(stats.physical_damage_min),
+        physical_damage_max=buffs.damage_vs_titans.apply(stats.physical_damage_max),
+        explosive_damage_min=buffs.damage_vs_titans.apply(stats.explosive_damage_min),
+        explosive_damage_max=buffs.damage_vs_titans.apply(stats.explosive_damage_max),
+        electric_damage_min=buffs.damage_vs_titans.apply(stats.electric_damage_min),
+        electric_damage_max=buffs.damage_vs_titans.apply(stats.electric_damage_max),
     )
 
 

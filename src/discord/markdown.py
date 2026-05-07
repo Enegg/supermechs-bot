@@ -38,7 +38,7 @@ class Commandish(Protocol):
 
 def command_mention(command: Commandish | disnake.CommandInteraction[Any], /) -> str:
     """Return a string mentioning a slash command."""
-    if isinstance(command, disnake.CommandInteraction):
+    if isinstance(command, disnake.ApplicationCommandInteraction):
         return f"</{command.application_command.qualified_name}:{command.data.id}>"
     return f"</{command.name}:{command.id}>"
 

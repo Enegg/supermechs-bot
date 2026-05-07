@@ -22,6 +22,6 @@ class ItemPackMetadata(NamedTuple):
 class ItemPack:
     """Mapping-like container of items."""
 
-    reloaded_items: abc.Mapping[sm.Item.Id, sm.IItem] = attrs.field(factory=dict, repr=limited_repr)
-    legacy_items: abc.Mapping[sm.Item.Id, sm.IItem] = attrs.field(factory=dict, repr=limited_repr)
-    hidden_items: abc.Mapping[sm.Item.Id, sm.IItem] = attrs.field(factory=dict, repr=limited_repr)
+    reloaded_items: abc.Mapping[sm.Item.Id, sm.Item] = attrs.field(factory=dict, repr=limited_repr)
+    legacy_items: abc.Mapping[sm.Item.Id, sm.Item] = attrs.field(factory=dict, repr=limited_repr)
+    hidden_items: abc.Mapping[sm.Item.Id, sm.Item] = attrs.field(factory=dict, repr=limited_repr)

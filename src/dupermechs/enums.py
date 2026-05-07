@@ -1,7 +1,7 @@
 import enum
 
 
-class ItemType(enum.Enum):
+class ItemSlot(enum.Enum):
     __slots__ = ()
 
     torso = enum.auto()
@@ -40,6 +40,22 @@ class ItemRarity(enum.IntEnum):
     perk = enum.auto()
 
 
+class ItemSubtype(enum.Enum):
+    __slots__ = ()
+
+    none = enum.auto()
+    power_kit = enum.auto()
+    color_kit = enum.auto()
+    transform_relic = enum.auto()
+    ascension_relic = enum.auto()
+    torso_perk = enum.auto()
+    giant_perk = enum.auto()
+    tiny_perk = enum.auto()
+    hat_perk = enum.auto()
+    shot_perk = enum.auto()
+    melee_weapon = enum.auto()
+
+
 class ItemStat(enum.StrEnum):
     __slots__ = ()
 
@@ -57,22 +73,18 @@ class ItemStat(enum.StrEnum):
     walk = enum.auto()
     jump = enum.auto()
     physical_damage = enum.auto()
-    physical_damage_addon = enum.auto()
     physical_resistance_damage = enum.auto()
     electric_damage = enum.auto()
-    electric_damage_addon = enum.auto()
     energy_damage = enum.auto()
     energy_capacity_damage = enum.auto()
     regeneration_damage = enum.auto()
     electric_resistance_damage = enum.auto()
     explosive_damage = enum.auto()
-    explosive_damage_addon = enum.auto()
     heat_damage = enum.auto()
     heat_capacity_damage = enum.auto()
     cooling_damage = enum.auto()
     explosive_resistance_damage = enum.auto()
     range = enum.auto()
-    range_addon = enum.auto()
     push = enum.auto()
     pull = enum.auto()
     recoil = enum.auto()
@@ -85,6 +97,10 @@ class ItemStat(enum.StrEnum):
     energy_cost = enum.auto()
     bullets_cost = enum.auto()
     rockets_cost = enum.auto()
+    hit_points_per_block = enum.auto()
+    energy_per_block = enum.auto()
+    heat_per_block = enum.auto()
+    block_percent_points = enum.auto()
 
 
 class ArenaShopCategory(enum.StrEnum):

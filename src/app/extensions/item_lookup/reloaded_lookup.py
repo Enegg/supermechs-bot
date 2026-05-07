@@ -1,9 +1,10 @@
+import datetime as dt
 import logging
 from collections import abc
 from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
-from discord import ComponentLimits
+from discord import ComponentLimits, markdown as md
 from disnake import MessageFlags
 from disnake.ext import commands
 
@@ -11,7 +12,7 @@ from app import i18n, ui
 from app.assets import COLORS, EMOJIS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
-from app.commands.params import ELEMENT_CHOICES, TIER_CHOICES, TYPE_CHOICES
+from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
@@ -60,7 +61,7 @@ class ComponentIds:
 async def item_lookup(
     inter: CommandInteraction,
     name: str = commands.Param(autocomplete=item_name_autocomplete),
-    type: str | None = commands.Param(None, choices=TYPE_CHOICES),
+    slot: str | None = commands.Param(None, choices=SLOT_CHOICES),
     element: str | None = commands.Param(None, choices=ELEMENT_CHOICES),
     rarity: str | None = commands.Param(None, choices=TIER_CHOICES),
 ) -> None:
@@ -70,8 +71,8 @@ async def item_lookup(
     ----------
     name:
         The name of the item. {{ ITEM_NAME }}
-    type:
-        Limit suggestions to this type. {{ ITEM_TYPE }}
+    slot:
+        Limit suggestions to this item slot. {{ ITEM_SLOT }}
     element:
         Limit suggestions to this element. {{ ITEM_ELEMENT }}
     rarity:
@@ -79,7 +80,7 @@ async def item_lookup(
     """  # noqa: D400
     gettext = i18n.get_gettext(inter)
 
-    for item in packs.filter_items(type, element, rarity, False):
+    for item in packs.filter_items(slot, element, rarity, False):
         if item.name == name:
             break
 
@@ -192,7 +193,7 @@ async def on_reloaded_lookup_interaction(
     await inter.response.edit_message(components=container)
 
 
-def get_item_stats(item: sm.IItem, ctx: UIContext, /) -> sm.IItemStats:
+def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
     base_stats = item.stages[ctx.stage_index].levels[ctx.level_index].stats
 
     if not ctx.buffs_enabled:
@@ -230,7 +231,7 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, UIContext]
 
 def make_level_options(
     gettext: i18n.GetText,
-    levels: abc.Iterable[sm.IStageLevel],
+    levels: abc.Iterable[sm.Item.Stage.Level],
     selected_level_index: int,
     start: int = 0,
 ) -> list[ui.SelectOption]:
@@ -270,7 +271,7 @@ def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
     return common_pks, rare_pks
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> ui.Container:
+def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
@@ -281,7 +282,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     if item.element is not sm.Item.Element.other:
         subtitle_parts.append(item.element.name)
 
-    subtitle_parts.append(item.type.name.replace("_", " "))
+    subtitle_parts.append(item.slot_id.name.replace("_", " "))
     subtitle_parts[0] = subtitle_parts[0].capitalize()
 
     power_level = (
@@ -326,7 +327,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     title = ui.TextDisplay("\n".join(title_lines))
     container = ui.Container(accent_colour=COLORS.elements[item.element])
 
-    match get_slot_icon(item.type):
+    match get_slot_icon(item.slot_id):
         case HttpResource(url):
             container.children.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
 
@@ -334,27 +335,25 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
             container.children.append(title)
 
     # ------------------------------------------- stats --------------------------------------------
-    stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
-
-    if (
-        not stats_lines
-        and item.type is sm.Item.Type.kit
-        and (boost_power := levels[ctx.level_index].power_contribution)
-    ):
-        stats_lines.append(
-            f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
-        )
-    if stats_lines or costs_lines:
-        stats_part = "\n".join(stats_lines)
-        costs_part = "\n".join(costs_lines)
+    if item.subtype is sm.Item.Subtype.power_kit:
+        boost_power = levels[ctx.level_index].power_contribution
         container.children.append(ui.TextDisplay(
-            f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
+                f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
         ))  # fmt: skip
-        if stats_part and costs_part:
-            container.children.append(ui.Separator(divider=False))
-            container.children.append(ui.TextDisplay(costs_part))
     else:
-        container.children.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
+        stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
+
+        if stats_lines or costs_lines:
+            stats_part = "\n".join(stats_lines)
+            costs_part = "\n".join(costs_lines)
+            container.children.append(ui.TextDisplay(
+                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
+            ))  # fmt: skip
+            if stats_part and costs_part:
+                container.children.append(ui.Separator(divider=False))
+                container.children.append(ui.TextDisplay(costs_part))
+        else:
+            container.children.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
     # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
@@ -437,5 +436,12 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
         placeholder=gettext("item-lookup-ui-level-select-placeholder"),
         custom_id=make_component_id(ComponentIds.level_select, ctx),
     )))  # fmt: skip
+
+    # ---------------------------------------- release date ----------------------------------------
+    if item.release_date is not None:
+        when = "Released" if item.release_date < dt.datetime.now(tz=dt.UTC) else "Releases"
+        container.children.append(ui.TextDisplay(
+            f"-# {when} {md.format_dt(item.release_date, "R")}"
+        ))  # fmt: skip
 
     return container

@@ -3,7 +3,7 @@ from typing import Literal
 
 import msgspec
 
-from .common import ItemStatsDto, LiteralElement, LiteralType, Name, PosInt, TransformRange
+from .common import ItemStatsDto, LiteralElement, LiteralSlot, Name, PosInt, TransformRange
 
 
 class ConfigDto(msgspec.Struct, kw_only=True):
@@ -17,7 +17,7 @@ class ItemDto(msgspec.Struct, kw_only=True):
     id: PosInt
     image: str | msgspec.UnsetType = msgspec.UNSET
     name: Name
-    type: LiteralType
+    slot_id: LiteralSlot = msgspec.field(name="type")
     element: LiteralElement = "OTHER"
     transform_range: TransformRange = "C"
     stats: ItemStatsDto

@@ -73,7 +73,11 @@ async def main() -> None:
     async with aio.client_session(bot.http), anyio.create_task_group() as tg:
         setup_signal_handler(bot, tg)
 
-        tg.start_soon(loader.load_datapack)
+        if CONFIG.item_pack_uri is None:
+            _LOG.warning(f"{CONFIG.item_pack_uri=}, item pack not configured")
+        else:
+            tg.start_soon(loader.load_datapack, CONFIG.item_pack_uri, CONFIG.gfx_pack_uri)
+
         tg.start_soon(sync.sync_commands, bot)
         tg.start_soon(mentions.populate, bot)
         tg.start_soon(bot.connect)

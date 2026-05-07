@@ -3,7 +3,7 @@ from typing import Literal
 
 import msgspec
 
-from .common import ItemStatsDto, LiteralElement, LiteralType, Name, PosInt, TransformRange, UInt
+from .common import ItemStatsDto, LiteralElement, LiteralSlot, Name, PosInt, TransformRange, UInt
 
 
 class SpriteRectDto(msgspec.Struct):
@@ -22,7 +22,7 @@ class ConfigDto(msgspec.Struct, kw_only=True):
 class ItemDto(msgspec.Struct, kw_only=True):
     id: PosInt
     name: Name
-    type: LiteralType
+    slot_id: LiteralSlot = msgspec.field(name="type")
     width: UInt = 0
     height: UInt = 0
     element: LiteralElement = "OTHER"

@@ -10,7 +10,7 @@ from app import i18n, ui
 from app.assets import COLORS, EMOJIS, get_slot_icon
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
-from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, TYPE_CHOICES
+from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
@@ -46,7 +46,7 @@ class ComponentIds:
 async def legacy_item_lookup(
     inter: CommandInteraction,
     name: str = commands.Param(autocomplete=item_name_autocomplete),
-    type: str | None = commands.Param(None, choices=TYPE_CHOICES),
+    slot: str | None = commands.Param(None, choices=SLOT_CHOICES),
     element: str | None = commands.Param(None, choices=LEGACY_ELEMENT_CHOICES),
     rarity: str | None = commands.Param(None, choices=LEGACY_TIER_CHOICES),
 ) -> None:
@@ -56,8 +56,8 @@ async def legacy_item_lookup(
     ----------
     name:
         The name of the item. {{ ITEM_NAME }}
-    type:
-        Limit suggestions to this type. {{ ITEM_TYPE }}
+    slot:
+        Limit suggestions to this item slot. {{ ITEM_SLOT }}
     element:
         Limit suggestions to this element. {{ ITEM_ELEMENT }}
     rarity:
@@ -65,7 +65,7 @@ async def legacy_item_lookup(
     """
     gettext = i18n.get_gettext(inter)
 
-    for item in packs.filter_items(type, element, rarity, True):
+    for item in packs.filter_items(slot, element, rarity, True):
         if item.name == name:
             break
 
@@ -139,7 +139,7 @@ async def on_legacy_lookup_interaction(
     await inter.response.edit_message(components=container)
 
 
-def get_item_stats(item: sm.IItem, ctx: UIContext, /) -> sm.IItemStats:
+def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
     base_stats = item.stages[0].levels[ctx.level_index].stats
 
     if not ctx.buffs_enabled:
@@ -176,7 +176,7 @@ def power_required_as_legacy_power_kits(power: int, /) -> int:
     return legacy_pks
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> ui.Container:
+def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
     tier = item.stages[0].tier
     levels = item.stages[0].levels
     assert len(levels) <= ComponentLimits.string_select_options  # TODO: guard this better
@@ -188,7 +188,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     if item.element is not sm.Item.Element.other:
         subtitle_parts.append(item.element.name)
 
-    subtitle_parts.append(item.type.name.replace("_", " "))
+    subtitle_parts.append(item.slot_id.name.replace("_", " "))
 
     power_level = (
         "max" if ctx.level_index == len(levels) - 1 else str(levels[ctx.level_index].level)
@@ -221,7 +221,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     title = ui.TextDisplay("\n".join(title_lines))
     container = ui.Container(accent_colour=COLORS.elements[item.element])
 
-    match get_slot_icon(item.type):
+    match get_slot_icon(item.slot_id):
         case HttpResource(url):
             container.children.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
 
@@ -232,7 +232,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.IItem, ctx: UIContext) -> u
     stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
 
     if (
-        item.type is sm.Item.Type.kit
+        item.slot_id is sm.Item.Slot.kit
         and not stats_lines
         and (boost_power := levels[ctx.level_index].power_contribution)
     ):

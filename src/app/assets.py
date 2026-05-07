@@ -1,6 +1,5 @@
 """Various assets existing on discord side."""
 
-import logging
 from collections import abc
 from typing import ClassVar, Final
 
@@ -16,14 +15,13 @@ import dupermechs.all as sm
 
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 
-_LOG = logging.getLogger(__name__)
 NULL_EMOJI: Final[str] = "❔"
 NULL_COLOR: Final[Color] = Color(0)
 MISSING_IMAGE: Final[FileResource] = FileResource(paths.MISSING_PNG)
 
 
 @attrs.frozen
-class TypeEmojis:
+class SlotEmojis:
     torso: str = NULL_EMOJI
     legs: str = NULL_EMOJI
     drone: str = NULL_EMOJI
@@ -41,7 +39,7 @@ class TypeEmojis:
     perk: str = NULL_EMOJI
     kit: str = NULL_EMOJI
 
-    def __getitem__(self, field: sm.Item.Type, /) -> str:
+    def __getitem__(self, field: sm.Item.Slot, /) -> str:
         return getattr(self, field.name)
 
 
@@ -145,6 +143,7 @@ class StatEmojis:
     energy_cost: str = NULL_EMOJI
     bullets_cost: str = NULL_EMOJI
     rockets_cost: str = NULL_EMOJI
+    shield_absorbtion: str = NULL_EMOJI
 
     def __getitem__(self, field: sm.enums.ItemStat, /) -> str:
         return getattr(self, field.name)
@@ -174,7 +173,7 @@ class CategoryEmojis:
 
 @attrs.frozen
 class Emojis:
-    types: TypeEmojis = attrs.Factory(TypeEmojis)
+    slots: SlotEmojis = attrs.Factory(SlotEmojis)
     tiers: TierEmojis = attrs.Factory(TierEmojis)
     elements: ElementEmojis = attrs.Factory(ElementEmojis)
     cards: CardEmojis = attrs.Factory(CardEmojis)
@@ -184,7 +183,7 @@ class Emojis:
 
 
 @attrs.frozen
-class TypeIcons:
+class SlotIcons:
     torso: AnyResource | None = None
     legs: AnyResource | None = None
     drone: AnyResource | None = None
@@ -202,13 +201,13 @@ class TypeIcons:
     perk: AnyResource | None = None
     kit: AnyResource | None = None
 
-    def __getitem__(self, field: sm.Item.Type, /) -> AnyResource | None:
+    def __getitem__(self, field: sm.Item.Slot, /) -> AnyResource | None:
         return getattr(self, field.name)
 
 
 @attrs.frozen
 class Icons:
-    types: TypeIcons = attrs.Factory(TypeIcons)
+    slots: SlotIcons = attrs.Factory(SlotIcons)
 
 
 @attrs.frozen
@@ -223,17 +222,12 @@ class ElementColors:
         return getattr(self, field.name)
 
 
-# TODO: DisnakeDev/disnake#1487
-def color_from_hex_code(hex_string: str, /) -> Color:
-    return Color(int(hex_string.removeprefix("#"), 16))
-
-
 @attrs.frozen
 class Colors:
     elements: ElementColors = attrs.Factory(ElementColors)
-    error: ClassVar = color_from_hex_code("#FF0000")
-    warning: ClassVar = color_from_hex_code("#FFBB00")
-    info: ClassVar = color_from_hex_code("#0088FF")
+    error: ClassVar = Color.from_hex("#FF0000")
+    warning: ClassVar = Color.from_hex("#FFBB00")
+    info: ClassVar = Color.from_hex("#0088FF")
 
 
 @attrs.frozen
@@ -249,11 +243,11 @@ COLORS = _PARSER.structure(Colors, "colors")
 del _PARSER
 
 
-def get_slot_icon(type: sm.Item.Type, /) -> AnyResource | None:
-    if type is sm.Item.Type.side_weapon:
-        return ICONS.types.right_side_weapon
+def get_slot_icon(slot: sm.Item.Slot, /) -> AnyResource | None:
+    if slot is sm.Item.Slot.side_weapon:
+        return ICONS.slots.right_side_weapon
 
-    if type is sm.Item.Type.top_weapon:
-        return ICONS.types.right_top_weapon
+    if slot is sm.Item.Slot.top_weapon:
+        return ICONS.slots.right_top_weapon
 
-    return ICONS.types[type]
+    return ICONS.slots[slot]
