@@ -1,4 +1,3 @@
-from collections import abc
 from typing import NamedTuple
 
 import msgspec
@@ -10,7 +9,7 @@ from app.mappers.common import (
     ItemMapping,
     stats_to_stages,
 )
-from app.models.sprite_pack import SpriteKey
+from app.models.sprite_pack import SpritePack
 from resources import HttpResource
 
 import dupermechs.all as sm
@@ -18,12 +17,12 @@ import dupermechs.all as sm
 
 class ConversionResultV1(NamedTuple):
     items: ItemMapping
-    images: abc.Mapping[SpriteKey, HttpResource]
+    images: SpritePack
 
 
 def convert_pack_v1(pack_dto: dto.ItemPackDto, /) -> ConversionResultV1:
     items: ItemMapping = {}
-    images: abc.Mapping[SpriteKey, HttpResource] = {}
+    images: SpritePack = {}
 
     if pack_dto.base_url is not msgspec.UNSET:
         base_url = pack_dto.base_url

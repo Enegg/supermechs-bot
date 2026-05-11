@@ -12,7 +12,7 @@ from app.mappers.pack_v1 import convert_pack_v1
 from app.mappers.pack_v2 import convert_pack_v2
 from app.mappers.pack_v3 import SpriteCollection, collect_items
 from app.models.item_pack import ItemPack
-from app.models.sprite_pack import DynamicSpritePack, SpriteKey
+from app.models.sprite_pack import SpritePack
 from resources import AnyResource, HttpResource
 
 from . import gfx, packs
@@ -45,8 +45,7 @@ async def load_datapack(item_pack_uri: AnyResource, gfx_pack_uri: AnyResource | 
                 item_pack = ItemPack(reloaded_items=pack_v1.items)
 
             packs.store_item_pack(item_pack)
-            sprite_pack = DynamicSpritePack(image_resources=pack_v1.images)
-            gfx.store_sprite_pack(sprite_pack)
+            gfx.set_sprite_pack(pack_v1.images)
 
         case "2":
             dto = msgspec.json.decode(data, type=ItemPackDtoV2)
@@ -83,7 +82,7 @@ async def load_gfx_v3(gfx_pack_uri: AnyResource, images: SpriteCollection) -> No
         case Ok(gfx_data):
             gfx_dto = msgspec.json.decode(gfx_data, type=GfxPackDto)
 
-    image_resources: dict[SpriteKey, HttpResource] = {}
+    image_resources: SpritePack = {}
 
     sprite_table = {(sprite.gfx, sprite.reloaded): sprite for sprite in gfx_dto.sprites}
 
@@ -97,5 +96,4 @@ async def load_gfx_v3(gfx_pack_uri: AnyResource, images: SpriteCollection) -> No
             sprite_dto.image.replace("%url%", gfx_dto.base_url)
         )
 
-    sprite_pack = DynamicSpritePack(image_resources=image_resources)
-    gfx.store_sprite_pack(sprite_pack)
+    gfx.set_sprite_pack(image_resources)

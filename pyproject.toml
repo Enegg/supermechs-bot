@@ -13,7 +13,6 @@ dependencies = [
     "disnake >= 2.12.0",
     "disnake-ext-plugins == 0.3.*",
     "orjson >= 3.8.10",
-    "pillow == 10.*",
     "psutil >= 5.9.7",
     "python-dotenv >= 1.0.0",
     "rich >= 14.0.0",
