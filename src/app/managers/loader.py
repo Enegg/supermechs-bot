@@ -1,4 +1,5 @@
 import logging
+from collections import abc
 
 import msgspec
 from monads.result import Err, Ok
@@ -24,6 +25,15 @@ class VersionDto(msgspec.Struct):
     version: str = "1"
 
 
+def safe_decode[T](data: abc.Buffer | str, /, *, type: type[T]) -> T | None:
+    try:
+        return msgspec.json.decode(data, type=type)
+
+    except msgspec.DecodeError as exc:
+        _LOG.error("Could not decode %s:", type.__name__, exc_info=exc)
+        return None
+
+
 async def load_datapack(item_pack_uri: AnyResource, gfx_pack_uri: AnyResource | None, /) -> None:
     match await aio.read_resource(item_pack_uri):
         case Err(exc):
@@ -31,11 +41,20 @@ async def load_datapack(item_pack_uri: AnyResource, gfx_pack_uri: AnyResource | 
             return
 
         case Ok(data):
-            version_dto = msgspec.json.decode(data, type=VersionDto)
+            version_dto = safe_decode(data, type=VersionDto)
+
+    if version_dto is None:
+        return
+
+    _LOG.info("Datapack version: %s", version_dto.version)
 
     match version_dto.version:
         case "1":
-            dto = msgspec.json.decode(data, type=ItemPackDtoV1)
+            dto = safe_decode(data, type=ItemPackDtoV1)
+
+            if dto is None:
+                return
+
             pack_v1 = convert_pack_v1(dto)
 
             if dto.legacy:
@@ -48,13 +67,21 @@ async def load_datapack(item_pack_uri: AnyResource, gfx_pack_uri: AnyResource | 
             gfx.set_sprite_pack(pack_v1.images)
 
         case "2":
-            dto = msgspec.json.decode(data, type=ItemPackDtoV2)
+            dto = safe_decode(data, type=ItemPackDtoV2)
+
+            if dto is None:
+                return
+
             pack_v2 = convert_pack_v2(dto)
             item_pack = ItemPack(reloaded_items=pack_v2)
             packs.store_item_pack(item_pack)
 
         case "3":
-            dto = msgspec.json.decode(data, type=ItemPackDtoV3)
+            dto = safe_decode(data, type=ItemPackDtoV3)
+
+            if dto is None:
+                return
+
             item_groups = collect_items(dto.items)
             item_pack = ItemPack(
                 reloaded_items=item_groups.reloaded,
@@ -80,10 +107,12 @@ async def load_gfx_v3(gfx_pack_uri: AnyResource, images: SpriteCollection) -> No
             return
 
         case Ok(gfx_data):
-            gfx_dto = msgspec.json.decode(gfx_data, type=GfxPackDto)
+            gfx_dto = safe_decode(gfx_data, type=GfxPackDto)
+
+    if gfx_dto is None:
+        return
 
     image_resources: SpritePack = {}
-
     sprite_table = {(sprite.gfx, sprite.reloaded): sprite for sprite in gfx_dto.sprites}
 
     for image_data in images:
