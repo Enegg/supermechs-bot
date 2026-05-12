@@ -130,8 +130,7 @@ def _get[KT](store: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Lo
 
         except KeyError:
             _LOG.error("Key %s does not exist", key)
-            value = str(key)
-            store[key, locale] = store[key, FALLBACK_LOCALE] = value
+            value = store[key, locale] = store[key, FALLBACK_LOCALE] = str(key)
 
         else:
             _LOG.warning("Locale %s has no key %r", locale, key)

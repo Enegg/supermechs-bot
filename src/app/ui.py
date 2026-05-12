@@ -3,6 +3,8 @@
 from functools import partial
 from typing import TYPE_CHECKING, Literal, override
 
+import yarl
+
 import disnake
 from app.disnake_types import Interaction, MessageInteraction, ModalInteraction
 from discord import ComponentLimits, EmojiType
@@ -80,7 +82,7 @@ __all__ = (
 
 type CallbackStore = _CallbackStore[MessageInteraction]
 type MessageComponents = _MessageComponents
-type MediaConvertible = MediaItemInput | _FileObject
+type MediaConvertible = MediaItemInput | _FileObject | yarl.URL
 type ActionButtonStyle = Literal[
     ButtonStyle.primary,
     ButtonStyle.secondary,
@@ -106,7 +108,10 @@ def callback_store(base_inter: Interaction, /) -> CallbackStore:
 def _media(media: MediaConvertible, /) -> UnfurledMediaItem:
     if isinstance(media, _FileObject):
         assert media.filename is not None
-        media = f"attachment://{media.filename}"
+        return UnfurledMediaItem(f"attachment://{media.filename}")
+
+    if isinstance(media, yarl.URL):
+        return UnfurledMediaItem(str(media))
 
     return _handle_media_item_input(media)
 

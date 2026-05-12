@@ -329,7 +329,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
     match get_slot_icon(item.slot_id):
         case HttpResource(url):
-            container.children.append(ui.Section(title, accessory=ui.thumbnail(str(url))))
+            container.children.append(ui.Section(title, accessory=ui.thumbnail(url)))
 
         case _:
             container.children.append(title)
