@@ -63,7 +63,8 @@ async def info(inter: CommandInteraction) -> None:
     bot = plugin.bot
 
     container = ui.Container(accent_colour=inter.me.color)
-    container.children.append(ui.Section(
+    add_component = container.children.append
+    add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
             "**General**\n"
@@ -81,19 +82,19 @@ async def info(inter: CommandInteraction) -> None:
         pack_key = md.hyperlink(pack_key, CONFIG.item_pack_uri.uri)
 
     item_pack = packs.get_item_pack()
-    container.children.append(ui.TextDisplay(
+    add_component(ui.TextDisplay(
         "**SuperMechs**\n"
         f"Item pack: {pack_key}\n"
         f"Total items: {len(item_pack.reloaded_items)} reloaded, {len(item_pack.legacy_items)} legacy"
     ))  # fmt: skip
-    container.children.append(ui.TextDisplay(
+    add_component(ui.TextDisplay(
         "**Backend**\n"
         f"Python version: {python_version}\n"
         f"Discord library: {md.hyperlink('disnake', disnake_url)} {disnake_version}\n"
         f"Lines of code: {_bot_info.app_sloc}"
     ))  # fmt: skip
     bytes_, prefix = as_binary_unit(get_ram_usage())
-    container.children.append(ui.TextDisplay(
+    add_component(ui.TextDisplay(
         "**Performance**\n"
         f"Started: {md.format_dt(BOT_PROCESS.create_time(), 'R')}\n"
         f"Latency: {round(bot.latency * 1000)}ms\n"

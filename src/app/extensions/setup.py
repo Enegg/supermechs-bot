@@ -50,7 +50,8 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, DevtoolsUI
 
 def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
     container = ui.Container()
-    container.children.append(ui.TextDisplay("# Developer Console"))
+    add_component = container.children.append
+    add_component(ui.TextDisplay("# Developer Console"))
 
     current_override = i18n.locale_override.unwrap_or(None)
     locale_options = [
@@ -76,23 +77,22 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
         )
         for locale, info in i18n.locale_info.items()
     ]  # fmt: skip
-    container.children.append(ui.TextDisplay("## Locale override"))
-    container.children.append(ui.ActionRow(ui.StringSelect(
+    add_component(ui.TextDisplay("## Locale override"))
+    add_component(ui.ActionRow(ui.StringSelect(
         custom_id=make_component_id(ComponentIds.locale_select, ctx),
         placeholder="Select locale",
         options=locale_options,
     )))  # fmt: skip
-    plugin_options = [
-        ui.SelectOption(label=plugin_name, default=plugin_name == ctx.last_reload_plugin_name)
-        for plugin_name in KNOWN_PLUGIN_PATHS
-    ]
-    container.children.append(ui.TextDisplay("## Plugins"))
-    container.children.append(ui.ActionRow(ui.StringSelect(
+    add_component(ui.TextDisplay("## Plugins"))
+    add_component(ui.ActionRow(ui.StringSelect(
         custom_id=make_component_id(ComponentIds.plugin_select, ctx),
         placeholder="Select plugin to reload",
-        options=plugin_options,
+        options=[
+            ui.SelectOption(label=plugin_name, default=plugin_name == ctx.last_reload_plugin_name)
+            for plugin_name in KNOWN_PLUGIN_PATHS
+        ],
     )))  # fmt: skip
-    container.children.append(ui.ActionRow(
+    add_component(ui.ActionRow(
         ui.ActionButton(
             custom_id=make_component_id(ComponentIds.reload_button, ctx),
             style=ui.ButtonStyle.gray,
@@ -107,8 +107,8 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
             emoji="💱",
         )
     ))  # fmt: skip
-    container.children.append(ui.Separator(divider=True))
-    container.children.append(ui.ActionRow(
+    add_component(ui.Separator(divider=True))
+    add_component(ui.ActionRow(
         ui.ActionButton(
             custom_id=make_component_id(ComponentIds.debug_button, ctx),
             style=ui.ButtonStyle.green if devtools.debug_enabled else ui.ButtonStyle.gray,

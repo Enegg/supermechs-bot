@@ -220,13 +220,14 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
     title = ui.TextDisplay("\n".join(title_lines))
     container = ui.Container(accent_colour=COLORS.elements[item.element])
+    add_component = container.children.append
 
     match get_slot_icon(item.slot_id):
         case HttpResource(url):
-            container.children.append(ui.Section(title, accessory=ui.thumbnail(url)))
+            add_component(ui.Section(title, accessory=ui.thumbnail(url)))
 
         case _:
-            container.children.append(title)
+            add_component(title)
 
     # ------------------------------------------- stats --------------------------------------------
     stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
@@ -242,14 +243,14 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     if stats_lines or costs_lines:
         stats_part = "\n".join(stats_lines)
         costs_part = "\n".join(costs_lines)
-        container.children.append(ui.TextDisplay(
+        add_component(ui.TextDisplay(
             f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
         ))  # fmt: skip
         if stats_part and costs_part:
-            container.children.append(ui.Separator(divider=False))
-            container.children.append(ui.TextDisplay(costs_part))
+            add_component(ui.Separator(divider=False))
+            add_component(ui.TextDisplay(costs_part))
     else:
-        container.children.append(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
+        add_component(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
     # ------------------------------------------ buttons -------------------------------------------
     buttons_row: list[ui.ActionButton] = []
@@ -270,16 +271,16 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         ))  # fmt: skip
 
     if buttons_row:
-        container.children.append(ui.ActionRow(*buttons_row))
+        add_component(ui.ActionRow(*buttons_row))
 
     # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, tier))) is not None:
-        container.children.append(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
+        add_component(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
-        container.children.append(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
+        add_component(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
 
     # ---------------------------------------- level select ----------------------------------------
-    container.children.append(ui.ActionRow(ui.StringSelect(
+    add_component(ui.ActionRow(ui.StringSelect(
         options=[
             ui.SelectOption(
                 label=gettext("item-lookup-ui-level-select-label", level=level.level),
