@@ -77,5 +77,5 @@ class CustomEmoji(msgspec.Struct):
     def to_partial(self) -> PartialEmoji:
         return PartialEmoji(id=self.id, name=self.name, animated=self.animated)
 
-    def to_asset(self) -> Asset.StaticOrGifAsset:
+    def to_asset(self) -> Asset:
         return Asset.from_emoji(self.id, self.animated)
