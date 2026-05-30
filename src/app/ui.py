@@ -1,12 +1,10 @@
 """Extension of the library provided UI kit."""
 
-from functools import partial
 from typing import TYPE_CHECKING, Literal, override
 
 import yarl
 
-import disnake
-from app.disnake_types import Interaction, MessageInteraction, ModalInteraction
+from app.disnake_types import MessageInteraction, ModalInteraction
 from discord import ComponentLimits, EmojiType
 from disnake import (
     ButtonStyle,
@@ -37,9 +35,6 @@ from disnake.ui import (
     TextInput,
     Thumbnail,
 )
-from ui_store import CallbackStore as _CallbackStore
-
-from app import i18n
 
 if TYPE_CHECKING:
     from disnake.components import MediaItemInput
@@ -49,7 +44,6 @@ __all__ = (
     "ActionButton",
     "ActionRow",
     "ButtonStyle",
-    "CallbackStore",
     "Checkbox",
     "CheckboxGroup",
     "Container",
@@ -73,14 +67,12 @@ __all__ = (
     "TextInputStyle",
     "Thumbnail",
     "UrlButton",
-    "callback_store",
     "file",
     "media_gallery_item",
     "option_to_page_count",
     "thumbnail",
 )
 
-type CallbackStore = _CallbackStore[MessageInteraction]
 type MessageComponents = _MessageComponents
 type MediaConvertible = MediaItemInput | _FileObject | yarl.URL
 type ActionButtonStyle = Literal[
@@ -89,20 +81,6 @@ type ActionButtonStyle = Literal[
     ButtonStyle.success,
     ButtonStyle.danger,
 ]
-
-
-def callback_store(base_inter: Interaction, /) -> CallbackStore:
-    async def interaction_check(inter: MessageInteraction, /) -> bool:
-        if inter.author.id == base_inter.author.id:
-            return True
-
-        msg = i18n.get_message(inter.locale, "ui-disallowed")
-        await inter.send(msg, ephemeral=True)
-        return False
-
-    return _CallbackStore(
-        partial(base_inter.bot.wait_for, disnake.Event.message_interaction), check=interaction_check
-    )
 
 
 def _media(media: MediaConvertible, /) -> UnfurledMediaItem:
