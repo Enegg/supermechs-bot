@@ -1,4 +1,3 @@
-import datetime as dt
 from threading import Lock
 from typing import Final
 
@@ -47,8 +46,3 @@ async def get_sloc(directory: Pathish = ".", /) -> int:
 def get_ram_usage() -> int:
     """Return the process RAM utilization, in bytes."""
     return BOT_PROCESS.memory_info().rss
-
-
-def get_start_dt() -> dt.datetime:
-    """Return the process start timestamp."""
-    return dt.datetime.fromtimestamp(BOT_PROCESS.create_time(), tz=dt.UTC)

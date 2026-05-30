@@ -1,4 +1,3 @@
-import io
 import logging
 import pathlib
 from http import HTTPMethod as HTTPMethod, HTTPStatus as HTTPStatus
@@ -24,7 +23,6 @@ session: Final[aiohttp.ClientSession]
 """Global HTTP session. Access via `from app import aio; aio.session`"""
 
 type HttpReadError = aiohttp.ClientError | ResponseNotOk
-type UserHttpReadError = HttpReadError | ContentTooLarge
 
 
 def client_session(client: disnake.http.HTTPClient, /) -> aiohttp.ClientSession:
@@ -81,12 +79,6 @@ def _log_response(response: aiohttp.ClientResponse, /) -> None:
 
 
 @attrs.define(auto_exc=True)
-class ContentTooLarge(OSError):
-    received: int
-    max_size: int
-
-
-@attrs.define(auto_exc=True)
 class ResponseNotOk(OSError):
     status: HTTPStatus
 
@@ -113,35 +105,6 @@ async def read_http(url: yarl.URL, /) -> Result[bytes, HttpReadError]:
     return Ok(content)
 
 
-async def read_user_http(
-    url: yarl.URL,
-    /,
-    max_size: int = 25 * 1024 * 1024,
-    chunk_size: int = 1024 * 1024,
-) -> Result[io.BytesIO, UserHttpReadError]:
-    _log_request(url, HTTPMethod.GET)
-
-    async with session.get(url) as response:
-        _log_response(response)
-
-        if response.status != HTTPStatus.OK:
-            return Err(ResponseNotOk.from_response(response))
-
-        if response.content_length is not None and response.content_length > max_size:
-            return Err(ContentTooLarge(response.content_length, max_size))
-
-        bio = io.BytesIO()
-
-        async for chunk in response.content.iter_chunked(chunk_size):
-            bio.write(chunk)
-
-            if bio.tell() > max_size:
-                return Err(ContentTooLarge(bio.tell(), max_size))
-
-    bio.seek(0)
-    return Ok(bio)
-
-
 async def read_resource(resource: AnyResource, /) -> Result[bytes, HttpReadError | OSError]:
     match resource:
         case FileResource():
@@ -149,7 +112,3 @@ async def read_resource(resource: AnyResource, /) -> Result[bytes, HttpReadError
 
         case HttpResource():
             return await read_http(resource.url)
-
-
-async def read_user_resource(resource: HttpResource, /) -> Result[io.BytesIO, UserHttpReadError]:
-    return await read_user_http(resource.url)

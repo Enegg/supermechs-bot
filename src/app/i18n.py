@@ -106,19 +106,6 @@ class GetText:
     def get_tier_name(self, tier: ItemRarity, /) -> str:
         return get_message(self.locale, "tier-" + tier.name)
 
-    # messages with template fields
-    def unknown_item_name(self, name: str) -> str:
-        return self("unknown-item-name", name=name)
-
-    def item_lookup_ui_level_select_label(self, level: int) -> str:
-        return self("item-lookup-ui-level-select-label", level=level)
-
-    def item_lookup_item_not_available(self, command: str) -> str:
-        return self("item-lookup-item-not-available", command=command)
-
-    def item_lookup_item_changed_info(self, command: str) -> str:
-        return self("item-lookup-item-changed-info", command=command)
-
 
 def _get[KT](store: abc.MutableMapping[LocalePair[KT], str], key: KT, locale: Locale) -> str:
     try:
