@@ -9,7 +9,7 @@ from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import COLORS, EMOJIS, get_slot_icon
+from app.assets import COLORS, EMOJIS, ICONS
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
@@ -307,17 +307,17 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
         # energizing
         power_line = [
-            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stats.energy_capacity}"
+            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_energy_capacity}"
         ]
         common_pks, rare_pks = power_required_as_power_kits(power_required)
 
         power_kits: list[str] = []
 
         if rare_pks:
-            power_kits.append(f"**{rare_pks}**×{EMOJIS.power_kits.rare}")  # noqa: RUF001
+            power_kits.append(f"**{rare_pks}**×{EMOJIS.power_kit_rare}")  # noqa: RUF001
 
         if common_pks:
-            power_kits.append(f"**{common_pks}**×{EMOJIS.power_kits.common}")  # noqa: RUF001
+            power_kits.append(f"**{common_pks}**×{EMOJIS.power_kit_common}")  # noqa: RUF001
 
         if power_kits:
             power_line.append(f"({' '.join(power_kits)})")
@@ -325,10 +325,10 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         title_lines.append("".join(power_line))
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container = ui.Container(accent_colour=COLORS.elements[item.element])
+    container = ui.Container(accent_colour=COLORS.get_element(item.element))
     add_component = container.children.append
 
-    match get_slot_icon(item.slot_id):
+    match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):
             add_component(ui.Section(title, accessory=ui.thumbnail(url)))
 
@@ -339,7 +339,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     if item.subtype is sm.Item.Subtype.power_kit:
         boost_power = levels[ctx.level_index].power_contribution
         add_component(ui.TextDisplay(
-                f"{EMOJIS.stats.energy_capacity} **{boost_power}** {gettext('boost-power')}"
+                f"{EMOJIS.stat_energy_capacity} **{boost_power}** {gettext('boost-power')}"
         ))  # fmt: skip
     else:
         stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
@@ -376,7 +376,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         button_row.append(ui.ActionButton(
             label=gettext("item-lookup-ui-damage-avg"),
             style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            emoji=EMOJIS.elements[item.element],
+            emoji=EMOJIS.get_element(item.element).to_partial(),
             custom_id=make_component_id(ComponentIds.avg_button, ctx),
         ))  # fmt: skip
     if has_damage(item_stats):
@@ -384,7 +384,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             label=gettext("item-lookup-ui-damage-vs-titans"),
             style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
             disabled=not ctx.buffs_enabled,
-            emoji=EMOJIS.elements[item.element],
+            emoji=EMOJIS.get_element(item.element).to_partial(),
             custom_id=make_component_id(ComponentIds.titan_button, ctx),
         ))  # fmt: skip
     if button_row:
@@ -397,7 +397,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 ui.SelectOption(
                     label=gettext.get_tier_name(stage.tier).capitalize(),
                     value=f"{i:x}",
-                    emoji=EMOJIS.tiers[stage.tier],
+                    emoji=EMOJIS.get_tier(stage.tier, hollow=i != ctx.stage_index).to_partial(),
                     default=i == ctx.stage_index,
                 )
                 for i, stage in enumerate(item.stages)

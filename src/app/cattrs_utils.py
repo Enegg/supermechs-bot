@@ -2,7 +2,8 @@ from typing import Any, Final, NewType
 
 import cattrs
 
-from disnake import Color
+from discord.emoji import AnyEmoji, CustomEmoji, UnicodeEmoji
+from disnake import Color, PartialEmoji
 
 from app.utils import atoi_bin
 from resources import AnyResource, from_uri
@@ -23,6 +24,16 @@ def _structure_resource(value: str, cls: type) -> AnyResource:
 
 
 CONVERTER.register_structure_hook_func(lambda x: x is AnyResource, _structure_resource)
+
+
+def _structure_emoji(value: str, cls: type) -> AnyEmoji:
+    partial_emoji = PartialEmoji.from_str(value)
+    if partial_emoji.id is None:
+        return UnicodeEmoji(partial_emoji.name)
+    return CustomEmoji(partial_emoji.id, partial_emoji.name, partial_emoji.animated)
+
+
+CONVERTER.register_structure_hook_func(lambda x: x is AnyEmoji, _structure_emoji)
 
 
 @CONVERTER.register_structure_hook

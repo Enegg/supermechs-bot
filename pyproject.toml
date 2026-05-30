@@ -110,6 +110,7 @@ builtins-ignorelist = ["id", "format", "input", "type"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = [
+    "typing.cast",
     "disnake.Color",
     "disnake.ext.commands.Param",
     "app.cattrs_utils.ByteSize",

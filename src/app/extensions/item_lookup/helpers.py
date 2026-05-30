@@ -46,8 +46,8 @@ def format_range(lo: int, hi: int, /) -> str:
 
 
 def item_transform_range(item: sm.Item, /, stage_index: int = -1) -> str:
-    str_range: list[str] = [EMOJIS.tiers.get_hollow(stage.tier) for stage in item.stages]
-    str_range[stage_index] = EMOJIS.tiers[item.stages[stage_index].tier]
+    str_range: list[str] = [str(EMOJIS.get_tier(stage.tier, hollow=True)) for stage in item.stages]
+    str_range[stage_index] = str(EMOJIS.get_tier(item.stages[stage_index].tier))
     return "".join(str_range)
 
 
@@ -88,8 +88,11 @@ def has_buff_affected_stats(stats: sm.ItemStats, /) -> bool:
 def format_stats(
     item_stats: sm.ItemStats, gettext: i18n.GetText, *, avg: bool
 ) -> tuple[list[str], list[str]]:
-    def fmt(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
+    def fmte(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
         return f"{emoji} **{value}** {gettext.get_stat_name(stat_key)}"
+
+    def fmt(value: int | str, stat_key: ItemStat, /) -> str:
+        return fmte(EMOJIS.get_stat(stat_key).mention, value, stat_key)
 
     format_damage: abc.Callable[[int, int], str] = (
         format_damage_average if avg else format_damage_default
@@ -97,215 +100,135 @@ def format_stats(
 
     stats_lines: list[str] = []
     costs_lines: list[str] = []
-    emojis = EMOJIS.stats
 
     if item_stats.weight:
-        stats_lines.append(fmt(emojis.weight, item_stats.weight, ItemStat.weight))
+        stats_lines.append(fmt(item_stats.weight, ItemStat.weight))
     if item_stats.hit_points:
-        stats_lines.append(fmt(emojis.hit_points, item_stats.hit_points, ItemStat.hit_points))
+        stats_lines.append(fmt(item_stats.hit_points, ItemStat.hit_points))
     if item_stats.energy_capacity:
-        stats_lines.append(
-            fmt(emojis.energy_capacity, item_stats.energy_capacity, ItemStat.energy_capacity)
-        )
+        stats_lines.append(fmt(item_stats.energy_capacity, ItemStat.energy_capacity))
     if item_stats.energy_regeneration:
-        stats_lines.append(
-            fmt(
-                emojis.energy_regeneration,
-                item_stats.energy_regeneration,
-                ItemStat.energy_regeneration,
-            )
-        )
+        stats_lines.append(fmt(item_stats.energy_regeneration, ItemStat.energy_regeneration))
     if item_stats.heat_capacity:
-        stats_lines.append(
-            fmt(emojis.heat_capacity, item_stats.heat_capacity, ItemStat.heat_capacity)
-        )
+        stats_lines.append(fmt(item_stats.heat_capacity, ItemStat.heat_capacity))
     if item_stats.heat_cooling:
-        stats_lines.append(fmt(emojis.heat_cooling, item_stats.heat_cooling, ItemStat.heat_cooling))
+        stats_lines.append(fmt(item_stats.heat_cooling, ItemStat.heat_cooling))
     if item_stats.physical_resistance:
-        stats_lines.append(
-            fmt(
-                emojis.physical_resistance,
-                item_stats.physical_resistance,
-                ItemStat.physical_resistance,
-            )
-        )
+        stats_lines.append(fmt(item_stats.physical_resistance, ItemStat.physical_resistance))
     if item_stats.explosive_resistance:
-        stats_lines.append(
-            fmt(
-                emojis.explosive_resistance,
-                item_stats.explosive_resistance,
-                ItemStat.explosive_resistance,
-            )
-        )
+        stats_lines.append(fmt(item_stats.explosive_resistance, ItemStat.explosive_resistance))
     if item_stats.electric_resistance:
-        stats_lines.append(
-            fmt(
-                emojis.electric_resistance,
-                item_stats.electric_resistance,
-                ItemStat.electric_resistance,
-            )
-        )
+        stats_lines.append(fmt(item_stats.electric_resistance, ItemStat.electric_resistance))
     if item_stats.bullets_capacity:
-        stats_lines.append(
-            fmt(
-                emojis.bullets_capacity,
-                item_stats.bullets_capacity,
-                ItemStat.bullets_capacity,
-            )
-        )
+        stats_lines.append(fmt(item_stats.bullets_capacity, ItemStat.bullets_capacity))
     if item_stats.rockets_capacity:
-        stats_lines.append(
-            fmt(
-                emojis.rockets_capacity,
-                item_stats.rockets_capacity,
-                ItemStat.rockets_capacity,
-            )
-        )
+        stats_lines.append(fmt(item_stats.rockets_capacity, ItemStat.rockets_capacity))
     if item_stats.physical_damage_min:
         stats_lines.append(
             fmt(
-                emojis.physical_damage,
                 format_damage(item_stats.physical_damage_min, item_stats.physical_damage_max),
                 ItemStat.physical_damage,
             )
         )
     if item_stats.physical_resistance_damage:
         stats_lines.append(
-            fmt(
-                emojis.physical_resistance_damage,
-                item_stats.physical_resistance_damage,
-                ItemStat.physical_resistance_damage,
-            )
+            fmt(item_stats.physical_resistance_damage, ItemStat.physical_resistance_damage)
         )
     if item_stats.electric_damage_min:
         stats_lines.append(
             fmt(
-                emojis.electric_damage,
                 format_damage(item_stats.electric_damage_min, item_stats.electric_damage_max),
                 ItemStat.electric_damage,
             )
         )
     if item_stats.energy_damage:
-        stats_lines.append(
-            fmt(emojis.energy_damage, item_stats.energy_damage, ItemStat.energy_damage)
-        )
+        stats_lines.append(fmt(item_stats.energy_damage, ItemStat.energy_damage))
     if item_stats.energy_capacity_damage:
-        stats_lines.append(
-            fmt(
-                emojis.energy_capacity_damage,
-                item_stats.energy_capacity_damage,
-                ItemStat.energy_capacity_damage,
-            )
-        )
+        stats_lines.append(fmt(item_stats.energy_capacity_damage, ItemStat.energy_capacity_damage))
     if item_stats.regeneration_damage:
-        stats_lines.append(
-            fmt(
-                emojis.regeneration_damage,
-                item_stats.regeneration_damage,
-                ItemStat.regeneration_damage,
-            )
-        )
+        stats_lines.append(fmt(item_stats.regeneration_damage, ItemStat.regeneration_damage))
     if item_stats.electric_resistance_damage:
         stats_lines.append(
-            fmt(
-                emojis.electric_resistance_damage,
-                item_stats.electric_resistance_damage,
-                ItemStat.electric_resistance_damage,
-            )
+            fmt(item_stats.electric_resistance_damage, ItemStat.electric_resistance_damage)
         )
     if item_stats.explosive_damage_min:
         stats_lines.append(
             fmt(
-                emojis.explosive_damage,
                 format_damage(item_stats.explosive_damage_min, item_stats.explosive_damage_max),
                 ItemStat.explosive_damage,
             )
         )
     if item_stats.heat_damage:
-        stats_lines.append(fmt(emojis.heat_damage, item_stats.heat_damage, ItemStat.heat_damage))
+        stats_lines.append(fmt(item_stats.heat_damage, ItemStat.heat_damage))
     if item_stats.heat_capacity_damage:
-        stats_lines.append(
-            fmt(
-                emojis.heat_capacity_damage,
-                item_stats.heat_capacity_damage,
-                ItemStat.heat_capacity_damage,
-            )
-        )
+        stats_lines.append(fmt(item_stats.heat_capacity_damage, ItemStat.heat_capacity_damage))
     if item_stats.cooling_damage:
-        stats_lines.append(
-            fmt(emojis.cooling_damage, item_stats.cooling_damage, ItemStat.cooling_damage)
-        )
+        stats_lines.append(fmt(item_stats.cooling_damage, ItemStat.cooling_damage))
     if item_stats.explosive_resistance_damage:
         stats_lines.append(
-            fmt(
-                emojis.explosive_resistance_damage,
-                item_stats.explosive_resistance_damage,
-                ItemStat.explosive_resistance_damage,
-            )
+            fmt(item_stats.explosive_resistance_damage, ItemStat.explosive_resistance_damage)
         )
     if item_stats.walk:
-        stats_lines.append(fmt(emojis.walk, item_stats.walk, ItemStat.walk))
+        stats_lines.append(fmt(item_stats.walk, ItemStat.walk))
     if item_stats.jump:
-        stats_lines.append(fmt(emojis.jump, item_stats.jump, ItemStat.jump))
+        stats_lines.append(fmt(item_stats.jump, ItemStat.jump))
     if item_stats.range_min:
         stats_lines.append(
-            fmt(
-                emojis.range,
-                format_range(item_stats.range_min, item_stats.range_max),
-                ItemStat.range,
-            )
+            fmt(format_range(item_stats.range_min, item_stats.range_max), ItemStat.range)
         )
     if item_stats.push:
         count = 1 if item_stats.push > MAX_EMOJIS else item_stats.push
-        stats_lines.append(fmt(emojis.push * count, item_stats.push, ItemStat.push))
+        stats_lines.append(fmte(str(EMOJIS.stat_push) * count, item_stats.push, ItemStat.push))
     if item_stats.pull:
         count = 1 if item_stats.pull > MAX_EMOJIS else item_stats.pull
-        stats_lines.append(fmt(emojis.pull * count, item_stats.pull, ItemStat.pull))
+        stats_lines.append(fmte(str(EMOJIS.stat_pull) * count, item_stats.pull, ItemStat.pull))
     if item_stats.recoil:
-        stats_lines.append(fmt(emojis.recoil, item_stats.recoil, ItemStat.recoil))
+        stats_lines.append(fmt(item_stats.recoil, ItemStat.recoil))
     if item_stats.advance:
         count = 1 if item_stats.advance > MAX_EMOJIS else item_stats.advance
-        stats_lines.append(fmt(emojis.advance * count, item_stats.advance, ItemStat.advance))
+        stats_lines.append(
+            fmte(str(EMOJIS.stat_advance) * count, item_stats.advance, ItemStat.advance)
+        )
     if item_stats.retreat:
         count = 1 if item_stats.retreat > MAX_EMOJIS else item_stats.retreat
-        stats_lines.append(fmt(emojis.retreat * count, item_stats.retreat, ItemStat.retreat))
+        stats_lines.append(
+            fmte(str(EMOJIS.stat_retreat) * count, item_stats.retreat, ItemStat.retreat)
+        )
     if item_stats.repair:
-        stats_lines.append(fmt(emojis.repair, item_stats.repair, ItemStat.repair))
+        stats_lines.append(fmt(item_stats.repair, ItemStat.repair))
     if item_stats.block_percent_points:
         stats_lines.append(
-            fmt(
-                emojis.shield_absorbtion,
+            fmte(
+                str(EMOJIS.stat_shield_absorption),
                 f"{item_stats.block_percent_points}%",
                 ItemStat.block_percent_points,
             )
         )
     if item_stats.heat_per_block and item_stats.hit_points_per_block:
         stats_lines.append(
-            f"{emojis.heat_generation} **{item_stats.heat_per_block}** Heat per {emojis.hit_points} **{item_stats.hit_points_per_block}** damage blocked"
+            f"{EMOJIS.stat_heat_generation} **{item_stats.heat_per_block}** Heat per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked"
         )
     if item_stats.energy_per_block and item_stats.hit_points_per_block:
         stats_lines.append(
-            f"{emojis.energy_cost} **{item_stats.energy_per_block}** Energy per {emojis.hit_points} **{item_stats.hit_points_per_block}** damage blocked"
+            f"{EMOJIS.stat_energy_cost} **{item_stats.energy_per_block}** Energy per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked"
         )
 
     if item_stats.uses:
         count = 1 if item_stats.uses > MAX_EMOJIS else item_stats.uses
-        costs_lines.append(fmt(emojis.uses * count, item_stats.uses, ItemStat.uses))
+        costs_lines.append(fmte(str(EMOJIS.stat_uses) * count, item_stats.uses, ItemStat.uses))
     if item_stats.backfire:
-        costs_lines.append(fmt(emojis.backfire, item_stats.backfire, ItemStat.backfire))
+        costs_lines.append(fmt(item_stats.backfire, ItemStat.backfire))
     if item_stats.heat_generation:
-        costs_lines.append(
-            fmt(emojis.heat_generation, item_stats.heat_generation, ItemStat.heat_generation)
-        )
+        costs_lines.append(fmt(item_stats.heat_generation, ItemStat.heat_generation))
     if item_stats.energy_cost:
-        costs_lines.append(fmt(emojis.energy_cost, item_stats.energy_cost, ItemStat.energy_cost))
+        costs_lines.append(fmt(item_stats.energy_cost, ItemStat.energy_cost))
     if item_stats.bullets_cost:
-        costs_lines.append(fmt(emojis.bullets_cost, item_stats.bullets_cost, ItemStat.bullets_cost))
+        costs_lines.append(fmt(item_stats.bullets_cost, ItemStat.bullets_cost))
     if item_stats.rockets_cost:
-        costs_lines.append(fmt(emojis.rockets_cost, item_stats.rockets_cost, ItemStat.rockets_cost))
+        costs_lines.append(fmt(item_stats.rockets_cost, ItemStat.rockets_cost))
     if item_stats.advance or item_stats.retreat:
         # if item has no costs, don't put jump-required separately
         (costs_lines or stats_lines).append(
-            f"{emojis.jump} **{gettext('item-lookup-jump-required')}**"
+            f"{EMOJIS.stat_jump} **{gettext('item-lookup-jump-required')}**"
         )
     return stats_lines, costs_lines

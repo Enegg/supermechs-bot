@@ -1,233 +1,219 @@
 """Various assets existing on discord side."""
 
 from collections import abc
-from typing import ClassVar, Final
+from typing import Final
 
 import attrs
 
+from discord.emoji import AnyEmoji, UnicodeEmoji
 from disnake import Color
 
 from app import paths
 from app.class_utils import MappingParser
-from resources import AnyResource, FileResource
+from resources import AnyResource, FileResource, HttpResource
 
 import dupermechs.all as sm
 
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 
-NULL_EMOJI: Final[str] = "❔"
-NULL_COLOR: Final[Color] = Color(0)
-MISSING_IMAGE: Final[FileResource] = FileResource(paths.MISSING_PNG)
-
-
-@attrs.frozen
-class SlotEmojis:
-    torso: str = NULL_EMOJI
-    legs: str = NULL_EMOJI
-    drone: str = NULL_EMOJI
-    side_weapon: str = NULL_EMOJI
-    right_side_weapon: str = NULL_EMOJI
-    left_side_weapon: str = NULL_EMOJI
-    top_weapon: str = NULL_EMOJI
-    right_top_weapon: str = NULL_EMOJI
-    left_top_weapon: str = NULL_EMOJI
-    charge: str = NULL_EMOJI
-    teleport: str = NULL_EMOJI
-    hook: str = NULL_EMOJI
-    shield: str = NULL_EMOJI
-    module: str = NULL_EMOJI
-    perk: str = NULL_EMOJI
-    kit: str = NULL_EMOJI
-
-    def __getitem__(self, field: sm.Item.Slot, /) -> str:
-        return getattr(self, field.name)
-
-
-@attrs.frozen
-class ElementEmojis:
-    other: str = NULL_EMOJI
-    physical: str = NULL_EMOJI
-    explosive: str = NULL_EMOJI
-    electric: str = NULL_EMOJI
-    combined: str = NULL_EMOJI
-
-    def __getitem__(self, field: sm.Item.Element, /) -> str:
-        return getattr(self, field.name)
-
-
-@attrs.frozen
-class TierEmojis:
-    common: str = NULL_EMOJI
-    rare: str = NULL_EMOJI
-    epic: str = NULL_EMOJI
-    legendary: str = NULL_EMOJI
-    mythical: str = NULL_EMOJI
-    divine: str = NULL_EMOJI
-    perk: str = NULL_EMOJI
-    common_hollow: str = NULL_EMOJI
-    rare_hollow: str = NULL_EMOJI
-    epic_hollow: str = NULL_EMOJI
-    legendary_hollow: str = NULL_EMOJI
-    mythical_hollow: str = NULL_EMOJI
-    divine_hollow: str = NULL_EMOJI
-    perk_hollow: str = NULL_EMOJI
-
-    def __getitem__(self, field: sm.Item.Rarity, /) -> str:
-        return getattr(self, field.name)
-
-    def get_hollow(self, field: sm.Item.Rarity, /) -> str:
-        return getattr(self, f"{field.name}_hollow")
-
-
-@attrs.frozen
-class CardEmojis:
-    common: str = NULL_EMOJI
-    rare: str = NULL_EMOJI
-    epic: str = NULL_EMOJI
-    legendary: str = NULL_EMOJI
-    mythical: str = NULL_EMOJI
-
-    def __getitem__(self, field: sm.Item.Rarity, /) -> str | None:
-        if field in (sm.Item.Rarity.divine, sm.Item.Rarity.perk):
-            return None
-        return getattr(self, field.name)
-
-
-@attrs.frozen
-class PowerKitEmojis:
-    common: str = NULL_EMOJI
-    rare: str = NULL_EMOJI
-
-
-@attrs.frozen
-class StatEmojis:
-    weight: str = NULL_EMOJI
-    hit_points: str = NULL_EMOJI
-    energy_capacity: str = NULL_EMOJI
-    energy_regeneration: str = NULL_EMOJI
-    heat_capacity: str = NULL_EMOJI
-    heat_cooling: str = NULL_EMOJI
-    physical_resistance: str = NULL_EMOJI
-    explosive_resistance: str = NULL_EMOJI
-    electric_resistance: str = NULL_EMOJI
-    bullets_capacity: str = NULL_EMOJI
-    rockets_capacity: str = NULL_EMOJI
-    walk: str = NULL_EMOJI
-    jump: str = NULL_EMOJI
-    physical_damage: str = NULL_EMOJI
-    physical_damage_addon: str = NULL_EMOJI
-    physical_resistance_damage: str = NULL_EMOJI
-    electric_damage: str = NULL_EMOJI
-    electric_damage_addon: str = NULL_EMOJI
-    energy_damage: str = NULL_EMOJI
-    energy_capacity_damage: str = NULL_EMOJI
-    regeneration_damage: str = NULL_EMOJI
-    electric_resistance_damage: str = NULL_EMOJI
-    explosive_damage: str = NULL_EMOJI
-    explosive_damage_addon: str = NULL_EMOJI
-    heat_damage: str = NULL_EMOJI
-    heat_capacity_damage: str = NULL_EMOJI
-    cooling_damage: str = NULL_EMOJI
-    explosive_resistance_damage: str = NULL_EMOJI
-    range: str = NULL_EMOJI
-    range_addon: str = NULL_EMOJI
-    push: str = NULL_EMOJI
-    pull: str = NULL_EMOJI
-    recoil: str = NULL_EMOJI
-    advance: str = NULL_EMOJI
-    retreat: str = NULL_EMOJI
-    uses: str = NULL_EMOJI
-    backfire: str = NULL_EMOJI
-    repair: str = NULL_EMOJI
-    heat_generation: str = NULL_EMOJI
-    energy_cost: str = NULL_EMOJI
-    bullets_cost: str = NULL_EMOJI
-    rockets_cost: str = NULL_EMOJI
-    shield_absorbtion: str = NULL_EMOJI
-
-    def __getitem__(self, field: sm.enums.ItemStat, /) -> str:
-        return getattr(self, field.name)
-
-
-@attrs.frozen
-class CategoryEmojis:
-    energy_capacity: str = NULL_EMOJI
-    energy_regeneration: str = NULL_EMOJI
-    energy_damage: str = NULL_EMOJI
-    heat_capacity: str = NULL_EMOJI
-    heat_cooling: str = NULL_EMOJI
-    heat_damage: str = NULL_EMOJI
-    physical_damage: str = NULL_EMOJI
-    explosive_damage: str = NULL_EMOJI
-    electric_damage: str = NULL_EMOJI
-    physical_resistance: str = NULL_EMOJI
-    explosive_resistance: str = NULL_EMOJI
-    electric_resistance: str = NULL_EMOJI
-    total_hp: str = NULL_EMOJI
-    backfire_reduction: str = NULL_EMOJI
-    damage_vs_titans: str = NULL_EMOJI
-
-    def __getitem__(self, field: sm.enums.ArenaShopCategory, /) -> str:
-        return getattr(self, field.name)
+NULL_EMOJI: Final = UnicodeEmoji("❔")
+NULL_COLOR: Final = Color.default()
+MISSING_IMAGE: Final = FileResource(paths.MISSING_PNG)
 
 
 @attrs.frozen
 class Emojis:
-    slots: SlotEmojis = attrs.Factory(SlotEmojis)
-    tiers: TierEmojis = attrs.Factory(TierEmojis)
-    elements: ElementEmojis = attrs.Factory(ElementEmojis)
-    cards: CardEmojis = attrs.Factory(CardEmojis)
-    power_kits: PowerKitEmojis = attrs.Factory(PowerKitEmojis)
-    stats: StatEmojis = attrs.Factory(StatEmojis)
-    categories: CategoryEmojis = attrs.Factory(CategoryEmojis)
+    item_slot_torso: AnyEmoji = NULL_EMOJI
+    item_slot_legs: AnyEmoji = NULL_EMOJI
+    item_slot_drone: AnyEmoji = NULL_EMOJI
+    item_slot_side_weapon: AnyEmoji = NULL_EMOJI
+    mech_slot_right_side_weapon: AnyEmoji = NULL_EMOJI
+    mech_slot_left_side_weapon: AnyEmoji = NULL_EMOJI
+    item_slot_top_weapon: AnyEmoji = NULL_EMOJI
+    mech_slot_right_top_weapon: AnyEmoji = NULL_EMOJI
+    mech_slot_left_top_weapon: AnyEmoji = NULL_EMOJI
+    item_slot_charge: AnyEmoji = NULL_EMOJI
+    item_slot_teleport: AnyEmoji = NULL_EMOJI
+    item_slot_hook: AnyEmoji = NULL_EMOJI
+    item_slot_shield: AnyEmoji = NULL_EMOJI
+    item_slot_module: AnyEmoji = NULL_EMOJI
+    item_slot_perk: AnyEmoji = NULL_EMOJI
+    item_slot_kit: AnyEmoji = NULL_EMOJI
 
+    def get_item_slot(self, field: sm.Item.Slot, /) -> AnyEmoji:
+        return getattr(self, "item_slot_" + field.name)
 
-@attrs.frozen
-class SlotIcons:
-    torso: AnyResource | None = None
-    legs: AnyResource | None = None
-    drone: AnyResource | None = None
-    side_weapon: AnyResource | None = None
-    right_side_weapon: AnyResource | None = None
-    left_side_weapon: AnyResource | None = None
-    top_weapon: AnyResource | None = None
-    right_top_weapon: AnyResource | None = None
-    left_top_weapon: AnyResource | None = None
-    charge: AnyResource | None = None
-    teleport: AnyResource | None = None
-    hook: AnyResource | None = None
-    shield: AnyResource | None = None
-    module: AnyResource | None = None
-    perk: AnyResource | None = None
-    kit: AnyResource | None = None
+    element_other: AnyEmoji = NULL_EMOJI
+    element_physical: AnyEmoji = NULL_EMOJI
+    element_explosive: AnyEmoji = NULL_EMOJI
+    element_electric: AnyEmoji = NULL_EMOJI
+    element_combined: AnyEmoji = NULL_EMOJI
 
-    def __getitem__(self, field: sm.Item.Slot, /) -> AnyResource | None:
-        return getattr(self, field.name)
+    def get_element(self, field: sm.Item.Element, /) -> AnyEmoji:
+        return getattr(self, "element_" + field.name)
+
+    tier_common: AnyEmoji = NULL_EMOJI
+    tier_rare: AnyEmoji = NULL_EMOJI
+    tier_epic: AnyEmoji = NULL_EMOJI
+    tier_legendary: AnyEmoji = NULL_EMOJI
+    tier_mythical: AnyEmoji = NULL_EMOJI
+    tier_divine: AnyEmoji = NULL_EMOJI
+    tier_perk: AnyEmoji = NULL_EMOJI
+    tier_common_hollow: AnyEmoji = NULL_EMOJI
+    tier_rare_hollow: AnyEmoji = NULL_EMOJI
+    tier_epic_hollow: AnyEmoji = NULL_EMOJI
+    tier_legendary_hollow: AnyEmoji = NULL_EMOJI
+    tier_mythical_hollow: AnyEmoji = NULL_EMOJI
+    tier_divine_hollow: AnyEmoji = NULL_EMOJI
+    tier_perk_hollow: AnyEmoji = NULL_EMOJI
+
+    def get_tier(self, field: sm.Item.Rarity, /, hollow: bool = False) -> AnyEmoji:
+        if hollow:
+            return getattr(self, f"tier_{field.name}_hollow")
+        return getattr(self, "tier_" + field.name)
+
+    card_common: AnyEmoji = NULL_EMOJI
+    card_rare: AnyEmoji = NULL_EMOJI
+    card_epic: AnyEmoji = NULL_EMOJI
+    card_legendary: AnyEmoji = NULL_EMOJI
+    card_mythical: AnyEmoji = NULL_EMOJI
+
+    def get_card(self, field: sm.Item.Rarity, /) -> AnyEmoji | None:
+        if field in (sm.Item.Rarity.divine, sm.Item.Rarity.perk):
+            return None
+        return getattr(self, "card_" + field.name)
+
+    power_kit_common: AnyEmoji = NULL_EMOJI
+    power_kit_rare: AnyEmoji = NULL_EMOJI
+
+    stat_weight: AnyEmoji = NULL_EMOJI
+    stat_hit_points: AnyEmoji = NULL_EMOJI
+    stat_energy_capacity: AnyEmoji = NULL_EMOJI
+    stat_energy_regeneration: AnyEmoji = NULL_EMOJI
+    stat_heat_capacity: AnyEmoji = NULL_EMOJI
+    stat_heat_cooling: AnyEmoji = NULL_EMOJI
+    stat_physical_resistance: AnyEmoji = NULL_EMOJI
+    stat_explosive_resistance: AnyEmoji = NULL_EMOJI
+    stat_electric_resistance: AnyEmoji = NULL_EMOJI
+    stat_bullets_capacity: AnyEmoji = NULL_EMOJI
+    stat_rockets_capacity: AnyEmoji = NULL_EMOJI
+    stat_walk: AnyEmoji = NULL_EMOJI
+    stat_jump: AnyEmoji = NULL_EMOJI
+    stat_physical_damage: AnyEmoji = NULL_EMOJI
+    stat_physical_damage_addon: AnyEmoji = NULL_EMOJI
+    stat_physical_resistance_damage: AnyEmoji = NULL_EMOJI
+    stat_electric_damage: AnyEmoji = NULL_EMOJI
+    stat_electric_damage_addon: AnyEmoji = NULL_EMOJI
+    stat_energy_damage: AnyEmoji = NULL_EMOJI
+    stat_energy_capacity_damage: AnyEmoji = NULL_EMOJI
+    stat_regeneration_damage: AnyEmoji = NULL_EMOJI
+    stat_electric_resistance_damage: AnyEmoji = NULL_EMOJI
+    stat_explosive_damage: AnyEmoji = NULL_EMOJI
+    stat_explosive_damage_addon: AnyEmoji = NULL_EMOJI
+    stat_heat_damage: AnyEmoji = NULL_EMOJI
+    stat_heat_capacity_damage: AnyEmoji = NULL_EMOJI
+    stat_cooling_damage: AnyEmoji = NULL_EMOJI
+    stat_explosive_resistance_damage: AnyEmoji = NULL_EMOJI
+    stat_range: AnyEmoji = NULL_EMOJI
+    stat_range_addon: AnyEmoji = NULL_EMOJI
+    stat_push: AnyEmoji = NULL_EMOJI
+    stat_pull: AnyEmoji = NULL_EMOJI
+    stat_recoil: AnyEmoji = NULL_EMOJI
+    stat_advance: AnyEmoji = NULL_EMOJI
+    stat_retreat: AnyEmoji = NULL_EMOJI
+    stat_uses: AnyEmoji = NULL_EMOJI
+    stat_backfire: AnyEmoji = NULL_EMOJI
+    stat_repair: AnyEmoji = NULL_EMOJI
+    stat_heat_generation: AnyEmoji = NULL_EMOJI
+    stat_energy_cost: AnyEmoji = NULL_EMOJI
+    stat_bullets_cost: AnyEmoji = NULL_EMOJI
+    stat_rockets_cost: AnyEmoji = NULL_EMOJI
+    stat_shield_absorption: AnyEmoji = NULL_EMOJI
+
+    def get_stat(self, field: sm.enums.ItemStat, /) -> AnyEmoji:
+        return getattr(self, "stat_" + field.name)
+
+    buff_energy_capacity: AnyEmoji = NULL_EMOJI
+    buff_energy_regeneration: AnyEmoji = NULL_EMOJI
+    buff_energy_damage: AnyEmoji = NULL_EMOJI
+    buff_heat_capacity: AnyEmoji = NULL_EMOJI
+    buff_heat_cooling: AnyEmoji = NULL_EMOJI
+    buff_heat_damage: AnyEmoji = NULL_EMOJI
+    buff_physical_damage: AnyEmoji = NULL_EMOJI
+    buff_explosive_damage: AnyEmoji = NULL_EMOJI
+    buff_electric_damage: AnyEmoji = NULL_EMOJI
+    buff_physical_resistance: AnyEmoji = NULL_EMOJI
+    buff_explosive_resistance: AnyEmoji = NULL_EMOJI
+    buff_electric_resistance: AnyEmoji = NULL_EMOJI
+    buff_total_hp: AnyEmoji = NULL_EMOJI
+    buff_backfire_reduction: AnyEmoji = NULL_EMOJI
+    buff_damage_vs_titans: AnyEmoji = NULL_EMOJI
+
+    def get_buff(self, field: sm.enums.ArenaShopCategory, /) -> AnyEmoji:
+        return getattr(self, "buff_" + field.name)
 
 
 @attrs.frozen
 class Icons:
-    slots: SlotIcons = attrs.Factory(SlotIcons)
+    item_slot_torso: AnyResource | None = None
+    item_slot_legs: AnyResource | None = None
+    item_slot_drone: AnyResource | None = None
+    item_slot_side_weapon: AnyResource | None = None
+    mech_slot_right_side_weapon: AnyResource | None = None
+    mech_slot_left_side_weapon: AnyResource | None = None
+    item_slot_top_weapon: AnyResource | None = None
+    mech_slot_right_top_weapon: AnyResource | None = None
+    mech_slot_left_top_weapon: AnyResource | None = None
+    item_slot_charge: AnyResource | None = None
+    item_slot_teleport: AnyResource | None = None
+    item_slot_hook: AnyResource | None = None
+    item_slot_shield: AnyResource | None = None
+    item_slot_module: AnyResource | None = None
+    item_slot_perk: AnyResource | None = None
+    item_slot_kit: AnyResource | None = None
+
+    def get_item_slot(self, field: sm.Item.Slot, /) -> AnyResource | None:
+        icon: AnyResource | None = getattr(self, "item_slot_" + field.name)
+
+        if icon is not None:
+            return icon
+
+        emoji = EMOJIS.get_item_slot(field)
+
+        if asset := emoji.to_asset():
+            return HttpResource.from_uri(asset.full_url)
+
+        return None
 
 
-@attrs.frozen
-class ElementColors:
-    other: Color = NULL_COLOR
-    physical: Color = NULL_COLOR
-    explosive: Color = NULL_COLOR
-    electric: Color = NULL_COLOR
-    combined: Color = NULL_COLOR
-
-    def __getitem__(self, field: sm.Item.Element, /) -> Color:
-        return getattr(self, field.name)
-
-
-@attrs.frozen
 class Colors:
-    elements: ElementColors = attrs.Factory(ElementColors)
-    error: ClassVar = Color.from_hex("#FF0000")
-    warning: ClassVar = Color.from_hex("#FFBB00")
-    info: ClassVar = Color.from_hex("#0088FF")
+    __slots__ = ()
+
+    tier_common: Final = Color.from_hex("#B1B1B1")
+    tier_rare: Final = Color.from_hex("#55ACEE")
+    tier_epic: Final = Color.from_hex("#CC41CC")
+    tier_legendary: Final = Color.from_hex("#E0A23C")
+    tier_mythical: Final = Color.from_hex("#FE6333")
+    tier_divine: Final = Color.from_hex("#FFFFFF")
+    tier_perk: Final = Color.from_hex("#FFFF33")
+
+    @classmethod
+    def get_tier(cls, field: sm.Item.Rarity, /) -> Color:
+        return getattr(cls, "tier_" + field.name)
+
+    element_other: Final = Color.from_hex("#323232")
+    element_physical: Final = Color.from_hex("#FFB800")
+    element_explosive: Final = Color.from_hex("#B71010")
+    element_electric: Final = Color.from_hex("#106ED8")
+    element_combined: Final = Color.from_hex("#211D1D")
+
+    @classmethod
+    def get_element(cls, field: sm.Item.Element, /) -> Color:
+        return getattr(cls, "element_" + field.name)
+
+    error: Final = Color.from_hex("#FF0000")
+    warning: Final = Color.from_hex("#FFBB00")
+    info: Final = Color.from_hex("#0088FF")
 
 
 @attrs.frozen
@@ -238,16 +224,6 @@ class Assets:
 _PARSER = MappingParser.from_path(paths.ASSETS_TOML)
 ASSETS = _PARSER.structure(Assets, "misc")
 EMOJIS = _PARSER.structure(Emojis, "emojis")
-ICONS = _PARSER.structure(Icons, "icons")
-COLORS = _PARSER.structure(Colors, "colors")
+ICONS = _PARSER.structure(Icons, "icon_overrides")
+COLORS = Colors()
 del _PARSER
-
-
-def get_slot_icon(slot: sm.Item.Slot, /) -> AnyResource | None:
-    if slot is sm.Item.Slot.side_weapon:
-        return ICONS.slots.right_side_weapon
-
-    if slot is sm.Item.Slot.top_weapon:
-        return ICONS.slots.right_top_weapon
-
-    return ICONS.slots[slot]
