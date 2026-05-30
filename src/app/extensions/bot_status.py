@@ -75,8 +75,7 @@ async def info(inter: CommandInteraction) -> None:
         accessory=ui.thumbnail(inter.me.display_avatar),
     ))  # fmt: skip
 
-    metadata = packs.get_item_pack_metadata()
-    pack_key = (metadata.key or metadata.name).unwrap_or("Unnamed pack")
+    pack_key = "Built-in items pack"
 
     if isinstance(CONFIG.item_pack_uri, HttpResource):
         pack_key = md.hyperlink(pack_key, CONFIG.item_pack_uri.uri)
@@ -111,7 +110,7 @@ async def info(inter: CommandInteraction) -> None:
             emoji=EMOJIS.slots.drone,
         )))  # fmt: skip
 
-    if CONFIG.indev:
+    if __debug__:
         debug_components(components)
 
     await inter.response.send_message(components=components, ephemeral=True)

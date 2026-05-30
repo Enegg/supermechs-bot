@@ -1,7 +1,7 @@
 import logging
 from collections import abc
 
-from app.models.item_pack import ItemPack, ItemPackMetadata
+from app.models.item_pack import ItemPack
 
 import dupermechs.all as sm
 
@@ -11,10 +11,6 @@ _item_pack: ItemPack = ItemPack()
 
 def get_item_pack() -> ItemPack:
     return _item_pack
-
-
-def get_item_pack_metadata() -> ItemPackMetadata:
-    return ItemPackMetadata()  # TODO
 
 
 def get_item_by_id(id: sm.Item.Id, /) -> sm.Item:

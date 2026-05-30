@@ -56,7 +56,7 @@ class LockManager[KT]:
     _locks: dict[KT, anyio.Lock] = attrs.field(factory=dict, init=False)
 
     @asynccontextmanager
-    async def acquire_for(self, key: KT, /) -> abc.AsyncIterator[None]:
+    async def acquire_for(self, key: KT, /) -> abc.AsyncGenerator[None]:
         try:
             lock = self._locks[key]
             owner = False

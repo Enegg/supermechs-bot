@@ -10,7 +10,7 @@ class EmbedLimits:
     """Maximum length of an embed's title."""
     description: Final = 4096
     """Maximum length of an embed's description."""
-    fields: Final = 10
+    fields: Final = 25
     """Maximum number of fields per embed."""
     field_name: Final = 256
     """Maximum length of an embed's field's name."""
