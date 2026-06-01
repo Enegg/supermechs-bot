@@ -7,13 +7,13 @@ _LOG = logging.getLogger("managers")
 _sprite_store: SpritePack = {}
 
 
-def get_image_url(key: SpriteKey, /) -> str | None:
+def get_image_url[T](key: SpriteKey, default: T = None, /) -> str | T:
     resource = _sprite_store.get(key)
 
     if isinstance(resource, HttpResource):
         return resource.uri
 
-    return None
+    return default
 
 
 def set_sprite_pack(pack: SpritePack, /) -> None:
