@@ -1,3 +1,4 @@
+import enum
 from collections import abc
 from difflib import SequenceMatcher
 from itertools import islice
@@ -12,6 +13,77 @@ if TYPE_CHECKING:
     from .params import FilledOptions
 
 __all__ = ("item_name_autocomplete",)
+
+
+class MatchQuality(enum.IntEnum):
+    exact = enum.auto()
+    acronym = enum.auto()
+    prefix = enum.auto()
+    substring = enum.auto()
+    fuzzy = enum.auto()
+
+
+class ItemMatch(NamedTuple):
+    name: str
+    quality: MatchQuality
+    word_index: int = 0
+    fuzzy_score: float = 0.0
+
+    def to_sort_key(self) -> tuple[object, ...]:
+        return (-self.quality, -self.word_index, self.fuzzy_score)
+
+
+def find_matches2(item_names: abc.Iterable[str], query: str) -> list[ItemMatch]:
+    query_lowercase = query.casefold()
+
+    results: list[ItemMatch] = []
+
+    seq_matcher = SequenceMatcher(b=query_lowercase)
+
+    for name in item_names:
+        name_lowercase = name.casefold()
+
+        if name_lowercase.startswith(query_lowercase):
+            if len(name_lowercase) == len(query_lowercase):
+                quality = MatchQuality.exact
+            else:
+                quality = MatchQuality.prefix
+            results.append(ItemMatch(name=name, quality=quality))
+            continue
+
+        if acronym_of(name) == query_lowercase:
+            results.append(ItemMatch(name, quality=MatchQuality.acronym))
+            continue
+
+        start = 0
+        word_index = 0
+
+        while (start := name_lowercase.find(" ", start)) != -1:
+            start += 1
+            word_index += 1
+            if name_lowercase.startswith(query_lowercase, start):
+                results.append(ItemMatch(name, MatchQuality.prefix, word_index=word_index))
+                break
+        else:
+            if query_lowercase in name_lowercase:
+                results.append(ItemMatch(name, quality=MatchQuality.substring))
+                continue
+
+            ratios = [get_ratio(name_part, seq_matcher) for name_part in name_lowercase.split(" ")]
+
+            best_ratio = max(ratios)
+            word_index = ratios.index(best_ratio)
+            results.append(
+                ItemMatch(
+                    name,
+                    quality=MatchQuality.fuzzy,
+                    word_index=word_index,
+                    fuzzy_score=best_ratio,
+                )
+            )
+
+    results.sort(key=ItemMatch.to_sort_key, reverse=True)
+    return results
 
 
 class MatchResult(NamedTuple):
@@ -119,6 +191,6 @@ def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autocomplet
     if not input:
         return list(islice(names, InteractionLimits.autocomplete_options))
 
-    matching = find_matches(names, input)
+    matching = find_matches2(names, input)
     del matching[InteractionLimits.autocomplete_options :]
     return [result.name for result in matching]
