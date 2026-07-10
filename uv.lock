@@ -93,16 +93,6 @@ wheels = [
 ]
 
 [[package]]
-name = "discord-ui-store"
-version = "0.1.5"
-source = { git = "https://github.com/Enegg/discord-ui-store?rev=v0.1.5#56b9fe42f3fc7c1fc93f41f3058e838d709637a4" }
-dependencies = [
-    { name = "anyio" },
-    { name = "attrs" },
-    { name = "typing-extensions" },
-]
-
-[[package]]
 name = "disnake"
 version = "2.12.0"
 source = { registry = "https://pypi.org/simple" }
@@ -419,7 +409,6 @@ dependencies = [
     { name = "anyio" },
     { name = "attrs" },
     { name = "cattrs" },
-    { name = "discord-ui-store" },
     { name = "disnake" },
     { name = "disnake-ext-plugins" },
     { name = "monads" },
@@ -438,7 +427,6 @@ requires-dist = [
     { name = "anyio", specifier = "==4.*" },
     { name = "attrs", specifier = ">=23.2.0" },
     { name = "cattrs", specifier = ">=24.1.2" },
-    { name = "discord-ui-store", git = "https://github.com/Enegg/discord-ui-store?rev=v0.1.5" },
     { name = "disnake", specifier = ">=2.12.0" },
     { name = "disnake-ext-plugins", specifier = "==0.3.*" },
     { name = "monads", git = "https://github.com/Enegg/py-monads?rev=v0.1.3" },
