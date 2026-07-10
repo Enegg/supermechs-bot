@@ -2,7 +2,7 @@ from collections import abc
 
 import attrs
 
-from app.class_utils import limited_repr
+from app.utils import limited_repr
 
 import supermechs.all as sm
 

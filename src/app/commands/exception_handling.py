@@ -1,19 +1,17 @@
 import logging
 from contextlib import suppress
 
-from app.disnake_types import Bot, CommandInteraction
 from discord import ComponentLimits, markdown as md, text_to_file
 from discord.message_builder import MessageBuilder
-from disnake import Event, HTTPException, InteractionTimedOut
-from disnake.abc import Messageable
+from disnake import Event, InteractionTimedOut
 from disnake.ext import commands
 
 from app import i18n, ui
 from app.assets import Colors
-from app.core import CONFIG
+from app.core import CONFIG, AppState
+from app.typeshed import Bot, CommandInteraction
 from app.utils import format_exception
 
-_channel: Messageable | None = None
 _LOG = logging.getLogger("event.command_error")
 
 
@@ -89,14 +87,14 @@ if CONFIG.indev:
             await inter.send(**params)
 
         except InteractionTimedOut:
-            if _channel is not None:
-                await _channel.send(**params)
+            if AppState.logs_channel is not None:
+                await AppState.logs_channel.send(**params)
 
 else:
 
     async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
-        if _channel is not None:
-            await _channel.send(**builder.get_send_params())
+        if AppState.logs_channel is not None:
+            await AppState.logs_channel.send(**builder.get_send_params())
 
         with suppress(InteractionTimedOut):
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)
@@ -104,20 +102,3 @@ else:
 
 def setup(bot: Bot, /) -> None:
     bot.add_listener(on_slash_command_error, Event.slash_command_error)
-
-
-async def setup_channel(bot: Bot, channel_id: int) -> None:
-    global _channel
-    try:
-        channel = await bot.fetch_channel(channel_id)
-
-    except HTTPException as exc:
-        _LOG.error("Fetching logs channel failed", exc_info=exc)
-        return
-
-    if not isinstance(channel, Messageable):
-        _LOG.error("Channel is not Messageable")
-        return
-
-    _LOG.info("Installed channel logger: #%s", channel.name)
-    _channel = channel

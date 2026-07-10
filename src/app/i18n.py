@@ -9,10 +9,10 @@ import msgspec
 
 from disnake import Locale
 
-from app.class_utils import unset_to_option
 from app.core import AppState
 from app.core.state import LocaleInfo
 from app.typeshed import Pathish
+from app.utils import unset_to_option
 
 from supermechs.enums import ItemRarity, ItemStat
 

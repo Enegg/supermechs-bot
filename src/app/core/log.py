@@ -4,15 +4,13 @@ import copy
 import datetime as dt
 import io
 import logging
-import logging.config
 from collections import abc
 from pathlib import Path
 from typing import override
 
 import orjson
-import rtoml
 
-from app.typeshed import Pathish
+from app.typeshed import FilterType
 from app.utils import strip_cwd
 
 BUILTIN_KEYS = frozenset({
@@ -40,9 +38,6 @@ BUILTIN_KEYS = frozenset({
     "threadName",
     "taskName",
 })  # fmt: skip
-
-type FilterType = logging.Filter | abc.Callable[[logging.LogRecord], logging.LogRecord | bool]
-"""Type of an object acceptable as a Filter."""
 
 
 def normalize_record_path(record: logging.LogRecord) -> logging.LogRecord:
@@ -109,11 +104,3 @@ class JsonFormatter(logging.Formatter):
                 message_dict[key] = value  # noqa: PERF403
 
         return orjson.dumps(message_dict, default=str).decode()
-
-
-def config_logging(path: Pathish, /) -> None:
-    """Configure the logging module."""
-    config = rtoml.load(Path(path))["logging"]
-    patch_file_handler()
-    logging.config.dictConfig(config)
-    logging.captureWarnings(True)

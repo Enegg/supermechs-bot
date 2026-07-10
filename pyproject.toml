@@ -99,7 +99,7 @@ section-order = [
 ]
 
 [tool.ruff.lint.isort.sections]
-discord = ["disnake", "discord", "ui_store", "disnake_plugins", "app.disnake_types"]
+discord = ["disnake", "discord", "disnake_plugins"]
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions", "collections.abc"]
@@ -128,8 +128,6 @@ allow-dunder-method-names = [
     "__attrs_init__",
 ]
 
-[tool.ruff.lint.flake8-tidy-imports]
-banned-module-level-imports = ["app.commands.sync"]
 
 [tool.pyright]
 typeCheckingMode = "strict"

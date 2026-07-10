@@ -1,19 +1,23 @@
 from collections import abc
-from typing import ClassVar, Final, NamedTuple, cast as type_cast, final
+from typing import ClassVar, Final, Literal, NamedTuple, cast as type_cast, final
 
-import aiohttp
 import msgspec
 import psutil
 from monads import option
 from monads.option import Null
 
 import disnake
-from app.disnake_types import Bot
 from discord.null_objects import NullUser
 from disnake import Locale, LocalizationProtocol
+from disnake.abc import Messageable
 
+from app.aio import HTTPSession
 from app.models.item_pack import ItemPack
-from app.models.sprite_pack import SpritePack
+from app.models.sprite_pack import SpriteKey, SpritePack
+from app.typeshed import Bot
+from resources import HttpResource
+
+import supermechs.all as sm
 
 __all__ = ("AppState",)
 
@@ -30,12 +34,15 @@ class BotUserInfo(NamedTuple):
     bot_public: bool = False
 
 
+type CommandName = Literal["item", "legacy-item"]
+
+
 @final
 class AppState:
     bot: ClassVar[Bot]
     bot_user_info: ClassVar[BotUserInfo] = BotUserInfo()
 
-    http_session: ClassVar[aiohttp.ClientSession]
+    http_session: ClassVar[HTTPSession]
     """App-lifetime HTTP session."""
     app_process: Final[psutil.Process] = psutil.Process()
     app_sloc: int = 0
@@ -45,6 +52,9 @@ class AppState:
 
     debug_log_components: ClassVar[bool] = False
     recently_loaded_plugin: ClassVar[str | None] = None
+
+    command_mentions: Final[abc.MutableMapping[str, str]] = {}
+    logs_channel: ClassVar[Messageable | None] = None
 
     @final
     class I18n:
@@ -68,3 +78,53 @@ class AppState:
         @classmethod
         def remove_locale_override(cls) -> None:
             cls.locale_override = option.Null.null
+
+
+def get_command_mention(name: CommandName, /) -> str:
+    mention = AppState.command_mentions.get(name)
+
+    if mention is not None:
+        return mention
+
+    mention = AppState.command_mentions[name] = "/" + name
+    return mention
+
+
+def get_image_url(key: SpriteKey, /) -> str | None:
+    resource = AppState.sprite_pack.get(key)
+
+    if isinstance(resource, HttpResource):
+        return resource.uri
+
+    return None
+
+
+def filter_items(
+    slot: str | None = None,
+    element: str | None = None,
+    rarity: str | None = None,
+    legacy: bool = False,
+) -> abc.Generator[sm.Item]:
+    filters: list[abc.Callable[[sm.Item], bool]] = []
+
+    if slot is not None:
+        target_slot = sm.Item.Slot[slot]
+        filters.append(lambda item: item.slot_id is target_slot)
+
+    if element is not None:
+        target_element = sm.Item.Element[element]
+        filters.append(lambda item: item.element is target_element)
+
+    if rarity is not None:
+        min_tier = sm.Item.Rarity[rarity]
+        filters.append(lambda item: item.stages[0].tier >= min_tier)
+
+    bank = AppState.item_pack.legacy_items if legacy else AppState.item_pack.reloaded_items
+
+    if not filters:
+        yield from bank.values()
+        return
+
+    for item in bank.values():
+        if all(f(item) for f in filters):
+            yield item

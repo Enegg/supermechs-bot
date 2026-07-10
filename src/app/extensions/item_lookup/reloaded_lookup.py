@@ -2,7 +2,6 @@ import datetime as dt
 import logging
 from typing import Final, Literal, NamedTuple
 
-from app.disnake_types import CommandInteraction
 from discord import markdown as md
 from disnake import MessageFlags
 from disnake.ext import commands
@@ -10,12 +9,11 @@ from disnake.ext import commands
 from app import i18n, ui
 from app.assets import EMOJIS, ICONS, Colors
 from app.commands.autocompleters import item_name_autocomplete
-from app.commands.mentions import get_mention
 from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
-from app.core import AppState
+from app.core import AppState, state
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
-from app.managers import gfx, packs
+from app.typeshed import CommandInteraction
 from resources import HttpResource
 
 from .helpers import (
@@ -80,7 +78,7 @@ async def item_lookup(
     """  # noqa: D400
     gettext = i18n.get_gettext(inter)
 
-    for item in packs.filter_items(AppState.item_pack, slot, element, rarity, False):
+    for item in state.filter_items(slot, element, rarity, False):
         if item.name == name:
             break
 
@@ -118,7 +116,7 @@ async def on_reloaded_lookup_interaction(
     # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
-            ui.TextDisplay(gettext("item-lookup-item-not-available", command=get_mention("item"))),
+            ui.TextDisplay(gettext("item-lookup-item-not-available", command=state.get_command_mention("item"))),
             accent_colour=Colors.error,
         ))  # fmt: skip
         return
@@ -139,7 +137,7 @@ async def on_reloaded_lookup_interaction(
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
-            gettext("item-lookup-item-changed-info", command=get_mention("item")),
+            gettext("item-lookup-item-changed-info", command=state.get_command_mention("item")),
             ephemeral=True,
         )
         return
@@ -330,7 +328,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             add_component(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
     # ------------------------------------------- image --------------------------------------------
-    if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
+    if (sprite_url := state.get_image_url((item.id, stage.tier))) is not None:
         add_component(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
         add_component(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))

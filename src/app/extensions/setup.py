@@ -1,15 +1,15 @@
 from typing import Final, Literal, NamedTuple
 
 import disnake
-from app.disnake_types import CommandInteraction
 from discord import ComponentLimits, markdown as md, text_to_file
 from discord.extensions import walk_extensions
 from disnake.ext import commands
 
-from app import devtools, paths, ui
+from app import devtools, init, paths, ui
 from app.assets import Colors
 from app.core import AppState
 from app.plugins_factory import create_dev_plugin
+from app.typeshed import CommandInteraction
 from app.utils import format_exception
 
 plugin = create_dev_plugin(__name__)
@@ -179,9 +179,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
                 ctx = ctx.__replace__(last_reload_plugin_name=option_value)
 
         case ComponentIds.cmd_sync_button:
-            from app.commands import sync
-
-            await sync.sync_commands(AppState.bot)
+            await init.sync_commands(AppState.bot)
 
         case ComponentIds.reload_button:
             if ctx.last_reload_plugin_name is None:

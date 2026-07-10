@@ -8,14 +8,17 @@ import anyio.abc
 
 import disnake
 from discord import load_extensions
+from disnake import Client, Event
 from disnake.ext import commands
 
-from app import aio, i18n, paths
-from app.commands import exception_handling, mentions
-from app.core import CONFIG, AppState, config_logging
+from app import aio, i18n, init, paths
+from app.commands import exception_handling
+from app.core import CONFIG, AppState
 from app.managers import loader
+from app.typeshed import CommandInteraction
 
 _LOG = logging.getLogger("main")
+_EVENT_LOG = logging.getLogger("event")
 
 
 def setup_signal_handler(bot: disnake.Client, tg: anyio.abc.TaskGroup) -> None:
@@ -32,10 +35,47 @@ def setup_signal_handler(bot: disnake.Client, tg: anyio.abc.TaskGroup) -> None:
     _LOG.info("Ctrl+C handler installed")
 
 
-async def main() -> None:
-    from app.commands import sync
+def prevent_delayed_sync(bot: commands.InteractionBot, /) -> None:
+    """Patches delayed sync not to fire."""
+    # this patch has to be done mostly because plugins call this method with no opt-out
+    bot._schedule_delayed_command_sync = lambda: None  # pyright: ignore[reportPrivateUsage]
 
-    config_logging(paths.CONFIG_TOML)
+
+def install_listeners(client: Client, /) -> None:
+    @client.listen(Event.ready)
+    async def on_ready() -> None:
+        limit = AppState.bot.session_start_limit
+        assert limit is not None
+        _EVENT_LOG.info(
+            f"Username: {AppState.bot.user.name};"
+            f" Session #{limit.total - limit.remaining}/{limit.total}"
+            f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
+        )
+
+    @client.listen(Event.disconnect)
+    async def on_disconnect() -> None:
+        _EVENT_LOG.info("Disconnected")
+
+    @client.listen(Event.slash_command)
+    async def on_slash_command(inter: CommandInteraction, /) -> None:
+        command_name = inter.application_command.qualified_name
+        _EVENT_LOG.info(
+            "%s (%d): /%s",
+            inter.author,
+            inter.author.id,
+            command_name,
+            extra={"filled_options": inter.filled_options},
+        )
+
+    @client.listen(Event.slash_command_completion)
+    async def on_slash_command_completion(inter: CommandInteraction, /) -> None:
+        command_name = inter.application_command.qualified_name
+        result = "failed" if inter.command_failed else "finished"
+        _EVENT_LOG.info("Command by %s %s: /%s", inter.author, result, command_name)
+
+
+async def main() -> None:
+    init.config_logging(paths.CONFIG_TOML)
     disnake.VoiceClient.warn_nacl = False
 
     AppState.bot = bot = commands.InteractionBot(
@@ -56,16 +96,17 @@ async def main() -> None:
     if CONFIG.indev:
         bot.get_global_command_named = partial(bot.get_guild_command_named, CONFIG.dev_guild_id)
 
-    sync.prevent_delayed_sync(bot)
+    prevent_delayed_sync(bot)
     i18n.load(paths.LOCALE_DIR)
     exception_handling.setup(bot)
+    install_listeners(bot)
 
     load_extensions(bot.load_extension, paths.PLUGINS_PACKAGE)
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, CONFIG.bot_token)
 
     if CONFIG.logs_channel_id:
-        await exception_handling.setup_channel(bot, CONFIG.logs_channel_id)
+        await init.setup_logs_channel(bot, CONFIG.logs_channel_id)
 
     else:
         _LOG.info(f"{CONFIG.logs_channel_id=}, channel logging disabled")
@@ -86,8 +127,7 @@ async def main() -> None:
                 AppState.http_session,
             )
 
-        tg.start_soon(sync.sync_commands, bot)
-        tg.start_soon(mentions.populate, bot)
+        tg.start_soon(init.sync_commands, bot)
         tg.start_soon(bot.connect)
 
 

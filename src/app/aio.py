@@ -24,9 +24,9 @@ type HttpReadError = aiohttp.ClientError | ResponseNotOk
 
 
 def client_session(client: disnake.http.HTTPClient, /) -> HTTPSession:
-    """Create a client session with client's connector & proxy."""
+    """Create a HTTP session with client's connector & proxy."""
 
-    # .venv/Lib/site-packages/aiohttp/payload.py:396
+    # https://github.com/aio-libs/aiohttp/blob/64313cfc5024a316d85f34e7e77c9995a683e35f/aiohttp/payload.py#L441
     # aiohttp wants dumps(Any) -> str, then encodes it
     @attrs.define
     class _MockStr:
