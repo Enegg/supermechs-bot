@@ -7,13 +7,13 @@ import anyio
 import anyio.abc
 
 import disnake
-from app.disnake_types import CommandInteraction
 from disnake.ext import commands
 
-from app import aio, i18n, paths
-from app.commands import exception_handling, mentions
-from app.core import CONFIG, AppState, config_logging
+from app import aio, i18n, init, paths
+from app.commands import exception_handling
+from app.core import CONFIG, AppState
 from app.managers import loader
+from app.typeshed import CommandInteraction
 from app.utils import walk_extensions
 
 _LOG = logging.getLogger("main")
@@ -67,9 +67,7 @@ def setup_signal_handler(client: disnake.Client, tg: anyio.abc.TaskGroup) -> Non
 
 
 async def main() -> None:
-    from app.commands import sync
-
-    config_logging(paths.CONFIG_TOML)
+    init.config_logging(paths.CONFIG_TOML)
     disnake.VoiceClient.warn_nacl = False
 
     AppState.bot = bot = commands.InteractionBot(
@@ -90,7 +88,9 @@ async def main() -> None:
     if CONFIG.indev:
         bot.get_global_command_named = partial(bot.get_guild_command_named, CONFIG.dev_guild_id)
 
-    sync.prevent_delayed_sync(bot)
+    # this patch has to be done mostly because plugins call this method with no opt-out
+    bot._schedule_delayed_command_sync = lambda: None  # pyright: ignore[reportPrivateUsage]
+
     i18n.load(paths.LOCALE_DIR)
     setup_event_loggers(bot)
     exception_handling.setup(bot)
@@ -105,7 +105,7 @@ async def main() -> None:
     await disnake.Client.login(bot, CONFIG.bot_token)
 
     if CONFIG.logs_channel_id:
-        await exception_handling.setup_channel(bot, CONFIG.logs_channel_id)
+        await init.setup_logs_channel(bot, CONFIG.logs_channel_id)
 
     else:
         _LOG.info(f"{CONFIG.logs_channel_id=}, channel logging disabled")
@@ -126,8 +126,7 @@ async def main() -> None:
                 AppState.http_session,
             )
 
-        tg.start_soon(sync.sync_commands, bot)
-        tg.start_soon(mentions.populate, bot)
+        tg.start_soon(init.sync_commands, bot)
         tg.start_soon(bot.connect)
 
 

@@ -1,5 +1,4 @@
 # pyright: enableExperimentalFeatures=true
-from typing import Literal
 from typing_extensions import TypedDict
 
 from disnake import Localized, OptionChoice
@@ -44,18 +43,6 @@ TIER_CHOICES = (
 
 
 class FilledOptions(TypedDict, total=False, closed=True):
-    slot: Literal[
-        "torso",
-        "legs",
-        "drone",
-        "side_weapon",
-        "top_weapon",
-        "teleport",
-        "charge",
-        "hook",
-        "shield",
-        "module",
-        "perk",
-    ]
-    element: Literal["physical", "explosive", "electric", "combined", "other"]
-    rarity: Literal["common", "rare", "epic", "legendary", "mythical", "divine", "perk"]
+    slot: str
+    element: str
+    rarity: str

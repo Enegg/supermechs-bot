@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Literal, override
 
 import yarl
 
-from app.disnake_types import MessageInteraction, ModalInteraction
 from discord import ComponentLimits, EmojiType
 from disnake import (
     ButtonStyle,
@@ -37,6 +36,8 @@ from disnake.ui import (
     TextInput,
     Thumbnail,
 )
+
+from app.typeshed import MessageInteraction, ModalInteraction
 
 if TYPE_CHECKING:
     from disnake.components import MediaItemInput
