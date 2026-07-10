@@ -14,7 +14,7 @@ from resources import AnyResource, FileResource, HttpResource
 
 import supermechs.all as sm
 
-__all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
+__all__ = ("ASSETS", "EMOJIS", "ICONS", "Colors")
 
 NULL_EMOJI: Final = UnicodeEmoji("❔")
 NULL_COLOR: Final = Color.default()
@@ -187,8 +187,6 @@ class Icons:
 
 
 class Colors:
-    __slots__ = ()
-
     tier_common: Final = Color.from_hex("#B1B1B1")
     tier_rare: Final = Color.from_hex("#55ACEE")
     tier_epic: Final = Color.from_hex("#CC41CC")
@@ -231,4 +229,3 @@ def load_assets() -> tuple[Assets, Emojis, Icons]:
 
 
 ASSETS, EMOJIS, ICONS = load_assets()
-COLORS = Colors()

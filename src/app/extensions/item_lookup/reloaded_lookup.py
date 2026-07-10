@@ -8,7 +8,7 @@ from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import COLORS, EMOJIS, ICONS
+from app.assets import EMOJIS, ICONS, Colors
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
@@ -119,7 +119,7 @@ async def on_reloaded_lookup_interaction(
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
             ui.TextDisplay(gettext("item-lookup-item-not-available", command=get_mention("item"))),
-            accent_colour=COLORS.error,
+            accent_colour=Colors.error,
         ))  # fmt: skip
         return
 
@@ -299,7 +299,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         title_lines.append("".join(power_line))
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container, add_component = ui.container(accent_color=COLORS.get_element(item.element))
+    container, add_component = ui.container(accent_color=Colors.get_element(item.element))
 
     match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):

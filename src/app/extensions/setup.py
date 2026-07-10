@@ -7,7 +7,7 @@ from discord.extensions import walk_extensions
 from disnake.ext import commands
 
 from app import devtools, paths, ui
-from app.assets import COLORS
+from app.assets import Colors
 from app.core import AppState
 from app.plugins_factory import create_dev_plugin
 from app.utils import format_exception
@@ -144,7 +144,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
         return
 
     component, ctx = parse_component_id(inter.data.custom_id)
-    error_container = ui.Container(accent_colour=COLORS.error)
+    error_container = ui.Container(accent_colour=Colors.error)
     traceback_file: disnake.File = disnake.utils.MISSING
 
     match component:
