@@ -3,7 +3,6 @@ import sys
 from functools import partial
 from typing import Final
 
-from app.disnake_types import CommandInteraction
 from discord import markdown as md
 from disnake import __version__ as disnake_version
 from disnake.utils import oauth_url
@@ -15,8 +14,8 @@ from app.core import CONFIG, AppState
 from app.core.state import BotUserInfo
 from app.devtools import debug_components
 from app.plugins_factory import create_plugin
-from app.system import get_ram_usage, get_sloc
-from app.utils import as_binary_unit
+from app.typeshed import CommandInteraction
+from app.utils import as_binary_unit, get_ram_usage, get_sloc
 from resources import HttpResource
 
 plugin = create_plugin(__name__)
