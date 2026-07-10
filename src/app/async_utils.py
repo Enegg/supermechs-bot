@@ -46,7 +46,7 @@ async def gather[T](*coros: AsyncFunc[[], T]) -> tuple[T, ...]:  # pyright: igno
 
 
 @attrs.define
-class LockManager[KT]:
+class LockManager[KT: abc.Hashable]:
     """Manager controlling `anyio.Lock` creation.
 
     The first context to acquire a lock under a given key will evict it on release.

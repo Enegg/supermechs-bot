@@ -9,7 +9,7 @@ import attrs
 import dotenv
 
 from app import paths
-from app.class_utils import MappingParser
+from app.utils import MappingParser
 from resources import AnyResource, from_uri
 
 __all__ = ("CONFIG",)

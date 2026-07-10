@@ -1,8 +1,8 @@
-from app.disnake_types import Bot
 from disnake import Permissions
 from disnake_plugins.plugin import Plugin
 
 from app.core import CONFIG
+from app.typeshed import Bot
 
 
 def _extract_plugin_name(name: str, /) -> str:

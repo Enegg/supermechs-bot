@@ -11,18 +11,14 @@ from discord import AnyEmoji, UnicodeEmoji
 from disnake import Color
 
 from app import paths
-from app.cattrs_utils import CONVERTER
-from app.class_utils import MappingParser, chain_maps
+from app.utils import CONVERTER, MappingParser, chain_maps
 from resources import AnyResource, FileResource, HttpResource
 
 import supermechs.all as sm
 
 __all__ = ("ASSETS", "EMOJIS", "ICONS", "Colors")
 
-_LOG = logging.getLogger()
-NULL_EMOJI: Final = UnicodeEmoji("❔")
-NULL_COLOR: Final = Color.default()
-MISSING_IMAGE: Final = FileResource(paths.MISSING_PNG)
+_LOG = logging.getLogger("assets")
 
 
 @final
@@ -40,6 +36,8 @@ class NoneEmoji:
 
 @attrs.frozen
 class Emojis:
+    NULL_EMOJI = UnicodeEmoji("❔")
+
     item_slot_torso: AnyEmoji = NULL_EMOJI
     item_slot_legs: AnyEmoji = NULL_EMOJI
     item_slot_drone: AnyEmoji = NULL_EMOJI
@@ -183,6 +181,8 @@ class Emojis:
 
 @attrs.frozen
 class Icons:
+    MISSING_IMAGE = FileResource(paths.MISSING_PNG)
+
     item_slot_torso: AnyResource | None = None
     item_slot_legs: AnyResource | None = None
     item_slot_drone: AnyResource | None = None
@@ -216,6 +216,8 @@ class Icons:
 
 
 class Colors:
+    null: Final = Color.default()
+
     tier_common: Final = Color.from_hex("#B1B1B1")
     tier_rare: Final = Color.from_hex("#55ACEE")
     tier_epic: Final = Color.from_hex("#CC41CC")
@@ -266,14 +268,13 @@ def _parse_emojis() -> Emojis:
     return CONVERTER.structure(data, Emojis)
 
 
-def load_assets() -> tuple[Assets, Emojis, Icons]:
+def load_assets() -> tuple[Assets, Icons]:
     parser = MappingParser.from_path(paths.ASSETS_TOML)
-    assets = parser.structure(Assets, "misc")
-    icons = parser.structure(Icons, "icon_overrides")
-
-    emojis = _parse_emojis()
-
-    return assets, emojis, icons
+    return (
+        parser.structure(Assets, "misc"),
+        parser.structure(Icons, "icon_overrides"),
+    )
 
 
-ASSETS, EMOJIS, ICONS = load_assets()
+ASSETS, ICONS = load_assets()
+EMOJIS = _parse_emojis()
