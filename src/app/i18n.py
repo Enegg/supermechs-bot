@@ -39,8 +39,7 @@ type LiteralKey = Literal[
     "item-lookup-ui-level-select-label",  # {level}
     "item-lookup-ui-level-select-placeholder",
     "item-lookup-ui-tier-select-placeholder",
-    "item-lookup-ui-select-up-label",
-    "item-lookup-ui-select-down-label",
+    "item-lookup-ui-select-next-label",  # {min}, {max}
     "item-lookup-jump-required",
     "item-lookup-no-stats",
     "item-lookup-no-image",

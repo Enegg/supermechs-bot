@@ -1,10 +1,9 @@
 import datetime as dt
 import logging
-from collections import abc
 from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
-from discord import ComponentLimits, markdown as md
+from discord import markdown as md
 from disnake import MessageFlags
 from disnake.ext import commands
 
@@ -229,32 +228,6 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, UIContext]
     )
 
 
-def make_level_options(
-    gettext: i18n.GetText,
-    levels: abc.Iterable[sm.Item.Stage.Level],
-    selected_level_index: int,
-    start: int = 0,
-) -> list[ui.SelectOption]:
-    return [
-        ui.SelectOption(
-            label=gettext("item-lookup-ui-level-select-label", level=level.level),
-            value=str(i),
-            default=i == selected_level_index,
-        )
-        for i, level in enumerate(levels, start=start)
-    ]
-
-
-def make_option_up(gettext: i18n.GetText, /) -> ui.SelectOption:
-    return ui.SelectOption(label=gettext("item-lookup-ui-select-up-label"), value="$u", emoji="🔺")
-
-
-def make_option_down(gettext: i18n.GetText, /) -> ui.SelectOption:
-    return ui.SelectOption(
-        label=gettext("item-lookup-ui-select-down-label"), value="$d", emoji="🔻"
-    )
-
-
 def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
     rare_pks, power = divmod(power, RARE_PK_POWER)
 
@@ -407,36 +380,40 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         )))  # fmt: skip
 
     # ---------------------------------------- level select ----------------------------------------
-    if len(levels) <= ComponentLimits.string_select_options:
-        level_options = make_level_options(gettext, levels, ctx.level_index)
-
-    elif ctx.levels_page == 1:
-        level_options = make_level_options(
-            gettext, levels[: ComponentLimits.string_select_options - 1], ctx.level_index
-        )
-        level_options.append(make_option_down(gettext))
-
-    elif ctx.levels_page == ui.option_to_page_count(len(levels)):
-        offset = (ComponentLimits.string_select_options - 2) * (ctx.levels_page - 1) + 1
-        level_options = [
-            make_option_up(gettext),
-            *make_level_options(gettext, levels[offset:], ctx.level_index, offset),
+    if len(levels) > 1:
+        page_index = ctx.levels_page - 1
+        start, end = ui.get_options_slice_for_page(len(levels), page_index)
+        level_options: list[ui.SelectOption] = []
+        if start != 0:
+            prev_start, prev_end = ui.get_options_slice_for_page(len(levels), page_index - 1)
+            level_options.append(ui.SelectOption(
+                label=gettext("item-lookup-ui-select-next-label", min=prev_start + 1, max=prev_end),
+                value="$u",
+                emoji="🔺",
+            ))  # fmt: skip
+        level_options += [
+            ui.SelectOption(
+                label=gettext("item-lookup-ui-level-select-label", level=level.level),
+                value=str(i),
+                default=i == ctx.level_index,
+            )
+            for i, level in enumerate(
+                levels if start == 0 and end == len(levels) else levels[start:end], start=start
+            )
         ]
+        if end != len(levels):
+            next_start, next_end = ui.get_options_slice_for_page(len(levels), page_index + 1)
+            level_options.append(ui.SelectOption(
+                label=gettext("item-lookup-ui-select-next-label", min=next_start + 1, max=next_end),
+                value="$d",
+                emoji="🔻",
+            ))  # fmt: skip
 
-    else:
-        size = ComponentLimits.string_select_options - 2
-        offset = size * (ctx.levels_page - 1) + 1
-        level_options = [
-            make_option_up(gettext),
-            *make_level_options(gettext, levels[offset : offset + size], ctx.level_index, offset),
-            make_option_down(gettext),
-        ]
-
-    add_component(ui.ActionRow(ui.StringSelect(
-        options=level_options,
-        placeholder=gettext("item-lookup-ui-level-select-placeholder"),
-        custom_id=make_component_id(ComponentIds.level_select, ctx),
-    )))  # fmt: skip
+        add_component(ui.ActionRow(ui.StringSelect(
+            options=level_options,
+            placeholder=gettext("item-lookup-ui-level-select-placeholder"),
+            custom_id=make_component_id(ComponentIds.level_select, ctx),
+        )))  # fmt: skip
 
     # ---------------------------------------- release date ----------------------------------------
     if item.release_date is not None:

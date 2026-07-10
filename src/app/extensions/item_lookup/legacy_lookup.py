@@ -280,17 +280,18 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         add_component(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
 
     # ---------------------------------------- level select ----------------------------------------
-    add_component(ui.ActionRow(ui.StringSelect(
-        options=[
-            ui.SelectOption(
-                label=gettext("item-lookup-ui-level-select-label", level=level.level),
-                value=str(i),
-                default=i == ctx.level_index,
-            )
-            for i, level in enumerate(levels)
-        ],
-        placeholder=gettext("item-lookup-ui-level-select-placeholder"),
-        custom_id=make_component_id(ComponentIds.level_select, ctx),
-    )))  # fmt: skip
+    if len(levels) > 1:
+        add_component(ui.ActionRow(ui.StringSelect(
+            options=[
+                ui.SelectOption(
+                    label=gettext("item-lookup-ui-level-select-label", level=level.level),
+                    value=str(i),
+                    default=i == ctx.level_index,
+                )
+                for i, level in enumerate(levels)
+            ],
+            placeholder=gettext("item-lookup-ui-level-select-placeholder"),
+            custom_id=make_component_id(ComponentIds.level_select, ctx),
+        )))  # fmt: skip
 
     return container

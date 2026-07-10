@@ -68,6 +68,7 @@ __all__ = (
     "Thumbnail",
     "UrlButton",
     "file",
+    "get_options_slice_for_page",
     "media_gallery_item",
     "option_to_page_count",
     "thumbnail",
@@ -120,8 +121,33 @@ def option_to_page_count(options: int, /) -> int:
         # fits on two pages, add one of up/down option on each
         return 2
 
-    size = ComponentLimits.string_select_options - 2
-    return 2 + (options - first_and_last_page + size - 1) // size
+    middle_page_size = ComponentLimits.string_select_options - 2
+    return 2 + (options - first_and_last_page + middle_page_size - 1) // middle_page_size
+
+
+def get_options_slice_for_page(option_count: int, page_index: int) -> tuple[int, int]:
+    if option_count <= ComponentLimits.string_select_options:
+        return 0, option_count
+
+    end_page_size = ComponentLimits.string_select_options - 1
+
+    if page_index == 0:
+        return 0, end_page_size
+
+    if option_count <= end_page_size * 2:
+        return end_page_size, option_count
+
+    middle_page_size = ComponentLimits.string_select_options - 2
+    middle_page_count = (
+        option_count - end_page_size * 2 + middle_page_size - 1
+    ) // middle_page_size
+
+    offset = end_page_size + middle_page_size * (page_index - 1)
+
+    if page_index <= middle_page_count:
+        return offset, offset + middle_page_size
+
+    return offset, option_count
 
 
 class ActionButton(_Button[None]):
