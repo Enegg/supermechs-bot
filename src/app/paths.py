@@ -4,7 +4,6 @@ CWD = Path.cwd()
 LOCALE_DIR = Path("locale/")
 STATIC_DIR = Path("static/")
 ASSETS_TOML = STATIC_DIR / "assets.toml"
-BUFFS_TOML = STATIC_DIR / "buffs.toml"
 MISSING_PNG = STATIC_DIR / "missing.png"
 ICONS_PNG_DIR = STATIC_DIR / "icons/png/"
 ICONS_SVG_DIR = STATIC_DIR / "icons/svg/"
