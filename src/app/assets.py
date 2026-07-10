@@ -17,7 +17,7 @@ from resources import AnyResource, FileResource, HttpResource
 
 import supermechs.all as sm
 
-__all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
+__all__ = ("ASSETS", "EMOJIS", "ICONS", "Colors")
 
 _LOG = logging.getLogger()
 NULL_EMOJI: Final = UnicodeEmoji("❔")
@@ -216,8 +216,6 @@ class Icons:
 
 
 class Colors:
-    __slots__ = ()
-
     tier_common: Final = Color.from_hex("#B1B1B1")
     tier_rare: Final = Color.from_hex("#55ACEE")
     tier_epic: Final = Color.from_hex("#CC41CC")
@@ -280,4 +278,3 @@ ASSETS = _PARSER.structure(Assets, "misc")
 ICONS = _PARSER.structure(Icons, "icon_overrides")
 del _PARSER
 EMOJIS = _parse_emojis()
-COLORS = Colors()

@@ -9,7 +9,7 @@ from discord.extensions import walk_extensions
 from disnake.ext import commands
 
 from app import devtools, i18n, paths, ui
-from app.assets import COLORS
+from app.assets import Colors
 from app.plugins_factory import create_dev_plugin
 from app.utils import format_exception
 
@@ -157,7 +157,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
         return
 
     component, ctx = parse_component_id(inter.data.custom_id)
-    error_container, add_err_component = ui.container(accent_color=COLORS.error)
+    error_container, add_err_component = ui.container(accent_color=Colors.error)
     files: list[disnake.File] = []
 
     match component:

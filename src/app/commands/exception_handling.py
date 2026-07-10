@@ -9,7 +9,7 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import COLORS
+from app.assets import Colors
 from app.core import CONFIG
 from app.utils import format_exception
 
@@ -44,7 +44,7 @@ def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError
 
 def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
     arguments = ", ".join(f"`{option}: {value}`" for option, value in inter.filled_options.items())
-    container, add_component = ui.container(accent_color=COLORS.error)
+    container, add_component = ui.container(accent_color=Colors.error)
     title_lines = [
         "## ⚠️ Uncaught exception",
         f"Place: {md.channel_mention(inter.channel_id)}",

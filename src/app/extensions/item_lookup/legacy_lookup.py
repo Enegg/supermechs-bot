@@ -7,7 +7,7 @@ from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import COLORS, EMOJIS, ICONS, NoneEmoji
+from app.assets import EMOJIS, ICONS, Colors, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
@@ -99,7 +99,7 @@ async def on_legacy_lookup_interaction(
             ui.TextDisplay(
                 gettext("item-lookup-item-not-available", command=get_mention("legacy-item"))
             ),
-            accent_colour=COLORS.error,
+            accent_colour=Colors.error,
         ))  # fmt: skip
         return
 
@@ -220,7 +220,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         )
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container, add_component = ui.container(accent_color=COLORS.get_element(item.element))
+    container, add_component = ui.container(accent_color=Colors.get_element(item.element))
 
     match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):
