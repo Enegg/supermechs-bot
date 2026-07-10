@@ -102,21 +102,6 @@ def find_matches(item_names: abc.Iterable[str], query: str) -> list[ItemMatch]:
     return results
 
 
-class MatchResult(NamedTuple):
-    name: str
-    direct_score: float
-    multiword_scores: abc.Sequence[float]
-    is_acronym: bool
-
-    def sort_key(self) -> tuple[object, ...]:
-        return (
-            self.is_acronym,
-            # max of an iterable, then of the two
-            max(self.direct_score, max(self.multiword_scores, default=0.0)),
-            self.direct_score,
-        )
-
-
 def get_ratio(name: str, matcher: SequenceMatcher[str], cutoff: float = 0.3) -> float:
     matcher.set_seq1(name)
 
@@ -127,29 +112,6 @@ def get_ratio(name: str, matcher: SequenceMatcher[str], cutoff: float = 0.3) -> 
         return score
 
     return matcher.ratio()
-
-
-def get_multiword_scores(
-    name: str, phrase_parts: abc.Sequence[str], matcher: SequenceMatcher[str]
-) -> abc.Sequence[float]:
-    name_parts = name.split(" ")
-
-    if len(name_parts) == 1 or len(name_parts) < len(phrase_parts):
-        return ()
-
-    scores: list[float] = []
-
-    for phrase_part in phrase_parts:
-        matcher.set_seq2(phrase_part)
-
-        max_score: float = 0.0
-
-        for name_part in name_parts:
-            max_score = max(get_ratio(name_part, matcher), max_score)
-
-        scores.append(max_score)
-
-    return scores
 
 
 def acronym_of(name: str, /) -> str | None:
