@@ -2,7 +2,7 @@ import enum
 from collections import abc
 from difflib import SequenceMatcher
 from itertools import islice
-from typing import TYPE_CHECKING, NamedTuple, cast as type_cast
+from typing import TYPE_CHECKING, Final, NamedTuple, cast as type_cast
 
 from app.disnake_types import CommandInteraction
 from discord import AutocompleteReturnType, InteractionLimits
@@ -16,10 +16,16 @@ __all__ = ("item_name_autocomplete",)
 
 
 class MatchQuality(enum.IntEnum):
+    # match order:
+    # 1. name == query (caseless)
     exact = enum.auto()
+    # 2. Overcharged Rocket Battery => "ORB" == query (caseless)
     acronym = enum.auto()
+    # 3. name.startswith(query); for multi-word names this also considers inner words
     prefix = enum.auto()
+    # 4. query in name
     substring = enum.auto()
+    # 5. Levenshtein distance
     fuzzy = enum.auto()
 
 
@@ -29,11 +35,12 @@ class ItemMatch(NamedTuple):
     word_index: int = 0
     fuzzy_score: float = 0.0
 
-    def to_sort_key(self) -> tuple[object, ...]:
-        return (-self.quality, -self.word_index, self.fuzzy_score)
+
+CUTOFF: Final = 2 / 3
 
 
-def find_matches2(item_names: abc.Iterable[str], query: str) -> list[ItemMatch]:
+def find_matches(item_names: abc.Iterable[str], query: str) -> list[ItemMatch]:
+    # TODO: operate on "tokens", i.e. "HeronMark" should be seen as-if it was ["Heron", "Mark"]
     query_lowercase = query.casefold()
 
     results: list[ItemMatch] = []
@@ -44,45 +51,54 @@ def find_matches2(item_names: abc.Iterable[str], query: str) -> list[ItemMatch]:
         name_lowercase = name.casefold()
 
         if name_lowercase.startswith(query_lowercase):
-            if len(name_lowercase) == len(query_lowercase):
-                quality = MatchQuality.exact
-            else:
-                quality = MatchQuality.prefix
-            results.append(ItemMatch(name=name, quality=quality))
+            results.append(ItemMatch(
+                name=name,
+                quality=MatchQuality.exact
+                if len(name_lowercase) == len(query_lowercase)
+                else MatchQuality.prefix,
+            ))  # fmt: skip
             continue
 
         if acronym_of(name) == query_lowercase:
             results.append(ItemMatch(name, quality=MatchQuality.acronym))
             continue
 
-        start = 0
+        last_space_index = 0
+        # in "my new item", "new" is word_index == 1
         word_index = 0
 
-        while (start := name_lowercase.find(" ", start)) != -1:
-            start += 1
+        while (last_space_index := name_lowercase.find(" ", last_space_index) + 1) != 0:
             word_index += 1
-            if name_lowercase.startswith(query_lowercase, start):
+            if name_lowercase.startswith(query_lowercase, last_space_index):
                 results.append(ItemMatch(name, MatchQuality.prefix, word_index=word_index))
                 break
         else:
-            if query_lowercase in name_lowercase:
-                results.append(ItemMatch(name, quality=MatchQuality.substring))
+            # this is effectively `query_lowercase in name_lowercase`, but also finds number of spaces
+            if (query_index := name_lowercase.find(query_lowercase)) != -1:
+                results.append(ItemMatch(
+                    name,
+                    quality=MatchQuality.substring,
+                    # number of spaces preceeding the match == index of first matching word
+                    word_index=name_lowercase.count(" ", None, query_index),
+                ))  # fmt: skip
                 continue
 
-            ratios = [get_ratio(name_part, seq_matcher) for name_part in name_lowercase.split(" ")]
+            ratios = [
+                get_ratio(name_part, seq_matcher, CUTOFF) for name_part in name_lowercase.split(" ")
+            ]
 
             best_ratio = max(ratios)
-            word_index = ratios.index(best_ratio)
-            results.append(
-                ItemMatch(
-                    name,
-                    quality=MatchQuality.fuzzy,
-                    word_index=word_index,
-                    fuzzy_score=best_ratio,
+            if best_ratio > CUTOFF:
+                results.append(
+                    ItemMatch(
+                        name,
+                        quality=MatchQuality.fuzzy,
+                        word_index=ratios.index(best_ratio),
+                        fuzzy_score=best_ratio,
+                    )
                 )
-            )
 
-    results.sort(key=ItemMatch.to_sort_key, reverse=True)
+    results.sort(key=lambda s: (-s.quality, -s.word_index, s.fuzzy_score), reverse=True)
     return results
 
 
@@ -154,27 +170,6 @@ def acronym_of(name: str, /) -> str | None:
     return "".join(filter(str.isupper, name)).lower()
 
 
-def find_matches(names: abc.Iterable[str], phrase: str) -> list[MatchResult]:
-    phrase = phrase.lower()
-    phrase_parts = [part for raw_part in phrase.split(" ") if (part := raw_part.strip())]
-
-    whole_matcher = SequenceMatcher(b=phrase)
-    multiword_matcher = SequenceMatcher[str]()
-
-    results: list[MatchResult] = []
-
-    for name in names:
-        lowercase_name = name.lower()
-        direct_score = get_ratio(lowercase_name, whole_matcher)
-        multiword_scores = get_multiword_scores(lowercase_name, phrase_parts, multiword_matcher)
-        is_acronym = acronym_of(name) == phrase
-
-        results.append(MatchResult(name, direct_score, multiword_scores, is_acronym))
-
-    results.sort(key=MatchResult.sort_key, reverse=True)
-    return results
-
-
 def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for slot & element."""
     filled_options: FilledOptions = type_cast("FilledOptions", inter.filled_options)
@@ -191,6 +186,6 @@ def item_name_autocomplete(inter: CommandInteraction, input: str) -> Autocomplet
     if not input:
         return list(islice(names, InteractionLimits.autocomplete_options))
 
-    matching = find_matches2(names, input)
+    matching = find_matches(names, input)
     del matching[InteractionLimits.autocomplete_options :]
-    return [result.name for result in matching]
+    return [match.name for match in matching]
