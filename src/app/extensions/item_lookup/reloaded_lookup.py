@@ -298,8 +298,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         title_lines.append("".join(power_line))
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container = ui.Container(accent_colour=COLORS.get_element(item.element))
-    add_component = container.children.append
+    container, add_component = ui.container(accent_color=COLORS.get_element(item.element))
 
     match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):

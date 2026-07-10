@@ -49,8 +49,7 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, DevtoolsUI
 
 
 def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
-    container = ui.Container()
-    add_component = container.children.append
+    container, add_component = ui.container()
     add_component(ui.TextDisplay("# Developer Console"))
 
     current_override = i18n.locale_override.unwrap_or(None)

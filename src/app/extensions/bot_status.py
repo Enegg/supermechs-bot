@@ -62,8 +62,9 @@ async def info(inter: CommandInteraction) -> None:
     """Display information about the bot."""
     bot = plugin.bot
 
-    container = ui.Container(accent_colour=inter.me.color)
-    add_component = container.children.append
+    components: ui.MessageComponents = []
+    container, add_component = ui.container(accent_color=inter.me.color)
+    components.append(container)
     add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
@@ -99,9 +100,6 @@ async def info(inter: CommandInteraction) -> None:
         f"Latency: {round(bot.latency * 1000)}ms\n"
         f"RAM usage: {bytes_}{prefix}B"
     ))  # fmt: skip
-
-    components: ui.MessageComponents = []
-    components.append(container)
 
     if _bot_info.bot_public:
         components.append(ui.ActionRow(ui.UrlButton(

@@ -44,7 +44,7 @@ def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError
 
 def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
     arguments = ", ".join(f"`{option}: {value}`" for option, value in inter.filled_options.items())
-    container = ui.Container(accent_colour=COLORS.error)
+    container, add_component = ui.container(accent_color=COLORS.error)
     title_lines = [
         "## ⚠️ Uncaught exception",
         f"Place: {md.channel_mention(inter.channel_id)}",
@@ -56,15 +56,15 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     builder = MessageBuilder()
 
     if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
-        container.children.append(ui.TextDisplay("\n".join(title_lines)))
-        container.children.append(ui.TextDisplay(md.codeblock(traceback_text)))
+        add_component(ui.TextDisplay("\n".join(title_lines)))
+        add_component(ui.TextDisplay(md.codeblock(traceback_text)))
 
     else:
         title_lines.append(f"Exception: `{type(exc).__name__}: {exc}`")
-        container.children.append(ui.TextDisplay("\n".join(title_lines)))
+        add_component(ui.TextDisplay("\n".join(title_lines)))
         file = text_to_file(traceback_text, "traceback.py")
         builder.add_files(file)
-        container.children.append(ui.file(file))
+        add_component(ui.file(file))
 
     return builder.with_components(container)
 

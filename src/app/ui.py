@@ -1,5 +1,6 @@
 """Extension of the library provided UI kit."""
 
+from collections import abc
 from typing import TYPE_CHECKING, Literal, override
 
 import yarl
@@ -8,6 +9,7 @@ from app.disnake_types import MessageInteraction, ModalInteraction
 from discord import ComponentLimits, EmojiType
 from disnake import (
     ButtonStyle,
+    Color,
     File as _FileObject,
     GroupOption,
     MediaGalleryItem,
@@ -39,6 +41,7 @@ from disnake.ui import (
 if TYPE_CHECKING:
     from disnake.components import MediaItemInput
     from disnake.ui._types import MessageComponents as _MessageComponents
+    from disnake.ui.container import ContainerChildUIComponent as _ContainerChildUIComponent
 
 __all__ = (
     "ActionButton",
@@ -67,6 +70,7 @@ __all__ = (
     "TextInputStyle",
     "Thumbnail",
     "UrlButton",
+    "container",
     "file",
     "get_options_slice_for_page",
     "media_gallery_item",
@@ -82,6 +86,17 @@ type ActionButtonStyle = Literal[
     ButtonStyle.success,
     ButtonStyle.danger,
 ]
+type ContainerChild = _ContainerChildUIComponent
+
+
+def container(
+    *components: ContainerChild,
+    accent_color: Color | None = None,
+    spoiler: bool = False,
+    id: int = 0,
+) -> tuple[Container, abc.Callable[[ContainerChild], None]]:
+    container = Container(*components, accent_colour=accent_color, spoiler=spoiler, id=id)
+    return container, container.children.append
 
 
 def _media(media: MediaConvertible, /) -> UnfurledMediaItem:
