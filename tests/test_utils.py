@@ -16,5 +16,4 @@ from app.ui import get_options_slice_for_page
     ],
 )
 def test_option_range(count: int, index: int, expected: tuple[int, int]) -> None:
-    start, end = get_options_slice_for_page(count, index)
-    assert (start, end) == expected
+    assert get_options_slice_for_page(count, index) == expected
