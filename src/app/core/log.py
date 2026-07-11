@@ -2,15 +2,12 @@
 # TODO (3.12): QueueHandler/QueueListener
 import copy
 import datetime as dt
-import io
 import logging
 from collections import abc
-from pathlib import Path
 from typing import override
 
 import orjson
 
-from app.typeshed import FilterType
 from app.utils import strip_cwd
 
 BUILTIN_KEYS = frozenset({
@@ -54,20 +51,6 @@ def normalize_record_path(record: logging.LogRecord) -> logging.LogRecord:
     record = copy.copy(record)
     record.pathname = path
     return record
-
-
-def get_path_normalizer() -> FilterType:
-    return normalize_record_path
-
-
-def patch_file_handler() -> None:
-    _base_open = logging.FileHandler._open
-
-    def _open(self: logging.FileHandler) -> io.TextIOWrapper:
-        Path(self.baseFilename).parent.mkdir(exist_ok=True, parents=True)
-        return _base_open(self)
-
-    logging.FileHandler._open = _open
 
 
 class JsonFormatter(logging.Formatter):
