@@ -67,7 +67,7 @@ def setup_signal_handler(client: disnake.Client, tg: anyio.abc.TaskGroup) -> Non
 
 
 async def main() -> None:
-    init.config_logging(paths.CONFIG_TOML)
+    init.config_logging()
     disnake.VoiceClient.warn_nacl = False
 
     AppState.bot = bot = commands.InteractionBot(
