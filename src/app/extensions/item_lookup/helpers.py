@@ -326,3 +326,11 @@ def embed_emoji_name(emoji: AnyEmoji, value: int) -> AnyEmoji:
     if isinstance(emoji, CustomEmoji):
         return emoji.__replace__(name=f"{value:_}_{emoji.name}")
     return emoji
+
+
+def move_last_between[T](
+    a: abc.MutableSequence[T], b: abc.MutableSequence[T], count: int, /
+) -> None:
+    """Move items from the end of `b` to the end of `a`, until `len(a) >= count` or `b` is empty."""
+    while len(a) < count and b:
+        a.append(b.pop())

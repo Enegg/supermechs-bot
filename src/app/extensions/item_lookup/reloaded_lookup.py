@@ -28,6 +28,7 @@ from .helpers import (
     has_damage,
     has_damage_spread,
     item_transform_range,
+    move_last_between,
 )
 
 import supermechs.all as sm
@@ -382,13 +383,13 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             ...  # TODO
 
         else:
+            stats_lines.reverse()
             current_lines: list[str] = [f"**{gettext('item-lookup-stats-header')}:**"]
 
             LINES_PER_BUTTON = 2
 
             if has_buff_affected_stats(item_stats):
-                while len(current_lines) < LINES_PER_BUTTON and stats_lines:  # TODO: inefficient
-                    current_lines.append(stats_lines.pop(0))
+                move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
                 add_component(ui.Section(
                     ui.TextDisplay("\n".join(current_lines)),
                     accessory=ui.ActionButton(
@@ -403,8 +404,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 current_lines.clear()
 
             if has_damage_spread(item_stats):
-                while len(current_lines) < LINES_PER_BUTTON and stats_lines:  # TODO: inefficient
-                    current_lines.append(stats_lines.pop(0))
+                move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
                 add_component(ui.Section(
                     ui.TextDisplay("\n".join(current_lines)),
                     accessory=ui.ActionButton(
@@ -417,8 +417,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 current_lines.clear()
 
             if has_damage(item_stats):
-                while len(current_lines) < LINES_PER_BUTTON and stats_lines:  # TODO: inefficient
-                    current_lines.append(stats_lines.pop(0))
+                move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
                 add_component(ui.Section(
                     ui.TextDisplay("\n".join(current_lines)),
                     accessory=ui.ActionButton(
@@ -431,7 +430,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 ))  # fmt: skip
                 current_lines.clear()
 
-            current_lines.extend(stats_lines)
+            current_lines += reversed(stats_lines)
             if current_lines:
                 add_component(ui.TextDisplay("\n".join(current_lines)))
             if current_lines and costs_lines:
