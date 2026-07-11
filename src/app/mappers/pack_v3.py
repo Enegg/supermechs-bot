@@ -13,7 +13,7 @@ from .common import (
     convert_stats,
 )
 
-import dupermechs.all as sm
+import supermechs.all as sm
 
 type SpriteCollection = abc.Sequence[SpriteData]
 

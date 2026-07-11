@@ -3,7 +3,7 @@ from collections import abc
 
 from app.models.item_pack import ItemPack
 
-import dupermechs.all as sm
+import supermechs.all as sm
 
 _LOG = logging.getLogger("managers")
 _item_pack: ItemPack = ItemPack()

@@ -4,8 +4,8 @@ from collections import abc
 from app import i18n
 from app.assets import EMOJIS
 
-import dupermechs.all as sm
-from dupermechs.enums import ItemStat
+import supermechs.all as sm
+from supermechs.enums import ItemStat
 
 MAX_EMOJIS = 4
 """Threshold for multiple emojis shown inline in the stats field."""

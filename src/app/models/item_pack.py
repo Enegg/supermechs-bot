@@ -4,7 +4,7 @@ import attrs
 
 from app.class_utils import limited_repr
 
-import dupermechs.all as sm
+import supermechs.all as sm
 
 __all__ = ("ItemPack",)
 

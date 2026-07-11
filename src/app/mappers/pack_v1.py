@@ -12,7 +12,7 @@ from app.mappers.common import (
 from app.models.sprite_pack import SpritePack
 from resources import HttpResource
 
-import dupermechs.all as sm
+import supermechs.all as sm
 
 
 class ConversionResultV1(NamedTuple):

@@ -26,8 +26,8 @@ from .helpers import (
     item_transform_range,
 )
 
-import dupermechs.all as sm
-from dupermechs import stats
+import supermechs.all as sm
+from supermechs import stats
 
 COMMON_PK_POWER = 10_000
 RARE_PK_POWER = 50_000

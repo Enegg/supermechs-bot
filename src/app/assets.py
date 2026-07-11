@@ -12,7 +12,7 @@ from app import paths
 from app.class_utils import MappingParser
 from resources import AnyResource, FileResource, HttpResource
 
-import dupermechs.all as sm
+import supermechs.all as sm
 
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 

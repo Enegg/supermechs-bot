@@ -7,7 +7,7 @@ from app.mappers.common import (
     stats_to_stages,
 )
 
-import dupermechs.all as sm
+import supermechs.all as sm
 
 
 def convert_pack_v2(pack_dto: dto.ItemPackDto, /) -> ItemMapping:

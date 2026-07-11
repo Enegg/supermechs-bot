@@ -4,8 +4,8 @@ from typing import Self
 
 import attrs
 
-from dupermechs.arenashop import ArenaShop
-from dupermechs.enums import ItemStat
+from supermechs.arenashop import ArenaShop
+from supermechs.enums import ItemStat
 
 __all__ = (
     "AnyBonus",

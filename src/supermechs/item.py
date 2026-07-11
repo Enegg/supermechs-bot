@@ -4,8 +4,8 @@ from typing import NewType
 
 import attrs
 
-from dupermechs.enums import ItemElement, ItemRarity, ItemSlot, ItemSubtype
-from dupermechs.stats import ItemStats
+from supermechs.enums import ItemElement, ItemRarity, ItemSlot, ItemSubtype
+from supermechs.stats import ItemStats
 
 __all__ = ("Item", "ItemId", "ItemStage", "StageLevel")
 

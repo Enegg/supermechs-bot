@@ -4,7 +4,7 @@ from typing_extensions import TypedDict
 
 from disnake import Localized, OptionChoice
 
-from dupermechs.enums import ItemElement, ItemRarity, ItemSlot
+from supermechs.enums import ItemElement, ItemRarity, ItemSlot
 
 __all__ = ("ELEMENT_CHOICES", "SLOT_CHOICES")
 

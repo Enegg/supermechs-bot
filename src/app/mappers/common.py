@@ -4,7 +4,7 @@ import msgspec
 
 from app.dto.common import ItemStatsDto, LiteralElement, LiteralSlot, LiteralSubtype, LiteralTier
 
-import dupermechs.all as sm
+import supermechs.all as sm
 
 type ItemMapping = abc.Mapping[sm.Item.Id, sm.Item]
 

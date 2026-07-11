@@ -13,7 +13,7 @@ from disnake import Locale, LocalizationProtocol
 from app.class_utils import unset_to_option
 from app.typeshed import Pathish
 
-from dupermechs.enums import ItemRarity, ItemStat
+from supermechs.enums import ItemRarity, ItemStat
 
 __all__ = ("GetText", "Locale", "get_gettext", "get_message", "load")
 

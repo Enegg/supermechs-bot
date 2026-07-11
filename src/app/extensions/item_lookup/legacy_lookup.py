@@ -18,8 +18,8 @@ from resources import HttpResource
 
 from .helpers import format_float, format_stats, has_buff_affected_stats, has_damage_spread
 
-import dupermechs.all as sm
-from dupermechs import stats
+import supermechs.all as sm
+from supermechs import stats
 
 LEGACY_PK_POWER = 76_800
 

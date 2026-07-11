@@ -3,7 +3,7 @@ from typing import Any
 
 import attrs
 
-from dupermechs.enums import ArenaShopCategory
+from supermechs.enums import ArenaShopCategory
 
 __all__ = ("ArenaShop", "ArenaShopBonuses", "ArenaShopLevels", "bind_levels")
 

@@ -1,9 +1,9 @@
 from collections import abc
 from typing import Final
 
-import dupermechs.all as sm
-from dupermechs import arenashop
-from dupermechs.stats import AnyBonus, FlatBonus, MultiplierBonus
+import supermechs.all as sm
+from supermechs import arenashop
+from supermechs.stats import AnyBonus, FlatBonus, MultiplierBonus
 
 ARENA_BONUSES: Final = sm.ArenaShop[abc.Sequence[AnyBonus]](
     energy_capacity     =MultiplierBonus.from_percentages(0,  1,  3,  5,  7,  9,  11,  13,  15,  17,  20),
