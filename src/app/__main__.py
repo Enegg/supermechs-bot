@@ -75,7 +75,7 @@ def install_listeners(client: Client, /) -> None:
 
 
 async def main() -> None:
-    init.config_logging(paths.CONFIG_TOML)
+    init.config_logging()
     disnake.VoiceClient.warn_nacl = False
 
     AppState.bot = bot = commands.InteractionBot(
