@@ -23,12 +23,14 @@ from .helpers import (
     format_stats,
     has_buff_affected_stats,
     has_damage_spread,
+    move_last_between,
 )
 
 import supermechs.all as sm
 from supermechs import stats
 
 LEGACY_PK_POWER = 76_800
+LINES_PER_BUTTON = 2
 
 
 class UIContext(NamedTuple):
@@ -241,43 +243,55 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     if item.subtype is sm.Item.Subtype.power_kit:
         boost_power = levels[ctx.level_index].power_contribution
         add_component(ui.TextDisplay(
-            f"{EMOJIS.stat_power} **{boost_power}** {gettext('boost-power')}"
+                f"{EMOJIS.stat_power} **{boost_power}** {gettext('boost-power')}"
         ))  # fmt: skip
     else:
         stats_lines, costs_lines = format_stats(item, item_stats, gettext, avg=ctx.damage_average)
 
-        if stats_lines or costs_lines:
-            stats_part = "\n".join(stats_lines)
-            costs_part = "\n".join(costs_lines)
-            add_component(ui.TextDisplay(
-                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
-            ))  # fmt: skip
-            if stats_part and costs_part:
-                add_component(ui.Separator(divider=False))
-                add_component(ui.TextDisplay(costs_part))
-        else:
+        if not (stats_lines or costs_lines):
             add_component(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
-    # ------------------------------------------ buttons -------------------------------------------
-    buttons_row: list[ui.ActionButton] = []
+        elif not stats_lines:
+            ...  # TODO
 
-    if has_buff_affected_stats(item_stats):
-        buttons_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-buffs"),
-            style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
-            emoji="⚔️",
-            custom_id=make_component_id(ComponentIds.buffs_button, ctx),
-        ))  # fmt: skip
-    if has_damage_spread(item_stats):
-        buttons_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-damage-avg"),
-            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            emoji=EMOJIS.get_element(item.element).to_partial(),
-            custom_id=make_component_id(ComponentIds.avg_button, ctx),
-        ))  # fmt: skip
+        else:
+            stats_lines.reverse()
+            current_lines: list[str] = [f"**{gettext('item-lookup-stats-header')}:**"]
 
-    if buttons_row:
-        add_component(ui.ActionRow(*buttons_row))
+            if has_buff_affected_stats(item_stats):
+                move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
+                add_component(ui.Section(
+                    ui.TextDisplay("\n".join(current_lines)),
+                    accessory=ui.ActionButton(
+                        label=gettext("item-lookup-ui-buffs"),
+                        style=ui.ButtonStyle.green
+                        if ctx.buffs_enabled
+                        else ui.ButtonStyle.gray,
+                        emoji="⚔️",
+                        custom_id=make_component_id(ComponentIds.buffs_button, ctx),
+                    ),
+                ))  # fmt: skip
+                current_lines.clear()
+
+            if has_damage_spread(item_stats):
+                move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
+                add_component(ui.Section(
+                    ui.TextDisplay("\n".join(current_lines)),
+                    accessory=ui.ActionButton(
+                        label=gettext("item-lookup-ui-damage-avg"),
+                        style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
+                        emoji=EMOJIS.get_element(item.element).to_partial(),
+                        custom_id=make_component_id(ComponentIds.avg_button, ctx),
+                    ),
+                ))  # fmt: skip
+                current_lines.clear()
+
+            current_lines += reversed(stats_lines)
+            if current_lines:
+                add_component(ui.TextDisplay("\n".join(current_lines)))
+            if current_lines and costs_lines:
+                add_component(ui.Separator(divider=False))
+                add_component(ui.TextDisplay("\n".join(costs_lines)))
 
     # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, tier))) is not None:
@@ -303,5 +317,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
     # --------------------------------------------- tip --------------------------------------------
     if power_required >= METRIC_FORMAT_THRESHOLD:
-        add_component(ui.TextDisplay(f"-# tip: press {EMOJIS.stat_power} to view exact power required!"))
+        add_component(
+            ui.TextDisplay(f"-# tip: press {EMOJIS.stat_power} to view exact power required!")
+        )
     return container

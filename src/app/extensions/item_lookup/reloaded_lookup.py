@@ -45,6 +45,7 @@ class FoodPower:
     rare_pk_to_pk: Final = rare_pk // 10 * 11  # +10%
 
 
+LINES_PER_BUTTON = 2
 MAX_RANK = 13
 MAX_LEVEL = 50
 
@@ -385,8 +386,6 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         else:
             stats_lines.reverse()
             current_lines: list[str] = [f"**{gettext('item-lookup-stats-header')}:**"]
-
-            LINES_PER_BUTTON = 2
 
             if has_buff_affected_stats(item_stats):
                 move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
