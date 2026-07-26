@@ -34,7 +34,7 @@ from supermechs import stats
 COMMON_PK_POWER = 10_000
 RARE_PK_POWER = 50_000
 MAX_RANK = 13
-MAX_LEVEL = 49
+MAX_LEVEL = 50
 
 
 class UIContext(NamedTuple):
