@@ -20,6 +20,7 @@ from app.managers import gfx, packs
 from resources import HttpResource
 
 from .helpers import (
+    format_compact_stats,
     format_float,
     format_stats,
     has_buff_affected_stats,
@@ -45,6 +46,7 @@ class UIContext(NamedTuple):
     damage_average: bool = False
     buffs_enabled: bool = False
     damage_vs_titan: bool = False
+    compact_layout: bool = False
 
 
 class ComponentIds:
@@ -57,8 +59,9 @@ class ComponentIds:
     buffs_button: Final = "buffs"
     avg_button: Final = "avg"
     titan_button: Final = "dvt"
+    compact_button: Final = "cmpct"
 
-    type AnyId = Literal["stages", "levels", "buffs", "avg", "dvt"]
+    type AnyId = Literal["stages", "levels", "buffs", "avg", "dvt", "cmpct"]
 
 
 def level_to_rank_emoji[T](level_index: int, default: T = NULL_EMOJI) -> AnyEmoji | T:
@@ -193,10 +196,17 @@ async def on_reloaded_lookup_interaction(
         case ComponentIds.titan_button:
             ctx = ctx.__replace__(damage_vs_titan=not ctx.damage_vs_titan)
 
+        case ComponentIds.compact_button:
+            ctx = ctx.__replace__(compact_layout=not ctx.compact_layout)
+
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(gettext, item, ctx)
+    if ctx.compact_layout:
+        container = get_compact_summary(gettext, item, ctx)
+    else:
+        container = get_item_summary(gettext, item, ctx)
+
     if __debug__:
         debug_components(container)
     await inter.response.edit_message(components=container)
@@ -217,7 +227,12 @@ def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
 
 
 def make_component_id(component: str, ctx: UIContext) -> str:
-    flags = ctx.damage_average | ctx.buffs_enabled << 1 | ctx.damage_vs_titan << 2
+    flags = (
+        ctx.damage_average
+        | ctx.buffs_enabled << 1
+        | ctx.damage_vs_titan << 2
+        | ctx.compact_layout << 3
+    )
     return f"{ComponentIds.prefix}:{component}:{ctx.item_id:x}:{ctx.stage_index}:{ctx.level_index}:{ctx.levels_page}:{flags:x}"
 
 
@@ -234,6 +249,7 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, UIContext]
             damage_average=flags & 1 == 1,
             buffs_enabled=flags >> 1 & 1 == 1,
             damage_vs_titan=flags >> 2 & 1 == 1,
+            compact_layout=flags >> 3 & 1 == 1,
         ),
     )
 
@@ -431,5 +447,152 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         add_component(ui.TextDisplay(
             f"-# {when} {md.format_dt(item.release_date, "R")}"
         ))  # fmt: skip
+
+    # --------------------------------------- compact button ---------------------------------------
+    add_component(ui.ActionRow(ui.ActionButton(
+        label="Collapse",
+        style=ui.ButtonStyle.gray,
+        emoji="🔺",
+        custom_id=make_component_id(ComponentIds.compact_button, ctx),
+    )))  # fmt: skip
+
+    return container
+
+
+def get_compact_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
+    stage = item.stages[ctx.stage_index]
+    levels = stage.levels
+    item_stats = get_item_stats(item, ctx)
+
+    # -------------------------------------------- title -------------------------------------------
+    container, add_component = ui.container(accent_color=COLORS.get_element(item.element))
+
+    summary_lines = [
+        f"## {item.name}",
+        f"-# {item_transform_range(item, ctx.stage_index)} {level_to_rank_emoji(ctx.level_index)}",
+    ]
+
+    # -------------------------------------------- stats -------------------------------------------
+    has_stats = False
+    costs_lines: list[str] = []
+
+    if item.subtype is sm.Item.Subtype.power_kit:
+        boost_power = levels[ctx.level_index].power_contribution
+        summary_lines.append(f"{EMOJIS.stat_energy_capacity} **{boost_power}**")
+    else:
+        stats_lines, costs_lines = format_compact_stats(item_stats, gettext, avg=ctx.damage_average)
+
+        if stats_lines or costs_lines:
+            summary_lines.append(f"**{gettext('item-lookup-stats-header')}:**")
+            summary_lines.extend(stats_lines or costs_lines)
+            has_stats = bool(stats_lines)
+        else:
+            summary_lines.append(f"-# {gettext('item-lookup-no-stats')}")
+
+    summary = ui.TextDisplay("\n".join(summary_lines))
+
+    if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
+        add_component(ui.Section(summary, accessory=ui.thumbnail(sprite_url)))
+    else:
+        add_component(summary)
+
+    if has_stats and costs_lines:
+        add_component(ui.Separator(divider=False))
+        add_component(ui.TextDisplay("\n".join(costs_lines)))
+
+    # ------------------------------------------- buttons ------------------------------------------
+    button_row: list[ui.ActionButton] = []
+
+    if has_buff_affected_stats(item_stats):
+        button_row.append(ui.ActionButton(
+            style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
+            emoji="⚔️",
+            custom_id=make_component_id(ComponentIds.buffs_button, ctx),
+        ))  # fmt: skip
+    if has_damage_spread(item_stats):
+        button_row.append(ui.ActionButton(
+            label="x̄ ±σ%",  # noqa: RUF001
+            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
+            emoji=EMOJIS.get_element(item.element).to_partial(),
+            custom_id=make_component_id(ComponentIds.avg_button, ctx),
+        ))  # fmt: skip
+    if has_damage(item_stats):
+        button_row.append(ui.ActionButton(
+            label=gettext("item-lookup-ui-damage-vs-titans"),
+            style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
+            disabled=not ctx.buffs_enabled,
+            emoji=EMOJIS.get_element(item.element).to_partial(),
+            custom_id=make_component_id(ComponentIds.titan_button, ctx),
+        ))  # fmt: skip
+    if button_row:
+        add_component(ui.ActionRow(*button_row))
+
+    # ---------------------------------------- stage select ----------------------------------------
+    if len(item.stages) > 1:
+        add_component(ui.ActionRow(ui.StringSelect(
+            options=[
+                ui.SelectOption(
+                    label=gettext.get_tier_name(stage.tier).capitalize(),
+                    value=f"{i:x}",
+                    emoji=EMOJIS.get_tier(stage.tier, hollow=i != ctx.stage_index).to_partial(),
+                    default=i == ctx.stage_index,
+                )
+                for i, stage in enumerate(item.stages)
+            ],
+            placeholder=gettext("item-lookup-ui-tier-select-placeholder"),
+            custom_id=make_component_id(ComponentIds.stage_select, ctx),
+        )))  # fmt: skip
+
+    # ---------------------------------------- level select ----------------------------------------
+    if len(levels) > 1:
+        page_index = ctx.levels_page - 1
+        start, end = ui.get_options_slice_for_page(len(levels), page_index)
+        level_options: list[ui.SelectOption] = []
+        if start != 0:
+            prev_start, prev_end = ui.get_options_slice_for_page(len(levels), page_index - 1)
+            level_options.append(ui.SelectOption(
+                label=gettext("item-lookup-ui-select-next-label", min=prev_start + 1, max=prev_end),
+                value="$u",
+                emoji="🔺",
+            ))  # fmt: skip
+        level_options += [
+            ui.SelectOption(
+                label=gettext("item-lookup-ui-level-select-label", level=level.level),
+                value=str(i),
+                emoji=level_to_rank_emoji(i, NoneEmoji).to_partial(),
+                default=i == ctx.level_index,
+            )
+            for i, level in enumerate(
+                levels if start == 0 and end == len(levels) else levels[start:end], start=start
+            )
+        ]
+        if end != len(levels):
+            next_start, next_end = ui.get_options_slice_for_page(len(levels), page_index + 1)
+            level_options.append(ui.SelectOption(
+                label=gettext("item-lookup-ui-select-next-label", min=next_start + 1, max=next_end),
+                value="$d",
+                emoji="🔻",
+            ))  # fmt: skip
+
+        add_component(ui.ActionRow(ui.StringSelect(
+            options=level_options,
+            placeholder=gettext("item-lookup-ui-level-select-placeholder"),
+            custom_id=make_component_id(ComponentIds.level_select, ctx),
+        )))  # fmt: skip
+
+    # ---------------------------------------- release date ----------------------------------------
+    if item.release_date is not None:
+        when = "Released" if item.release_date < dt.datetime.now(tz=dt.UTC) else "Releases"
+        add_component(ui.TextDisplay(
+            f"-# {when} {md.format_dt(item.release_date, "R")}"
+        ))  # fmt: skip
+
+    # --------------------------------------- compact button ---------------------------------------
+    add_component(ui.ActionRow(ui.ActionButton(
+        label="Expand",
+        style=ui.ButtonStyle.gray,
+        emoji="🔻",
+        custom_id=make_component_id(ComponentIds.compact_button, ctx),
+    )))  # fmt: skip
 
     return container

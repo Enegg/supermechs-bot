@@ -232,3 +232,197 @@ def format_stats(
             f"{EMOJIS.stat_jump} **{gettext('item-lookup-jump-required')}**"
         )
     return stats_lines, costs_lines
+
+
+def format_compact_stats(
+    item_stats: sm.ItemStats, gettext: i18n.GetText, *, avg: bool
+) -> tuple[list[str], list[str]]:
+    def fmte(emoji: str, value: int | str, /) -> str:
+        return f"{emoji} **{value}**"
+
+    def fmt(value: int | str, stat_key: ItemStat, /) -> str:
+        return fmte(EMOJIS.get_stat(stat_key).mention, value)
+
+    format_damage: abc.Callable[[int, int], str] = (
+        format_damage_average if avg else format_damage_default
+    )
+    SEP = "  "
+
+    stats_lines: list[str] = []
+    costs_lines: list[str] = []
+
+    if item_stats.weight:
+        stats_lines.append(fmt(item_stats.weight, ItemStat.weight))
+
+    stat_group: list[str] = []
+
+    if item_stats.hit_points:
+        stat_group.append(fmt(item_stats.hit_points, ItemStat.hit_points))
+    if item_stats.physical_resistance:
+        stat_group.append(fmt(item_stats.physical_resistance, ItemStat.physical_resistance))
+    if item_stats.explosive_resistance:
+        stat_group.append(fmt(item_stats.explosive_resistance, ItemStat.explosive_resistance))
+    if item_stats.electric_resistance:
+        stat_group.append(fmt(item_stats.electric_resistance, ItemStat.electric_resistance))
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.energy_capacity:
+        stat_group.append(fmt(item_stats.energy_capacity, ItemStat.energy_capacity))
+    if item_stats.energy_regeneration:
+        stat_group.append(fmt(item_stats.energy_regeneration, ItemStat.energy_regeneration))
+    if item_stats.heat_capacity:
+        stat_group.append(fmt(item_stats.heat_capacity, ItemStat.heat_capacity))
+    if item_stats.heat_cooling:
+        stat_group.append(fmt(item_stats.heat_cooling, ItemStat.heat_cooling))
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.bullets_capacity:
+        stat_group.append(fmt(item_stats.bullets_capacity, ItemStat.bullets_capacity))
+    if item_stats.rockets_capacity:
+        stat_group.append(fmt(item_stats.rockets_capacity, ItemStat.rockets_capacity))
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.physical_damage_min:
+        stat_group.append(
+            fmt(
+                format_damage(item_stats.physical_damage_min, item_stats.physical_damage_max),
+                ItemStat.physical_damage,
+            )
+        )
+    if item_stats.physical_resistance_damage:
+        stat_group.append(
+            fmt(item_stats.physical_resistance_damage, ItemStat.physical_resistance_damage)
+        )
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.electric_damage_min:
+        stat_group.append(
+            fmt(
+                format_damage(item_stats.electric_damage_min, item_stats.electric_damage_max),
+                ItemStat.electric_damage,
+            )
+        )
+    if item_stats.energy_damage:
+        stat_group.append(fmt(item_stats.energy_damage, ItemStat.energy_damage))
+    if item_stats.energy_capacity_damage:
+        stat_group.append(fmt(item_stats.energy_capacity_damage, ItemStat.energy_capacity_damage))
+    if item_stats.regeneration_damage:
+        stat_group.append(fmt(item_stats.regeneration_damage, ItemStat.regeneration_damage))
+    if item_stats.electric_resistance_damage:
+        stat_group.append(
+            fmt(item_stats.electric_resistance_damage, ItemStat.electric_resistance_damage)
+        )
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.explosive_damage_min:
+        stat_group.append(
+            fmt(
+                format_damage(item_stats.explosive_damage_min, item_stats.explosive_damage_max),
+                ItemStat.explosive_damage,
+            )
+        )
+    if item_stats.heat_damage:
+        stat_group.append(fmt(item_stats.heat_damage, ItemStat.heat_damage))
+    if item_stats.heat_capacity_damage:
+        stat_group.append(fmt(item_stats.heat_capacity_damage, ItemStat.heat_capacity_damage))
+    if item_stats.cooling_damage:
+        stat_group.append(fmt(item_stats.cooling_damage, ItemStat.cooling_damage))
+    if item_stats.explosive_resistance_damage:
+        stat_group.append(
+            fmt(item_stats.explosive_resistance_damage, ItemStat.explosive_resistance_damage)
+        )
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.walk:
+        stat_group.append(fmt(item_stats.walk, ItemStat.walk))
+    if item_stats.jump:
+        stat_group.append(fmt(item_stats.jump, ItemStat.jump))
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.range_min:
+        stat_group.append(
+            fmt(format_range(item_stats.range_min, item_stats.range_max), ItemStat.range)
+        )
+    if item_stats.push:
+        stat_group.append(fmt(item_stats.push, ItemStat.push))
+    if item_stats.pull:
+        stat_group.append(fmt(item_stats.pull, ItemStat.pull))
+    if item_stats.recoil:
+        stat_group.append(fmt(item_stats.recoil, ItemStat.recoil))
+    if item_stats.advance:
+        stat_group.append(fmt(item_stats.advance, ItemStat.advance))
+    if item_stats.retreat:
+        stat_group.append(fmt(item_stats.retreat, ItemStat.retreat))
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.repair:
+        stats_lines.append(fmt(item_stats.repair, ItemStat.repair))
+
+    if item_stats.block_percent_points:
+        stat_group.append(
+            fmte(str(EMOJIS.stat_shield_absorption), f"{item_stats.block_percent_points}%")
+        )
+    if item_stats.heat_per_block and item_stats.hit_points_per_block:
+        stat_group.append(
+            f"{EMOJIS.stat_heat_generation} **{item_stats.heat_per_block}** Heat per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked"
+        )
+    if item_stats.energy_per_block and item_stats.hit_points_per_block:
+        stat_group.append(
+            f"{EMOJIS.stat_energy_cost} **{item_stats.energy_per_block}** Energy per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked"
+        )
+
+    if stat_group:
+        stats_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.uses:
+        if item_stats.uses > MAX_EMOJIS:
+            stat_group.append(fmt(item_stats.uses, ItemStat.uses))
+        else:
+            stat_group.append(str(EMOJIS.stat_uses) * item_stats.uses)
+    if item_stats.backfire:
+        stat_group.append(fmt(item_stats.backfire, ItemStat.backfire))
+    if item_stats.heat_generation:
+        stat_group.append(fmt(item_stats.heat_generation, ItemStat.heat_generation))
+    if item_stats.energy_cost:
+        stat_group.append(fmt(item_stats.energy_cost, ItemStat.energy_cost))
+    if item_stats.bullets_cost:
+        stat_group.append(fmt(item_stats.bullets_cost, ItemStat.bullets_cost))
+    if item_stats.rockets_cost:
+        stat_group.append(fmt(item_stats.rockets_cost, ItemStat.rockets_cost))
+
+    if stat_group:
+        costs_lines.append(SEP.join(stat_group))
+        stat_group.clear()
+
+    if item_stats.advance or item_stats.retreat:
+        # if item has no costs, don't put jump-required separately
+        (costs_lines or stats_lines).append(
+            f"{EMOJIS.stat_jump} **{gettext('item-lookup-jump-required')}**"
+        )
+
+    return stats_lines, costs_lines
