@@ -1,14 +1,16 @@
 import datetime as dt
 import logging
+import math
 from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import markdown as md
+from discord.emoji import AnyEmoji
 from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import COLORS, EMOJIS, ICONS
+from app.assets import COLORS, EMOJIS, ICONS, NULL_EMOJI, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
@@ -31,6 +33,8 @@ from supermechs import stats
 
 COMMON_PK_POWER = 10_000
 RARE_PK_POWER = 50_000
+MAX_RANK = 13
+MAX_LEVEL = 49
 
 
 class UIContext(NamedTuple):
@@ -55,6 +59,12 @@ class ComponentIds:
     titan_button: Final = "dvt"
 
     type AnyId = Literal["stages", "levels", "buffs", "avg", "dvt"]
+
+
+def level_to_rank_emoji[T](level_index: int, default: T = NULL_EMOJI) -> AnyEmoji | T:
+    factor = MAX_RANK / MAX_LEVEL
+    new_index = math.floor(level_index * factor)
+    return EMOJIS.get_rank(new_index, default)
 
 
 async def item_lookup(
@@ -263,12 +273,12 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         if ctx.stage_index == len(item.stages) - 1 and ctx.level_index == len(levels) - 1
         else str(levels[ctx.level_index].level)
     )
-
+    rank_emoji = level_to_rank_emoji(ctx.level_index)
     title_lines = [
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}*",
         f"-# {item_transform_range(item, ctx.stage_index)}",
-        f"{gettext('item-lookup-power-level')}: **{power_level}**",
+        f"{gettext('item-lookup-power-level')}: **{power_level}** {rank_emoji}",
     ]
 
     if power_required := levels[ctx.level_index].power_required:
@@ -394,6 +404,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             ui.SelectOption(
                 label=gettext("item-lookup-ui-level-select-label", level=level.level),
                 value=str(i),
+                emoji=level_to_rank_emoji(i, NoneEmoji).to_partial(),
                 default=i == ctx.level_index,
             )
             for i, level in enumerate(

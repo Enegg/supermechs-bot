@@ -1,7 +1,7 @@
 """Various assets existing on discord side."""
 
 from collections import abc
-from typing import Final
+from typing import Final, final
 
 import attrs
 
@@ -19,6 +19,19 @@ __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 NULL_EMOJI: Final = UnicodeEmoji("❔")
 NULL_COLOR: Final = Color.default()
 MISSING_IMAGE: Final = FileResource(paths.MISSING_PNG)
+
+
+@final
+class NoneEmoji:
+    """Emoji that converts to None."""
+
+    @staticmethod
+    def to_partial() -> None:
+        return None
+
+    @staticmethod
+    def to_asset() -> None:
+        return None
 
 
 @attrs.frozen
@@ -151,6 +164,13 @@ class Emojis:
 
     def get_buff(self, field: sm.enums.ArenaShopCategory, /) -> AnyEmoji:
         return getattr(self, "buff_" + field.name)
+
+    ranks: abc.Sequence[AnyEmoji] = ()
+
+    def get_rank[T](self, rank: int, /, default: T = NULL_EMOJI) -> AnyEmoji | T:
+        if rank < len(self.ranks):
+            return self.ranks[rank]
+        return default
 
 
 @attrs.frozen

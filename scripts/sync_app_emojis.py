@@ -160,10 +160,13 @@ async def amain(defer: Defer.AsyncDefer, files: list[pathlib.Path]) -> None:
 
     new_emojis: list[AppEmoji] = []
 
-    for file_name in files_to_upload:
-        file_path = name_to_file[file_name]
+    async def worker(filename: str, /) -> None:
+        file_path = name_to_file[filename]
+        new_emojis.append(await create_app_emoji(client, app_id, name=filename, path=file_path))
 
-        new_emojis.append(await create_app_emoji(client, app_id, name=file_name, path=file_path))
+    async with anyio.create_task_group() as tg:
+        for file_name in files_to_upload:
+            tg.start_soon(worker, file_name)
 
     rich.print("Newly uploaded emojis:", [f"<:{e.name}:{e.id}>" for e in new_emojis])
 

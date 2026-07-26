@@ -7,7 +7,7 @@ from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import COLORS, EMOJIS, ICONS
+from app.assets import COLORS, EMOJIS, ICONS, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
@@ -194,10 +194,11 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         "max" if ctx.level_index == len(levels) - 1 else str(levels[ctx.level_index].level)
     )
     tier_emoji = emoji if (emoji := EMOJIS.get_card(tier)) is not None else EMOJIS.get_tier(tier)
+    rank_emoji = EMOJIS.get_rank(ctx.level_index)
     title_lines = [
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}* {tier_emoji}",
-        f"{gettext('item-lookup-power-level')}: **{power_level}**",
+        f"{gettext('item-lookup-power-level')}: **{power_level}** {rank_emoji}",
     ]
 
     if power_required := levels[ctx.level_index].power_required:
@@ -285,6 +286,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 ui.SelectOption(
                     label=gettext("item-lookup-ui-level-select-label", level=level.level),
                     value=str(i),
+                    emoji=EMOJIS.get_rank(i, NoneEmoji).to_partial(),
                     default=i == ctx.level_index,
                 )
                 for i, level in enumerate(levels)

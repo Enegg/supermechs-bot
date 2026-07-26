@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Literal, override
+from typing import Literal, final, override
 
 import msgspec
 
@@ -13,7 +13,10 @@ __all__ = ("AnyEmoji", "CustomEmoji", "UnicodeEmoji")
 type AnyEmoji = UnicodeEmoji | CustomEmoji
 
 
+@final
 class UnicodeEmoji(msgspec.Struct):
+    """Built-in unicode emoji."""
+
     name: str
 
     @property
@@ -44,7 +47,10 @@ class UnicodeEmoji(msgspec.Struct):
         return None
 
 
+@final
 class CustomEmoji(msgspec.Struct):
+    """Application-owned emoji."""
+
     id: int
     name: str
     animated: bool = False
