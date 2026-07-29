@@ -16,7 +16,7 @@ from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from resources import HttpResource
 
-from .helpers import format_float, format_stats, has_buff_affected_stats, has_damage_spread
+from .helpers import format_large_number, format_stats, has_buff_affected_stats, has_damage_spread
 
 import supermechs.all as sm
 from supermechs import stats
@@ -202,12 +202,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     ]
 
     if power_required := levels[ctx.level_index].power_required:
-        if power_required >= 1000 and power_required % 100 == 0:  # noqa: PLR2004
-            power_str = format_float(power_required / 1000, 1) + "k"
-
-        else:
-            power_str = f"{power_required:,}"
-
+        power_str = format_large_number(power_required)
         # energizing
         power_line = [
             f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_power}"
@@ -218,6 +213,11 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             power_line.append(f"(**{legacy_pks}**×{EMOJIS.power_kit_common})")  # noqa: RUF001
 
         title_lines.append("".join(power_line))
+
+    if cumulative_gold_cost := sum(levels[i].upgrade_gold_cost for i in range(ctx.level_index)):
+        title_lines.append(
+            f"{gettext('item-lookup-total-upgrade-cost')}: **{format_large_number(cumulative_gold_cost)}** {EMOJIS.currency_gold}"
+        )
 
     title = ui.TextDisplay("\n".join(title_lines))
     container, add_component = ui.container(accent_color=COLORS.get_element(item.element))

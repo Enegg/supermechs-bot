@@ -17,6 +17,7 @@ class StageLevel:
     level: int = 0
     power_required: int = 0
     power_contribution: int = 0
+    upgrade_gold_cost: int = 0
     stats: ItemStats = attrs.Factory(ItemStats)
 
 
@@ -26,6 +27,8 @@ class ItemStage:
 
     tier: ItemRarity
     levels: abc.Sequence[StageLevel]
+    evolution_gold_cost: int = 0
+    ascension_gold_cost: int = 0
 
 
 @attrs.frozen(kw_only=True)

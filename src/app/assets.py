@@ -170,6 +170,9 @@ class Emojis:
             return self.ranks[rank]
         return default
 
+    currency_gold: AnyEmoji = NULL_EMOJI
+    currency_tokens: AnyEmoji = NULL_EMOJI
+
 
 @attrs.frozen
 class Icons:

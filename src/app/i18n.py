@@ -36,6 +36,9 @@ type LiteralKey = Literal[
     "item-lookup-ui-damage-vs-titans",
     "item-lookup-power-level",
     "item-lookup-power-required",
+    "item-lookup-total-upgrade-cost",
+    "item-lookup-evolution-cost",
+    "item-lookup-ascension-cost",
     "item-lookup-ui-level-select-label",  # {level}
     "item-lookup-ui-level-select-placeholder",
     "item-lookup-ui-tier-select-placeholder",

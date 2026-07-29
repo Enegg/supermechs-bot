@@ -20,7 +20,7 @@ from app.managers import gfx, packs
 from resources import HttpResource
 
 from .helpers import (
-    format_float,
+    format_large_number,
     format_stats,
     has_buff_affected_stats,
     has_damage,
@@ -281,11 +281,9 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     subtitle_parts.append(item.slot_id.name.replace("_", " "))
     subtitle_parts[0] = subtitle_parts[0].capitalize()
 
-    power_level = (
-        "max"
-        if ctx.stage_index == len(item.stages) - 1 and ctx.level_index == len(levels) - 1
-        else str(levels[ctx.level_index].level)
-    )
+    is_max_level = ctx.level_index == len(levels) - 1
+    is_max_stage = ctx.stage_index == len(item.stages) - 1
+    power_level = "max" if is_max_stage and is_max_level else str(levels[ctx.level_index].level)
     title_lines = [
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}*",
@@ -293,13 +291,9 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         f"{gettext('item-lookup-power-level')}: **{power_level}** {level_to_rank_emoji(ctx.level_index)}",
     ]
 
+    # - - - - - - - - - - - - - - - - - - - - power required - - - - - - - - - - - - - - - - - - - -
     if power_required := levels[ctx.level_index].power_required:
-        if power_required >= 1000 and power_required % 100 == 0:  # noqa: PLR2004
-            power_str = format_float(power_required / 1000, 1) + "k"
-
-        else:
-            power_str = f"{power_required:,}"
-
+        power_str = format_large_number(power_required)
         # energizing
         power_line = [
             f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_power}"
@@ -322,6 +316,25 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             power_line.append(f"({' '.join(power_kits)})")
 
         title_lines.append("".join(power_line))
+
+    # - - - - - - - - - - - - - - - - - - - - - gold costs - - - - - - - - - - - - - - - - - - - - -
+    if cumulative_gold_cost := sum(levels[i].upgrade_gold_cost for i in range(ctx.level_index)):
+        title_lines.append(
+            f"{gettext('item-lookup-total-upgrade-cost')}: **{format_large_number(cumulative_gold_cost)}** {EMOJIS.currency_gold}"
+        )
+
+    if is_max_level and not is_max_stage:
+        if stage.evolution_gold_cost:
+            evolution_cost = format_large_number(stage.evolution_gold_cost)
+            title_lines.append(
+                f"{gettext('item-lookup-evolution-cost')}: **{evolution_cost}** {EMOJIS.currency_gold}"
+            )
+
+        elif stage.ascension_gold_cost:
+            ascension_cost = format_large_number(stage.ascension_gold_cost)
+            title_lines.append(
+                f"{gettext('item-lookup-ascension-cost')}: **{ascension_cost}** {EMOJIS.currency_gold}"
+            )
 
     title = ui.TextDisplay("\n".join(title_lines))
     container, add_component = ui.container(accent_color=COLORS.get_element(item.element))

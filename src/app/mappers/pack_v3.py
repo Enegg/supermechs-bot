@@ -40,13 +40,21 @@ def _collect_stages(item: dto.ItemDto, /) -> tuple[abc.Sequence[sm.Item.Stage], 
                 power_required=level_dto.min_power_to_have,
                 power_contribution=level_dto.power_contribution,
                 stats=convert_stats(level_dto.stats),
+                upgrade_gold_cost=level_dto.upgrade_gold_cost,
             )
             for level_dto in stage_dto.levels
         ]
         if not levels:
             levels.append(sm.Item.Stage.Level(level=1))
 
-        stages.append(sm.Item.Stage(tier=tier, levels=tuple(levels)))
+        stages.append(
+            sm.Item.Stage(
+                tier=tier,
+                levels=tuple(levels),
+                evolution_gold_cost=stage_dto.evolution_gold_cost,
+                ascension_gold_cost=stage_dto.ascension_gold_cost,
+            )
+        )
 
     if not stages:
         stages.append(sm.Item.Stage(tier=sm.Item.Rarity.common, levels=[sm.Item.Stage.Level()]))

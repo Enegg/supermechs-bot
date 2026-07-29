@@ -232,3 +232,19 @@ def format_stats(
             f"{EMOJIS.stat_jump} **{gettext('item-lookup-jump-required')}**"
         )
     return stats_lines, costs_lines
+
+
+_SUFFIXES = ("", "k", "M", "G", "T")
+
+
+def format_large_number(n: int, /) -> str:
+    assert n > 0, f"Expected n > 0, got {n}"
+    exp = math.log10(n)
+
+    if exp <= 4: # <= 10_000  # noqa: PLR2004
+        return f"{n:,}"
+
+    exp = min(math.floor(exp / 3.0), len(_SUFFIXES) - 1)
+    nf = n / math.pow(1000.0, exp)
+
+    return format_float(nf, 1) + _SUFFIXES[exp]
