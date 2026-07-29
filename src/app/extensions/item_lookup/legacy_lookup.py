@@ -230,27 +230,25 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             add_component(title)
 
     # ------------------------------------------- stats --------------------------------------------
-    stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
-
-    if (
-        item.slot_id is sm.Item.Slot.kit
-        and not stats_lines
-        and (boost_power := levels[ctx.level_index].power_contribution)
-    ):
-        stats_lines.append(
-            f"{EMOJIS.stat_energy_capacity} **{boost_power}** {gettext('boost-power')}"
-        )
-    if stats_lines or costs_lines:
-        stats_part = "\n".join(stats_lines)
-        costs_part = "\n".join(costs_lines)
+    if item.subtype is sm.Item.Subtype.power_kit:
+        boost_power = levels[ctx.level_index].power_contribution
         add_component(ui.TextDisplay(
-            f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
+            f"{EMOJIS.stat_energy_capacity} **{boost_power}** {gettext('boost-power')}"
         ))  # fmt: skip
-        if stats_part and costs_part:
-            add_component(ui.Separator(divider=False))
-            add_component(ui.TextDisplay(costs_part))
     else:
-        add_component(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
+        stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
+
+        if stats_lines or costs_lines:
+            stats_part = "\n".join(stats_lines)
+            costs_part = "\n".join(costs_lines)
+            add_component(ui.TextDisplay(
+                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
+            ))  # fmt: skip
+            if stats_part and costs_part:
+                add_component(ui.Separator(divider=False))
+                add_component(ui.TextDisplay(costs_part))
+        else:
+            add_component(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
     # ------------------------------------------ buttons -------------------------------------------
     buttons_row: list[ui.ActionButton] = []
