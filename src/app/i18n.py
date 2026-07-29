@@ -44,6 +44,8 @@ type LiteralKey = Literal[
     "item-lookup-no-stats",
     "item-lookup-no-image",
     "item-lookup-stats-header",
+    "item-lookup-releases",
+    "item-lookup-released",
     "item-lookup-item-not-available",  # {command}
     "item-lookup-item-changed-info",  # {command}
     # item-compare

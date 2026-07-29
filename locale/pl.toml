@@ -71,6 +71,8 @@ item-lookup-jump-required = "Wymagana zdolność skoku"
 item-lookup-no-stats = "Brak statystyk do pokazania"
 item-lookup-no-image = "Obraz niedostępny"
 item-lookup-stats-header = "Statystyki"
+item-lookup-releases = "Wydanie"
+item-lookup-released = "Wydany"
 item-lookup-item-not-available = "⚠️ Ten przedmiot nie jest dłużej dostępny.\n-# Wskazówka: paczka przedmiotów mogła ulec zmianie. Spróbuj wyszukać ten przedmiot ponownie za pomocą {command}."
 item-lookup-item-changed-info = "Podsumowanie które kliknięto wyświetlało przedmiot z innej paczki przedmiotów.\nJeżeli przedmiot uległ zmianie, spróbuj wyszukać go ponownie za pomocą {command}."
 

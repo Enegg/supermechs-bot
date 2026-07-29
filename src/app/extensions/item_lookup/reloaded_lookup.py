@@ -427,9 +427,11 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
     # ---------------------------------------- release date ----------------------------------------
     if item.release_date is not None:
-        when = "Released" if item.release_date < dt.datetime.now(tz=dt.UTC) else "Releases"
-        add_component(ui.TextDisplay(
-            f"-# {when} {md.format_dt(item.release_date, "R")}"
-        ))  # fmt: skip
+        when = gettext(
+            "item-lookup-released"
+            if item.release_date < dt.datetime.now(tz=dt.UTC)
+            else "item-lookup-releases"
+        )
+        add_component(ui.TextDisplay(f"-# {when} {md.format_dt(item.release_date, 'R')}"))
 
     return container

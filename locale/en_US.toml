@@ -72,6 +72,8 @@ item-lookup-jump-required = "Jumping required"
 item-lookup-no-stats = "No stats to show"
 item-lookup-no-image = "Image not available"
 item-lookup-stats-header = "Stats"
+item-lookup-releases = "Releases"
+item-lookup-released = "Released"
 item-lookup-item-not-available = "⚠️ This item is no longer available.\n-# Hint: the item pack might have been changed. Try searching it with {command} again."
 item-lookup-item-changed-info = "The summary you've interacted with was made using a different item pack.\nIf the item shown has changed, try searching it with {command} again."
 
