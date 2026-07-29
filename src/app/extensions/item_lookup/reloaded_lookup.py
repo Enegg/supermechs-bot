@@ -290,7 +290,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
         # energizing
         power_line = [
-            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_energy_capacity}"
+            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_power}"
         ]
         common_pks, rare_pks = power_required_as_power_kits(power_required)
 
@@ -321,7 +321,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     if item.subtype is sm.Item.Subtype.power_kit:
         boost_power = levels[ctx.level_index].power_contribution
         add_component(ui.TextDisplay(
-                f"{EMOJIS.stat_energy_capacity} **{boost_power}** {gettext('boost-power')}"
+                f"{EMOJIS.stat_power} **{boost_power}** {gettext('boost-power')}"
         ))  # fmt: skip
     else:
         stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)

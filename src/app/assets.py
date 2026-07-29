@@ -99,6 +99,7 @@ class Emojis:
 
     power_kit_common: AnyEmoji = NULL_EMOJI
     power_kit_rare: AnyEmoji = NULL_EMOJI
+    stat_power: AnyEmoji = NULL_EMOJI
 
     stat_weight: AnyEmoji = NULL_EMOJI
     stat_hit_points: AnyEmoji = NULL_EMOJI
