@@ -206,9 +206,6 @@ if __name__ == "__main__":
             missing: list[str] = []
 
             for stat in ItemStat:
-                if stat.name.endswith("addon"):
-                    continue
-
                 try:
                     stats[stat, locale]
 

@@ -40,11 +40,7 @@ class Emojis:
     item_slot_legs: AnyEmoji = NULL_EMOJI
     item_slot_drone: AnyEmoji = NULL_EMOJI
     item_slot_side_weapon: AnyEmoji = NULL_EMOJI
-    mech_slot_right_side_weapon: AnyEmoji = NULL_EMOJI
-    mech_slot_left_side_weapon: AnyEmoji = NULL_EMOJI
     item_slot_top_weapon: AnyEmoji = NULL_EMOJI
-    mech_slot_right_top_weapon: AnyEmoji = NULL_EMOJI
-    mech_slot_left_top_weapon: AnyEmoji = NULL_EMOJI
     item_slot_charge: AnyEmoji = NULL_EMOJI
     item_slot_teleport: AnyEmoji = NULL_EMOJI
     item_slot_hook: AnyEmoji = NULL_EMOJI
@@ -55,6 +51,11 @@ class Emojis:
 
     def get_item_slot(self, field: sm.Item.Slot, /) -> AnyEmoji:
         return getattr(self, "item_slot_" + field.name)
+
+    mech_slot_right_side_weapon: AnyEmoji = NULL_EMOJI
+    mech_slot_left_side_weapon: AnyEmoji = NULL_EMOJI
+    mech_slot_right_top_weapon: AnyEmoji = NULL_EMOJI
+    mech_slot_left_top_weapon: AnyEmoji = NULL_EMOJI
 
     element_other: AnyEmoji = NULL_EMOJI
     element_physical: AnyEmoji = NULL_EMOJI
@@ -113,22 +114,18 @@ class Emojis:
     stat_walk: AnyEmoji = NULL_EMOJI
     stat_jump: AnyEmoji = NULL_EMOJI
     stat_physical_damage: AnyEmoji = NULL_EMOJI
-    stat_physical_damage_addon: AnyEmoji = NULL_EMOJI
     stat_physical_resistance_damage: AnyEmoji = NULL_EMOJI
     stat_electric_damage: AnyEmoji = NULL_EMOJI
-    stat_electric_damage_addon: AnyEmoji = NULL_EMOJI
     stat_energy_damage: AnyEmoji = NULL_EMOJI
     stat_energy_capacity_damage: AnyEmoji = NULL_EMOJI
     stat_regeneration_damage: AnyEmoji = NULL_EMOJI
     stat_electric_resistance_damage: AnyEmoji = NULL_EMOJI
     stat_explosive_damage: AnyEmoji = NULL_EMOJI
-    stat_explosive_damage_addon: AnyEmoji = NULL_EMOJI
     stat_heat_damage: AnyEmoji = NULL_EMOJI
     stat_heat_capacity_damage: AnyEmoji = NULL_EMOJI
     stat_cooling_damage: AnyEmoji = NULL_EMOJI
     stat_explosive_resistance_damage: AnyEmoji = NULL_EMOJI
     stat_range: AnyEmoji = NULL_EMOJI
-    stat_range_addon: AnyEmoji = NULL_EMOJI
     stat_push: AnyEmoji = NULL_EMOJI
     stat_pull: AnyEmoji = NULL_EMOJI
     stat_recoil: AnyEmoji = NULL_EMOJI
@@ -141,7 +138,7 @@ class Emojis:
     stat_energy_cost: AnyEmoji = NULL_EMOJI
     stat_bullets_cost: AnyEmoji = NULL_EMOJI
     stat_rockets_cost: AnyEmoji = NULL_EMOJI
-    stat_shield_absorption: AnyEmoji = NULL_EMOJI
+    stat_block_percentage: AnyEmoji = NULL_EMOJI
 
     def get_stat(self, field: sm.enums.ItemStat, /) -> AnyEmoji:
         return getattr(self, "stat_" + field.name)
@@ -179,11 +176,7 @@ class Icons:
     item_slot_legs: AnyResource | None = None
     item_slot_drone: AnyResource | None = None
     item_slot_side_weapon: AnyResource | None = None
-    mech_slot_right_side_weapon: AnyResource | None = None
-    mech_slot_left_side_weapon: AnyResource | None = None
     item_slot_top_weapon: AnyResource | None = None
-    mech_slot_right_top_weapon: AnyResource | None = None
-    mech_slot_left_top_weapon: AnyResource | None = None
     item_slot_charge: AnyResource | None = None
     item_slot_teleport: AnyResource | None = None
     item_slot_hook: AnyResource | None = None
@@ -191,6 +184,11 @@ class Icons:
     item_slot_module: AnyResource | None = None
     item_slot_perk: AnyResource | None = None
     item_slot_kit: AnyResource | None = None
+
+    mech_slot_right_side_weapon: AnyResource | None = None
+    mech_slot_left_side_weapon: AnyResource | None = None
+    mech_slot_right_top_weapon: AnyResource | None = None
+    mech_slot_left_top_weapon: AnyResource | None = None
 
     def get_item_slot(self, field: sm.Item.Slot, /) -> AnyResource | None:
         icon: AnyResource | None = getattr(self, "item_slot_" + field.name)

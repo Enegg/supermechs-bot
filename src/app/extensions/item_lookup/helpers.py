@@ -196,12 +196,12 @@ def format_stats(
         )
     if item_stats.repair:
         stats_lines.append(fmt(item_stats.repair, ItemStat.repair))
-    if item_stats.block_percent_points:
+    if item_stats.block_percentage:
         stats_lines.append(
             fmte(
-                str(EMOJIS.stat_shield_absorption),
-                f"{item_stats.block_percent_points}%",
-                ItemStat.block_percent_points,
+                str(EMOJIS.stat_block_percentage),
+                f"{item_stats.block_percentage}%",
+                ItemStat.block_percentage,
             )
         )
     if item_stats.heat_per_block and item_stats.hit_points_per_block:

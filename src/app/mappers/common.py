@@ -120,7 +120,7 @@ def convert_stats(stats: ItemStatsDto, /) -> sm.ItemStats:
         hit_points_per_block=stats.hp_per_block,
         heat_per_block=stats.heat_per_block,
         energy_per_block=stats.energy_per_block,
-        block_percent_points=stats.absorb_ratio,
+        block_percentage=stats.absorb_ratio,
     )
 
 

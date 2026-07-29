@@ -43,7 +43,7 @@ heat_generation = "Heat cost"
 energy_cost = "Energy cost"
 bullets_cost = "Bullets cost"
 rockets_cost = "Rockets cost"
-block_percent_points = "Damage reduction"
+block_percentage = "Damage reduction"
 
 [messages]
 command-dev = "This is a developer-only command."

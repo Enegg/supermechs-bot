@@ -42,7 +42,7 @@ heat_generation = "Emisja ciepła"
 energy_cost = "Pobór energii"
 bullets_cost = "Zużycie pocisków"
 rockets_cost = "Zużycie rakiet"
-block_percent_points = "Redukcja obrażeń"
+block_percentage = "Redukcja obrażeń"
 
 [messages]
 command-dev = "To komenda wyłącznie deweloperska."

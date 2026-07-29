@@ -67,7 +67,7 @@ class ItemStats:
     hit_points_per_block: int = 0
     energy_per_block: int = 0
     heat_per_block: int = 0
-    block_percent_points: int = 0
+    block_percentage: int = 0
 
     def __getitem__(self, stat: ItemStat, /) -> int:
         return getattr(self, stat.name)
@@ -122,7 +122,7 @@ def combine(parts: abc.Iterable[ItemStats], /) -> ItemStats:
         total.hit_points_per_block += part.hit_points_per_block
         total.energy_per_block += part.energy_per_block
         total.heat_per_block += part.heat_per_block
-        total.block_percent_points += part.block_percent_points
+        total.block_percentage += part.block_percentage
 
     return total
 

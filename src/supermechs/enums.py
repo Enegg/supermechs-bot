@@ -100,7 +100,7 @@ class ItemStat(enum.StrEnum):
     hit_points_per_block = enum.auto()
     energy_per_block = enum.auto()
     heat_per_block = enum.auto()
-    block_percent_points = enum.auto()
+    block_percentage = enum.auto()
 
 
 class ArenaShopCategory(enum.StrEnum):
