@@ -78,21 +78,33 @@ def atoi_bin(value: str, /) -> int:
     return int(value) << (10 * exp)
 
 
-def format_exception(exc: BaseException, /) -> str:
-    """Format the exception's traceback into a string.
+def normalize_traceback(tb: traceback.TracebackException, /) -> None:
+    """Normalize a `TracebackException`.
 
-    Makes paths embedded within the message relative to the cwd.
+    This makes file paths relative to the cwd.
     """
-    # TODO: make it work with ExceptionGroups too
-    tb = traceback.TracebackException.from_exception(exc, compact=True)
+    if hasattr(tb, "filename"):  # 'filename' is only present for SyntaxErrors
+        tb.filename = strip_cwd(tb.filename)
 
     for frame_summary in tb.stack:
+        if frame_summary.filename.startswith("<"):
+            continue
+
         try:
             frame_summary.filename = strip_cwd(frame_summary.filename)
 
         except ValueError:
             continue
 
+    if tb.exceptions:
+        for child_tb in tb.exceptions:
+            normalize_traceback(child_tb)
+
+
+def format_exception(exc: BaseException, /) -> str:
+    """Format an exception's traceback into a string."""
+    tb = traceback.TracebackException.from_exception(exc, compact=True)
+    normalize_traceback(tb)
     return "".join(tb.format())
 
 
