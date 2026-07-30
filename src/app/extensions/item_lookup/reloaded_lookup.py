@@ -31,8 +31,12 @@ from .helpers import (
 import supermechs.all as sm
 from supermechs import stats
 
+COMMON_ITEM_POWER = 400
+RARE_ITEM_POWER = 1760
 COMMON_PK_POWER = 10_000
+COMMON_PK_TO_PK_POWER = 11_000
 RARE_PK_POWER = 50_000
+RARE_PK_TO_PK_POWER = 55_000
 MAX_RANK = 13
 MAX_LEVEL = 50
 
@@ -238,20 +242,29 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, UIContext]
     )
 
 
-def power_required_as_power_kits(power: int, /) -> tuple[int, int]:
-    rare_pks, power = divmod(power, RARE_PK_POWER)
+class FoodItems(NamedTuple):
+    common_pks: int = 0
+    rare_pks: int = 0
+    common_items: int = 0
+    rare_items: int = 0
 
-    if power >= RARE_PK_POWER * 0.9:
+
+def food_items_required_for_power(power: int, /, target_is_pk: bool = False) -> FoodItems:
+    rare_pk_power_provided = RARE_PK_TO_PK_POWER if target_is_pk else RARE_PK_POWER
+    common_pk_power_provided = COMMON_PK_TO_PK_POWER if target_is_pk else COMMON_PK_POWER
+    rare_pks, power = divmod(power, rare_pk_power_provided)
+    if power >= rare_pk_power_provided * 0.95:
         rare_pks += 1
-        common_pks = 0
-
-    else:
-        common_pks, power = divmod(power, COMMON_PK_POWER)
-
-        if power >= COMMON_PK_POWER * 0.8:
-            common_pks += 1
-
-    return common_pks, rare_pks
+        power = 0
+    common_pks, power = divmod(power, common_pk_power_provided)
+    if power >= common_pk_power_provided * 0.95:
+        common_pks += 1
+        power = 0
+    rare_items, power = divmod(power, RARE_ITEM_POWER)
+    common_items = power // COMMON_ITEM_POWER
+    return FoodItems(
+        common_pks=common_pks, rare_pks=rare_pks, common_items=common_items, rare_items=rare_items
+    )
 
 
 def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
@@ -273,12 +286,11 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         if ctx.stage_index == len(item.stages) - 1 and ctx.level_index == len(levels) - 1
         else str(levels[ctx.level_index].level)
     )
-    rank_emoji = level_to_rank_emoji(ctx.level_index)
     title_lines = [
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}*",
         f"-# {item_transform_range(item, ctx.stage_index)}",
-        f"{gettext('item-lookup-power-level')}: **{power_level}** {rank_emoji}",
+        f"{gettext('item-lookup-power-level')}: **{power_level}** {level_to_rank_emoji(ctx.level_index)}",
     ]
 
     if power_required := levels[ctx.level_index].power_required:
@@ -292,15 +304,19 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         power_line = [
             f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_power}"
         ]
-        common_pks, rare_pks = power_required_as_power_kits(power_required)
-
+        food_items = food_items_required_for_power(
+            power_required, item.subtype is sm.Item.Subtype.power_kit
+        )
         power_kits: list[str] = []
 
-        if rare_pks:
-            power_kits.append(f"**{rare_pks}**×{EMOJIS.power_kit_rare}")  # noqa: RUF001
-
-        if common_pks:
-            power_kits.append(f"**{common_pks}**×{EMOJIS.power_kit_common}")  # noqa: RUF001
+        if food_items.rare_pks:
+            power_kits.append(f"**{food_items.rare_pks}**×{EMOJIS.power_kit_rare}")  # noqa: RUF001
+        if food_items.common_pks:
+            power_kits.append(f"**{food_items.common_pks}**×{EMOJIS.power_kit_common}")  # noqa: RUF001
+        if food_items.rare_items:
+            power_kits.append(f"**{food_items.rare_items}**×{EMOJIS.card_rare}")  # noqa: RUF001
+        if food_items.common_items:
+            power_kits.append(f"**{food_items.common_items}**×{EMOJIS.card_common}")  # noqa: RUF001
 
         if power_kits:
             power_line.append(f"({' '.join(power_kits)})")
