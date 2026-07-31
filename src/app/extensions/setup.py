@@ -1,5 +1,7 @@
 from typing import Final, Literal, NamedTuple
 
+import anyio
+
 import disnake
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits, markdown as md, text_to_file
@@ -24,13 +26,14 @@ class ComponentIds:
     prefix: Final = "dev-console"
 
     locale_select: Final = "locale"
+    i18n_button: Final = "rei18n"
     debug_button: Final = "debug"
     reset_button: Final = "reset"
     plugin_select: Final = "plugins"
     reload_button: Final = "reload"
     cmd_sync_button: Final = "cmdsync"
 
-    type AnyId = Literal["locale", "debug", "reset", "plugins", "reload", "cmdsync"]
+    type AnyId = Literal["locale", "rei18n", "debug", "reset", "plugins", "reload", "cmdsync"]
 
 
 class DevtoolsUIContext(NamedTuple):
@@ -76,13 +79,29 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
         )
         for locale, info in i18n.locale_info.items()
     ]  # fmt: skip
-    add_component(ui.TextDisplay("## Locale override"))
+    add_component(ui.Section(
+        ui.TextDisplay("## Locale override"),
+        accessory=ui.ActionButton(
+            custom_id=make_component_id(ComponentIds.i18n_button, ctx),
+            label="Reload i18n",
+            emoji="🏳️",
+        ),
+    ))  # fmt: skip
     add_component(ui.ActionRow(ui.StringSelect(
         custom_id=make_component_id(ComponentIds.locale_select, ctx),
         placeholder="Select locale",
         options=locale_options,
     )))  # fmt: skip
-    add_component(ui.TextDisplay("## Plugins"))
+    add_component(ui.Section(
+        ui.TextDisplay("## Plugins"),
+        accessory=ui.ActionButton(
+            custom_id=make_component_id(ComponentIds.reload_button, ctx),
+            style=ui.ButtonStyle.gray,
+            label="Reload plugin",
+            disabled=ctx.last_reload_plugin_name is None,
+            emoji="🏗️",
+        ),
+    ))  # fmt: skip
     add_component(ui.ActionRow(ui.StringSelect(
         custom_id=make_component_id(ComponentIds.plugin_select, ctx),
         placeholder="Select plugin to reload",
@@ -92,13 +111,6 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
         ],
     )))  # fmt: skip
     add_component(ui.ActionRow(
-        ui.ActionButton(
-            custom_id=make_component_id(ComponentIds.reload_button, ctx),
-            style=ui.ButtonStyle.gray,
-            label="Reload plugin",
-            disabled=ctx.last_reload_plugin_name is None,
-            emoji="🏗️",
-        ),
         ui.ActionButton(
             custom_id=make_component_id(ComponentIds.cmd_sync_button, ctx),
             style=ui.ButtonStyle.gray,
@@ -145,8 +157,8 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
         return
 
     component, ctx = parse_component_id(inter.data.custom_id)
-    error_container = ui.Container(accent_colour=COLORS.error)
-    traceback_file: disnake.File = disnake.utils.MISSING
+    error_container, add_err_component = ui.container(accent_color=COLORS.error)
+    files: list[disnake.File] = []
 
     match component:
         case ComponentIds.locale_select:
@@ -158,6 +170,9 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
 
             else:
                 i18n.set_locale_override(disnake.Locale[option_value])
+
+        case ComponentIds.i18n_button:
+            i18n.load(paths.LOCALE_DIR)
 
         case ComponentIds.debug_button:
             devtools.debug_enabled ^= True
@@ -171,9 +186,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
             [option_value] = inter.values
 
             if option_value not in KNOWN_PLUGIN_PATHS:
-                error_container.children.append(
-                    ui.TextDisplay("Selected plugin is no longer available.")
-                )
+                add_err_component(ui.TextDisplay("Selected plugin is no longer available."))
 
             else:
                 global recently_loaded_plugin
@@ -187,42 +200,46 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
 
         case ComponentIds.reload_button:
             if ctx.last_reload_plugin_name is None:
-                error_container.children.append(ui.TextDisplay("Cannot reload, no cached plugin."))
+                add_err_component(ui.TextDisplay("Cannot reload, no cached plugin."))
 
             else:
                 try:
                     plugin.bot.reload_extension(ctx.last_reload_plugin_name)
 
                 except commands.ExtensionFailed as exc:
-                    error_container.children.append(
+                    add_err_component(
                         ui.TextDisplay("## ⚠️ An exception occurred during reloading:")
                     )
-                    traceback_text = format_exception(exc)
+                    traceback_text = format_exception(exc.original)
 
                     if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
-                        error_container.children.append(
-                            ui.TextDisplay(md.codeblock(traceback_text))
-                        )
+                        add_err_component(ui.TextDisplay(md.codeblock(traceback_text)))
 
                     else:
-                        traceback_file = text_to_file(traceback_text, "traceback.py")
-                        error_container.children.append(ui.file(traceback_file))
+                        files.append(traceback_file := text_to_file(traceback_text, "traceback.py"))
+                        add_err_component(ui.file(traceback_file))
 
         case _:
-            error_container.children.append(ui.TextDisplay("Unknown component"))
+            add_err_component(ui.TextDisplay("Unknown component"))
             plugin.logger.warning("%s - unknown component: %r", dev_console.name, component)
 
     components = create_console(ctx)
     if __debug__:
         devtools.debug_components(components)
-    await inter.response.edit_message(components=components)
 
     if error_container.children:
-        await inter.followup.send(
-            file=traceback_file,
-            components=error_container,
-            flags=disnake.MessageFlags(is_components_v2=True, ephemeral=True),
-        )
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(lambda: inter.response.edit_message(components=components))
+            tg.start_soon(
+                lambda: inter.followup.send(
+                    files=files,
+                    components=error_container,
+                    flags=disnake.MessageFlags(is_components_v2=True, ephemeral=True),
+                )
+            )
+
+    else:
+        await inter.response.edit_message(components=components)
 
 
 setup, teardown = plugin.create_extension_handlers()

@@ -169,8 +169,14 @@ def _load_locale_file(path: Path, /) -> None:
     data = msgspec.toml.decode(path.read_bytes(), type=_LocaleFileStruct)
 
     for key, entry in data.stats.items():
-        stat = ItemStat[key]
-        stats[stat, locale] = entry
+        try:
+            stat = ItemStat[key]
+
+        except KeyError:
+            _LOG.error("Invalid stat key: %s", key)
+
+        else:
+            stats[stat, locale] = entry
 
     if data.messages is not msgspec.UNSET:
         for key, message in data.messages.items():
