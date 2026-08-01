@@ -128,6 +128,8 @@ ranks = [
     "<:rank16:1530741956441936062>",
 ]
 
+arena_position_empty  = "▪️"
+arena_position_corner = "♟️"
 
 [icon_overrides]
 # this section defaults to emojis

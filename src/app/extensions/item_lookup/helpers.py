@@ -1,5 +1,6 @@
 import math
 from collections import abc
+from itertools import repeat
 
 from app import i18n
 from app.assets import EMOJIS
@@ -45,6 +46,71 @@ def format_range(lo: int, hi: int, /) -> str:
     return f"{lo}-{hi}"
 
 
+def format_range_display(item: sm.Item, stats: sm.ItemStats, /) -> str:
+    ARENA_SIZE = 10
+    # since your mech always occupes one spot in the arena, the range is N-1
+    MAX_RANGE = ARENA_SIZE - 1
+    # if we have space for it, add some padding for clarity
+    PADDING = 2
+
+    damage_emoji = EMOJIS.get_element(item.element).mention
+    empty_emoji = EMOJIS.arena_position_empty.mention
+    range_display: list[str]
+
+    lo = stats.range_min - 1
+    hi = MAX_RANGE if stats.range_max <= 0 else stats.range_max
+
+    # ... <dmg> <slot> <dmg> ...
+    if item.slot_id is sm.Item.Slot.teleport and hi <= MAX_RANGE // 2:
+        r = hi - lo
+        range_display = [
+            *repeat(empty_emoji, PADDING),
+            *repeat(damage_emoji, r),
+            EMOJIS.item_slot_teleport.mention,
+            *repeat(damage_emoji, r),
+            *repeat(empty_emoji, PADDING),
+        ]
+
+    # <retreat/recoil> ... <slot> ... <advance> ... <dmg> ... <end>
+    else:
+        if stats.retreat != 0:
+            range_display = [
+                EMOJIS.stat_retreat.mention,
+                *repeat(empty_emoji, stats.retreat - 1),
+            ]
+        elif stats.recoil != 0:
+            range_display = [
+                EMOJIS.stat_recoil.mention,
+                *repeat(empty_emoji, stats.recoil - 1),
+            ]
+        else:
+            range_display = []
+        range_display.append(EMOJIS.get_item_slot(item.slot_id).mention)
+        # if advance would appear after beginning of damage range, don't show it
+        if stats.advance != 0 and stats.advance < stats.range_min:
+            range_display += [
+                *repeat(empty_emoji, stats.advance - 1),
+                EMOJIS.stat_advance.mention,
+            ]
+        range_display += [
+            *repeat(
+                empty_emoji,
+                lo - stats.advance if stats.advance < stats.range_min else lo,
+            ),
+            *repeat(damage_emoji, hi - lo),
+        ]
+        width = (stats.retreat or stats.recoil) + max(hi, stats.advance)
+        if width > ARENA_SIZE // 2:
+            range_display += [
+                *repeat(empty_emoji, MAX_RANGE - width),
+                EMOJIS.arena_position_corner.mention,
+            ]
+        else:
+            range_display += repeat(empty_emoji, PADDING)
+
+    return "".join(range_display)
+
+
 def item_transform_range(item: sm.Item, /, stage_index: int = -1) -> str:
     str_range: list[str] = [str(EMOJIS.get_tier(stage.tier, hollow=True)) for stage in item.stages]
     str_range[stage_index] = str(EMOJIS.get_tier(item.stages[stage_index].tier))
@@ -86,7 +152,7 @@ def has_buff_affected_stats(stats: sm.ItemStats, /) -> bool:
 
 
 def format_stats(
-    item_stats: sm.ItemStats, gettext: i18n.GetText, *, avg: bool
+    item: sm.Item, item_stats: sm.ItemStats, gettext: i18n.GetText, *, avg: bool
 ) -> tuple[list[str], list[str]]:
     def fmte(emoji: str, value: int | str, stat_key: ItemStat, /) -> str:
         return f"{emoji} **{value}** {gettext.get_stat_name(stat_key)}"
@@ -185,15 +251,11 @@ def format_stats(
     if item_stats.recoil:
         stats_lines.append(fmt(item_stats.recoil, ItemStat.recoil))
     if item_stats.advance:
-        count = 1 if item_stats.advance > MAX_EMOJIS else item_stats.advance
-        stats_lines.append(
-            fmte(str(EMOJIS.stat_advance) * count, item_stats.advance, ItemStat.advance)
-        )
+        stats_lines.append(fmt(item_stats.advance, ItemStat.advance))
     if item_stats.retreat:
-        count = 1 if item_stats.retreat > MAX_EMOJIS else item_stats.retreat
-        stats_lines.append(
-            fmte(str(EMOJIS.stat_retreat) * count, item_stats.retreat, ItemStat.retreat)
-        )
+        stats_lines.append(fmt(item_stats.retreat, ItemStat.retreat))
+    if item_stats.range_min or item_stats.retreat:
+        stats_lines.append(format_range_display(item, item_stats))
     if item_stats.repair:
         stats_lines.append(fmt(item_stats.repair, ItemStat.repair))
     if item_stats.block_percentage:

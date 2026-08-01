@@ -173,6 +173,9 @@ class Emojis:
     currency_gold: AnyEmoji = NULL_EMOJI
     currency_tokens: AnyEmoji = NULL_EMOJI
 
+    arena_position_empty: AnyEmoji = NULL_EMOJI
+    arena_position_corner: AnyEmoji = NULL_EMOJI
+
 
 @attrs.frozen
 class Icons:

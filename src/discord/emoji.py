@@ -14,7 +14,7 @@ type AnyEmoji = UnicodeEmoji | CustomEmoji
 
 
 @final
-class UnicodeEmoji(msgspec.Struct):
+class UnicodeEmoji(msgspec.Struct, frozen=True):
     """Built-in unicode emoji."""
 
     name: str
@@ -26,6 +26,16 @@ class UnicodeEmoji(msgspec.Struct):
     @property
     def animated(self) -> Literal[False]:
         return False
+
+    @override
+    def __eq__(self, rhs: object, /) -> bool:
+        if isinstance(rhs, __class__):
+            return self.name == rhs.name
+
+        if isinstance(rhs, str):
+            return self.name == rhs
+
+        return NotImplemented
 
     @override
     def __hash__(self) -> int:
@@ -48,7 +58,7 @@ class UnicodeEmoji(msgspec.Struct):
 
 
 @final
-class CustomEmoji(msgspec.Struct):
+class CustomEmoji(msgspec.Struct, frozen=True):
     """Application-owned emoji."""
 
     id: int

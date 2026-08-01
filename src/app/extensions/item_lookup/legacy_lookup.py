@@ -236,7 +236,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             f"{EMOJIS.stat_power} **{boost_power}** {gettext('boost-power')}"
         ))  # fmt: skip
     else:
-        stats_lines, costs_lines = format_stats(item_stats, gettext, avg=ctx.damage_average)
+        stats_lines, costs_lines = format_stats(item, item_stats, gettext, avg=ctx.damage_average)
 
         if stats_lines or costs_lines:
             stats_part = "\n".join(stats_lines)
