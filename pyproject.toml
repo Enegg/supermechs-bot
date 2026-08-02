@@ -16,7 +16,7 @@ dependencies = [
     "psutil >= 5.9.7",
     "python-dotenv >= 1.0.0",
     "rich >= 14.0.0",
-    "rtoml >= 0.9.0",
+    "rtoml >= 0.12.0",
     "typing-extensions >= 4.9.0",
     "monads @ git+https://github.com/Enegg/py-monads@v0.1.3",
     "msgspec >= 0.19.0",
@@ -29,16 +29,19 @@ license = {text = "GPL-3.0-or-later"}
 Repository = "https://github.com/Enegg/supermechs-bot"
 
 
+[dependency-groups]
+test = [
+    "pytest"
+]
+
+
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["uv_build>=0.12.1,<0.13"]
+build-backend = "uv_build"
 
 
-[tool.pdm]
-distribution = false
-
-[tool.pdm.build]
-includes = ["src/app"]
+[tool.uv.build-backend]
+module-name = "app"
 
 
 [tool.ruff]
@@ -131,6 +134,7 @@ allow-dunder-method-names = [
 [tool.ruff.lint.flake8-tidy-imports]
 banned-module-level-imports = ["app.commands.sync"]
 
+
 [tool.pyright]
 typeCheckingMode = "strict"
 pythonVersion = "3.13"
@@ -154,3 +158,7 @@ reportUnnecessaryIsInstance = "information"
 reportUnknownMemberType = false  # disnake causes plenty errors
 reportUnknownVariableType = false  # gg pyright
 reportMissingTypeStubs = false
+
+
+[tool.pytest]
+testpaths = ["tests"]

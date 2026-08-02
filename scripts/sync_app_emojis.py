@@ -17,6 +17,7 @@ import anyio.to_thread
 import attrs
 import msgspec
 import rich
+import rtoml
 
 import disnake
 import disnake.http
@@ -432,9 +433,9 @@ def cache(emojis: abc.Sequence[CustomEmoji], /) -> None:
 
         output_toml_dict[field_name] = str(emoji)
 
-    encoded = msgspec.toml.encode(output_toml_dict)
+    toml_string = rtoml.dumps(output_toml_dict)
     try:
-        paths.EMOJIS_TOML.write_bytes(encoded)
+        paths.EMOJIS_TOML.write_text(toml_string)
     except OSError as exc:
         print(f"Failed to write to {paths.EMOJIS_TOML}:")
         traceback.print_exception(exc)
