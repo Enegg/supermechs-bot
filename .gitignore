@@ -1,5 +1,5 @@
 # python compiled files
-__pycache__
+__pycache__/
 *.py[cod]
 
 # machine specific files
@@ -12,7 +12,5 @@ TODO.md
 .pdm-python
 
 # local data files
-tests/data/
-dev/
-logs/
 .state/
+static/.emojis.toml

@@ -1,21 +1,25 @@
 """Various assets existing on discord side."""
 
+import logging
 from collections import abc
 from typing import Final, final
 
 import attrs
+import rtoml
 
 from discord.emoji import AnyEmoji, UnicodeEmoji
 from disnake import Color
 
 from app import paths
-from app.class_utils import MappingParser
+from app.cattrs_utils import CONVERTER
+from app.class_utils import MappingParser, chain_maps
 from resources import AnyResource, FileResource, HttpResource
 
 import supermechs.all as sm
 
 __all__ = ("ASSETS", "COLORS", "EMOJIS", "ICONS")
 
+_LOG = logging.getLogger()
 NULL_EMOJI: Final = UnicodeEmoji("❔")
 NULL_COLOR: Final = Color.default()
 MISSING_IMAGE: Final = FileResource(paths.MISSING_PNG)
@@ -246,9 +250,34 @@ class Assets:
     frantic_gifs: abc.Sequence[str]
 
 
+def _parse_emojis() -> Emojis:
+    sources: list[abc.Mapping[str, str]] = []
+
+    config = rtoml.loads(paths.ASSETS_TOML.read_text(encoding="utf-8"))
+    emojis_overrides: abc.Mapping[str, str] | None = config.get("emoji_overrides")
+
+    if emojis_overrides is not None:
+        sources.append(emojis_overrides)
+
+    if paths.EMOJIS_TOML.exists():
+        sources.append(rtoml.loads(paths.EMOJIS_TOML.read_text(encoding="utf-8")))
+    else:
+        _LOG.warning("Emojis not cached")
+
+    data: abc.Mapping[str, str]
+    if len(sources) == 0:
+        data = {}
+    elif len(sources) == 1:
+        [data] = sources
+    else:
+        data = chain_maps(*sources)
+
+    return CONVERTER.structure(data, Emojis)
+
+
 _PARSER = MappingParser.from_path(paths.ASSETS_TOML)
 ASSETS = _PARSER.structure(Assets, "misc")
-EMOJIS = _PARSER.structure(Emojis, "emojis")
 ICONS = _PARSER.structure(Icons, "icon_overrides")
-COLORS = Colors()
 del _PARSER
+EMOJIS = _parse_emojis()
+COLORS = Colors()

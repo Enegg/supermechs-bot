@@ -5,7 +5,7 @@ frantic_gifs = [
 ]
 
 
-[emojis]
+[emoji_overrides]
 item_slot_torso             =  "<:torso:730115680363347968>"
 item_slot_legs              =   "<:legs:730115699397361827>"
 item_slot_drone             =  "<:drone:730115574763618394>"
@@ -15,29 +15,11 @@ item_slot_charge            = "<:charge:730115557239685281>"
 item_slot_teleport          =   "<:tele:730115603683213423>"
 item_slot_hook              =   "<:hook:730115622347735071>"
 item_slot_module            = "<:module:730115649866694686>"
-item_slot_shield            = "<:shield:1437226022549328073>"
-item_slot_kit               =    "<:kit:1437225259341189286>"
-item_slot_perk              =   "<:perk:1437218417609539726>"
 
 mech_slot_right_side_weapon =  "<:sider:730115747799629940>"
 mech_slot_left_side_weapon  =  "<:sidel:730115729365663884>"
 mech_slot_right_top_weapon  =   "<:topr:730115786735091762>"
 mech_slot_left_top_weapon   =   "<:topl:730115768431280238>"
-
-tier_common           =      "<:tier_common:1430252827170705449>"
-tier_rare             =        "<:tier_rare:1430252834338766999>"
-tier_epic             =        "<:tier_epic:1430252829376774155>"
-tier_legendary        =   "<:tier_legendary:1430253303584784426>"
-tier_mythical         =    "<:tier_mythical:1430252831356489898>"
-tier_divine           =      "<:tier_divine:1430252828152299702>"
-tier_perk             =        "<:tier_perk:1430252832665112596>"
-tier_common_hollow    =    "<:tier_common_o:1430252835559182366>"
-tier_rare_hollow      =      "<:tier_rare_o:1430252844640108554>"
-tier_epic_hollow      =      "<:tier_epic_o:1430252838474481859>"
-tier_legendary_hollow = "<:tier_legendary_o:1430252840005402645>"
-tier_mythical_hollow  =  "<:tier_mythical_o:1430252841569882192>"
-tier_divine_hollow    =    "<:tier_divine_o:1430252836976853052>"
-tier_perk_hollow      =      "<:tier_perk_o:1430252843624956025>"
 
 # element_other     =
 element_physical  =   "<:phydmg:725871208830074929>"
@@ -45,23 +27,12 @@ element_explosive =   "<:expdmg:725871223338172448>"
 element_electric  =   "<:eledmg:725871233614479443>"
 element_combined  = "<:combined:1026853188940349490>"
 
-card_common    =    "<:card_common:1430257776851943514>"
-card_rare      =      "<:card_rare:1430257785555386530>"
-card_epic      =      "<:card_epic:1430257779192627358>"
-card_legendary = "<:card_legendary:1430257780379484260>"
-card_mythical  =  "<:card_mythical:1430257781927317604>"
-
-power_kit_common = "<:power_kit_10k:1430355888647966820>"
-power_kit_rare   = "<:power_kit_50k:1430355890472615976>"
-
 stat_weight                      =     "<:weight:725870760484143174>"
 stat_hit_points                  =     "<:health:725870887588462652>"
 stat_energy_capacity             =     "<:energy:725870941883859054>"
 stat_energy_regeneration         =      "<:regen:725871003665825822>"
 stat_heat_capacity               =       "<:heat:725871043767435336>"
 stat_heat_cooling                =    "<:cooling:725871075778363422>"
-stat_bullets_capacity            =    "<:bullets:1430271130597462257>"
-stat_rockets_capacity            =    "<:rockets:1430271133218902268>"
 stat_physical_resistance         =     "<:phyres:725871121051811931>"
 stat_explosive_resistance        =     "<:expres:725871136935772294>"
 stat_electric_resistance         =     "<:eleres:725871146716758077>"
@@ -87,7 +58,6 @@ stat_advance                     =    "<:advance:725871818115907715>"
 stat_retreat                     =    "<:retreat:725871804236955668>"
 stat_uses                        =       "<:uses:725871917923303688>"
 stat_backfire                    =   "<:backfire:725871901062201404>"
-stat_repair                      =     "<:repair:1430271131922726954>"
 stat_heat_generation             =     "<:heagen:725871674007879740>"
 stat_energy_cost                 =    "<:enecost:725871660237979759>"
 stat_bullets_cost                =    "<:bullets:1430271130597462257>"
@@ -108,25 +78,6 @@ buff_explosive_resistance =   "<:expres:725871136935772294>"
 buff_electric_resistance  =   "<:eleres:725871146716758077>"
 buff_total_hp             =   "<:health:725870887588462652>"
 buff_backfire_reduction   = "<:backfire:725871901062201404>"
-
-ranks = [
-    "<:rank1:1530741946358829118>",
-    "<:rank2:1530741957528391720>",
-    "<:rank3:1530741958409191546>",
-    "<:rank4:1530741959801704641>",
-    "<:rank5:1530741960506081285>",
-    "<:rank6:1530741962209235156>",
-    "<:rank7:1530741963123326980>",
-    "<:rank8:1530741964998311956>",
-    "<:rank9:1530741965795102845>",
-    "<:rank10:1530741948019900607>",
-    "<:rank11:1530741949135323328>",
-    "<:rank12:1530741950322442410>",
-    "<:rank13:1530741951438258330>",
-    "<:rank14:1530741952444760215>",
-    "<:rank15:1530741954801959092>",
-    "<:rank16:1530741956441936062>",
-]
 
 arena_position_empty  = "▪️"
 arena_position_corner = "♟️"
