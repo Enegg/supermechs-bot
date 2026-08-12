@@ -55,6 +55,7 @@ ignore = [
     "B005",      # I know str.strip(...) takes a set
     "BLE001",    # except Exception; reported in places where exceptions are gathered into a group
     "C901",      # complex functions oh no
+    "CPY001",    # copyright noice
     "COM812",    # don't require commas
     "D1",        # don't require docstrings for public API
     "E501",      # line too long; => formatter
