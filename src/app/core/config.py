@@ -41,8 +41,8 @@ class Config:
 
 
 def get_config() -> Config:
-    _parser = argparse.ArgumentParser("supermechs-bot")
-    _parser.add_argument("--token", action="store", default="", help="Bot token to use.")
+    _parser = argparse.ArgumentParser("supermechs-bot", argument_default=argparse.SUPPRESS)
+    _parser.add_argument("--token", action="store", help="Bot token to use.")
     _parser.add_argument(
         "--env",
         action="store",
@@ -55,7 +55,6 @@ def get_config() -> Config:
         dest="dev_guild_id",
         action="store",
         type=int,
-        default=argparse.SUPPRESS,
         help="ID of a guild dev-only commands will be registered to.",
         metavar="ID",
     )
@@ -64,7 +63,6 @@ def get_config() -> Config:
         dest="item_pack_uri",
         action="store",
         type=from_uri,
-        default=argparse.SUPPRESS,
         help="Path/URL of an item pack.",
         metavar="URI",
     )
@@ -73,7 +71,6 @@ def get_config() -> Config:
         dest="gfx_pack_uri",
         action="store",
         type=from_uri,
-        default=argparse.SUPPRESS,
         help="Path/URL of a graphics pack.",
         metavar="URI",
     )
