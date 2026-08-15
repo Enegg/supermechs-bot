@@ -29,7 +29,6 @@ def setup_signal_handler(bot: disnake.Client, tg: anyio.abc.TaskGroup) -> None:
 
     signal.signal(signal.SIGINT, handle)
     signal.signal(signal.SIGTERM, handle)
-    _LOG.info("Ctrl+C handler installed")
 
 
 async def main() -> None:

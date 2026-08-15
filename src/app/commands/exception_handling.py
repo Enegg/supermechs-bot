@@ -116,7 +116,11 @@ async def setup_channel(bot: Bot, channel_id: int) -> None:
         return
 
     if not isinstance(channel, Messageable):
-        _LOG.error("Channel is not Messageable")
+        _LOG.error(
+            "Channel is not Messageable: type=%s",
+            # abc.PrivateChannel does not expose .type, but DMChannel does
+            channel.type.name,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType]
+        )
         return
 
     _LOG.info("Installed channel logger: #%s", channel.name)
