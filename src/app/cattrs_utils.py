@@ -3,7 +3,7 @@ from typing import Any, Final, NewType
 import cattrs
 
 from discord.emoji import AnyEmoji, CustomEmoji, UnicodeEmoji
-from disnake import Color, PartialEmoji
+from disnake import PartialEmoji
 
 from app.utils import atoi_bin
 from resources import AnyResource, from_uri
@@ -11,11 +11,6 @@ from resources import AnyResource, from_uri
 ByteSize = NewType("ByteSize", int)
 
 CONVERTER: Final = cattrs.Converter()
-
-
-@CONVERTER.register_structure_hook
-def _structure_color(value: int, cls: type) -> Color:
-    return Color(int(value))
 
 
 def _structure_resource(value: str, cls: type) -> AnyResource:
@@ -51,4 +46,4 @@ def _structure_binary_int(value: Any, _: object) -> ByteSize:
     return ByteSize(atoi_bin(value))
 
 
-del _structure_color, _structure_resource, _structure_binary_int
+del _structure_resource, _structure_binary_int
