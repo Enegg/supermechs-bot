@@ -17,7 +17,11 @@ _repr_obj.maxdict = 20
 limited_repr = _repr_obj.repr
 
 
-def chain_maps[KT, VT](*maps: abc.Mapping[KT, VT]) -> abc.Mapping[KT, VT]:
+def chain_maps[KT, VT](maps: abc.Sequence[abc.Mapping[KT, VT]], /) -> abc.Mapping[KT, VT]:
+    if len(maps) == 0:
+        return {}
+    if len(maps) == 1:
+        return maps[0]
     # ChainMap expects MutableMappings, but we only care about its immutable API
     return ChainMap(*maps)  # pyright: ignore[reportArgumentType]
 
@@ -34,7 +38,7 @@ class MappingParser:
         self.conv = conv
 
     def structure[T](self, cls: type[T], *key_path: str) -> T:
-        config: abc.Mapping[str, Any] = chain_maps(*self.mappings)
+        config: abc.Mapping[str, Any] = chain_maps(self.mappings)
 
         for key in key_path:
             config = config[key]

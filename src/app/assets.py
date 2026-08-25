@@ -262,14 +262,7 @@ def _parse_emojis() -> Emojis:
     else:
         _LOG.warning("Emojis not cached")
 
-    data: abc.Mapping[str, str]
-    if len(sources) == 0:
-        data = {}
-    elif len(sources) == 1:
-        [data] = sources
-    else:
-        data = chain_maps(*sources)
-
+    data = chain_maps(sources)
     return CONVERTER.structure(data, Emojis)
 
 
