@@ -5,7 +5,7 @@ from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import markdown as md
-from discord.emoji import AnyEmoji
+from discord.emoji import AnyEmoji, CustomEmoji
 from disnake import MessageFlags
 from disnake.ext import commands
 
@@ -20,7 +20,8 @@ from app.managers import gfx, packs
 from resources import HttpResource
 
 from .helpers import (
-    format_large_number,
+    METRIC_FORMAT_THRESHOLD,
+    format_real_to_metric,
     format_stats,
     has_buff_affected_stats,
     has_damage,
@@ -31,12 +32,17 @@ from .helpers import (
 import supermechs.all as sm
 from supermechs import stats
 
-COMMON_ITEM_POWER = 400
-RARE_ITEM_POWER = 1760
-COMMON_PK_POWER = 10_000
-COMMON_PK_TO_PK_POWER = 11_000
-RARE_PK_POWER = 50_000
-RARE_PK_TO_PK_POWER = 55_000
+
+class FoodPower:
+    common_item: Final = 400
+    rare_item: Final = 1_760
+    common_pk: Final = 10_000
+    rare_pk: Final = 50_000
+
+    common_pk_to_pk: Final = common_pk // 10 * 11  # +10%
+    rare_pk_to_pk: Final = rare_pk // 10 * 11  # +10%
+
+
 MAX_RANK = 13
 MAX_LEVEL = 50
 
@@ -67,6 +73,21 @@ def level_to_rank_emoji[T](level_index: int, default: T = NULL_EMOJI) -> AnyEmoj
     factor = MAX_RANK / MAX_LEVEL
     new_index = math.floor(level_index * factor)
     return EMOJIS.get_rank(new_index, default)
+
+
+def divmod_round(x: int, y: int, f: float, /) -> tuple[int, int]:
+    """Like divmod, but if `x%y >= y*f`, returns `(a//b+1, 0)`."""
+    a, b = divmod(x, y)
+    if b >= y * f:
+        return a + 1, 0
+    return a, b
+
+
+def embed_emoji_name(emoji: AnyEmoji, value: int) -> AnyEmoji:
+    """Prefix emoji's name with an integer value."""
+    if isinstance(emoji, CustomEmoji):
+        return emoji.__replace__(name=f"{value:_}_{emoji.name}")
+    return emoji
 
 
 async def slash_item(
@@ -245,23 +266,24 @@ class FoodItems(NamedTuple):
     rare_pks: int = 0
     common_items: int = 0
     rare_items: int = 0
+    leftover: int = 0
 
 
 def food_items_required_for_power(power: int, /, target_is_pk: bool = False) -> FoodItems:
-    rare_pk_power_provided = RARE_PK_TO_PK_POWER if target_is_pk else RARE_PK_POWER
-    common_pk_power_provided = COMMON_PK_TO_PK_POWER if target_is_pk else COMMON_PK_POWER
-    rare_pks, power = divmod(power, rare_pk_power_provided)
-    if power >= rare_pk_power_provided * 0.95:
-        rare_pks += 1
-        power = 0
-    common_pks, power = divmod(power, common_pk_power_provided)
-    if power >= common_pk_power_provided * 0.95:
-        common_pks += 1
-        power = 0
-    rare_items, power = divmod(power, RARE_ITEM_POWER)
-    common_items = power // COMMON_ITEM_POWER
+    rare_pks, power = divmod_round(
+        power, FoodPower.rare_pk_to_pk if target_is_pk else FoodPower.rare_pk, 0.95
+    )
+    common_pks, power = divmod_round(
+        power, FoodPower.common_pk_to_pk if target_is_pk else FoodPower.common_pk, 0.95
+    )
+    rare_items, power = divmod_round(power, FoodPower.rare_item, 0.8)
+    common_items, power = divmod_round(power, FoodPower.common_item, 0.75)
     return FoodItems(
-        common_pks=common_pks, rare_pks=rare_pks, common_items=common_items, rare_items=rare_items
+        common_pks=common_pks,
+        rare_pks=rare_pks,
+        common_items=common_items,
+        rare_items=rare_items,
+        leftover=power,
     )
 
 
@@ -269,6 +291,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
+    container, add_component = ui.container(accent_color=Colors.get_tier(stage.tier))
 
     # ------------------------------------- title, description -------------------------------------
     subtitle_parts: list[str] = []
@@ -279,8 +302,8 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     subtitle_parts.append(item.slot_id.name.replace("_", " "))
     subtitle_parts[0] = subtitle_parts[0].capitalize()
 
-    is_max_level = ctx.level_index == len(levels) - 1
-    is_max_stage = ctx.stage_index == len(item.stages) - 1
+    is_max_level: Final = ctx.level_index == len(levels) - 1
+    is_max_stage: Final = ctx.stage_index == len(item.stages) - 1
     power_level = "max" if is_max_stage and is_max_level else str(levels[ctx.level_index].level)
     title_lines = [
         f"## {item.name}",
@@ -291,11 +314,12 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
     # - - - - - - - - - - - - - - - - - - - - power required - - - - - - - - - - - - - - - - - - - -
     if power_required := levels[ctx.level_index].power_required:
-        power_str = format_large_number(power_required)
         # energizing
-        power_line = [
-            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_power}"
-        ]
+        power_line = (
+            f"{gettext('item-lookup-power-required')}: "
+            f"**{format_real_to_metric(power_required)}**"
+            f"{embed_emoji_name(EMOJIS.stat_power, power_required)}"
+        )
         food_items = food_items_required_for_power(
             power_required, item.subtype is sm.Item.Subtype.power_kit
         )
@@ -309,33 +333,37 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             power_kits.append(f"**{food_items.rare_items}**×{EMOJIS.card_rare}")  # noqa: RUF001
         if food_items.common_items:
             power_kits.append(f"**{food_items.common_items}**×{EMOJIS.card_common}")  # noqa: RUF001
+        if food_items.leftover and power_kits:
+            power_kits.append(f"+**{food_items.leftover}**")
 
         if power_kits:
-            power_line.append(f"({' '.join(power_kits)})")
+            power_line += f"({' '.join(power_kits)})"
 
-        title_lines.append("".join(power_line))
+        title_lines.append(power_line)
 
     # - - - - - - - - - - - - - - - - - - - - - gold costs - - - - - - - - - - - - - - - - - - - - -
     if cumulative_gold_cost := sum(levels[i].upgrade_gold_cost for i in range(ctx.level_index)):
         title_lines.append(
-            f"{gettext('item-lookup-total-upgrade-cost')}: **{format_large_number(cumulative_gold_cost)}** {EMOJIS.currency_gold}"
+            f"{gettext('item-lookup-total-upgrade-cost')}: "
+            f"**{format_real_to_metric(cumulative_gold_cost)}** "
+            f"{embed_emoji_name(EMOJIS.currency_gold, cumulative_gold_cost)}"
         )
 
     if is_max_level and not is_max_stage:
         if stage.evolution_gold_cost:
-            evolution_cost = format_large_number(stage.evolution_gold_cost)
             title_lines.append(
-                f"{gettext('item-lookup-evolution-cost')}: **{evolution_cost}** {EMOJIS.currency_gold}"
+                f"{gettext('item-lookup-evolution-cost')}: "
+                f"**{format_real_to_metric(stage.evolution_gold_cost)}** "
+                f"{embed_emoji_name(EMOJIS.currency_gold, stage.evolution_gold_cost)}"
             )
-
         elif stage.ascension_gold_cost:
-            ascension_cost = format_large_number(stage.ascension_gold_cost)
             title_lines.append(
-                f"{gettext('item-lookup-ascension-cost')}: **{ascension_cost}** {EMOJIS.currency_gold}"
+                f"{gettext('item-lookup-ascension-cost')}: "
+                f"**{format_real_to_metric(stage.ascension_gold_cost)}** "
+                f"{embed_emoji_name(EMOJIS.currency_gold, stage.ascension_gold_cost)}"
             )
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container, add_component = ui.container(accent_color=Colors.get_element(item.element))
 
     match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):
@@ -452,13 +480,21 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             custom_id=make_component_id(ComponentIds.level_select, ctx),
         )))  # fmt: skip
 
-    # ---------------------------------------- release date ----------------------------------------
+    # ------------------------------------- tips, release date -------------------------------------
+    tip_display: list[str] = []
+
+    if power_required >= METRIC_FORMAT_THRESHOLD or cumulative_gold_cost >= METRIC_FORMAT_THRESHOLD:
+        tip_display.append(
+            f"-# tip: press {EMOJIS.stat_power} or {EMOJIS.currency_gold} to view the exact values!"
+        )
     if item.release_date is not None:
         when = gettext(
             "item-lookup-released"
             if item.release_date < dt.datetime.now(tz=dt.UTC)
             else "item-lookup-releases"
         )
-        add_component(ui.TextDisplay(f"-# {when} {md.format_dt(item.release_date, 'R')}"))
+        tip_display.append(f"-# {when} {md.format_dt(item.release_date, 'R')}")
 
+    if tip_display:
+        add_component(ui.TextDisplay("\n".join(tip_display)))
     return container

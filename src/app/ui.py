@@ -126,18 +126,36 @@ def file(media: MediaConvertible, *, spoiler: bool = False, id: int = 0) -> File
     return File(file=_media(media), spoiler=spoiler, id=id)
 
 
-def option_to_page_count(options: int, /) -> int:
-    if options <= ComponentLimits.string_select_options:
+def option_to_page_count(option_count: int, /) -> int:
+    if option_count <= ComponentLimits.string_select_options:
         return 1
 
     first_and_last_page = (ComponentLimits.string_select_options - 1) * 2
 
-    if options <= first_and_last_page:
+    if option_count <= first_and_last_page:
         # fits on two pages, add one of up/down option on each
         return 2
 
     middle_page_size = ComponentLimits.string_select_options - 2
-    return 2 + (options - first_and_last_page + middle_page_size - 1) // middle_page_size
+    return 2 + (option_count - first_and_last_page + middle_page_size - 1) // middle_page_size
+
+
+def option_index_to_page(option_count: int, option_index: int) -> int:
+    if option_count <= ComponentLimits.string_select_options:
+        return 1
+
+    end_page_size = ComponentLimits.string_select_options - 1
+
+    if option_index < end_page_size:
+        return 1
+
+    if option_count <= end_page_size * 2:
+        return 2
+
+    option_index -= end_page_size - 1
+    middle_pages, rem = divmod(option_index, ComponentLimits.string_select_options - 2)
+
+    return middle_pages + (rem > 0) + 1
 
 
 def get_options_slice_for_page(option_count: int, page_index: int) -> tuple[int, int]:

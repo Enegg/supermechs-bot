@@ -12,7 +12,7 @@ MAX_EMOJIS = 4
 """Threshold for multiple emojis shown inline in the stats field."""
 
 
-def format_float(num: float, decimals: int) -> str:
+def format_real(num: int | float, decimals: int) -> str:
     num = round(float(num), decimals)
 
     if num.is_integer():
@@ -31,8 +31,8 @@ def format_damage_default(lo: int, hi: int, /) -> str:
 def format_damage_average(lo: int | float, hi: int | float, /, *, decimals: int = 1) -> str:
     mean = (lo + hi) / 2
     dev = math.sqrt(((lo - mean) ** 2 + (hi - mean) ** 2) / 2) / mean * 100.0
-    str_mean = format_float(mean, 1)
-    str_dev = format_float(dev, decimals)
+    str_mean = format_real(mean, 1)
+    str_dev = format_real(dev, decimals)
     return f"{str_mean} ±{str_dev}%"
 
 
@@ -295,17 +295,25 @@ def format_stats(
     return stats_lines, costs_lines
 
 
+# https://en.wikipedia.org/wiki/Metric_prefix
 _SUFFIXES = ("", "k", "M", "G", "T")
+# abbreviate at 5+ digits
+METRIC_FORMAT_THRESHOLD = 1e4
 
 
-def format_large_number(n: int, /) -> str:
-    assert n > 0, f"Expected n > 0, got {n}"
-    exp = math.log10(n)
+def format_real_to_metric(n: int | float, /) -> str:
+    """Format a number with a k/M/… metric suffix for `abs(n) >= 1e4`.
 
-    if exp <= 4: # <= 10_000  # noqa: PLR2004
+    >>> format_large_number(-9999)
+    "-9,999"
+    >>> format_large_number(10_000)
+    "10k"
+    >>> format_large_number(1.2e6)
+    "1.2M"
+    """
+    if abs(n) < METRIC_FORMAT_THRESHOLD:
         return f"{n:,}"
 
-    exp = min(math.floor(exp / 3.0), len(_SUFFIXES) - 1)
-    nf = n / math.pow(1000.0, exp)
-
-    return format_float(nf, 1) + _SUFFIXES[exp]
+    exp = math.floor(math.log(abs(n), 1e3))
+    exp = min(exp, len(_SUFFIXES) - 1)
+    return format_real(n / math.pow(1e3, exp), 1) + _SUFFIXES[exp]

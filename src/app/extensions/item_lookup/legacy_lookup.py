@@ -16,7 +16,7 @@ from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from resources import HttpResource
 
-from .helpers import format_large_number, format_stats, has_buff_affected_stats, has_damage_spread
+from .helpers import format_real_to_metric, format_stats, has_buff_affected_stats, has_damage_spread
 
 import supermechs.all as sm
 from supermechs import stats
@@ -200,7 +200,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     ]
 
     if power_required := levels[ctx.level_index].power_required:
-        power_str = format_large_number(power_required)
+        power_str = format_real_to_metric(power_required)
         # energizing
         power_line = [
             f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_power}"
@@ -214,11 +214,13 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
     if cumulative_gold_cost := sum(levels[i].upgrade_gold_cost for i in range(ctx.level_index)):
         title_lines.append(
-            f"{gettext('item-lookup-total-upgrade-cost')}: **{format_large_number(cumulative_gold_cost)}** {EMOJIS.currency_gold}"
+            f"{gettext('item-lookup-total-upgrade-cost')}: "
+            f"**{format_real_to_metric(cumulative_gold_cost)}** "
+            f"{EMOJIS.currency_gold}"
         )
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container, add_component = ui.container(accent_color=Colors.get_element(item.element))
+    container, add_component = ui.container(accent_color=Colors.get_tier(tier))
 
     match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):
