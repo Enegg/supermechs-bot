@@ -41,7 +41,7 @@ class ComponentIds:
     type AnyId = Literal["levels", "buffs", "avg"]
 
 
-async def legacy_item_lookup(
+async def slash_legacy_item(
     inter: CommandInteraction,
     name: str = commands.Param(autocomplete=item_name_autocomplete),
     slot: str | None = commands.Param(None, choices=SLOT_CHOICES),

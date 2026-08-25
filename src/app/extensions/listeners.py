@@ -10,7 +10,7 @@ _LOG = logging.getLogger("event")
 
 
 @plugin.listener(Event.ready)
-async def on_ready() -> None:
+async def _() -> None:
     limit = plugin.bot.session_start_limit
     assert limit is not None
     _LOG.info(
@@ -21,12 +21,12 @@ async def on_ready() -> None:
 
 
 @plugin.listener(Event.disconnect)
-async def on_disconnect() -> None:
+async def _() -> None:
     _LOG.info("Disconnected")
 
 
 @plugin.listener(Event.slash_command)
-async def on_slash_command(inter: CommandInteraction, /) -> None:
+async def _(inter: CommandInteraction, /) -> None:
     command_name = inter.application_command.qualified_name
     _LOG.info(
         "%s (%d): /%s",
@@ -38,7 +38,7 @@ async def on_slash_command(inter: CommandInteraction, /) -> None:
 
 
 @plugin.listener(Event.slash_command_completion)
-async def on_slash_command_completion(inter: CommandInteraction, /) -> None:
+async def _(inter: CommandInteraction, /) -> None:
     command_name = inter.application_command.qualified_name
     result = "failed" if inter.command_failed else "finished"
     _LOG.info("Command by %s %s: /%s", inter.author, result, command_name)

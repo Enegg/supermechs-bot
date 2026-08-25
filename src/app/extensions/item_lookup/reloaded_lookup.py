@@ -69,7 +69,7 @@ def level_to_rank_emoji[T](level_index: int, default: T = NULL_EMOJI) -> AnyEmoj
     return EMOJIS.get_rank(new_index, default)
 
 
-async def item_lookup(
+async def slash_item(
     inter: CommandInteraction,
     name: str = commands.Param(autocomplete=item_name_autocomplete),
     slot: str | None = commands.Param(None, choices=SLOT_CHOICES),

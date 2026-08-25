@@ -136,7 +136,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
 
 @plugin.slash_command(name="devtools")
 @commands.is_owner()
-async def dev_console(inter: CommandInteraction) -> None:
+async def slash_devtools(inter: CommandInteraction) -> None:
     """Open developer console."""
     ctx = DevtoolsUIContext(last_reload_plugin_name=recently_loaded_plugin)
     components = create_console(ctx)
@@ -146,7 +146,7 @@ async def dev_console(inter: CommandInteraction) -> None:
 
 
 @plugin.listener(disnake.Event.message_interaction)
-async def on_console_interaction(inter: ui.MessageInteraction) -> None:
+async def _(inter: ui.MessageInteraction) -> None:
     if not inter.data.custom_id.startswith(ComponentIds.prefix):
         return
 
@@ -219,7 +219,7 @@ async def on_console_interaction(inter: ui.MessageInteraction) -> None:
 
         case _:
             add_err_component(ui.TextDisplay("Unknown component"))
-            plugin.logger.warning("%s - unknown component: %r", dev_console.name, component)
+            plugin.logger.warning("%s - unknown component: %r", slash_devtools.name, component)
 
     components = create_console(ctx)
     if __debug__:

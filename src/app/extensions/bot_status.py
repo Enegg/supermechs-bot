@@ -37,7 +37,7 @@ _bot_info: _BotInfo = _BotInfo()
 
 
 @plugin.load_hook(post=True)
-async def load_info() -> None:
+async def _() -> None:
     global _bot_info
     app_info, app_sloc = await gather(
         plugin.bot.application_info,
@@ -50,15 +50,15 @@ async def load_info() -> None:
     )
 
 
-@plugin.slash_command()
-async def frantic(inter: CommandInteraction) -> None:
+@plugin.slash_command(name="frantic")
+async def slash_frantic(inter: CommandInteraction) -> None:
     """Humiliate frantic users."""
     choice = random.choice(ASSETS.frantic_gifs)
     await inter.response.send_message(choice)
 
 
-@plugin.slash_command()
-async def info(inter: CommandInteraction) -> None:
+@plugin.slash_command(name="info")
+async def slash_info(inter: CommandInteraction) -> None:
     """Display information about the bot."""
     bot = plugin.bot
 
