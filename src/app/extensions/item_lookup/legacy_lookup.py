@@ -32,8 +32,6 @@ class UIContext(NamedTuple):
 
 
 class ComponentIds:
-    __slots__ = ()
-
     prefix: Final = "legacy-item-lookup"
 
     level_select: Final = "levels"

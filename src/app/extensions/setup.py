@@ -21,8 +21,6 @@ recently_loaded_plugin: str | None = None
 
 
 class ComponentIds:
-    __slots__ = ()
-
     prefix: Final = "dev-console"
 
     locale_select: Final = "locale"

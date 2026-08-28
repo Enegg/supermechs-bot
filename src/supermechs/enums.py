@@ -2,8 +2,6 @@ import enum
 
 
 class ItemSlot(enum.Enum):
-    __slots__ = ()
-
     torso = enum.auto()
     legs = enum.auto()
     drone = enum.auto()
@@ -19,8 +17,6 @@ class ItemSlot(enum.Enum):
 
 
 class ItemElement(enum.Enum):
-    __slots__ = ()
-
     other = enum.auto()
     physical = enum.auto()
     explosive = enum.auto()
@@ -29,8 +25,6 @@ class ItemElement(enum.Enum):
 
 
 class ItemRarity(enum.IntEnum):
-    __slots__ = ()
-
     common = enum.auto()
     rare = enum.auto()
     epic = enum.auto()
@@ -41,8 +35,6 @@ class ItemRarity(enum.IntEnum):
 
 
 class ItemSubtype(enum.Enum):
-    __slots__ = ()
-
     none = enum.auto()
     power_kit = enum.auto()
     color_kit = enum.auto()
@@ -57,8 +49,6 @@ class ItemSubtype(enum.Enum):
 
 
 class ItemStat(enum.StrEnum):
-    __slots__ = ()
-
     weight = enum.auto()
     hit_points = enum.auto()
     energy_capacity = enum.auto()
@@ -104,8 +94,6 @@ class ItemStat(enum.StrEnum):
 
 
 class ArenaShopCategory(enum.StrEnum):
-    __slots__ = ()
-
     energy_capacity = enum.auto()
     energy_regeneration = enum.auto()
     energy_damage = enum.auto()

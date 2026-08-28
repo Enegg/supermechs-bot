@@ -52,8 +52,6 @@ class UIContext(NamedTuple):
 
 
 class ComponentIds:
-    __slots__ = ()
-
     prefix: Final = "item-lookup"
 
     stage_select: Final = "stages"
