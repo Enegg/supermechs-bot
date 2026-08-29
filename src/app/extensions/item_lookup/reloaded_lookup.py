@@ -6,7 +6,7 @@ from typing import Final, Literal, NamedTuple
 from app.disnake_types import CommandInteraction
 from discord import markdown as md
 from discord.emoji import AnyEmoji, CustomEmoji
-from disnake import MessageFlags
+from discord.message_builder2 import MessageBuilder
 from disnake.ext import commands
 
 from app import i18n, ui
@@ -128,12 +128,10 @@ async def slash_item(
         level_index=len(levels) - 1,
         levels_page=ui.option_to_page_count(len(levels)),
     )
-    container = get_item_summary(gettext, item, ctx)
+    builder = get_item_summary(gettext, item, ctx)
     if __debug__:
-        debug_components(container)
-    await inter.response.send_message(
-        components=container, flags=MessageFlags(is_components_v2=True)
-    )
+        debug_components(builder)
+    await builder.send(inter)
 
 
 async def on_reloaded_lookup_interaction(
@@ -167,7 +165,7 @@ async def on_reloaded_lookup_interaction(
         ctx = ctx.__replace__(
             stage_index=valid_stage_index, level_index=valid_level_index, levels_page=0
         )
-        await inter.response.edit_message(components=get_item_summary(gettext, item, ctx))
+        await get_item_summary(gettext, item, ctx).edit(inter)
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
@@ -219,10 +217,10 @@ async def on_reloaded_lookup_interaction(
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(gettext, item, ctx)
+    builder = get_item_summary(gettext, item, ctx)
     if __debug__:
-        debug_components(container)
-    await inter.response.edit_message(components=container)
+        debug_components(builder)
+    await builder.edit(inter)
 
 
 def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
@@ -287,11 +285,12 @@ def food_items_required_for_power(power: int, /, target_is_pk: bool = False) -> 
     )
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
+def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> MessageBuilder:
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
-    container, add_component = ui.container(accent_color=Colors.get_tier(stage.tier))
+    builder = MessageBuilder()
+    add_component = builder.container(accent_color=Colors.get_tier(stage.tier))
 
     # ------------------------------------- title, description -------------------------------------
     subtitle_parts: list[str] = []
@@ -497,4 +496,4 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
 
     if tip_display:
         add_component(ui.TextDisplay("\n".join(tip_display)))
-    return container
+    return builder

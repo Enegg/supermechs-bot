@@ -1,3 +1,4 @@
+from collections import abc
 from typing import Final, Literal, NamedTuple
 
 import anyio
@@ -6,6 +7,7 @@ import disnake
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits, markdown as md, text_to_file
 from discord.extensions import walk_extensions
+from discord.message_builder2 import MessageBuilder
 from disnake.ext import commands
 
 from app import devtools, i18n, paths, ui
@@ -49,9 +51,9 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, DevtoolsUI
     return component, ctx
 
 
-def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
-    container, add_component = ui.container()
-    add_component(ui.TextDisplay("# Developer Console"))
+def create_console(ctx: DevtoolsUIContext) -> MessageBuilder:
+    builder = MessageBuilder()
+    add_component = builder.container(ui.TextDisplay("# Developer Console"))
 
     current_override = i18n.locale_override.unwrap_or(None)
     locale_options = [
@@ -131,7 +133,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
             emoji="🔙",
         ),
     ))  # fmt: skip
-    return container
+    return builder
 
 
 @plugin.slash_command(name="devtools")
@@ -139,10 +141,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
 async def slash_devtools(inter: CommandInteraction) -> None:
     """Open developer console."""
     ctx = DevtoolsUIContext(last_reload_plugin_name=recently_loaded_plugin)
-    components = create_console(ctx)
-    await inter.response.send_message(
-        components=components, flags=disnake.MessageFlags(is_components_v2=True)
-    )
+    await create_console(ctx).send(inter)
 
 
 @plugin.listener(disnake.Event.message_interaction)
@@ -155,8 +154,9 @@ async def _(inter: ui.MessageInteraction) -> None:
         return
 
     component, ctx = parse_component_id(inter.data.custom_id)
-    error_container, add_err_component = ui.container(accent_color=Colors.error)
-    files: list[disnake.File] = []
+    error_builder = MessageBuilder()
+    add_err_component = error_builder.container(accent_color=Colors.error)
+    has_error: bool = False
 
     match component:
         case ComponentIds.locale_select:
@@ -185,11 +185,13 @@ async def _(inter: ui.MessageInteraction) -> None:
 
             if option_value not in KNOWN_PLUGIN_PATHS:
                 add_err_component(ui.TextDisplay("Selected plugin is no longer available."))
+                has_error = True
 
             else:
                 global recently_loaded_plugin
                 recently_loaded_plugin = option_value
                 ctx = ctx.__replace__(last_reload_plugin_name=option_value)
+                has_error |= reload_plugin(option_value, error_builder, add_err_component)
 
         case ComponentIds.cmd_sync_button:
             from app.commands import sync
@@ -199,45 +201,55 @@ async def _(inter: ui.MessageInteraction) -> None:
         case ComponentIds.reload_button:
             if ctx.last_reload_plugin_name is None:
                 add_err_component(ui.TextDisplay("Cannot reload, no cached plugin."))
+                has_error = True
 
             else:
-                try:
-                    plugin.bot.reload_extension(ctx.last_reload_plugin_name)
-
-                except commands.ExtensionFailed as exc:
-                    add_err_component(
-                        ui.TextDisplay("## ⚠️ An exception occurred during reloading:")
-                    )
-                    traceback_text = format_exception(exc.original)
-
-                    if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
-                        add_err_component(ui.TextDisplay(md.codeblock(traceback_text)))
-
-                    else:
-                        files.append(traceback_file := text_to_file(traceback_text, "traceback.py"))
-                        add_err_component(ui.file(traceback_file))
+                has_error |= reload_plugin(
+                    ctx.last_reload_plugin_name, error_builder, add_err_component
+                )
 
         case _:
             add_err_component(ui.TextDisplay("Unknown component"))
+            has_error = True
             plugin.logger.warning("%s - unknown component: %r", slash_devtools.name, component)
 
-    components = create_console(ctx)
-    if __debug__:
-        devtools.debug_components(components)
+    console_builder = create_console(ctx)
 
-    if error_container.children:
+    if __debug__:
+        devtools.debug_components(console_builder)
+
+    if has_error:
         async with anyio.create_task_group() as tg:
-            tg.start_soon(lambda: inter.response.edit_message(components=components))
-            tg.start_soon(
-                lambda: inter.followup.send(
-                    files=files,
-                    components=error_container,
-                    flags=disnake.MessageFlags(is_components_v2=True, ephemeral=True),
-                )
-            )
+            tg.start_soon(lambda: console_builder.edit(inter))
+            tg.start_soon(lambda: error_builder.followup(inter, ephemeral=True))
 
     else:
-        await inter.response.edit_message(components=components)
+        await console_builder.edit(inter)
+
+
+def reload_plugin(
+    plugin_name: str,
+    error_builder: MessageBuilder,
+    add_err_component: abc.Callable[[ui.ContainerChild], None],
+) -> bool:
+    try:
+        plugin.bot.reload_extension(plugin_name)
+
+    except commands.ExtensionFailed as exc:
+        add_err_component(ui.TextDisplay("## ⚠️ An exception occurred during reloading:"))
+        traceback_text = format_exception(exc.original)
+
+        if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
+            add_err_component(ui.TextDisplay(md.codeblock(traceback_text)))
+
+        else:
+            traceback_file = text_to_file(traceback_text, "traceback.py")
+            error_builder.add_file(traceback_file)
+            add_err_component(ui.file(traceback_file))
+        return True
+
+    else:
+        return False
 
 
 setup, teardown = plugin.create_extension_handlers()

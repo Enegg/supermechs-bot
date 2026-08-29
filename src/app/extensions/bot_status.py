@@ -6,6 +6,7 @@ from typing import Final, NamedTuple
 import disnake
 from app.disnake_types import CommandInteraction
 from discord import markdown as md
+from discord.message_builder2 import MessageBuilder
 from discord.null_objects import NullUser
 from disnake import __version__ as disnake_version
 from disnake.utils import oauth_url
@@ -62,9 +63,8 @@ async def slash_info(inter: CommandInteraction) -> None:
     """Display information about the bot."""
     bot = plugin.bot
 
-    components: ui.MessageComponents = []
-    container, add_component = ui.container(accent_color=inter.me.color)
-    components.append(container)
+    builder = MessageBuilder()
+    add_component = builder.container(accent_color=inter.me.color)
     add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
@@ -102,16 +102,16 @@ async def slash_info(inter: CommandInteraction) -> None:
     ))  # fmt: skip
 
     if _bot_info.bot_public:
-        components.append(ui.ActionRow(ui.UrlButton(
+        builder.add_component(ui.ActionRow(ui.UrlButton(
             url=oauth_url(bot.user.id, scopes=("bot", "applications.commands")),
             label="Invite me!",
             emoji=EMOJIS.item_slot_drone.to_partial(),
         )))  # fmt: skip
 
     if __debug__:
-        debug_components(components)
+        debug_components(builder)
 
-    await inter.response.send_message(components=components, ephemeral=True)
+    await builder.send(inter, ephemeral=True)
 
 
 setup, teardown = plugin.create_extension_handlers()

@@ -3,7 +3,7 @@ from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits
-from disnake import MessageFlags
+from discord.message_builder2 import MessageBuilder
 from disnake.ext import commands
 
 from app import i18n, ui
@@ -72,12 +72,10 @@ async def slash_legacy_item(
         raise commands.UserInputError(msg)
 
     ctx = UIContext(item_id=item.id, level_index=0)
-    container = get_item_summary(gettext, item, ctx)
+    builder = get_item_summary(gettext, item, ctx)
     if __debug__:
-        debug_components(container)
-    await inter.response.send_message(
-        components=container, flags=MessageFlags(is_components_v2=True)
-    )
+        debug_components(builder)
+    await builder.send(inter)
 
 
 async def on_legacy_lookup_interaction(
@@ -106,7 +104,7 @@ async def on_legacy_lookup_interaction(
     if len(item.stages[0].levels) < ctx.level_index:
         valid_level_index = min(ctx.level_index, len(item.stages[0].levels) - 1)
         ctx = ctx.__replace__(level_index=valid_level_index)
-        await inter.response.edit_message(components=get_item_summary(gettext, item, ctx))
+        await get_item_summary(gettext, item, ctx).edit(inter)
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
@@ -131,10 +129,10 @@ async def on_legacy_lookup_interaction(
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(gettext, item, ctx)
+    builder = get_item_summary(gettext, item, ctx)
     if __debug__:
-        debug_components(container)
-    await inter.response.edit_message(components=container)
+        debug_components(builder)
+    await builder.edit(inter)
 
 
 def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
@@ -174,11 +172,13 @@ def power_required_as_legacy_power_kits(power: int, /) -> int:
     return legacy_pks
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
+def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> MessageBuilder:
     tier = item.stages[0].tier
     levels = item.stages[0].levels
     assert len(levels) <= ComponentLimits.string_select_options  # TODO: guard this better
     item_stats = get_item_stats(item, ctx)
+    builder = MessageBuilder()
+    add_component = builder.container(accent_color=Colors.get_tier(tier))
 
     # ------------------------------------- title, description -------------------------------------
     subtitle_parts: list[str] = ["Legacy"]
@@ -220,7 +220,6 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         )
 
     title = ui.TextDisplay("\n".join(title_lines))
-    container, add_component = ui.container(accent_color=Colors.get_tier(tier))
 
     match ICONS.get_item_slot(item.slot_id):
         case HttpResource(url):
@@ -293,4 +292,4 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             custom_id=make_component_id(ComponentIds.level_select, ctx),
         )))  # fmt: skip
 
-    return container
+    return builder
