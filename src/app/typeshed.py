@@ -1,9 +1,22 @@
 import os
-import typing
 from collections import abc
+from typing import TYPE_CHECKING, assert_type as assert_static_type
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     import _typeshed
+
+__all__ = (
+    "AsyncFunc",
+    "ConvertibleToFloat",
+    "ConvertibleToInt",
+    "Factory",
+    "Pathish",
+    "SupportsGe",
+    "SupportsGt",
+    "SupportsLe",
+    "SupportsLt",
+    "assert_static_type",
+)
 
 type Factory[RetT] = abc.Callable[[], RetT]
 """0-argument callable returning an object of given type."""
