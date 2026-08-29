@@ -7,6 +7,7 @@ import anyio
 import anyio.abc
 
 import disnake
+from app.disnake_types import CommandInteraction
 from discord import load_extensions
 from disnake.ext import commands
 
@@ -16,16 +17,50 @@ from app.core import CONFIG, config_logging
 from app.managers import loader
 
 _LOG = logging.getLogger("main")
+_LOG_EVENT = logging.getLogger("event")
 
 
-def setup_signal_handler(bot: disnake.Client, tg: anyio.abc.TaskGroup) -> None:
+def setup_event_loggers(client: disnake.Client, /) -> None:
+    @client.listen(disnake.Event.ready)
+    async def _() -> None:
+        limit = client.session_start_limit
+        assert limit is not None
+        _LOG.info(
+            f"Username: {client.user.name};"
+            f" Session #{limit.total - limit.remaining}/{limit.total}"
+            f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
+        )
+
+    @client.listen(disnake.Event.disconnect)
+    async def _() -> None:
+        _LOG.info("Disconnected")
+
+    @client.listen(disnake.Event.slash_command)
+    async def _(inter: CommandInteraction, /) -> None:
+        command_name = inter.application_command.qualified_name
+        _LOG.info(
+            "%s (%d): /%s",
+            inter.author.name,
+            inter.author.id,
+            command_name,
+            extra={"filled_options": inter.filled_options},
+        )
+
+    @client.listen(disnake.Event.slash_command_completion)
+    async def _(inter: CommandInteraction, /) -> None:
+        command_name = inter.application_command.qualified_name
+        result = "failed" if inter.command_failed else "finished"
+        _LOG.info("Command by %s %s: /%s", inter.author, result, command_name)
+
+
+def setup_signal_handler(client: disnake.Client, tg: anyio.abc.TaskGroup) -> None:
     # TODO: cancel all ongoing commands before .close
     # NOTE: anyio.open_signal_receiver does not work on Windows
     def handle(signum: int, frame: object) -> None:
         del frame
         sig = signal.Signals(signum).name
         _LOG.warning("Received %s, stopping", sig)
-        tg.start_soon(bot.close)
+        tg.start_soon(client.close)
 
     signal.signal(signal.SIGINT, handle)
     signal.signal(signal.SIGTERM, handle)
@@ -57,6 +92,7 @@ async def main() -> None:
 
     sync.prevent_delayed_sync(bot)
     i18n.load(paths.LOCALE_DIR)
+    setup_event_loggers(bot)
     exception_handling.setup(bot)
 
     load_extensions(bot.load_extension, paths.PLUGINS_PACKAGE)
