@@ -64,7 +64,7 @@ async def slash_info(inter: CommandInteraction) -> None:
     bot = plugin.bot
 
     builder = MessageBuilder()
-    add_component = builder.container(accent_color=inter.me.color)
+    add_component = builder.nested_component(ui.container(accent_color=inter.me.color))
     add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
@@ -111,7 +111,7 @@ async def slash_info(inter: CommandInteraction) -> None:
     if __debug__:
         debug_components(builder)
 
-    await builder.send(inter, ephemeral=True)
+    await builder.send_response(inter, ephemeral=True)
 
 
 setup, teardown = plugin.create_extension_handlers()

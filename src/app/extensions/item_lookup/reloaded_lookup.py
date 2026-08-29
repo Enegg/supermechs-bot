@@ -131,7 +131,7 @@ async def slash_item(
     builder = get_item_summary(gettext, item, ctx)
     if __debug__:
         debug_components(builder)
-    await builder.send(inter)
+    await builder.send_response(inter)
 
 
 async def on_reloaded_lookup_interaction(
@@ -165,7 +165,7 @@ async def on_reloaded_lookup_interaction(
         ctx = ctx.__replace__(
             stage_index=valid_stage_index, level_index=valid_level_index, levels_page=0
         )
-        await get_item_summary(gettext, item, ctx).edit(inter)
+        await get_item_summary(gettext, item, ctx).edit_response(inter)
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
@@ -220,7 +220,7 @@ async def on_reloaded_lookup_interaction(
     builder = get_item_summary(gettext, item, ctx)
     if __debug__:
         debug_components(builder)
-    await builder.edit(inter)
+    await builder.edit_response(inter)
 
 
 def get_item_stats(item: sm.Item, ctx: UIContext, /) -> sm.ItemStats:
@@ -290,7 +290,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> Me
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
     builder = MessageBuilder()
-    add_component = builder.container(accent_color=Colors.get_tier(stage.tier))
+    add_component = builder.nested_component(ui.container(accent_color=Colors.get_tier(stage.tier)))
 
     # ------------------------------------- title, description -------------------------------------
     subtitle_parts: list[str] = []

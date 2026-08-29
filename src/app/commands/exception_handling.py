@@ -3,7 +3,7 @@ from contextlib import suppress
 
 from app.disnake_types import Bot, CommandInteraction
 from discord import ComponentLimits, markdown as md, text_to_file
-from discord.message_builder import MessageBuilder
+from discord.message_builder2 import MessageBuilder
 from disnake import Event, HTTPException, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
@@ -44,7 +44,8 @@ def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError
 
 def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
     arguments = ", ".join(f"`{option}: {value}`" for option, value in inter.filled_options.items())
-    container, add_component = ui.container(accent_color=Colors.error)
+    builder = MessageBuilder()
+    add_component = builder.nested_component(ui.container(accent_color=Colors.error))
     title_lines = [
         "## ⚠️ Uncaught exception",
         f"Place: {md.channel_mention(inter.channel_id)}",
@@ -53,7 +54,6 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     ]
 
     traceback_text = format_exception(exc)
-    builder = MessageBuilder()
 
     if md.codeblock_size(traceback_text) <= ComponentLimits.text_display_content:
         add_component(ui.TextDisplay("\n".join(title_lines)))
@@ -63,10 +63,10 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
         title_lines.append(f"Exception: `{type(exc).__name__}: {exc}`")
         add_component(ui.TextDisplay("\n".join(title_lines)))
         file = text_to_file(traceback_text, "traceback.py")
-        builder.add_files(file)
+        builder.add_file(file)
         add_component(ui.file(file))
 
-    return builder.with_components(container)
+    return builder
 
 
 async def on_slash_command_error(inter: CommandInteraction, exc: commands.CommandError) -> None:
@@ -84,19 +84,18 @@ async def on_slash_command_error(inter: CommandInteraction, exc: commands.Comman
 if CONFIG.indev:
 
     async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
-        params = builder.get_send_params()
         try:
-            await inter.send(**params)
+            await builder.send_response(inter)
 
         except InteractionTimedOut:
             if _channel is not None:
-                await _channel.send(**params)
+                await builder.send_to(_channel)
 
 else:
 
     async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
         if _channel is not None:
-            await _channel.send(**builder.get_send_params())
+            await builder.send_to(_channel)
 
         with suppress(InteractionTimedOut):
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)

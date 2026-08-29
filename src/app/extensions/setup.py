@@ -53,7 +53,7 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, DevtoolsUI
 
 def create_console(ctx: DevtoolsUIContext) -> MessageBuilder:
     builder = MessageBuilder()
-    add_component = builder.container(ui.TextDisplay("# Developer Console"))
+    add_component = builder.nested_component(ui.container(ui.TextDisplay("# Developer Console")))
 
     current_override = i18n.locale_override.unwrap_or(None)
     locale_options = [
@@ -141,7 +141,7 @@ def create_console(ctx: DevtoolsUIContext) -> MessageBuilder:
 async def slash_devtools(inter: CommandInteraction) -> None:
     """Open developer console."""
     ctx = DevtoolsUIContext(last_reload_plugin_name=recently_loaded_plugin)
-    await create_console(ctx).send(inter)
+    await create_console(ctx).send_response(inter)
 
 
 @plugin.listener(disnake.Event.message_interaction)
@@ -155,7 +155,7 @@ async def _(inter: ui.MessageInteraction) -> None:
 
     component, ctx = parse_component_id(inter.data.custom_id)
     error_builder = MessageBuilder()
-    add_err_component = error_builder.container(accent_color=Colors.error)
+    add_err_component = error_builder.nested_component(ui.container(accent_color=Colors.error))
     has_error: bool = False
 
     match component:
@@ -220,11 +220,11 @@ async def _(inter: ui.MessageInteraction) -> None:
 
     if has_error:
         async with anyio.create_task_group() as tg:
-            tg.start_soon(lambda: console_builder.edit(inter))
+            tg.start_soon(lambda: console_builder.edit_response(inter))
             tg.start_soon(lambda: error_builder.followup(inter, ephemeral=True))
 
     else:
-        await console_builder.edit(inter)
+        await console_builder.edit_response(inter)
 
 
 def reload_plugin(
