@@ -4,7 +4,7 @@ from itertools import repeat
 
 from discord.emoji import AnyEmoji, CustomEmoji
 
-from app import i18n
+from app import i18n, ui
 from app.assets import EMOJIS
 
 import supermechs.all as sm
@@ -328,9 +328,24 @@ def embed_emoji_name(emoji: AnyEmoji, value: int) -> AnyEmoji:
     return emoji
 
 
-def move_last_between[T](
-    a: abc.MutableSequence[T], b: abc.MutableSequence[T], count: int, /
-) -> None:
-    """Move items from the end of `b` to the end of `a`, until `len(a) >= count` or `b` is empty."""
-    while len(a) < count and b:
-        a.append(b.pop())
+def text_into_sections(
+    lines: abc.Sequence[str], buttons: abc.Sequence[ui.ActionButton], lines_per_button: int = 2
+) -> list[ui.Section]:
+    buttons = list(reversed(buttons))
+    sections: list[ui.Section] = []
+
+    i = 0
+    while buttons and (start := lines_per_button * i) < len(lines):
+        button = buttons.pop()
+        sections.append(ui.Section(
+            ui.TextDisplay(
+                "\n".join(lines[start : lines_per_button * (i + 1) if buttons else len(lines)])
+            ),
+            accessory=button,
+        ))  # fmt: skip
+        i += 1
+
+    while buttons:
+        sections.append(ui.Section(ui.TextDisplay("\u2800"), accessory=buttons.pop()))
+
+    return sections

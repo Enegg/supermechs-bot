@@ -23,7 +23,7 @@ from .helpers import (
     format_stats,
     has_buff_affected_stats,
     has_damage_spread,
-    move_last_between,
+    text_into_sections,
 )
 
 import supermechs.all as sm
@@ -251,45 +251,40 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         if not (stats_lines or costs_lines):
             add_component(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
 
-        elif not stats_lines:
-            ...  # TODO
-
         else:
-            stats_lines.reverse()
-            current_lines: list[str] = [f"**{gettext('item-lookup-stats-header')}:**"]
+            buttons: list[ui.ActionButton] = []
 
             if has_buff_affected_stats(item_stats):
-                move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
-                add_component(ui.Section(
-                    ui.TextDisplay("\n".join(current_lines)),
-                    accessory=ui.ActionButton(
-                        label=gettext("item-lookup-ui-buffs"),
-                        style=ui.ButtonStyle.green
-                        if ctx.buffs_enabled
-                        else ui.ButtonStyle.gray,
-                        emoji="⚔️",
-                        custom_id=make_component_id(ComponentIds.buffs_button, ctx),
-                    ),
+                buttons.append(ui.ActionButton(
+                    label=gettext("item-lookup-ui-buffs"),
+                    style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
+                    emoji="⚔️",
+                    custom_id=make_component_id(ComponentIds.buffs_button, ctx),
                 ))  # fmt: skip
-                current_lines.clear()
-
             if has_damage_spread(item_stats):
-                move_last_between(current_lines, stats_lines, LINES_PER_BUTTON)
-                add_component(ui.Section(
-                    ui.TextDisplay("\n".join(current_lines)),
-                    accessory=ui.ActionButton(
-                        label=gettext("item-lookup-ui-damage-avg"),
-                        style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-                        emoji=EMOJIS.get_element(item.element).to_partial(),
-                        custom_id=make_component_id(ComponentIds.avg_button, ctx),
-                    ),
+                buttons.append(ui.ActionButton(
+                    label=gettext("item-lookup-ui-damage-avg"),
+                    style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
+                    emoji=EMOJIS.get_element(item.element).to_partial(),
+                    custom_id=make_component_id(ComponentIds.avg_button, ctx),
                 ))  # fmt: skip
-                current_lines.clear()
 
-            current_lines += reversed(stats_lines)
-            if current_lines:
-                add_component(ui.TextDisplay("\n".join(current_lines)))
-            if current_lines and costs_lines:
+            main_stats = stats_lines or costs_lines
+            main_stats.insert(0, f"**{gettext('item-lookup-stats-header')}:**")
+
+            if not buttons:
+                add_component(ui.TextDisplay("\n".join(main_stats)))
+            else:
+                deficit = len(buttons) * LINES_PER_BUTTON - len(main_stats)
+
+                if deficit > 0 and main_stats is stats_lines and costs_lines:
+                    main_stats.extend(costs_lines[:deficit])
+                    del costs_lines[:deficit]
+
+                for section in text_into_sections(main_stats, buttons, LINES_PER_BUTTON):
+                    add_component(section)
+
+            if stats_lines and costs_lines:
                 add_component(ui.Separator(divider=False))
                 add_component(ui.TextDisplay("\n".join(costs_lines)))
 
