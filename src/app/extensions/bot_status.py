@@ -5,8 +5,7 @@ from typing import Final, NamedTuple
 
 import disnake
 from app.disnake_types import CommandInteraction
-from discord import markdown as md
-from discord.message_builder2 import MessageBuilder
+from discord import MessageBuilder, markdown as md
 from discord.null_objects import NullUser
 from disnake import __version__ as disnake_version
 from disnake.utils import oauth_url

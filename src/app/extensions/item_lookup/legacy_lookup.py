@@ -2,8 +2,7 @@ import logging
 from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
-from discord import ComponentLimits
-from discord.message_builder2 import MessageBuilder
+from discord import ComponentLimits, MessageBuilder
 from disnake.ext import commands
 
 from app import i18n, ui

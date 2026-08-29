@@ -7,7 +7,7 @@ from typing import Final, final
 import attrs
 import rtoml
 
-from discord.emoji import AnyEmoji, UnicodeEmoji
+from discord import AnyEmoji, UnicodeEmoji
 from disnake import Color
 
 from app import paths

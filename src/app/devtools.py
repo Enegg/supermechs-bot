@@ -1,6 +1,6 @@
 import rich
 
-from discord.message_builder2 import MessageBuilder
+from discord import MessageBuilder
 from disnake.ui.action_row import normalize_components_to_dict
 
 __all__ = ("debug_components",)

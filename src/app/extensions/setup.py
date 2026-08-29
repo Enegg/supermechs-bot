@@ -5,9 +5,8 @@ import anyio
 
 import disnake
 from app.disnake_types import CommandInteraction
-from discord import ComponentLimits, markdown as md, text_to_file
+from discord import ComponentLimits, MessageBuilder, markdown as md, text_to_file
 from discord.extensions import walk_extensions
-from discord.message_builder2 import MessageBuilder
 from disnake.ext import commands
 
 from app import devtools, i18n, paths, ui

@@ -2,8 +2,7 @@ import logging
 from contextlib import suppress
 
 from app.disnake_types import Bot, CommandInteraction
-from discord import ComponentLimits, markdown as md, text_to_file
-from discord.message_builder2 import MessageBuilder
+from discord import ComponentLimits, MessageBuilder, markdown as md, text_to_file
 from disnake import Event, HTTPException, InteractionTimedOut
 from disnake.abc import Messageable
 from disnake.ext import commands
