@@ -4,8 +4,7 @@ import math
 from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
-from discord import AnyEmoji, markdown as md
-from discord.message_builder2 import MessageBuilder
+from discord import AnyEmoji, MessageBuilder, markdown as md
 from disnake.ext import commands
 
 from app import i18n, ui
