@@ -1,6 +1,5 @@
 """Extension of the library provided UI kit."""
 
-from collections import abc
 from typing import TYPE_CHECKING, Literal, override
 
 import yarl
@@ -95,9 +94,8 @@ def container(
     accent_color: Color | None = None,
     spoiler: bool = False,
     id: int = 0,
-) -> tuple[Container, abc.Callable[[ContainerChild], None]]:
-    container = Container(*components, accent_colour=accent_color, spoiler=spoiler, id=id)
-    return container, container.children.append
+) -> Container:
+    return Container(*components, accent_colour=accent_color, spoiler=spoiler, id=id)
 
 
 def _media(media: AnyMedia, /) -> UnfurledMediaItem:
