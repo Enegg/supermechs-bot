@@ -1,8 +1,7 @@
 import rich
 
+from discord.message_builder2 import MessageBuilder
 from disnake.ui.action_row import normalize_components_to_dict
-
-from app import ui
 
 __all__ = ("debug_components",)
 
@@ -10,9 +9,9 @@ __all__ = ("debug_components",)
 debug_enabled: bool = False
 
 
-def debug_components(components: ui.MessageComponents, /) -> None:
+def debug_components(builder: MessageBuilder, /) -> None:
     if not debug_enabled:
         return
 
-    component_payload, _ = normalize_components_to_dict(components)
+    component_payload, _ = normalize_components_to_dict(builder.components)
     rich.print(component_payload)
