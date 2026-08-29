@@ -1,3 +1,4 @@
+import contextlib
 import types
 from collections import abc
 from typing import TYPE_CHECKING, Any, Final, overload
@@ -66,6 +67,7 @@ class MessageBuilder:
         self, component: ui.Container, /
     ) -> abc.Callable[[ContainerChild], None]: ...
     def nested_component(self, component: ParentComponent, /) -> abc.Callable[[Any], None]:
+        """Add to the builder a component that has children. Returned callable appends to its children."""
         self.components.append(component)
         match component:
             case (
@@ -79,6 +81,25 @@ class MessageBuilder:
             case _:
                 msg = f"{type(component).__name__} is not a parent component"
                 raise TypeError(msg)
+
+    @contextlib.contextmanager
+    def collect_row(self, *, id: int = 0) -> abc.Generator[abc.Callable[[ActionRowChild], None]]:
+        """Context manager that returns a callable which appends buttons into an `ActionRow`.
+
+        At exit, the `ActionRow` is created and added only if there's at least one button.
+
+        ```
+        with builder.button_row() as add_button:
+            if condition_a:
+                add_button(ui.Button(...))
+            if condition_b:
+                add_button(ui.Button(...))
+        """
+        # no need for try ... finally, no state to cleanup
+        buttons: list[ActionRowChild] = []
+        yield buttons.append
+        if buttons:
+            self.components.append(ui.ActionRow(*buttons, id=id))
 
     def followup(self, inter: MessageInteraction, /, ephemeral: bool = False) -> Coroutine[None]:
         return inter.followup.send(
