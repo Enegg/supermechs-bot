@@ -2,7 +2,7 @@ import io
 import os
 import traceback
 from collections import abc
-from typing import Literal, Self, get_args as get_type_args, override
+from typing import Literal, Self, get_args as get_type_args, overload, override
 
 from disnake.utils import utcnow as utcnow
 
@@ -129,6 +129,8 @@ class StringBuilder:
 
     def __init__(self, initial: str = "", /) -> None:
         self.sio = io.StringIO(initial_value=initial)
+        # setting initial_value does not move the pointer, so any .write would overwrite it
+        self.sio.seek(len(initial))
 
     # NOTE: len() also provides bool()
     def __len__(self) -> int:
@@ -138,19 +140,20 @@ class StringBuilder:
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.build()!r})"
 
-    def add(self, s: str, /) -> Self:
-        """Write string `s` to the buffer."""
-        self.sio.write(s)
-        return self
-
-    def add_many(self, *s: str) -> Self:
-        """Write multiple strings to the buffer."""
-        self.sio.writelines(s)
-        return self
-
-    def add_from(self, it: abc.Iterable[str], /) -> Self:
-        """Write multiple strings to the buffer from iterable `it`."""
-        self.sio.writelines(it)
+    @overload
+    def add(self, s: str, /) -> Self: ...
+    @overload
+    def add(self, *s: str) -> Self: ...
+    @overload
+    def add(self, it: abc.Iterable[str], /) -> Self: ...
+    def add(self, it: abc.Iterable[str] | str = "", *s: str) -> Self:
+        """Write one or more strings to the buffer."""
+        if isinstance(it, str):
+            self.sio.write(it)
+        else:
+            self.sio.writelines(it)
+        if s:
+            self.sio.writelines(s)
         return self
 
     def add_repeated(self, s: str, count: int, /) -> Self:
