@@ -7,12 +7,13 @@ import attrs
 
 import disnake.abc
 from disnake import (
-    ApplicationCommandInteraction as _CommandInteraction,
+    ApplicationCommandInteraction as CommandInteraction,
     File,
     MediaGalleryItem,
     Message,
     MessageFlags,
-    MessageInteraction as _MessageInteraction,
+    MessageInteraction,
+    WebhookMessage,
     ui,
 )
 
@@ -32,9 +33,6 @@ type ContainerChild = _ContainerChildUIComponent
 type MessageActionRow = ui.ActionRow[ActionRowChild]
 type ParentComponent = MessageActionRow | ui.MediaGallery | ui.Section | ui.Container
 type MessageComponent = _MessageTopLevelComponent
-
-type MessageInteraction = _MessageInteraction[Any]
-type CommandInteraction = _CommandInteraction[Any]
 
 type Coroutine[T] = types.CoroutineType[Any, Any, T]
 
@@ -101,15 +99,18 @@ class MessageBuilder:
         if buttons:
             self.components.append(ui.ActionRow(*buttons, id=id))
 
-    def followup(self, inter: MessageInteraction, /, ephemeral: bool = False) -> Coroutine[None]:
+    def followup(
+        self, inter: MessageInteraction[Any], /, ephemeral: bool = False
+    ) -> Coroutine[WebhookMessage]:
         return inter.followup.send(
             files=self.files,
             components=self.components,
             flags=MessageFlags(ephemeral=ephemeral, is_components_v2=True),
+            wait=True,
         )
 
     def send_response(
-        self, inter: CommandInteraction | MessageInteraction, /, ephemeral: bool = False
+        self, inter: CommandInteraction[Any] | MessageInteraction[Any], /, ephemeral: bool = False
     ) -> Coroutine[None]:
         return inter.response.send_message(
             files=self.files,
@@ -117,7 +118,7 @@ class MessageBuilder:
             flags=MessageFlags(ephemeral=ephemeral, is_components_v2=True),
         )
 
-    def edit_response(self, inter: MessageInteraction, /) -> Coroutine[None]:
+    def edit_response(self, inter: MessageInteraction[Any], /) -> Coroutine[None]:
         return inter.response.edit_message(files=self.files, components=self.components)
 
     def send_to(self, target: disnake.abc.Messageable, /) -> Coroutine[Message]:
