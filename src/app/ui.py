@@ -79,7 +79,8 @@ __all__ = (
 )
 
 type MessageComponents = _MessageComponents
-type MediaConvertible = MediaItemInput | _FileObject | yarl.URL
+type AnyMedia = MediaItemInput | _FileObject | yarl.URL
+type LocalMedia = str | UnfurledMediaItem | _FileObject
 type ActionButtonStyle = Literal[
     ButtonStyle.primary,
     ButtonStyle.secondary,
@@ -99,7 +100,7 @@ def container(
     return container, container.children.append
 
 
-def _media(media: MediaConvertible, /) -> UnfurledMediaItem:
+def _media(media: AnyMedia, /) -> UnfurledMediaItem:
     if isinstance(media, _FileObject):
         assert media.filename is not None
         return UnfurledMediaItem(f"attachment://{media.filename}")
@@ -111,19 +112,22 @@ def _media(media: MediaConvertible, /) -> UnfurledMediaItem:
 
 
 def media_gallery_item(
-    media: MediaConvertible, description: str | None = None, *, spoiler: bool = False
+    media: AnyMedia, description: str | None = None, *, spoiler: bool = False
 ) -> MediaGalleryItem:
     return MediaGalleryItem(media=_media(media), description=description, spoiler=spoiler)
 
 
 def thumbnail(
-    media: MediaConvertible, description: str | None = None, *, spoiler: bool = False, id: int = 0
+    media: AnyMedia, description: str | None = None, *, spoiler: bool = False, id: int = 0
 ) -> Thumbnail:
     return Thumbnail(media=_media(media), description=description, spoiler=spoiler, id=id)
 
 
-def file(media: MediaConvertible, *, spoiler: bool = False, id: int = 0) -> File:
-    return File(file=_media(media), spoiler=spoiler, id=id)
+def file(media: LocalMedia, *, spoiler: bool = False, id: int = 0) -> File:
+    if isinstance(media, _FileObject):
+        assert media.filename is not None
+        media = UnfurledMediaItem(f"attachment://{media.filename}")
+    return File(file=media, spoiler=spoiler, id=id)
 
 
 def option_to_page_count(option_count: int, /) -> int:
