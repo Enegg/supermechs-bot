@@ -1,14 +1,15 @@
+import io
 import os
 import traceback
 from collections import abc
-from typing import Literal, get_args as get_type_args
+from typing import Literal, Self, get_args as get_type_args, override
 
 from disnake.utils import utcnow as utcnow
 
 from app import paths
 from app.typeshed import Pathish
 
-__all__ = ("as_binary_unit", "atoi_bin", "format_exception", "utcnow")
+__all__ = ("StringBuilder", "as_binary_unit", "atoi_bin", "format_exception", "utcnow")
 
 
 # https://en.wikipedia.org/wiki/Binary_prefix
@@ -117,3 +118,49 @@ def strip_cwd(path: Pathish, /) -> str:
         Path is not within the cwd.
     """
     return os.path.relpath(path, paths.CWD)
+
+
+class StringBuilder:
+    """Wrapper around `io.StringIO`, providing convenience chaining methods."""
+
+    __slots__ = ("sio",)
+
+    sio: io.StringIO
+
+    def __init__(self, initial: str = "", /) -> None:
+        self.sio = io.StringIO(initial_value=initial)
+
+    # NOTE: len() also provides bool()
+    def __len__(self) -> int:
+        return self.sio.tell()
+
+    @override
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.build()!r})"
+
+    def add(self, s: str, /) -> Self:
+        """Write string `s` to the buffer."""
+        self.sio.write(s)
+        return self
+
+    def add_many(self, *s: str) -> Self:
+        """Write multiple strings to the buffer."""
+        self.sio.writelines(s)
+        return self
+
+    def add_from(self, it: abc.Iterable[str], /) -> Self:
+        """Write multiple strings to the buffer from iterable `it`."""
+        self.sio.writelines(it)
+        return self
+
+    def add_repeated(self, s: str, count: int, /) -> Self:
+        """Write string `s` * `count` times to the buffer."""
+        # TODO: is a while loop faster, or s * count?
+        while count > 0:
+            self.sio.write(s)
+            count -= 1
+        return self
+
+    def build(self) -> str:
+        """Return the string contents of the buffer."""
+        return self.sio.getvalue()
