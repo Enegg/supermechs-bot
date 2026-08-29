@@ -16,7 +16,14 @@ from app.gamerules import MAXED_ARENA_BUFFS
 from app.managers import gfx, packs
 from resources import HttpResource
 
-from .helpers import format_real_to_metric, format_stats, has_buff_affected_stats, has_damage_spread
+from .helpers import (
+    METRIC_FORMAT_THRESHOLD,
+    embed_emoji_name,
+    format_real_to_metric,
+    format_stats,
+    has_buff_affected_stats,
+    has_damage_spread,
+)
 
 import supermechs.all as sm
 from supermechs import stats
@@ -200,10 +207,11 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     ]
 
     if power_required := levels[ctx.level_index].power_required:
-        power_str = format_real_to_metric(power_required)
         # energizing
         power_line = [
-            f"{gettext('item-lookup-power-required')}: **{power_str}**{EMOJIS.stat_power}"
+            f"{gettext('item-lookup-power-required')}: "
+            f"**{format_real_to_metric(power_required)}**"
+            f"{embed_emoji_name(EMOJIS.stat_power, power_required)}"
         ]
         legacy_pks = power_required_as_legacy_power_kits(power_required)
 
@@ -293,4 +301,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
             custom_id=make_component_id(ComponentIds.level_select, ctx),
         )))  # fmt: skip
 
+    # --------------------------------------------- tip --------------------------------------------
+    if power_required >= METRIC_FORMAT_THRESHOLD:
+        add_component(ui.TextDisplay(f"-# tip: press {EMOJIS.stat_power} to view exact power required!"))
     return container

@@ -5,7 +5,7 @@ from typing import Final, Literal, NamedTuple
 
 from app.disnake_types import CommandInteraction
 from discord import markdown as md
-from discord.emoji import AnyEmoji, CustomEmoji
+from discord.emoji import AnyEmoji
 from disnake import MessageFlags
 from disnake.ext import commands
 
@@ -21,6 +21,7 @@ from resources import HttpResource
 
 from .helpers import (
     METRIC_FORMAT_THRESHOLD,
+    embed_emoji_name,
     format_real_to_metric,
     format_stats,
     has_buff_affected_stats,
@@ -81,13 +82,6 @@ def divmod_round(x: int, y: int, f: float, /) -> tuple[int, int]:
     if b >= y * f:
         return a + 1, 0
     return a, b
-
-
-def embed_emoji_name(emoji: AnyEmoji, value: int) -> AnyEmoji:
-    """Prefix emoji's name with an integer value."""
-    if isinstance(emoji, CustomEmoji):
-        return emoji.__replace__(name=f"{value:_}_{emoji.name}")
-    return emoji
 
 
 async def slash_item(

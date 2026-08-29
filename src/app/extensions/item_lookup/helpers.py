@@ -2,6 +2,8 @@ import math
 from collections import abc
 from itertools import repeat
 
+from discord.emoji import AnyEmoji, CustomEmoji
+
 from app import i18n
 from app.assets import EMOJIS
 
@@ -317,3 +319,10 @@ def format_real_to_metric(n: int | float, /) -> str:
     exp = math.floor(math.log(abs(n), 1e3))
     exp = min(exp, len(_SUFFIXES) - 1)
     return format_real(n / math.pow(1e3, exp), 1) + _SUFFIXES[exp]
+
+
+def embed_emoji_name(emoji: AnyEmoji, value: int) -> AnyEmoji:
+    """Prefix emoji's name with an integer value."""
+    if isinstance(emoji, CustomEmoji):
+        return emoji.__replace__(name=f"{value:_}_{emoji.name}")
+    return emoji
