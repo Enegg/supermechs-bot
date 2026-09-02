@@ -306,11 +306,11 @@ METRIC_FORMAT_THRESHOLD = 1e4
 def format_real_to_metric(n: int | float, /) -> str:
     """Format a number with a k/M/… metric suffix for `abs(n) >= 1e4`.
 
-    >>> format_large_number(-9999)
+    >>> format_real_to_metric(-9999)
     "-9,999"
-    >>> format_large_number(10_000)
+    >>> format_real_to_metric(10_000)
     "10k"
-    >>> format_large_number(1.2e6)
+    >>> format_real_to_metric(1.2e6)
     "1.2M"
     """
     if abs(n) < METRIC_FORMAT_THRESHOLD:
@@ -322,7 +322,7 @@ def format_real_to_metric(n: int | float, /) -> str:
 
 
 def embed_emoji_name(emoji: AnyEmoji, value: int) -> AnyEmoji:
-    """Prefix emoji's name with an integer value."""
+    """Prefix custom emoji's name with an integer value. Does nothing for normal emojis."""
     if isinstance(emoji, CustomEmoji):
         return emoji.__replace__(name=f"{value:_}_{emoji.name}")
     return emoji
