@@ -125,9 +125,6 @@ def acronym_of(name: str, /) -> str | None:
     if name[0].isupper() and name[1:].islower():
         # don't bother with single capital letters
         return None
-    # filter out already-acronym names, like "EMP"
-    if name.isupper():
-        return None
     # names which are partially acronyms are fine
     return "".join(filter(str.isupper, name)).lower()
 
