@@ -1,7 +1,7 @@
 import pathlib
 import reprlib
 from collections import ChainMap, abc
-from typing import Any, Self
+from typing import Any, Never, Self
 
 import attrs
 import cattrs
@@ -56,6 +56,6 @@ class MappingParser:
         return cls(config)
 
 
-def unset_to_option[T](v: T | msgspec.UnsetType, /) -> Option[T]:
+def unset_to_option[T = Never](v: T | msgspec.UnsetType, /) -> Option[T]:
     """Return `Null.null` for `msgspec.UNSET`, `Some(T)` otherwise."""
     return Null.null if v is msgspec.UNSET else Some(v)
