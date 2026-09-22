@@ -2,7 +2,7 @@ from typing import Any, Final, NewType
 
 import cattrs
 
-from discord.emoji import AnyEmoji, CustomEmoji, UnicodeEmoji
+from discord import AnyEmoji, CustomEmoji, UnicodeEmoji
 from disnake import PartialEmoji
 
 from app.utils import atoi_bin

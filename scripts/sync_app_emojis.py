@@ -21,7 +21,7 @@ import rtoml
 
 import disnake
 import disnake.http
-from discord.emoji import CustomEmoji
+from discord import CustomEmoji
 from disnake.utils import (
     _bytes_to_base64_data as bytes_to_base64_data,  # pyright: ignore[reportPrivateUsage]
 )

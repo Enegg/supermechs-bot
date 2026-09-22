@@ -2,7 +2,7 @@ import math
 from collections import abc
 from itertools import repeat
 
-from discord.emoji import AnyEmoji, CustomEmoji
+from discord import AnyEmoji, CustomEmoji
 
 from app import i18n, ui
 from app.assets import EMOJIS
