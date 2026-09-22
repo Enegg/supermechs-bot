@@ -8,13 +8,13 @@ import anyio.abc
 
 import disnake
 from app.disnake_types import CommandInteraction
-from discord import load_extensions
 from disnake.ext import commands
 
 from app import aio, i18n, paths
 from app.commands import exception_handling, mentions
 from app.core import CONFIG, config_logging
 from app.managers import loader
+from app.utils import walk_extensions
 
 _LOG = logging.getLogger("main")
 _LOG_EVENT = logging.getLogger("event")
@@ -95,7 +95,12 @@ async def main() -> None:
     setup_event_loggers(bot)
     exception_handling.setup(bot)
 
-    load_extensions(bot.load_extension, paths.PLUGINS_PACKAGE)
+    for ext in walk_extensions(paths.PLUGINS_PACKAGE):
+        try:
+            bot.load_extension(ext)
+        except Exception as exc:
+            _LOG.error("Ignoring exception in %s:", ext, exc_info=exc)
+
     # bypass call to _schedule_app_command_preparation
     await disnake.Client.login(bot, CONFIG.bot_token)
 

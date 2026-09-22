@@ -5,13 +5,12 @@ import anyio
 import disnake
 from app.disnake_types import CommandInteraction
 from discord import ComponentLimits, markdown as md, text_to_file
-from discord.extensions import walk_extensions
 from disnake.ext import commands
 
 from app import devtools, i18n, paths, ui
 from app.assets import Colors
 from app.plugins_factory import create_dev_plugin
-from app.utils import format_exception
+from app.utils import format_exception, walk_extensions
 
 plugin = create_dev_plugin(__name__)
 KNOWN_PLUGIN_PATHS = tuple(walk_extensions(paths.PLUGINS_PACKAGE))
