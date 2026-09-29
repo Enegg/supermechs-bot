@@ -28,6 +28,7 @@ from .helpers import (
     has_damage,
     has_damage_spread,
     item_transform_range,
+    text_into_sections,
 )
 
 import supermechs.all as sm
@@ -44,6 +45,7 @@ class FoodPower:
     rare_pk_to_pk: Final = rare_pk // 10 * 11  # +10%
 
 
+LINES_PER_BUTTON = 2
 MAX_RANK = 13
 MAX_LEVEL = 50
 
@@ -375,51 +377,58 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     else:
         stats_lines, costs_lines = format_stats(item, item_stats, gettext, avg=ctx.damage_average)
 
-        if stats_lines or costs_lines:
-            stats_part = "\n".join(stats_lines)
-            costs_part = "\n".join(costs_lines)
-            add_component(ui.TextDisplay(
-                f"**{gettext('item-lookup-stats-header')}:**\n{stats_part or costs_part}"
-            ))  # fmt: skip
-            if stats_part and costs_part:
-                add_component(ui.Separator(divider=False))
-                add_component(ui.TextDisplay(costs_part))
-        else:
+        if not (stats_lines or costs_lines):
             add_component(ui.TextDisplay(f"-# {gettext('item-lookup-no-stats')}"))
+
+        else:
+            buttons: list[ui.ActionButton] = []
+
+            if has_buff_affected_stats(item_stats):
+                buttons.append(ui.ActionButton(
+                    label=gettext("item-lookup-ui-buffs"),
+                    style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
+                    emoji="⚔️",
+                    custom_id=make_component_id(ComponentIds.buffs_button, ctx),
+                ))  # fmt: skip
+            if has_damage_spread(item_stats):
+                buttons.append(ui.ActionButton(
+                    label=gettext("item-lookup-ui-damage-avg"),
+                    style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
+                    emoji=EMOJIS.get_element(item.element).to_partial(),
+                    custom_id=make_component_id(ComponentIds.avg_button, ctx),
+                ))  # fmt: skip
+            if has_damage(item_stats):
+                buttons.append(ui.ActionButton(
+                    label=gettext("item-lookup-ui-damage-vs-titans"),
+                    style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
+                    disabled=not ctx.buffs_enabled,
+                    emoji=EMOJIS.get_element(item.element).to_partial(),
+                    custom_id=make_component_id(ComponentIds.titan_button, ctx),
+                ))  # fmt: skip
+
+            main_stats = stats_lines or costs_lines
+            main_stats.insert(0, f"**{gettext('item-lookup-stats-header')}:**")
+
+            if not buttons:
+                add_component(ui.TextDisplay("\n".join(main_stats)))
+            else:
+                deficit = len(buttons) * LINES_PER_BUTTON - len(main_stats)
+
+                if deficit > 0 and main_stats is stats_lines and costs_lines:
+                    main_stats.extend(costs_lines[:deficit])
+                    del costs_lines[:deficit]
+
+                container.children.extend(text_into_sections(main_stats, buttons, LINES_PER_BUTTON))
+
+            if stats_lines and costs_lines:
+                add_component(ui.Separator(divider=False))
+                add_component(ui.TextDisplay("\n".join(costs_lines)))
 
     # ------------------------------------------- image --------------------------------------------
     if (sprite_url := gfx.get_image_url((item.id, stage.tier))) is not None:
         add_component(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
         add_component(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
-
-    # ------------------------------------------ buttons -------------------------------------------
-    button_row: list[ui.ActionButton] = []
-
-    if has_buff_affected_stats(item_stats):
-        button_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-buffs"),
-            style=ui.ButtonStyle.green if ctx.buffs_enabled else ui.ButtonStyle.gray,
-            emoji="⚔️",
-            custom_id=make_component_id(ComponentIds.buffs_button, ctx),
-        ))  # fmt: skip
-    if has_damage_spread(item_stats):
-        button_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-damage-avg"),
-            style=ui.ButtonStyle.green if ctx.damage_average else ui.ButtonStyle.gray,
-            emoji=EMOJIS.get_element(item.element).to_partial(),
-            custom_id=make_component_id(ComponentIds.avg_button, ctx),
-        ))  # fmt: skip
-    if has_damage(item_stats):
-        button_row.append(ui.ActionButton(
-            label=gettext("item-lookup-ui-damage-vs-titans"),
-            style=ui.ButtonStyle.green if ctx.buffs_enabled and ctx.damage_vs_titan else ui.ButtonStyle.gray,
-            disabled=not ctx.buffs_enabled,
-            emoji=EMOJIS.get_element(item.element).to_partial(),
-            custom_id=make_component_id(ComponentIds.titan_button, ctx),
-        ))  # fmt: skip
-    if button_row:
-        add_component(ui.ActionRow(*button_row))
 
     # ---------------------------------------- stage select ----------------------------------------
     if len(item.stages) > 1:

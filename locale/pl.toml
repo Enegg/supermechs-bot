@@ -59,7 +59,7 @@ ui-cmd-cancel-button = "Zakończ"
 unknown-item-name = "Nie odnaleziono przedmiotu '{name}'."
 
 item-lookup-ui-buffs = "Bonusy"
-item-lookup-ui-damage-avg = "Średnia obrażeń"
+item-lookup-ui-damage-avg = "Średnia"
 item-lookup-ui-damage-vs-titans = "dla tytanów"
 item-lookup-power-level = "Poziom"
 item-lookup-power-required = "Wymagana moc"

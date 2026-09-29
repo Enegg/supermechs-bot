@@ -4,7 +4,7 @@ from itertools import repeat
 
 from discord.emoji import AnyEmoji, CustomEmoji
 
-from app import i18n
+from app import i18n, ui
 from app.assets import EMOJIS
 
 import supermechs.all as sm
@@ -50,7 +50,7 @@ def format_range(lo: int, hi: int, /) -> str:
 
 def format_range_display(item: sm.Item, stats: sm.ItemStats, /) -> str:
     ARENA_SIZE = 10
-    # since your mech always occupes one spot in the arena, the range is N-1
+    # since your mech always occupies one spot in the arena, the range is N-1
     MAX_RANGE = ARENA_SIZE - 1
     # if we have space for it, add some padding for clarity
     PADDING = 2
@@ -326,3 +326,26 @@ def embed_emoji_name(emoji: AnyEmoji, value: int) -> AnyEmoji:
     if isinstance(emoji, CustomEmoji):
         return emoji.__replace__(name=f"{value:_}_{emoji.name}")
     return emoji
+
+
+def text_into_sections(
+    lines: abc.Sequence[str], buttons: abc.Sequence[ui.ActionButton], lines_per_button: int = 2
+) -> list[ui.Section]:
+    buttons = list(reversed(buttons))
+    sections: list[ui.Section] = []
+
+    i = 0
+    while buttons and (start := lines_per_button * i) < len(lines):
+        button = buttons.pop()
+        sections.append(ui.Section(
+            ui.TextDisplay(
+                "\n".join(lines[start : lines_per_button * (i + 1) if buttons else len(lines)])
+            ),
+            accessory=button,
+        ))  # fmt: skip
+        i += 1
+
+    while buttons:
+        sections.append(ui.Section(ui.TextDisplay("\u2800"), accessory=buttons.pop()))
+
+    return sections
