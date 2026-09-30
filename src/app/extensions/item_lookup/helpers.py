@@ -1,6 +1,5 @@
 import math
 from collections import abc
-from itertools import repeat
 
 from discord import AnyEmoji, CustomEmoji
 
@@ -64,50 +63,39 @@ def format_range_display(item: sm.Item, stats: sm.ItemStats, /) -> str:
     # ... <dmg> <slot> <dmg> ...
     if item.slot_id is sm.Item.Slot.teleport and hi <= MAX_RANGE // 2:
         r = hi - lo
-        return "".join([
-            *repeat(empty_emoji, PADDING),
-            *repeat(damage_emoji, r),
-            EMOJIS.item_slot_teleport.mention,
-            *repeat(damage_emoji, r),
-            *repeat(empty_emoji, PADDING),
-        ])  # fmt: skip
+        return (
+            empty_emoji * PADDING
+            + damage_emoji * r
+            + EMOJIS.item_slot_teleport.mention
+            + damage_emoji * r
+            + empty_emoji * PADDING
+        )
 
     # <retreat/recoil> ... <slot> ... <advance> ... <dmg> ... <end>
-    range_display: list[str]
+    range_display: list[str] = []
     if stats.retreat != 0:
-        range_display = [
-            EMOJIS.stat_retreat.mention,
-            *repeat(empty_emoji, stats.retreat - 1),
-        ]
+        range_display.append(EMOJIS.stat_retreat.mention)
+        range_display.append(empty_emoji * (stats.retreat - 1))
     elif stats.recoil != 0:
-        range_display = [
-            EMOJIS.stat_recoil.mention,
-            *repeat(empty_emoji, stats.recoil - 1),
-        ]
-    else:
-        range_display = []
+        range_display.append(EMOJIS.stat_recoil.mention)
+        range_display.append(empty_emoji * (stats.recoil - 1))
+
     range_display.append(EMOJIS.get_item_slot(item.slot_id).mention)
     # if advance would appear after beginning of damage range, don't show it
     if stats.advance != 0 and stats.advance < stats.range_min:
-        range_display += [
-            *repeat(empty_emoji, stats.advance - 1),
-            EMOJIS.stat_advance.mention,
-        ]
-    range_display += [
-        *repeat(
-            empty_emoji,
-            lo - stats.advance if stats.advance < stats.range_min else lo,
-        ),
-        *repeat(damage_emoji, hi - lo),
-    ]
+        range_display.append(empty_emoji * (stats.advance - 1))
+        range_display.append(EMOJIS.stat_advance.mention)
+
+    range_display.append(
+        empty_emoji * (lo - stats.advance if stats.advance < stats.range_min else lo)
+    )
+    range_display.append(damage_emoji * (hi - lo))
     width = (stats.retreat or stats.recoil) + max(hi, stats.advance)
     if width > ARENA_SIZE // 2:
-        range_display += [
-            *repeat(empty_emoji, MAX_RANGE - width),
-            EMOJIS.arena_position_corner.mention,
-        ]
+        range_display.append(empty_emoji * (MAX_RANGE - width))
+        range_display.append(EMOJIS.arena_position_corner.mention)
     else:
-        range_display += repeat(empty_emoji, PADDING)
+        range_display.append(empty_emoji * PADDING)
 
     return "".join(range_display)
 
