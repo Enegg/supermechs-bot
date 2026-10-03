@@ -96,9 +96,9 @@ class Emojis:
     card_legendary: AnyEmoji = NULL_EMOJI
     card_mythical: AnyEmoji = NULL_EMOJI
 
-    def get_card(self, field: sm.Item.Rarity, /) -> AnyEmoji | None:
+    def get_card[T](self, field: sm.Item.Rarity, /, default: T = NULL_EMOJI) -> AnyEmoji | T:
         if field in (sm.Item.Rarity.divine, sm.Item.Rarity.perk):
-            return None
+            return default
         return getattr(self, "card_" + field.name)
 
     power_kit_common: AnyEmoji = NULL_EMOJI

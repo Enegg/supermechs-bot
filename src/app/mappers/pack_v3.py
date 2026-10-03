@@ -1,6 +1,6 @@
 import datetime as dt
 from collections import abc
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 import app.dto.pack_v3 as dto
 
@@ -90,6 +90,7 @@ def collect_items(item_dtos: abc.Sequence[dto.ItemDto], /) -> ItemGroups:
                 if item_dto.released_at
                 else None
             ),
+            related_item_ids=cast("abc.Sequence[sm.Item.Id]", item_dto.related_item_ids),
         )
 
         if item_dto.hidden:

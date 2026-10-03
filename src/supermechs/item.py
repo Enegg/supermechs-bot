@@ -47,3 +47,4 @@ class Item:
     stages: abc.Sequence[ItemStage]
     subtype: ItemSubtype = ItemSubtype.none
     release_date: dt.datetime | None = None
+    related_item_ids: abc.Sequence[ItemId] = ()

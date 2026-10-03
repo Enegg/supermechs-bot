@@ -43,6 +43,7 @@ class ItemDto(msgspec.Struct, kw_only=True):
     hidden: bool = False
     released_at: UInt = 0
     stages: abc.Sequence[ItemStageDto]
+    related_item_ids: abc.Sequence[PosInt] = ()
 
 
 class ItemPackDto(msgspec.Struct, kw_only=True, tag_field="version", tag="3"):

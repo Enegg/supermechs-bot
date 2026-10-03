@@ -62,13 +62,14 @@ class UIContext(NamedTuple):
 class ComponentIds:
     prefix: Final = "item-lookup"
 
+    variant_select: Final = "related"
     stage_select: Final = "stages"
     level_select: Final = "levels"
     buffs_button: Final = "buffs"
     avg_button: Final = "avg"
     titan_button: Final = "dvt"
 
-    type AnyId = Literal["stages", "levels", "buffs", "avg", "dvt"]
+    type AnyId = Literal["related", "stages", "levels", "buffs", "avg", "dvt"]
 
 
 def level_to_rank_emoji[T](level_index: int, default: T = NULL_EMOJI) -> AnyEmoji | T:
@@ -123,7 +124,7 @@ async def slash_item(
         level_index=len(levels) - 1,
         levels_page=ui.option_to_page_count(len(levels)),
     )
-    container = get_item_summary(gettext, item, ctx)
+    container = get_item_summary(gettext, item, packs.get_item_pack(), ctx)
     if __debug__:
         debug_components(container)
     await inter.response.send_message(
@@ -162,7 +163,9 @@ async def on_reloaded_lookup_interaction(
         ctx = ctx.__replace__(
             stage_index=valid_stage_index, level_index=valid_level_index, levels_page=0
         )
-        await inter.response.edit_message(components=get_item_summary(gettext, item, ctx))
+        await inter.response.edit_message(
+            components=get_item_summary(gettext, item, item_pack, ctx)
+        )
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
@@ -173,6 +176,17 @@ async def on_reloaded_lookup_interaction(
 
     # NOTE: using __replace__ directly due to copy.replace(**kwargs: Any)
     match component:
+        case ComponentIds.variant_select:
+            assert inter.values
+            [option_value] = inter.values
+            item = packs.get_item_by_id(sm.Item.Id(int(option_value)))
+            ctx = ctx.__replace__(
+                item_id=item.id,
+                stage_index=(stage_index := len(item.stages) - 1),
+                level_index=(levels := len(item.stages[stage_index].levels)) - 1,
+                levels_page=ui.option_to_page_count(levels),
+            )
+
         case ComponentIds.stage_select:
             assert inter.values
             [option_value] = inter.values
@@ -214,7 +228,7 @@ async def on_reloaded_lookup_interaction(
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(gettext, item, ctx)
+    container = get_item_summary(gettext, item, item_pack, ctx)
     if __debug__:
         debug_components(container)
     await inter.response.edit_message(components=container)
@@ -282,11 +296,34 @@ def food_items_required_for_power(power: int, /, target_is_pk: bool = False) -> 
     )
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
+def get_item_summary(
+    gettext: i18n.GetText, item: sm.Item, item_pack: packs.ItemPack, ctx: UIContext
+) -> ui.Container:
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
     container, add_component = ui.container(accent_color=Colors.get_tier(stage.tier))
+
+    related_items = [
+        related_item
+        for item_id in item.related_item_ids
+        if (related_item := item_pack.reloaded_items.get(item_id)) is not None
+    ]
+
+    if related_items:
+        add_component(ui.ActionRow(ui.StringSelect(
+            custom_id=make_component_id(ComponentIds.variant_select, ctx),
+            placeholder="Select variant",
+            options=[
+                ui.SelectOption(
+                    label=related_item.name,
+                    value=str(related_item.id),
+                    emoji=EMOJIS.get_card(related_item.stages[0].tier, NoneEmoji).to_partial(),
+                    default=item.id == related_item.id,
+                )
+                for related_item in related_items
+            ],
+        )))  # fmt: skip
 
     # ------------------------------------- title, description -------------------------------------
     subtitle_parts: list[str] = []
