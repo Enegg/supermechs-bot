@@ -421,7 +421,7 @@ def cache(emojis: abc.Sequence[CustomEmoji], /) -> None:
     for field_name in ORDERED_FIELD_NAMES:
         if field_name == "ranks":
             output_toml_dict[field_name] = [
-                str(name_to_emoji[emoji_name] for emoji_name in rank_emojis)
+                str(name_to_emoji[emoji_name]) for emoji_name in rank_emojis
             ]
             continue
 
