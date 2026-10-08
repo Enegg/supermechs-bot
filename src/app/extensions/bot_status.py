@@ -3,9 +3,8 @@ import sys
 from functools import partial
 from typing import Final, NamedTuple
 
-import disnake
 from app.disnake_types import CommandInteraction
-from discord import NullUser, markdown as md
+from discord import AbstractUser, NullUser, markdown as md
 from disnake import __version__ as disnake_version
 from disnake.utils import oauth_url
 
@@ -27,7 +26,7 @@ disnake_url: Final = "https://github.com/DisnakeDev/disnake"
 
 
 class _BotInfo(NamedTuple):
-    owner: disnake.abc.User = NullUser()
+    owner: AbstractUser = NullUser
     app_sloc: int = 0
     bot_public: bool = False
 

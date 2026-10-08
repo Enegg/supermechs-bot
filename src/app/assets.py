@@ -7,7 +7,7 @@ from typing import Final, final
 import attrs
 import rtoml
 
-from discord import AnyEmoji, UnicodeEmoji
+from discord import AnyEmoji, CustomEmoji, UnicodeEmoji, urls
 from disnake import Color
 
 from app import paths
@@ -28,6 +28,10 @@ MISSING_IMAGE: Final = FileResource(paths.MISSING_PNG)
 @final
 class NoneEmoji:
     """Emoji that converts to None."""
+
+    id: Final = None
+    mention: Final = "❔"
+    animated: Final = False
 
     @staticmethod
     def to_partial() -> None:
@@ -85,10 +89,11 @@ class Emojis:
     tier_divine_hollow: AnyEmoji = NULL_EMOJI
     tier_perk_hollow: AnyEmoji = NULL_EMOJI
 
-    def get_tier(self, field: sm.Item.Rarity, /, hollow: bool = False) -> AnyEmoji:
-        if hollow:
-            return getattr(self, f"tier_{field.name}_hollow")
-        return getattr(self, "tier_" + field.name)
+    def get_tier_circle(self, field: sm.Item.Rarity, /) -> AnyEmoji:
+        return getattr(self, f"tier_{field.name}")
+
+    def get_tier_ring(self, field: sm.Item.Rarity, /) -> AnyEmoji:
+        return getattr(self, f"tier_{field.name}_hollow")
 
     card_common: AnyEmoji = NULL_EMOJI
     card_rare: AnyEmoji = NULL_EMOJI
@@ -96,10 +101,10 @@ class Emojis:
     card_legendary: AnyEmoji = NULL_EMOJI
     card_mythical: AnyEmoji = NULL_EMOJI
 
-    def get_card(self, field: sm.Item.Rarity, /) -> AnyEmoji | None:
-        if field in (sm.Item.Rarity.divine, sm.Item.Rarity.perk):
-            return None
-        return getattr(self, "card_" + field.name)
+    def get_card[T](self, field: sm.Item.Rarity, /, default: T = None) -> AnyEmoji | T:
+        if field <= sm.Item.Rarity.mythical:
+            return getattr(self, "card_" + field.name)
+        return default
 
     power_kit_common: AnyEmoji = NULL_EMOJI
     power_kit_rare: AnyEmoji = NULL_EMOJI
@@ -169,7 +174,7 @@ class Emojis:
 
     ranks: abc.Sequence[AnyEmoji] = ()
 
-    def get_rank[T](self, rank: int, /, default: T = NULL_EMOJI) -> AnyEmoji | T:
+    def get_rank[T](self, rank: int, /, default: T = None) -> AnyEmoji | T:
         if rank < len(self.ranks):
             return self.ranks[rank]
         return default
@@ -209,10 +214,12 @@ class Icons:
 
         emoji = EMOJIS.get_item_slot(field)
 
-        if asset := emoji.to_asset():
-            return HttpResource.from_uri(asset.full_url)
+        if not isinstance(emoji, CustomEmoji):
+            return None
 
-        return None
+        return HttpResource.from_uri(
+            f"{urls.CDN}/emojis/{emoji.id}.{'gif' if emoji.animated else 'webp'}"
+        )
 
 
 class Colors:

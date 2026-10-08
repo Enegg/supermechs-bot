@@ -101,8 +101,8 @@ def format_range_display(item: sm.Item, stats: sm.ItemStats, /) -> str:
 
 
 def item_transform_range(item: sm.Item, /, stage_index: int = -1) -> str:
-    str_range: list[str] = [str(EMOJIS.get_tier(stage.tier, hollow=True)) for stage in item.stages]
-    str_range[stage_index] = str(EMOJIS.get_tier(item.stages[stage_index].tier))
+    str_range: list[str] = [EMOJIS.get_tier_ring(stage.tier).mention for stage in item.stages]
+    str_range[stage_index] = EMOJIS.get_tier_circle(item.stages[stage_index].tier).mention
     return "".join(str_range)
 
 
@@ -156,6 +156,7 @@ def format_stats(
     stats_lines: list[str] = []
     costs_lines: list[str] = []
 
+    # fmt: off
     if item_stats.weight:
         stats_lines.append(fmt(item_stats.weight, ItemStat.weight))
     if item_stats.hit_points:
@@ -179,23 +180,11 @@ def format_stats(
     if item_stats.rockets_capacity:
         stats_lines.append(fmt(item_stats.rockets_capacity, ItemStat.rockets_capacity))
     if item_stats.physical_damage_min:
-        stats_lines.append(
-            fmt(
-                format_damage(item_stats.physical_damage_min, item_stats.physical_damage_max),
-                ItemStat.physical_damage,
-            )
-        )
+        stats_lines.append(fmt(format_damage(item_stats.physical_damage_min, item_stats.physical_damage_max), ItemStat.physical_damage))
     if item_stats.physical_resistance_damage:
-        stats_lines.append(
-            fmt(item_stats.physical_resistance_damage, ItemStat.physical_resistance_damage)
-        )
+        stats_lines.append(fmt(item_stats.physical_resistance_damage, ItemStat.physical_resistance_damage))
     if item_stats.electric_damage_min:
-        stats_lines.append(
-            fmt(
-                format_damage(item_stats.electric_damage_min, item_stats.electric_damage_max),
-                ItemStat.electric_damage,
-            )
-        )
+        stats_lines.append(fmt(format_damage(item_stats.electric_damage_min, item_stats.electric_damage_max), ItemStat.electric_damage))
     if item_stats.energy_damage:
         stats_lines.append(fmt(item_stats.energy_damage, ItemStat.energy_damage))
     if item_stats.energy_capacity_damage:
@@ -203,16 +192,9 @@ def format_stats(
     if item_stats.regeneration_damage:
         stats_lines.append(fmt(item_stats.regeneration_damage, ItemStat.regeneration_damage))
     if item_stats.electric_resistance_damage:
-        stats_lines.append(
-            fmt(item_stats.electric_resistance_damage, ItemStat.electric_resistance_damage)
-        )
+        stats_lines.append(fmt(item_stats.electric_resistance_damage, ItemStat.electric_resistance_damage))
     if item_stats.explosive_damage_min:
-        stats_lines.append(
-            fmt(
-                format_damage(item_stats.explosive_damage_min, item_stats.explosive_damage_max),
-                ItemStat.explosive_damage,
-            )
-        )
+        stats_lines.append(fmt(format_damage(item_stats.explosive_damage_min, item_stats.explosive_damage_max), ItemStat.explosive_damage))
     if item_stats.heat_damage:
         stats_lines.append(fmt(item_stats.heat_damage, ItemStat.heat_damage))
     if item_stats.heat_capacity_damage:
@@ -220,17 +202,13 @@ def format_stats(
     if item_stats.cooling_damage:
         stats_lines.append(fmt(item_stats.cooling_damage, ItemStat.cooling_damage))
     if item_stats.explosive_resistance_damage:
-        stats_lines.append(
-            fmt(item_stats.explosive_resistance_damage, ItemStat.explosive_resistance_damage)
-        )
+        stats_lines.append(fmt(item_stats.explosive_resistance_damage, ItemStat.explosive_resistance_damage))
     if item_stats.walk:
         stats_lines.append(fmt(item_stats.walk, ItemStat.walk))
     if item_stats.jump:
         stats_lines.append(fmt(item_stats.jump, ItemStat.jump))
     if item_stats.range_min:
-        stats_lines.append(
-            fmt(format_range(item_stats.range_min, item_stats.range_max), ItemStat.range)
-        )
+        stats_lines.append(fmt(format_range(item_stats.range_min, item_stats.range_max), ItemStat.range))
     if item_stats.push:
         count = 1 if item_stats.push > MAX_EMOJIS else item_stats.push
         stats_lines.append(fmte(str(EMOJIS.stat_push) * count, item_stats.push, ItemStat.push))
@@ -248,22 +226,11 @@ def format_stats(
     if item_stats.repair:
         stats_lines.append(fmt(item_stats.repair, ItemStat.repair))
     if item_stats.block_percentage:
-        stats_lines.append(
-            fmte(
-                str(EMOJIS.stat_block_percentage),
-                f"{item_stats.block_percentage}%",
-                ItemStat.block_percentage,
-            )
-        )
+        stats_lines.append(fmte(EMOJIS.stat_block_percentage.mention, f"{item_stats.block_percentage}%", ItemStat.block_percentage))
     if item_stats.heat_per_block and item_stats.hit_points_per_block:
-        stats_lines.append(
-            f"{EMOJIS.stat_heat_generation} **{item_stats.heat_per_block}** Heat per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked"
-        )
+        stats_lines.append(f"{EMOJIS.stat_heat_generation} **{item_stats.heat_per_block}** Heat per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked")
     if item_stats.energy_per_block and item_stats.hit_points_per_block:
-        stats_lines.append(
-            f"{EMOJIS.stat_energy_cost} **{item_stats.energy_per_block}** Energy per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked"
-        )
-
+        stats_lines.append(f"{EMOJIS.stat_energy_cost} **{item_stats.energy_per_block}** Energy per {EMOJIS.stat_hit_points} **{item_stats.hit_points_per_block}** damage blocked")
     if item_stats.uses:
         count = 1 if item_stats.uses > MAX_EMOJIS else item_stats.uses
         costs_lines.append(fmte(str(EMOJIS.stat_uses) * count, item_stats.uses, ItemStat.uses))
@@ -279,9 +246,8 @@ def format_stats(
         costs_lines.append(fmt(item_stats.rockets_cost, ItemStat.rockets_cost))
     if item_stats.advance or item_stats.retreat:
         # if item has no costs, don't put jump-required separately
-        (costs_lines or stats_lines).append(
-            f"{EMOJIS.stat_jump} **{gettext('item-lookup-jump-required')}**"
-        )
+        (costs_lines or stats_lines).append(f"{EMOJIS.stat_jump} **{gettext('item-lookup-jump-required')}**")
+    # fmt: on
     return stats_lines, costs_lines
 
 

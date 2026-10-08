@@ -7,7 +7,7 @@ from disnake import MessageFlags
 from disnake.ext import commands
 
 from app import i18n, ui
-from app.assets import EMOJIS, ICONS, Colors, NoneEmoji
+from app.assets import EMOJIS, ICONS, NULL_EMOJI, Colors, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.mentions import get_mention
 from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
@@ -200,8 +200,10 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
     power_level = (
         "max" if ctx.level_index == len(levels) - 1 else str(levels[ctx.level_index].level)
     )
-    tier_emoji = emoji if (emoji := EMOJIS.get_card(tier)) is not None else EMOJIS.get_tier(tier)
-    rank_emoji = EMOJIS.get_rank(ctx.level_index)
+    if (tier_emoji := EMOJIS.get_card(tier)) is None:
+        tier_emoji = EMOJIS.get_tier_circle(tier)
+
+    rank_emoji = EMOJIS.get_rank(ctx.level_index, NULL_EMOJI)
     title_lines = [
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}* {tier_emoji}",

@@ -1,4 +1,5 @@
 from collections import abc
+from typing import Literal
 
 import disnake
 
@@ -9,3 +10,6 @@ type AutocompleteReturnType = (
 )
 type EmbedColorType = disnake.Color | int | None
 type EmojiType = str | disnake.Emoji | disnake.PartialEmoji
+
+type AssetSize = Literal[16, 32, 64, 128, 256, 512, 1024, 2048, 4096]
+type AssetFormat = Literal["png", "webp", "gif"]

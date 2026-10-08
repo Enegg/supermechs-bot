@@ -71,7 +71,7 @@ class ComponentIds:
     type AnyId = Literal["stages", "levels", "buffs", "avg", "dvt"]
 
 
-def level_to_rank_emoji[T](level_index: int, default: T = NULL_EMOJI) -> AnyEmoji | T:
+def level_to_rank_emoji[T](level_index: int, default: T = None) -> AnyEmoji | T:
     factor = MAX_RANK / MAX_LEVEL
     new_index = math.floor(level_index * factor)
     return EMOJIS.get_rank(new_index, default)
@@ -304,7 +304,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
         f"## {item.name}",
         f"*{' '.join(subtitle_parts)}*",
         f"-# {item_transform_range(item, ctx.stage_index)}",
-        f"{gettext('item-lookup-power-level')}: **{power_level}** {level_to_rank_emoji(ctx.level_index)}",
+        f"{gettext('item-lookup-power-level')}: **{power_level}** {level_to_rank_emoji(ctx.level_index, NULL_EMOJI)}",
     ]
 
     # - - - - - - - - - - - - - - - - - - - - power required - - - - - - - - - - - - - - - - - - - -
@@ -436,7 +436,11 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 ui.SelectOption(
                     label=gettext.get_tier_name(stage.tier).capitalize(),
                     value=f"{i:x}",
-                    emoji=EMOJIS.get_tier(stage.tier, hollow=i != ctx.stage_index).to_partial(),
+                    emoji=(
+                        EMOJIS.get_tier_circle(stage.tier)
+                        if i == ctx.stage_index
+                        else EMOJIS.get_tier_ring(stage.tier)
+                    ).to_partial(),
                     default=i == ctx.stage_index,
                 )
                 for i, stage in enumerate(item.stages)
