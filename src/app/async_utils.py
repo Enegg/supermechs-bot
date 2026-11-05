@@ -1,6 +1,6 @@
 from collections import abc
 from contextlib import asynccontextmanager
-from typing import Any, cast as type_cast, overload
+from typing import cast as type_cast, overload
 
 import anyio
 import attrs
@@ -10,7 +10,7 @@ from app.typeshed import AsyncFunc
 
 async def amap[T, RetT](coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
     """Asynchronously map coroutine function over arguments."""
-    out: list[RetT] = [type_cast("Any", None)] * len(args)
+    out: list[RetT] = [type_cast("RetT", None)] * len(args)
 
     async def worker(index: int, arg: T) -> None:
         out[index] = await coro(arg)
@@ -33,7 +33,7 @@ async def gather[T1, T2, T3, T4](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c
 async def gather[T1, T2, T3, T4, Tn](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], c4: AsyncFunc[[], T4], /, *cs: AsyncFunc[[], Tn]) -> tuple[T1, T2, T3, T4, *tuple[Tn, ...]]: ...
 # fmt: on
 async def gather[T](*coros: AsyncFunc[[], T]) -> tuple[T, ...]:  # pyright: ignore[reportInconsistentOverload]
-    out: list[T] = [type_cast("Any", None)] * len(coros)
+    out: list[T] = [type_cast("T", None)] * len(coros)
 
     async def worker(index: int, coro: AsyncFunc[[], T]) -> None:
         out[index] = await coro()
