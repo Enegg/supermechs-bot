@@ -1,4 +1,3 @@
-
 import app.dto.pack_v2 as dto
 from app.mappers.common import (
     LITERAL_ELEMENT_TO_ENUM,

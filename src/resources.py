@@ -33,6 +33,7 @@ class Resource(Protocol):
         """Construct a Resource from a uri."""
         ...
 
+
 @final
 @attrs.frozen
 class HttpResource(Resource):
