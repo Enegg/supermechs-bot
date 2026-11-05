@@ -52,30 +52,27 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
     container, add_component = ui.container()
     add_component(ui.TextDisplay("# Developer Console"))
 
-    current_override = i18n.locale_override.unwrap_or(None)
     locale_options = [
         ui.SelectOption(
             label="None",
             value="$none",
             description="Select to remove the override",
             emoji="🏴‍☠️",
-            default=current_override is None,
+            default=i18n.locale_override is None,
         )
     ]
     locale_options += [
         ui.SelectOption(
-            label=(
-                info.region
-                .map(lambda region, info=info: f"{info.english_name} - {region}")
-                .unwrap_or(info.english_name)
-            ),
+            label=info.english_name
+            if info.region is None
+            else f"{info.english_name} - {info.region}",
             value=locale.name,
             description=info.local_name,
-            emoji=info.flag_emoji.unwrap_or(None),
-            default=locale is current_override,
+            emoji=info.flag_emoji,
+            default=locale is i18n.locale_override,
         )
         for locale, info in i18n.locale_info.items()
-    ]  # fmt: skip
+    ]
     add_component(ui.Section(
         ui.TextDisplay("## Locale override"),
         accessory=ui.ActionButton(

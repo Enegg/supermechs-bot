@@ -6,11 +6,10 @@ from typing import Final, Literal, Protocol, cast as type_cast
 
 import attrs
 import msgspec
-from monads.option import Null, Option, Some
 
 from disnake import Locale, LocalizationProtocol
 
-from app.class_utils import unset_to_option
+from app.class_utils import unset_to_default
 from app.typeshed import Pathish
 
 from supermechs.enums import ItemRarity, ItemStat
@@ -79,17 +78,17 @@ _command_locale: Final[abc.Mapping[str, dict[str, str]]] = {}
 # provider only needs .get(_: str, /) -> Mapping[str, str] | None, which the above has
 localization_provider: Final = type_cast("LocalizationProtocol", _command_locale)
 
-locale_override: Option[Locale] = Null.null
+locale_override: Locale | None = None
 
 
 def set_locale_override(locale: Locale) -> None:
     global locale_override
-    locale_override = Some(locale)
+    locale_override = locale
 
 
 def remove_locale_override() -> None:
     global locale_override
-    locale_override = Null.null
+    locale_override = None
 
 
 class HasLocale(Protocol):
@@ -140,7 +139,7 @@ def get_message(locale: Locale, key: LiteralKey, /, **format_kwargs: object) -> 
 
 
 def get_gettext(inter: HasLocale, /) -> GetText:
-    return GetText(locale_override.unwrap_or(inter.locale))
+    return GetText(inter.locale if locale_override is None else locale_override)
 
 
 class _LocaleMetadata(msgspec.Struct):
@@ -160,8 +159,8 @@ class _LocaleFileStruct(msgspec.Struct):
 class LocaleInfo(msgspec.Struct):
     english_name: str
     local_name: str
-    flag_emoji: Option[str] = Null.null
-    region: Option[str] = Null.null
+    flag_emoji: str | None = None
+    region: str | None = None
 
 
 def _load_locale_file(path: Path, /) -> None:
@@ -191,8 +190,8 @@ def _load_locale_file(path: Path, /) -> None:
     locale_info[locale] = LocaleInfo(
         english_name=data.metadata.english_name,
         local_name=data.metadata.local_name,
-        flag_emoji=unset_to_option(data.metadata.flag_emoji),
-        region=unset_to_option(data.metadata.region),
+        flag_emoji=unset_to_default(data.metadata.flag_emoji),
+        region=unset_to_default(data.metadata.region),
     )
 
 
