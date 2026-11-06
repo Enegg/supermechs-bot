@@ -28,6 +28,7 @@ disnake_url: Final = "https://github.com/DisnakeDev/disnake"
 
 class _BotInfo(NamedTuple):
     owner: disnake.abc.User = NullUser()
+    team: disnake.Team | None = None
     app_sloc: int = 0
     bot_public: bool = False
 
@@ -44,6 +45,7 @@ async def _() -> None:
     )
     _bot_info = _BotInfo(
         owner=app_info.owner,
+        team=app_info.team,
         app_sloc=app_sloc,
         bot_public=app_info.bot_public,
     )
@@ -64,11 +66,25 @@ async def slash_info(inter: CommandInteraction) -> None:
     components: ui.MessageComponents = []
     container, add_component = ui.container(accent_color=inter.me.color)
     components.append(container)
+
+    if (team := _bot_info.team) is not None:
+        # when an app is team-owned, .owner is a pseudo-user that represents the team
+        # and doesn't really have any useful attributes
+        assert team.owner_id is not None  # TODO: disnake#1630
+        developer_line = f"Developer: {md.user_mention(team.owner_id)}"
+        if len(team.members) > 1:
+            if len(team.members) == 2:  # noqa: PLR2004
+                developer_line += " and 1 other"
+            else:
+                developer_line += f" and {len(team.members)} others"
+    else:
+        developer_line = f"Developer: {_bot_info.owner.mention}"
+
     add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
             "**General**\n"
-            f"Developer: {_bot_info.owner.mention}\n"
+            f"{developer_line}\n"
             f"Created: {md.format_dt(bot.user.created_at, 'R')}\n"
             f"Servers: {len(bot.guilds)}"
         ),

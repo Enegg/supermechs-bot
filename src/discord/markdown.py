@@ -29,6 +29,11 @@ def channel_mention(channel_id: int, /) -> str:
     return f"<#{channel_id}>"
 
 
+def user_mention(user_id: int, /) -> str:
+    """Return a string mentioning a user."""
+    return f"<@{user_id}>"
+
+
 class Commandish(Protocol):
     @property
     def id(self) -> int: ...
