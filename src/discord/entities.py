@@ -1,14 +1,15 @@
 import datetime as dt
-from typing import Literal, Self, final, override
+from typing import Final, Literal, Self, final, override
 
 import msgspec
 
 import disnake
-from discord.urls import CDN
 from disnake import PartialEmoji
 from disnake.utils import snowflake_time
 
 __all__ = ("AnyEmoji", "Asset", "CustomEmoji", "NullUser", "UnicodeEmoji")
+
+CDN: Final = disnake.Asset.BASE
 
 
 @final
