@@ -1,18 +1,15 @@
 import asyncio
 import logging
 import signal
-from functools import partial
 
 import anyio
 import anyio.abc
 
-import disnake
-from disnake.ext import commands
+from disnake import Client, Event
 
 from app import aio, i18n, init, paths
 from app.commands import exception_handling
-from app.core import CONFIG, AppState
-from app.managers import loader
+from app.core import CONFIG, state
 from app.typeshed import CommandInteraction
 from app.utils import walk_extensions
 
@@ -20,8 +17,8 @@ _LOG = logging.getLogger("main")
 _LOG_EVENT = logging.getLogger("event")
 
 
-def setup_event_loggers(client: disnake.Client, /) -> None:
-    @client.listen(disnake.Event.ready)
+def setup_event_loggers(client: Client, /) -> None:
+    @client.listen(Event.ready)
     async def _() -> None:
         limit = client.session_start_limit
         assert limit is not None
@@ -31,11 +28,11 @@ def setup_event_loggers(client: disnake.Client, /) -> None:
             f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
         )
 
-    @client.listen(disnake.Event.disconnect)
+    @client.listen(Event.disconnect)
     async def _() -> None:
         _LOG.info("Disconnected")
 
-    @client.listen(disnake.Event.slash_command)
+    @client.listen(Event.slash_command)
     async def _(inter: CommandInteraction, /) -> None:
         command_name = inter.application_command.qualified_name
         _LOG.info(
@@ -46,14 +43,14 @@ def setup_event_loggers(client: disnake.Client, /) -> None:
             extra={"filled_options": inter.filled_options},
         )
 
-    @client.listen(disnake.Event.slash_command_completion)
+    @client.listen(Event.slash_command_completion)
     async def _(inter: CommandInteraction, /) -> None:
         command_name = inter.application_command.qualified_name
         result = "failed" if inter.command_failed else "finished"
         _LOG.info("Command by %s %s: /%s", inter.author, result, command_name)
 
 
-def setup_signal_handler(client: disnake.Client, tg: anyio.abc.TaskGroup) -> None:
+def setup_signal_handler(client: Client, tg: anyio.abc.TaskGroup) -> None:
     # TODO: cancel all ongoing commands before .close
     # NOTE: anyio.open_signal_receiver does not work on Windows
     def handle(signum: int, frame: object) -> None:
@@ -68,28 +65,8 @@ def setup_signal_handler(client: disnake.Client, tg: anyio.abc.TaskGroup) -> Non
 
 async def main() -> None:
     init.config_logging()
-    disnake.VoiceClient.warn_nacl = False
-
-    AppState.bot = bot = commands.InteractionBot(
-        # NOTE: guilds provides things like Interaction.me,
-        # which is typed as -> Member | ClientUser, but can actually be None
-        intents=disnake.Intents(guilds=True),
-        activity=disnake.Game("SuperMechs"),
-        allowed_mentions=disnake.AllowedMentions.none(),
-        localization_provider=AppState.I18n.localization_provider,
-        test_guilds=CONFIG.test_guild_ids if CONFIG.indev else None,
-        command_sync_flags=commands.CommandSyncFlags(
-            sync_commands_debug=CONFIG.debug_command_sync,
-            sync_on_cog_actions=False,
-        ),
-        # NOTE: Client/Bot instance needs async context. Lets make that clear.
-        loop=asyncio.get_running_loop(),
-    )
-    if CONFIG.indev:
-        bot.get_global_command_named = partial(bot.get_guild_command_named, CONFIG.dev_guild_id)
-
-    # this patch has to be done mostly because plugins call this method with no opt-out
-    bot._schedule_delayed_command_sync = lambda: None  # pyright: ignore[reportPrivateUsage]
+    bot = state.BOT
+    state.event_loop = bot._connection.loop = bot.http.loop = bot.loop = asyncio.get_running_loop()  # pyright: ignore[reportPrivateUsage]
 
     i18n.load(paths.LOCALE_DIR)
     setup_event_loggers(bot)
@@ -102,7 +79,7 @@ async def main() -> None:
             _LOG.error("Ignoring exception in %s:", ext, exc_info=exc)
 
     # bypass call to _schedule_app_command_preparation
-    await disnake.Client.login(bot, CONFIG.bot_token)
+    await Client.login(bot, CONFIG.bot_token)
 
     if CONFIG.logs_channel_id:
         await init.setup_logs_channel(bot, CONFIG.logs_channel_id)
@@ -111,7 +88,7 @@ async def main() -> None:
         _LOG.info(f"{CONFIG.logs_channel_id=}, channel logging disabled")
 
     async with (
-        aio.client_session(bot.http) as AppState.http_session,
+        aio.client_session(bot.http) as state.http_session,
         anyio.create_task_group() as tg,
     ):
         setup_signal_handler(bot, tg)
@@ -120,10 +97,10 @@ async def main() -> None:
             _LOG.warning(f"{CONFIG.item_pack_uri=}, item pack not configured")
         else:
             tg.start_soon(
-                loader.load_datapack,
+                init.load_datapack,
                 CONFIG.item_pack_uri,
                 CONFIG.gfx_pack_uri,
-                AppState.http_session,
+                state.http_session,
             )
 
         tg.start_soon(init.sync_commands, bot)

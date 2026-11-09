@@ -2,6 +2,7 @@ from pathlib import Path
 
 CWD = Path.cwd()
 LOCALE_DIR = Path("locale/")
+LOCALE_FILE_EXT = ".toml"
 STATIC_DIR = Path("static/")
 ASSETS_TOML = STATIC_DIR / "assets.toml"
 EMOJIS_TOML = STATIC_DIR / ".emojis.toml"

@@ -57,23 +57,6 @@ async def read_path(path: Pathish, /) -> Result[bytes, OSError]:
         return Err(exc)
 
 
-def _log_request(url: yarl.URL, method: HTTPMethod) -> None:
-    _LOG.info("Request method=%s url=%s", method, url)
-
-
-def _log_response(response: aiohttp.ClientResponse, /) -> None:
-    _LOG.log(
-        logging.INFO if response.status == HTTPStatus.OK else logging.WARNING,
-        "Response method=%s url=%s status=%d type=%s length=%s (%s%sB)",
-        response.method,
-        response.url,
-        response.status,
-        response.content_type,
-        response.content_length,
-        *as_binary_unit(response.content_length or 0),
-    )
-
-
 @attrs.define(auto_exc=True)
 class ResponseNotOk(OSError):
     status: HTTPStatus
@@ -84,10 +67,19 @@ class ResponseNotOk(OSError):
 
 
 async def read_http(url: yarl.URL, /, session: HTTPSession) -> Result[bytes, HttpReadError]:
-    _log_request(url, HTTPMethod.GET)
+    _LOG.info("Request method=%s url=%s", HTTPMethod.GET, url)
 
     async with session.get(url) as response:
-        _log_response(response)
+        _LOG.log(
+            logging.INFO if response.status == HTTPStatus.OK else logging.WARNING,
+            "Response method=%s url=%s status=%d type=%s length=%s (%s%sB)",
+            response.method,
+            response.url,
+            response.status,
+            response.content_type,
+            response.content_length,
+            *as_binary_unit(response.content_length or 0),
+        )
 
         if response.status != HTTPStatus.OK:
             return Err(ResponseNotOk.from_response(response))

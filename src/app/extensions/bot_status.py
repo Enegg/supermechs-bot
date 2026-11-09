@@ -1,21 +1,20 @@
 import random
 import sys
-from functools import partial
 from typing import Final
+
+import anyio
 
 from discord import markdown as md
 from disnake import __version__ as disnake_version
 from disnake.utils import oauth_url
 
-from app import ui
+from app import init, ui
 from app.assets import ASSETS, EMOJIS
-from app.async_utils import gather
-from app.core import CONFIG, AppState
-from app.core.state import BotUserInfo
+from app.core import CONFIG, state
 from app.devtools import debug_components
 from app.plugins_factory import create_plugin
 from app.typeshed import CommandInteraction
-from app.utils import as_binary_unit, get_ram_usage, get_sloc
+from app.utils import as_binary_unit
 from resources import HttpResource
 
 plugin = create_plugin(__name__)
@@ -26,16 +25,9 @@ disnake_url: Final = "https://github.com/DisnakeDev/disnake"
 
 @plugin.load_hook(post=True)
 async def _() -> None:
-    app_info, app_sloc = await gather(
-        AppState.bot.application_info,
-        partial(get_sloc, "src"),
-    )
-    AppState.bot_user_info = BotUserInfo(
-        owner=app_info.owner,
-        team=app_info.team,
-        bot_public=app_info.bot_public,
-    )
-    AppState.app_sloc = app_sloc
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(init.init_app_info)
+        tg.start_soon(init.init_sloc)
 
 
 @plugin.slash_command(name="frantic")
@@ -52,7 +44,7 @@ async def slash_info(inter: CommandInteraction) -> None:
     container, add_component = ui.container(accent_color=inter.me.color)
     components.append(container)
 
-    if (team := AppState.bot_user_info.team) is not None:
+    if (team := state.bot_user_info.team) is not None:
         # when an app is team-owned, .owner is a pseudo-user that represents the team
         # and doesn't really have any useful attributes
         assert team.owner_id is not None  # TODO: disnake#1630
@@ -63,15 +55,15 @@ async def slash_info(inter: CommandInteraction) -> None:
             else:
                 developer_line += f" and {len(team.members)} others"
     else:
-        developer_line = f"Developer: {AppState.bot_user_info.owner.mention}"
+        developer_line = f"Developer: {state.bot_user_info.owner.mention}"
 
     add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
             "**General**\n"
             f"{developer_line}\n"
-            f"Created: {md.format_dt(AppState.bot.user.created_at, 'R')}\n"
-            f"Servers: {len(AppState.bot.guilds)}"
+            f"Created: {md.format_dt(state.BOT.user.created_at, 'R')}\n"
+            f"Servers: {len(state.BOT.guilds)}"
         ),
         accessory=ui.thumbnail(inter.me.display_avatar),
     ))  # fmt: skip
@@ -81,7 +73,7 @@ async def slash_info(inter: CommandInteraction) -> None:
     if isinstance(CONFIG.item_pack_uri, HttpResource):
         pack_key = md.hyperlink(pack_key, CONFIG.item_pack_uri.uri)
 
-    item_pack = AppState.item_pack
+    item_pack = state.item_pack
     add_component(ui.TextDisplay(
         "**SuperMechs**\n"
         f"Item pack: {pack_key}\n"
@@ -91,19 +83,19 @@ async def slash_info(inter: CommandInteraction) -> None:
         "**Backend**\n"
         f"Python version: {python_version}\n"
         f"Discord library: {md.hyperlink('disnake', disnake_url)} {disnake_version}\n"
-        f"Lines of code: {AppState.app_sloc}"
+        f"Lines of code: {state.app_sloc}"
     ))  # fmt: skip
-    bytes_, prefix = as_binary_unit(get_ram_usage(AppState.app_process))
+    bytes_, prefix = as_binary_unit(state.APP_PROCESS.memory_info().rss)
     add_component(ui.TextDisplay(
         "**Performance**\n"
-        f"Started: {md.format_dt(AppState.app_process.create_time(), 'R')}\n"
-        f"Latency: {round(AppState.bot.latency * 1000)}ms\n"
+        f"Started: {md.format_dt(state.APP_PROCESS.create_time(), 'R')}\n"
+        f"Latency: {round(state.BOT.latency * 1000)}ms\n"
         f"RAM usage: {bytes_}{prefix}B"
     ))  # fmt: skip
 
-    if AppState.bot_user_info.bot_public:
+    if state.bot_user_info.bot_public:
         components.append(ui.ActionRow(ui.UrlButton(
-            url=oauth_url(AppState.bot.user.id, scopes=("bot", "applications.commands")),
+            url=oauth_url(state.BOT.user.id, scopes=("bot", "applications.commands")),
             label="Invite me!",
             emoji=EMOJIS.item_slot_drone.to_partial(),
         )))  # fmt: skip

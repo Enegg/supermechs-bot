@@ -3,13 +3,13 @@ from contextlib import suppress
 
 from discord import ComponentLimits, markdown as md, text_to_file
 from discord.message_builder import MessageBuilder
-from disnake import Event, InteractionTimedOut
+from disnake import Client, Event, InteractionTimedOut
 from disnake.ext import commands
 
 from app import i18n, ui
 from app.assets import Colors
-from app.core import CONFIG, AppState
-from app.typeshed import Bot, CommandInteraction
+from app.core import CONFIG, state
+from app.typeshed import CommandInteraction
 from app.utils import format_exception
 
 _LOG = logging.getLogger("event.command_error")
@@ -87,18 +87,18 @@ if CONFIG.indev:
             await inter.send(**params)
 
         except InteractionTimedOut:
-            if AppState.logs_channel is not None:
-                await AppState.logs_channel.send(**params)
+            if state.logs_channel is not None:
+                await state.logs_channel.send(**params)
 
 else:
 
     async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
-        if AppState.logs_channel is not None:
-            await AppState.logs_channel.send(**builder.get_send_params())
+        if state.logs_channel is not None:
+            await state.logs_channel.send(**builder.get_send_params())
 
         with suppress(InteractionTimedOut):
             await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)
 
 
-def setup(bot: Bot, /) -> None:
-    bot.add_listener(on_slash_command_error, Event.slash_command_error)
+def setup(client: Client, /) -> None:
+    client.add_listener(on_slash_command_error, Event.slash_command_error)
