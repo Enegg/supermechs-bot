@@ -13,7 +13,6 @@ import anyio.to_thread
 import attrs
 import cattrs
 import msgspec
-import psutil
 import rtoml
 
 from discord.entities import AnyEmoji, CustomEmoji, UnicodeEmoji
@@ -150,11 +149,6 @@ def walk_extensions(root_module: str, *, package: str | None = None) -> abc.Iter
 
     for _, sub_name, _ in pkgutil.iter_modules(paths, f"{spec.name}."):
         yield sub_name
-
-
-def get_ram_usage(process: psutil.Process, /) -> int:
-    """Return a process' RAM utilization, in bytes."""
-    return process.memory_info().rss
 
 
 def _file_sloc(path: Pathish, /) -> int:

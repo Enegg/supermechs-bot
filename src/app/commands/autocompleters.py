@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Final, NamedTuple, cast as type_cast
 
 from discord import AutocompleteReturnType, InteractionLimits
 
+from app import stuff
 from app.core import state
 from app.typeshed import CommandInteraction
 
@@ -130,14 +131,16 @@ def acronym_of(name: str, /) -> str | None:
 
 
 def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
-    """Autocomplete for items with regard for slot & element."""
+    """Autocomplete for items with regard for slot, element & rarity."""
     filled_options: FilledOptions = type_cast("FilledOptions", inter.filled_options)
 
-    items = state.filter_items(
+    items = stuff.filter_items(
+        state.item_pack.legacy_items
+        if inter.application_command.name == "legacy-item"  # HACK
+        else state.item_pack.reloaded_items,
         slot=filled_options.get("slot"),
         element=filled_options.get("element"),
         rarity=filled_options.get("rarity"),
-        legacy=inter.application_command.name == "legacy-item",  # HACK
     )
     names = (item.name for item in items)
     input = input.strip()

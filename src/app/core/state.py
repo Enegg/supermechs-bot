@@ -1,121 +1,78 @@
+import asyncio
 from collections import abc
-from typing import ClassVar, Final, Literal, cast as type_cast, final
+from functools import partial
+from typing import Final, cast as type_cast, override
 
-import msgspec
 import psutil
 
 import disnake
-from discord.entities import NullUser
 from disnake import Locale, LocalizationProtocol
 from disnake.abc import Messageable
+from disnake.ext import commands
 
 from app.aio import HTTPSession
-from app.models.item_pack import ItemPack
-from app.models.sprite_pack import SpriteKey, SpritePack
-from app.typeshed import Bot
-from resources import HttpResource
-
-import supermechs.all as sm
-
-__all__ = ("AppState",)
+from app.core import CONFIG
+from app.structs import BotUserInfo, ItemPack, LocaleInfo, LocalePair, SpritePack
 
 
-class LocaleInfo(msgspec.Struct):
-    english_name: str
-    local_name: str
-    flag_emoji: str | None = None
-    region: str | None = None
+# TODO: is there a better way to create objects that depend on a loop instance?
+class MockEventLoop(asyncio.AbstractEventLoop):
+    @override
+    def set_debug(self, enabled: bool) -> None: ...
+    @override
+    def get_debug(self) -> bool:
+        return False
 
 
-class BotUserInfo(msgspec.Struct):
-    owner: disnake.abc.User = NullUser()
-    team: disnake.Team | None = None
-    bot_public: bool = False
+DEFAULT_LOOP: Final[asyncio.AbstractEventLoop] = MockEventLoop()
+APP_PROCESS: Final = psutil.Process()
 
+# ----------------------------------------- set-once state -----------------------------------------
+event_loop: asyncio.AbstractEventLoop = DEFAULT_LOOP
+http_session: HTTPSession = ...  # pyright: ignore[reportAssignmentType]
+"""App-lifetime HTTP session."""
+logs_channel: Messageable | None = None
+bot_user_info: BotUserInfo = BotUserInfo()
 
-type CommandName = Literal["item", "legacy-item"]
+item_pack: ItemPack = ItemPack()
+sprite_pack: SpritePack = {}
 
+FALLBACK_LOCALE: Final = Locale.en_US
+locale_info: Final[abc.MutableMapping[Locale, LocaleInfo]] = {}
+i18n_stats: Final[abc.MutableMapping[LocalePair[str], str]] = {}
+i18n_messages: Final[abc.MutableMapping[LocalePair[str], str]] = {}
+i18n_command_locale: Final[abc.MutableMapping[str, dict[str, str]]] = {}
+# provider only needs .get(_: str, /) -> Mapping[str, str] | None
+localization_provider: Final[LocalizationProtocol] = type_cast(
+    "LocalizationProtocol", i18n_command_locale
+)
 
-@final
-class AppState:
-    bot: ClassVar[Bot]
-    bot_user_info: ClassVar[BotUserInfo] = BotUserInfo()
+# ----------------------------------------- variable state -----------------------------------------
+debug_log_components: bool = False
+debug_reloaded_plugin_name: str | None = None
+debug_locale_override: Locale | None = None
 
-    http_session: ClassVar[HTTPSession]
-    """App-lifetime HTTP session."""
-    app_process: Final[psutil.Process] = psutil.Process()
-    app_sloc: int = 0
+app_sloc: int = 0
+command_mentions: Final[abc.MutableMapping[str, str]] = {}
 
-    item_pack: ClassVar[ItemPack] = ItemPack()
-    sprite_pack: ClassVar[SpritePack] = {}
+# this is checked in Client.__init__
+disnake.VoiceClient.warn_nacl = False
+BOT: Final = commands.InteractionBot(
+    # NOTE: guilds provides things like Interaction.me,
+    # which is typed as -> Member | ClientUser, but can actually be None
+    intents=disnake.Intents(guilds=True),
+    activity=disnake.Game("SuperMechs"),
+    allowed_mentions=disnake.AllowedMentions.none(),
+    localization_provider=localization_provider,
+    test_guilds=CONFIG.test_guild_ids if CONFIG.indev else None,
+    command_sync_flags=commands.CommandSyncFlags(
+        sync_commands_debug=CONFIG.debug_command_sync,
+        sync_on_cog_actions=False,
+    ),
+    loop=DEFAULT_LOOP,
+)
+if CONFIG.indev:
+    BOT.get_global_command_named = partial(BOT.get_guild_command_named, CONFIG.dev_guild_id)
 
-    debug_log_components: ClassVar[bool] = False
-    recently_loaded_plugin: ClassVar[str | None] = None
-
-    command_mentions: Final[abc.MutableMapping[str, str]] = {}
-    logs_channel: ClassVar[Messageable | None] = None
-
-    @final
-    class I18n:
-        type LocalePair[KT] = tuple[KT, Locale]
-
-        stats: Final[abc.MutableMapping[LocalePair[str], str]] = {}
-        messages: Final[abc.MutableMapping[LocalePair[str], str]] = {}
-        locale_info: Final[abc.MutableMapping[Locale, LocaleInfo]] = {}
-
-        command_locale: Final[abc.MutableMapping[str, dict[str, str]]] = {}
-        # provider only needs .get(_: str, /) -> Mapping[str, str] | None
-        localization_provider: Final[LocalizationProtocol] = type_cast(
-            "LocalizationProtocol", command_locale
-        )
-        locale_override: ClassVar[Locale | None] = None
-
-
-def get_command_mention(name: CommandName, /) -> str:
-    mention = AppState.command_mentions.get(name)
-
-    if mention is not None:
-        return mention
-
-    mention = AppState.command_mentions[name] = "/" + name
-    return mention
-
-
-def get_image_url(key: SpriteKey, /) -> str | None:
-    resource = AppState.sprite_pack.get(key)
-
-    if isinstance(resource, HttpResource):
-        return resource.uri
-
-    return None
-
-
-def filter_items(
-    slot: str | None = None,
-    element: str | None = None,
-    rarity: str | None = None,
-    legacy: bool = False,
-) -> abc.Generator[sm.Item]:
-    filters: list[abc.Callable[[sm.Item], bool]] = []
-
-    if slot is not None:
-        target_slot = sm.Item.Slot[slot]
-        filters.append(lambda item: item.slot_id is target_slot)
-
-    if element is not None:
-        target_element = sm.Item.Element[element]
-        filters.append(lambda item: item.element is target_element)
-
-    if rarity is not None:
-        min_tier = sm.Item.Rarity[rarity]
-        filters.append(lambda item: item.stages[0].tier >= min_tier)
-
-    bank = AppState.item_pack.legacy_items if legacy else AppState.item_pack.reloaded_items
-
-    if not filters:
-        yield from bank.values()
-        return
-
-    for item in bank.values():
-        if all(f(item) for f in filters):
-            yield item
+# this patch has to be done mostly because plugins call this method with no opt-out
+BOT._schedule_delayed_command_sync = lambda: None  # pyright: ignore[reportPrivateUsage]

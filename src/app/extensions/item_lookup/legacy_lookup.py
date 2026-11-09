@@ -5,11 +5,11 @@ from discord import ComponentLimits
 from disnake import MessageFlags
 from disnake.ext import commands
 
-from app import i18n, ui
+from app import i18n, stuff, ui
 from app.assets import EMOJIS, ICONS, Colors, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
-from app.core import AppState, state
+from app.core import state
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.typeshed import CommandInteraction
@@ -71,7 +71,7 @@ async def slash_legacy_item(
     """
     gettext = i18n.get_gettext(inter)
 
-    for item in state.filter_items(slot, element, rarity, True):
+    for item in stuff.filter_items(state.item_pack.legacy_items, slot, element, rarity):
         if item.name == name:
             break
 
@@ -93,17 +93,16 @@ async def on_legacy_lookup_interaction(
 ) -> None:
     component, ctx = parse_component_id(inter.data.custom_id)
     gettext = i18n.get_gettext(inter)
-    item_pack = AppState.item_pack
     # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
     try:
-        item = item_pack.legacy_items[ctx.item_id]
+        item = state.item_pack.legacy_items[ctx.item_id]
 
     # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
             ui.TextDisplay(
-                gettext("item-lookup-item-not-available", command=state.get_command_mention("legacy-item"))
+                gettext("item-lookup-item-not-available", command=stuff.get_command_mention("legacy-item"))
             ),
             accent_colour=Colors.error,
         ))  # fmt: skip
@@ -119,7 +118,7 @@ async def on_legacy_lookup_interaction(
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
             gettext(
-                "item-lookup-item-changed-info", command=state.get_command_mention("legacy-item")
+                "item-lookup-item-changed-info", command=stuff.get_command_mention("legacy-item")
             ),
             ephemeral=True,
         )
@@ -289,7 +288,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 add_component(ui.TextDisplay("\n".join(costs_lines)))
 
     # ------------------------------------------- image --------------------------------------------
-    if (sprite_url := state.get_image_url((item.id, tier))) is not None:
+    if (sprite_url := stuff.get_image_url((item.id, tier))) is not None:
         add_component(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
         add_component(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
