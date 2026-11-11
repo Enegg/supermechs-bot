@@ -1,6 +1,5 @@
-# https://www.youtube.com/watch?v=9L77QExPmI0
+# https://youtu.be/9L77QExPmI0
 # TODO (3.12): QueueHandler/QueueListener
-import copy
 import datetime as dt
 import logging
 from collections import abc
@@ -8,52 +7,34 @@ from typing import override
 
 import orjson
 
-from app.utils import strip_cwd
-
-BUILTIN_KEYS = frozenset({
-    "args",
-    "asctime",
-    "created",
-    "exc_info",
-    "exc_text",
-    "filename",
-    "funcName",
-    "levelname",
-    "levelno",
-    "lineno",
-    "module",
-    "msecs",
-    "message",
-    "msg",
-    "name",
-    "pathname",
-    "process",
-    "processName",
-    "relativeCreated",
-    "stack_info",
-    "thread",
-    "threadName",
-    "taskName",
-})  # fmt: skip
-
-
-def normalize_record_path(record: logging.LogRecord) -> logging.LogRecord:
-    if record.pathname == "(unknown file)":
-        return record
-
-    try:
-        path = strip_cwd(record.pathname)
-
-    except ValueError:
-        return record
-
-    # TODO (3.13): copy.replace?
-    record = copy.copy(record)
-    record.pathname = path
-    return record
-
 
 class JsonFormatter(logging.Formatter):
+    LOG_RECORD_BUILTIN_KEYS = frozenset({
+        "args",
+        "asctime",
+        "created",
+        "exc_info",
+        "exc_text",
+        "filename",
+        "funcName",
+        "levelname",
+        "levelno",
+        "lineno",
+        "module",
+        "msecs",
+        "message",
+        "msg",
+        "name",
+        "pathname",
+        "process",
+        "processName",
+        "relativeCreated",
+        "stack_info",
+        "thread",
+        "threadName",
+        "taskName",
+    })  # fmt: skip
+
     def __init__(
         self,
         *,
@@ -83,7 +64,7 @@ class JsonFormatter(logging.Formatter):
         message_dict.update(base_fields)
 
         for key, value in record.__dict__.items():
-            if key not in BUILTIN_KEYS:
+            if key not in __class__.LOG_RECORD_BUILTIN_KEYS:
                 message_dict[key] = value  # noqa: PERF403
 
         return orjson.dumps(message_dict, default=str).decode()

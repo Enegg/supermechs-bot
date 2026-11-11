@@ -1,22 +1,26 @@
 import logging
 from contextlib import suppress
+from functools import partial
 
 from discord import ComponentLimits, markdown as md, text_to_file
 from discord.message_builder import MessageBuilder
-from disnake import Client, Event, InteractionTimedOut
+from disnake import Event, InteractionTimedOut
 from disnake.ext import commands
 
 from app import i18n, ui
 from app.assets import Colors
-from app.core import CONFIG, state
+from app.core.config import CONFIG
+from app.core.state import State
 from app.typeshed import CommandInteraction
 from app.utils import format_exception
 
 _LOG = logging.getLogger("event.command_error")
 
 
-def get_user_error_message(inter: CommandInteraction, exc: commands.CommandError) -> str | None:
-    gettext = i18n.get_gettext(inter)
+def get_user_error_message(
+    inter: CommandInteraction, exc: commands.CommandError, state: State
+) -> str | None:
+    gettext = i18n.get_gettext(inter, state)
 
     match exc:
         case commands.NotOwner():
@@ -67,8 +71,10 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     return builder.with_components(container)
 
 
-async def on_slash_command_error(inter: CommandInteraction, exc: commands.CommandError) -> None:
-    if (msg := get_user_error_message(inter, exc)) is not None:
+async def on_slash_command_error(
+    inter: CommandInteraction, exc: commands.CommandError, state: State
+) -> None:
+    if (msg := get_user_error_message(inter, exc, state)) is not None:
         with suppress(InteractionTimedOut):
             await inter.send(msg, ephemeral=True)
         return
@@ -76,12 +82,14 @@ async def on_slash_command_error(inter: CommandInteraction, exc: commands.Comman
     error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
     _LOG.error("Exception in %s", inter.application_command.qualified_name, exc_info=error)
     builder = exception_to_message(error, inter)
-    await send_response(inter, builder)
+    await send_response(inter, builder, state)
 
 
 if CONFIG.indev:
 
-    async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
+    async def send_response(
+        inter: CommandInteraction, builder: MessageBuilder, state: State
+    ) -> None:
         params = builder.get_send_params()
         try:
             await inter.send(**params)
@@ -92,13 +100,17 @@ if CONFIG.indev:
 
 else:
 
-    async def send_response(inter: CommandInteraction, builder: MessageBuilder) -> None:
+    async def send_response(
+        inter: CommandInteraction, builder: MessageBuilder, state: State
+    ) -> None:
         if state.logs_channel is not None:
             await state.logs_channel.send(**builder.get_send_params())
 
         with suppress(InteractionTimedOut):
-            await inter.send(i18n.get_message(inter.locale, "command-error"), ephemeral=True)
+            await inter.send(
+                i18n.get_message(state.i18n, inter.locale, "command-error"), ephemeral=True
+            )
 
 
-def setup(client: Client, /) -> None:
-    client.add_listener(on_slash_command_error, Event.slash_command_error)
+def setup(state: State, /) -> None:
+    state.bot.add_listener(partial(on_slash_command_error, state=state), Event.slash_command_error)

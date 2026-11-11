@@ -1,16 +1,12 @@
 import random
-import sys
-from typing import Final
-
-import anyio
 
 from discord import markdown as md
-from disnake import __version__ as disnake_version
 from disnake.utils import oauth_url
 
-from app import init, ui
+from app import const, ui
 from app.assets import ASSETS, EMOJIS
-from app.core import CONFIG, state
+from app.core.config import CONFIG
+from app.core.state import State
 from app.devtools import debug_components
 from app.plugins_factory import create_plugin
 from app.typeshed import CommandInteraction
@@ -18,16 +14,6 @@ from app.utils import as_binary_unit
 from resources import HttpResource
 
 plugin = create_plugin(__name__)
-
-python_version: Final = ".".join(map(str, sys.version_info[:3]))
-disnake_url: Final = "https://github.com/DisnakeDev/disnake"
-
-
-@plugin.load_hook(post=True)
-async def _() -> None:
-    async with anyio.create_task_group() as tg:
-        tg.start_soon(init.init_app_info)
-        tg.start_soon(init.init_sloc)
 
 
 @plugin.slash_command(name="frantic")
@@ -40,6 +26,7 @@ async def slash_frantic(inter: CommandInteraction) -> None:
 @plugin.slash_command(name="info")
 async def slash_info(inter: CommandInteraction) -> None:
     """Display information about the bot."""
+    state: State = State.magically_get_state()
     components: ui.MessageComponents = []
     container, add_component = ui.container(accent_color=inter.me.color)
     components.append(container)
@@ -62,8 +49,8 @@ async def slash_info(inter: CommandInteraction) -> None:
             "## Bot info\n"
             "**General**\n"
             f"{developer_line}\n"
-            f"Created: {md.format_dt(state.BOT.user.created_at, 'R')}\n"
-            f"Servers: {len(state.BOT.guilds)}"
+            f"Created: {md.format_dt(state.bot.user.created_at, 'R')}\n"
+            f"Servers: {len(state.bot.guilds)}"
         ),
         accessory=ui.thumbnail(inter.me.display_avatar),
     ))  # fmt: skip
@@ -81,27 +68,30 @@ async def slash_info(inter: CommandInteraction) -> None:
     ))  # fmt: skip
     add_component(ui.TextDisplay(
         "**Backend**\n"
-        f"Python version: {python_version}\n"
-        f"Discord library: {md.hyperlink('disnake', disnake_url)} {disnake_version}\n"
-        f"Lines of code: {state.app_sloc}"
+        f"Python version: {const.PYTHON_VERSION}\n"
+        f"Discord library: {md.hyperlink('disnake', const.DISNAKE_URL)} {const.DISNAKE_VERSION}\n"
+        f"Lines of code: {state.app_source_stats.significant_lines}\n"
+        f"Source files: {state.app_source_stats.file_count}\n"
+        f"Classes: {state.app_source_stats.classes}\n"
+        f"Functions: {state.app_source_stats.functions}"
     ))  # fmt: skip
-    bytes_, prefix = as_binary_unit(state.APP_PROCESS.memory_info().rss)
+    bytes_, prefix = as_binary_unit(const.APP_PROCESS.memory_info().rss)
     add_component(ui.TextDisplay(
         "**Performance**\n"
-        f"Started: {md.format_dt(state.APP_PROCESS.create_time(), 'R')}\n"
-        f"Latency: {round(state.BOT.latency * 1000)}ms\n"
+        f"Started: {md.format_dt(const.APP_PROCESS.create_time(), 'R')}\n"
+        f"Latency: {round(state.bot.latency * 1000)}ms\n"
         f"RAM usage: {bytes_}{prefix}B"
     ))  # fmt: skip
 
     if state.bot_user_info.bot_public:
         components.append(ui.ActionRow(ui.UrlButton(
-            url=oauth_url(state.BOT.user.id, scopes=("bot", "applications.commands")),
+            url=oauth_url(state.bot.user.id, scopes=("bot", "applications.commands")),
             label="Invite me!",
             emoji=EMOJIS.item_slot_drone.to_partial(),
         )))  # fmt: skip
 
     if __debug__:
-        debug_components(components)
+        debug_components(components, state.debug)
 
     await inter.response.send_message(components=components, ephemeral=True)
 

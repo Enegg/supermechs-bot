@@ -36,7 +36,7 @@ class Config:
 
     @property
     def test_guild_ids(self) -> abc.Sequence[int]:
-        """The IDs of only guilds the bot will register commands in while in dev mode."""
+        """The IDs of the only guilds the bot will register commands in while in dev mode."""
         return (self.dev_guild_id,)
 
 

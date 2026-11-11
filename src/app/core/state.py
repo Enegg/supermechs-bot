@@ -1,78 +1,57 @@
-import asyncio
 from collections import abc
-from functools import partial
-from typing import Final, cast as type_cast, override
+from typing import ClassVar, Final, Self
 
-import psutil
+import attrs
 
-import disnake
-from disnake import Locale, LocalizationProtocol
+from disnake import Locale
 from disnake.abc import Messageable
 from disnake.ext import commands
 
-from app.aio import HTTPSession
-from app.core import CONFIG
-from app.structs import BotUserInfo, ItemPack, LocaleInfo, LocalePair, SpritePack
+from app import structs
+from app.utils import SourceStats
+
+from supermechs.enums import ItemStat
 
 
-# TODO: is there a better way to create objects that depend on a loop instance?
-class MockEventLoop(asyncio.AbstractEventLoop):
-    @override
-    def set_debug(self, enabled: bool) -> None: ...
-    @override
-    def get_debug(self) -> bool:
-        return False
+@attrs.define(kw_only=True)
+class I18nStore:
+    locale_info: Final[abc.MutableMapping[Locale, structs.LocaleInfo]] = attrs.Factory(dict)
+    stat_l10ns: Final[abc.MutableMapping[structs.LocalePair[ItemStat], str]] = attrs.Factory(dict)
+    message_l10ns: Final[abc.MutableMapping[structs.LocalePair[str], str]] = attrs.Factory(dict)
+    command_l10ns: Final[abc.MutableMapping[str, abc.Mapping[str, str]]] = attrs.Factory(dict)
 
 
-DEFAULT_LOOP: Final[asyncio.AbstractEventLoop] = MockEventLoop()
-APP_PROCESS: Final = psutil.Process()
+@attrs.define(kw_only=True)
+class DebugOptions:
+    log_components: bool = False
+    reloaded_plugin_name: str | None = None
+    locale_override: Locale | None = None
 
-# ----------------------------------------- set-once state -----------------------------------------
-event_loop: asyncio.AbstractEventLoop = DEFAULT_LOOP
-http_session: HTTPSession = ...  # pyright: ignore[reportAssignmentType]
-"""App-lifetime HTTP session."""
-logs_channel: Messageable | None = None
-bot_user_info: BotUserInfo = BotUserInfo()
 
-item_pack: ItemPack = ItemPack()
-sprite_pack: SpritePack = {}
+# TODO: Assets
+class Assets:
+    EMOJIS: Final = ...
 
-FALLBACK_LOCALE: Final = Locale.en_US
-locale_info: Final[abc.MutableMapping[Locale, LocaleInfo]] = {}
-i18n_stats: Final[abc.MutableMapping[LocalePair[str], str]] = {}
-i18n_messages: Final[abc.MutableMapping[LocalePair[str], str]] = {}
-i18n_command_locale: Final[abc.MutableMapping[str, dict[str, str]]] = {}
-# provider only needs .get(_: str, /) -> Mapping[str, str] | None
-localization_provider: Final[LocalizationProtocol] = type_cast(
-    "LocalizationProtocol", i18n_command_locale
-)
 
-# ----------------------------------------- variable state -----------------------------------------
-debug_log_components: bool = False
-debug_reloaded_plugin_name: str | None = None
-debug_locale_override: Locale | None = None
+@attrs.define(kw_only=True)
+class State:
+    instance: ClassVar[Self]
 
-app_sloc: int = 0
-command_mentions: Final[abc.MutableMapping[str, str]] = {}
+    bot: Final[commands.InteractionBot]
 
-# this is checked in Client.__init__
-disnake.VoiceClient.warn_nacl = False
-BOT: Final = commands.InteractionBot(
-    # NOTE: guilds provides things like Interaction.me,
-    # which is typed as -> Member | ClientUser, but can actually be None
-    intents=disnake.Intents(guilds=True),
-    activity=disnake.Game("SuperMechs"),
-    allowed_mentions=disnake.AllowedMentions.none(),
-    localization_provider=localization_provider,
-    test_guilds=CONFIG.test_guild_ids if CONFIG.indev else None,
-    command_sync_flags=commands.CommandSyncFlags(
-        sync_commands_debug=CONFIG.debug_command_sync,
-        sync_on_cog_actions=False,
-    ),
-    loop=DEFAULT_LOOP,
-)
-if CONFIG.indev:
-    BOT.get_global_command_named = partial(BOT.get_guild_command_named, CONFIG.dev_guild_id)
+    logs_channel: Messageable | None = None
+    bot_user_info: structs.BotUserInfo = attrs.Factory(structs.BotUserInfo)
+    app_source_stats: SourceStats = SourceStats()  # noqa: RUF009
+    command_mentions: Final[abc.MutableMapping[str, str]] = attrs.Factory(dict)
 
-# this patch has to be done mostly because plugins call this method with no opt-out
-BOT._schedule_delayed_command_sync = lambda: None  # pyright: ignore[reportPrivateUsage]
+    item_pack: structs.ItemPack = attrs.Factory(structs.ItemPack)
+    sprite_pack: structs.SpritePack = attrs.Factory(structs.SpritePack)
+
+    i18n: Final[I18nStore] = attrs.Factory(I18nStore)
+    debug: Final[DebugOptions] = attrs.Factory(DebugOptions)
+    assets: Assets = attrs.Factory(Assets)
+
+    @classmethod
+    def magically_get_state(cls) -> Self:
+        # TODO: make it less magical
+        return cls.instance
