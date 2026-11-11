@@ -7,11 +7,11 @@ from discord import AnyEmoji, markdown as md
 from disnake import MessageFlags
 from disnake.ext import commands
 
-from app import i18n, stuff, ui
+from app import i18n, structs, stuff, ui
 from app.assets import EMOJIS, ICONS, Colors, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import ELEMENT_CHOICES, SLOT_CHOICES, TIER_CHOICES
-from app.core import state
+from app.core.state import State
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.typeshed import CommandInteraction
@@ -104,7 +104,8 @@ async def slash_item(
     rarity:
         Remove suggestions below this rarity. {{ ITEM_TIER }}
     """  # noqa: D400
-    gettext = i18n.get_gettext(inter)
+    state = State.magically_get_state()
+    gettext = i18n.get_gettext(inter, state)
 
     for item in stuff.filter_items(state.item_pack.reloaded_items, slot, element, rarity):
         if item.name == name:
@@ -122,9 +123,9 @@ async def slash_item(
         level_index=len(levels) - 1,
         levels_page=ui.option_to_page_count(len(levels)),
     )
-    container = get_item_summary(gettext, item, ctx)
+    container = get_item_summary(gettext, item, ctx, state.sprite_pack)
     if __debug__:
-        debug_components(container)
+        debug_components(container, state.debug)
     await inter.response.send_message(
         components=container, flags=MessageFlags(is_components_v2=True)
     )
@@ -133,8 +134,9 @@ async def slash_item(
 async def on_reloaded_lookup_interaction(
     inter: ui.MessageInteraction, logger: logging.Logger
 ) -> None:
+    state = State.magically_get_state()
     component, ctx = parse_component_id(inter.data.custom_id)
-    gettext = i18n.get_gettext(inter)
+    gettext = i18n.get_gettext(inter, state)
     # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
     try:
@@ -143,7 +145,7 @@ async def on_reloaded_lookup_interaction(
     # 1. The ID is invalid. Can't do much but disabling the view and/or sending a message:
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
-            ui.TextDisplay(gettext("item-lookup-item-not-available", command=stuff.get_command_mention("item"))),
+            ui.TextDisplay(gettext("item-lookup-item-not-available", command=stuff.get_command_mention("item", state))),
             accent_colour=Colors.error,
         ))  # fmt: skip
         return
@@ -160,11 +162,15 @@ async def on_reloaded_lookup_interaction(
         ctx = ctx.__replace__(
             stage_index=valid_stage_index, level_index=valid_level_index, levels_page=0
         )
-        await inter.response.edit_message(components=get_item_summary(gettext, item, ctx))
+        await inter.response.edit_message(
+            components=get_item_summary(gettext, item, ctx, state.sprite_pack)
+        )
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
-            gettext("item-lookup-item-changed-info", command=stuff.get_command_mention("item")),
+            gettext(
+                "item-lookup-item-changed-info", command=stuff.get_command_mention("item", state)
+            ),
             ephemeral=True,
         )
         return
@@ -212,9 +218,9 @@ async def on_reloaded_lookup_interaction(
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(gettext, item, ctx)
+    container = get_item_summary(gettext, item, ctx, state.sprite_pack)
     if __debug__:
-        debug_components(container)
+        debug_components(container, state.debug)
     await inter.response.edit_message(components=container)
 
 
@@ -280,7 +286,9 @@ def food_items_required_for_power(power: int, /, target_is_pk: bool = False) -> 
     )
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
+def get_item_summary(
+    gettext: i18n.GetText, item: sm.Item, ctx: UIContext, sprite_pack: structs.SpritePack
+) -> ui.Container:
     stage = item.stages[ctx.stage_index]
     levels = stage.levels
     item_stats = get_item_stats(item, ctx)
@@ -422,7 +430,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 add_component(ui.TextDisplay("\n".join(costs_lines)))
 
     # ------------------------------------------- image --------------------------------------------
-    if (sprite_url := stuff.get_image_url((item.id, stage.tier))) is not None:
+    if (sprite_url := stuff.get_image_url((item.id, stage.tier), sprite_pack)) is not None:
         add_component(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
         add_component(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))

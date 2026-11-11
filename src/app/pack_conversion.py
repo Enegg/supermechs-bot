@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 import msgspec
 
-from app import dto
+from app import dto, structs
 from app.structs import ItemMapping
 
 import supermechs.all as sm
@@ -66,14 +66,9 @@ class SpriteData(NamedTuple):
     reloaded: bool
 
 
-class ItemGroups(NamedTuple):
-    reloaded: ItemMapping
-    legacy: ItemMapping
-    hidden: ItemMapping
-    images: SpriteCollection
-
-
-def collect_items(item_dtos: abc.Sequence[dto.ItemDto], /) -> ItemGroups:
+def collect_items(
+    item_dtos: abc.Sequence[dto.ItemDto], /
+) -> tuple[structs.ItemPack, SpriteCollection]:
     reloaded_items: ItemMapping = {}
     legacy_items: ItemMapping = {}
     hidden_items: ItemMapping = {}
@@ -179,6 +174,7 @@ def collect_items(item_dtos: abc.Sequence[dto.ItemDto], /) -> ItemGroups:
         else:
             legacy_items[item.id] = item
 
-    return ItemGroups(
-        reloaded=reloaded_items, legacy=legacy_items, hidden=hidden_items, images=all_images
+    pack = structs.ItemPack(
+        reloaded_items=reloaded_items, legacy_items=legacy_items, hidden_items=hidden_items
     )
+    return pack, all_images

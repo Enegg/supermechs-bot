@@ -6,9 +6,9 @@ import disnake
 from discord import ComponentLimits, markdown as md, text_to_file
 from disnake.ext import commands
 
-from app import devtools, i18n, init, paths, ui
+from app import devtools, init, paths, ui
 from app.assets import Colors
-from app.core import state
+from app.core.state import State
 from app.plugins_factory import create_dev_plugin
 from app.typeshed import CommandInteraction
 from app.utils import format_exception, walk_extensions
@@ -47,7 +47,7 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, DevtoolsUI
     return component, ctx
 
 
-def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
+def create_console(ctx: DevtoolsUIContext, state: State) -> ui.MessageComponents:
     container, add_component = ui.container()
     add_component(ui.TextDisplay("# Developer Console"))
 
@@ -57,7 +57,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
             value="$none",
             description="Select to remove the override",
             emoji="🏴‍☠️",
-            default=state.debug_locale_override is None,
+            default=state.debug.locale_override is None,
         )
     ]
     locale_options += [
@@ -68,9 +68,9 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
             value=locale.name,
             description=info.local_name,
             emoji=info.flag_emoji,
-            default=locale is state.debug_locale_override,
+            default=locale is state.debug.locale_override,
         )
-        for locale, info in state.locale_info.items()
+        for locale, info in state.i18n.locale_info.items()
     ]
     add_component(ui.Section(
         ui.TextDisplay("## Locale override"),
@@ -115,7 +115,7 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
     add_component(ui.ActionRow(
         ui.ActionButton(
             custom_id=make_component_id(ComponentIds.debug_button, ctx),
-            style=ui.ButtonStyle.green if state.debug_log_components else ui.ButtonStyle.gray,
+            style=ui.ButtonStyle.green if state.debug.log_components else ui.ButtonStyle.gray,
             label="Debug components",
             emoji="🗒️",
         ),
@@ -133,8 +133,9 @@ def create_console(ctx: DevtoolsUIContext) -> ui.MessageComponents:
 @commands.is_owner()
 async def slash_devtools(inter: CommandInteraction) -> None:
     """Open developer console."""
-    ctx = DevtoolsUIContext(last_reload_plugin_name=state.debug_reloaded_plugin_name)
-    components = create_console(ctx)
+    state = State.magically_get_state()
+    ctx = DevtoolsUIContext(last_reload_plugin_name=state.debug.reloaded_plugin_name)
+    components = create_console(ctx, state)
     await inter.response.send_message(
         components=components, flags=disnake.MessageFlags(is_components_v2=True)
     )
@@ -145,7 +146,9 @@ async def _(inter: ui.MessageInteraction) -> None:
     if not inter.data.custom_id.startswith(ComponentIds.prefix):
         return
 
-    if not await state.BOT.is_owner(inter.author):
+    state = State.magically_get_state()
+
+    if not await state.bot.is_owner(inter.author):
         await inter.response.send_message("You cannot use this.", ephemeral=True)
         return
 
@@ -159,20 +162,20 @@ async def _(inter: ui.MessageInteraction) -> None:
             [option_value] = inter.values
 
             if option_value == "$none":
-                state.debug_locale_override = None
+                state.debug.locale_override = None
 
             else:
-                state.debug_locale_override = disnake.Locale[option_value]
+                state.debug.locale_override = disnake.Locale[option_value]
 
         case ComponentIds.i18n_button:
-            i18n.load(paths.LOCALE_DIR)
+            init.load_i18n(paths.LOCALE_DIR, state.i18n)
 
         case ComponentIds.debug_button:
-            state.debug_log_components ^= True
+            state.debug.log_components ^= True
 
         case ComponentIds.reset_button:
-            state.debug_locale_override = None
-            state.debug_log_components = False
+            state.debug.locale_override = None
+            state.debug.log_components = False
 
         case ComponentIds.plugin_select:
             assert inter.values
@@ -182,11 +185,11 @@ async def _(inter: ui.MessageInteraction) -> None:
                 add_err_component(ui.TextDisplay("Selected plugin is no longer available."))
 
             else:
-                state.debug_reloaded_plugin_name = option_value
+                state.debug.reloaded_plugin_name = option_value
                 ctx = ctx.__replace__(last_reload_plugin_name=option_value)
 
         case ComponentIds.cmd_sync_button:
-            await init.sync_commands(state.BOT)
+            await init.sync_commands(state)
 
         case ComponentIds.reload_button:
             if ctx.last_reload_plugin_name is None:
@@ -194,7 +197,7 @@ async def _(inter: ui.MessageInteraction) -> None:
 
             else:
                 try:
-                    state.BOT.reload_extension(ctx.last_reload_plugin_name)
+                    state.bot.reload_extension(ctx.last_reload_plugin_name)
 
                 except commands.ExtensionFailed as exc:
                     add_err_component(
@@ -213,9 +216,9 @@ async def _(inter: ui.MessageInteraction) -> None:
             add_err_component(ui.TextDisplay("Unknown component"))
             plugin.logger.warning("%s - unknown component: %r", slash_devtools.name, component)
 
-    components = create_console(ctx)
+    components = create_console(ctx, state)
     if __debug__:
-        devtools.debug_components(components)
+        devtools.debug_components(components, state.debug)
 
     if error_container.children:
         async with anyio.create_task_group() as tg:

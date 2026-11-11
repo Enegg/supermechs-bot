@@ -1,7 +1,7 @@
 from disnake import Permissions
 from disnake_plugins.plugin import Plugin
 
-from app.core import CONFIG
+from app.core.config import CONFIG
 from app.typeshed import Bot
 
 

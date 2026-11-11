@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final, NamedTuple, cast as type_cast
 from discord import AutocompleteReturnType, InteractionLimits
 
 from app import stuff
-from app.core import state
+from app.core.state import State
 from app.typeshed import CommandInteraction
 
 if TYPE_CHECKING:
@@ -132,6 +132,7 @@ def acronym_of(name: str, /) -> str | None:
 
 def item_name_autocomplete(inter: CommandInteraction, input: str) -> AutocompleteReturnType:
     """Autocomplete for items with regard for slot, element & rarity."""
+    state = State.magically_get_state()
     filled_options: FilledOptions = type_cast("FilledOptions", inter.filled_options)
 
     items = stuff.filter_items(

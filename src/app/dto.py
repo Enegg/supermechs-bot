@@ -15,7 +15,7 @@ class LocaleFileStruct(msgspec.Struct):
     metadata: LocaleMetadataDto
     stats: abc.Mapping[str, str]
     messages: abc.Mapping[str, str] | msgspec.UnsetType = msgspec.UNSET
-    commands: dict[str, str] | msgspec.UnsetType = msgspec.UNSET
+    commands: abc.Mapping[str, str] | msgspec.UnsetType = msgspec.UNSET
 
 
 # -------------------------------------------- item pack -------------------------------------------

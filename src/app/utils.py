@@ -1,3 +1,4 @@
+import enum
 import importlib.util
 import os
 import pathlib
@@ -6,7 +7,7 @@ import reprlib
 import traceback
 from collections import ChainMap, abc
 from threading import Lock
-from typing import Any, Final, Literal, Self, get_args as get_type_args
+from typing import Any, Final, Literal, NamedTuple, Self, get_args as get_type_args
 
 import anyio
 import anyio.to_thread
@@ -14,6 +15,7 @@ import attrs
 import cattrs
 import msgspec
 import rtoml
+from monads.result import Err, Ok, Result
 
 from discord.entities import AnyEmoji, CustomEmoji, UnicodeEmoji
 from disnake import Color, PartialEmoji
@@ -151,35 +153,54 @@ def walk_extensions(root_module: str, *, package: str | None = None) -> abc.Iter
         yield sub_name
 
 
-def _file_sloc(path: Pathish, /) -> int:
-    sloc = 0
-
-    with open(path, encoding="utf-8") as file:  # noqa: PTH123
-        for line in map(str.lstrip, file):
-            if not line or line.startswith(("#", '"""')):
-                continue
-
-            sloc += 1
-
-    return sloc
+class SourceStats(NamedTuple):
+    file_count: int = 0
+    total_chars: int = 0
+    total_lines: int = 0
+    significant_lines: int = 0
+    classes: int = 0
+    functions: int = 0
 
 
-async def get_sloc(directory: Pathish = ".", /) -> int:
-    """Get the number of significant lines of code of python files within the directory."""
-    total: int = 0
+async def get_source_stats(directory: Pathish = ".", /) -> SourceStats:
+    """Get statistics about python source files within a directory."""
+    total_lines = total_chars = significant_lines = classes = functions = 0
     write_lock = Lock()
 
     def runner(path: Pathish, /) -> None:
-        nonlocal total
-        sloc = _file_sloc(path)
+        nonlocal total_lines, total_chars, significant_lines, classes, functions
+        file_lines = file_chars = file_sig_lines = file_classes = file_functions = 0
+
+        with open(path, encoding="utf-8") as file:  # noqa: PTH123
+            for line in file:
+                file_chars += len(line)
+                file_lines += 1
+
+                stripped_line = line.lstrip()
+                if not stripped_line:
+                    continue
+                if not stripped_line.startswith(("#", '"""')):
+                    file_sig_lines += 1
+                if stripped_line.startswith("class "):
+                    file_classes += 1
+                if stripped_line.startswith(("def ", "async def ")):
+                    file_functions += 1
+
         with write_lock:
-            total += sloc
+            total_lines += file_lines
+            total_chars += file_chars
+            significant_lines += file_sig_lines
+            classes += file_classes
+            functions += file_functions
+
+    file_count = 0
 
     async with anyio.create_task_group() as tg:
         async for path in anyio.Path(directory).glob("**/*.py"):
             tg.start_soon(anyio.to_thread.run_sync, runner, path)
+            file_count += 1
 
-    return total
+    return SourceStats(file_count, total_chars, total_lines, significant_lines, classes, functions)
 
 
 def chain_maps[KT, VT](maps: abc.Sequence[abc.Mapping[KT, VT]], /) -> abc.Mapping[KT, VT]:
@@ -194,6 +215,23 @@ def chain_maps[KT, VT](maps: abc.Sequence[abc.Mapping[KT, VT]], /) -> abc.Mappin
 def unset_to_default[T](v: T | msgspec.UnsetType, /, default: T = None) -> T:
     """Return `default` for `msgspec.UNSET`, `v` otherwise."""
     return default if v is msgspec.UNSET else v
+
+
+def try_enum[E: enum.Enum](key: str, enum_type: type[E]) -> E | None:
+    try:
+        return enum_type[key]
+    except KeyError:
+        return None
+
+
+async def async_result[T, E: BaseException](
+    coro: abc.Awaitable[T], /, *excs: type[E]
+) -> Result[T, E]:
+    try:
+        return Ok(await coro)
+
+    except excs as err:
+        return Err(err)
 
 
 CONVERTER: Final = cattrs.Converter()

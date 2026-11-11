@@ -79,6 +79,7 @@ ignore = [
     "S311",      # we don't do cryptography
     "SLF001",    # _member access; => pyright
     "T201",      # print
+    "TC001",     # move under TYPE_CHECKING
     "TC002",     # move under TYPE_CHECKING
 ]
 

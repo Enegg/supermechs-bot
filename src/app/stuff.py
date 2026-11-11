@@ -1,13 +1,13 @@
 from collections import abc
 
-from app.core import state
-from app.structs import SpriteKey
+from app import structs
+from app.core.state import State
 from resources import HttpResource
 
 import supermechs.all as sm
 
 
-def get_command_mention(name: str, /) -> str:
+def get_command_mention(name: str, /, state: State) -> str:
     mention = state.command_mentions.get(name)
 
     if mention is not None:
@@ -17,8 +17,8 @@ def get_command_mention(name: str, /) -> str:
     return mention
 
 
-def get_image_url(key: SpriteKey, /) -> str | None:
-    resource = state.sprite_pack.get(key)
+def get_image_url(key: structs.SpriteKey, /, sprite_pack: structs.SpritePack) -> str | None:
+    resource = sprite_pack.images.get(key)
 
     if isinstance(resource, HttpResource):
         return resource.uri

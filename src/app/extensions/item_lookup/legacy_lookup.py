@@ -5,11 +5,11 @@ from discord import ComponentLimits
 from disnake import MessageFlags
 from disnake.ext import commands
 
-from app import i18n, stuff, ui
+from app import i18n, structs, stuff, ui
 from app.assets import EMOJIS, ICONS, Colors, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
-from app.core import state
+from app.core.state import State
 from app.devtools import debug_components
 from app.gamerules import MAXED_ARENA_BUFFS
 from app.typeshed import CommandInteraction
@@ -69,7 +69,8 @@ async def slash_legacy_item(
     rarity:
         Remove suggestions below this rarity. {{ ITEM_TIER }}
     """
-    gettext = i18n.get_gettext(inter)
+    state = State.magically_get_state()
+    gettext = i18n.get_gettext(inter, state)
 
     for item in stuff.filter_items(state.item_pack.legacy_items, slot, element, rarity):
         if item.name == name:
@@ -80,9 +81,9 @@ async def slash_legacy_item(
         raise commands.UserInputError(msg)
 
     ctx = UIContext(item_id=item.id, level_index=0)
-    container = get_item_summary(gettext, item, ctx)
+    container = get_item_summary(gettext, item, ctx, state.sprite_pack)
     if __debug__:
-        debug_components(container)
+        debug_components(container, state.debug)
     await inter.response.send_message(
         components=container, flags=MessageFlags(is_components_v2=True)
     )
@@ -91,8 +92,9 @@ async def slash_legacy_item(
 async def on_legacy_lookup_interaction(
     inter: ui.MessageInteraction, logger: logging.Logger
 ) -> None:
+    state = State.magically_get_state()
     component, ctx = parse_component_id(inter.data.custom_id)
-    gettext = i18n.get_gettext(inter)
+    gettext = i18n.get_gettext(inter, state)
     # If the bot (re)starts with a new item pack, and a summary of an item from previous
     # pack persists, interaction with it may lead to following scenarios:
     try:
@@ -102,7 +104,7 @@ async def on_legacy_lookup_interaction(
     except KeyError:
         await inter.response.edit_message(components=ui.Container(
             ui.TextDisplay(
-                gettext("item-lookup-item-not-available", command=stuff.get_command_mention("legacy-item"))
+                gettext("item-lookup-item-not-available", command=stuff.get_command_mention("legacy-item", state))
             ),
             accent_colour=Colors.error,
         ))  # fmt: skip
@@ -113,12 +115,15 @@ async def on_legacy_lookup_interaction(
     if len(item.stages[0].levels) < ctx.level_index:
         valid_level_index = min(ctx.level_index, len(item.stages[0].levels) - 1)
         ctx = ctx.__replace__(level_index=valid_level_index)
-        await inter.response.edit_message(components=get_item_summary(gettext, item, ctx))
+        await inter.response.edit_message(
+            components=get_item_summary(gettext, item, ctx, state.sprite_pack)
+        )
         # we cannot easily tell if the item has not changed. (save for parsing the message and comparing item names)
         # If it did, it's going to confuse the user, so lets inform them (even if it didn't)
         await inter.followup.send(
             gettext(
-                "item-lookup-item-changed-info", command=stuff.get_command_mention("legacy-item")
+                "item-lookup-item-changed-info",
+                command=stuff.get_command_mention("legacy-item", state),
             ),
             ephemeral=True,
         )
@@ -140,9 +145,9 @@ async def on_legacy_lookup_interaction(
         case _:
             logger.warning("%s - unknown component: %r", ComponentIds.prefix, component)
 
-    container = get_item_summary(gettext, item, ctx)
+    container = get_item_summary(gettext, item, ctx, state.sprite_pack)
     if __debug__:
-        debug_components(container)
+        debug_components(container, state.debug)
     await inter.response.edit_message(components=container)
 
 
@@ -183,7 +188,9 @@ def power_required_as_legacy_power_kits(power: int, /) -> int:
     return legacy_pks
 
 
-def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui.Container:
+def get_item_summary(
+    gettext: i18n.GetText, item: sm.Item, ctx: UIContext, sprite_pack: structs.SpritePack
+) -> ui.Container:
     tier = item.stages[0].tier
     levels = item.stages[0].levels
     assert len(levels) <= ComponentLimits.string_select_options  # TODO: guard this better
@@ -288,7 +295,7 @@ def get_item_summary(gettext: i18n.GetText, item: sm.Item, ctx: UIContext) -> ui
                 add_component(ui.TextDisplay("\n".join(costs_lines)))
 
     # ------------------------------------------- image --------------------------------------------
-    if (sprite_url := stuff.get_image_url((item.id, tier))) is not None:
+    if (sprite_url := stuff.get_image_url((item.id, tier), sprite_pack)) is not None:
         add_component(ui.MediaGallery(ui.media_gallery_item(sprite_url)))
     else:
         add_component(ui.TextDisplay(f"*{gettext('item-lookup-no-image')}*"))
