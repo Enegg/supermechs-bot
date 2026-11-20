@@ -1,8 +1,10 @@
 # this is NOT meant to be __init__.py
 
 import copy
+import importlib.util
 import logging
 import logging.handlers
+import pkgutil
 import sys
 from collections import abc
 from pathlib import Path
@@ -28,7 +30,33 @@ from supermechs.enums import ItemStat
 _LOG = logging.getLogger(__name__)
 
 
+def load_plugins(package: str, /, state: State) -> None:
+    if (spec := importlib.util.find_spec(package)) is None:
+        msg = f"Unable to find root module '{package}'"
+        raise ImportError(msg, name=package)
+
+    if (paths := spec.submodule_search_locations) is None:
+        msg = f"Module '{package}' is not a package"
+        raise ImportError(msg, name=package)
+
+    # TODO: this isn't enough to make this callable more than once
+    state.loaded_plugins.clear()
+
+    for module_info in pkgutil.iter_modules(paths, spec.name + "."):
+        ext = module_info.name
+        try:
+            state.bot.load_extension(ext)
+        except Exception as exc:
+            _LOG.error("Ignoring exception in %s:", ext, exc_info=exc)
+        else:
+            state.loaded_plugins.append(ext)
+
+
 def load_i18n(directory: Pathish, /, i18n: I18nStore) -> None:
+    i18n.locale_info.clear()
+    i18n.stat_l10ns.clear()
+    i18n.message_l10ns.clear()
+    i18n.command_l10ns.clear()
     # .glob can fail
     # TODO: is there a better way to wrap .glob?
     try:

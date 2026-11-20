@@ -16,7 +16,6 @@ from app.commands import exception_handling
 from app.core.config import CONFIG
 from app.core.state import I18nStore, State
 from app.typeshed import CommandInteraction
-from app.utils import walk_extensions
 
 _LOG = logging.getLogger("main")
 _LOG_EVENT = logging.getLogger("event")
@@ -104,12 +103,7 @@ async def main() -> None:
     init.load_i18n(paths.LOCALE_DIR, i18n)
     setup_event_loggers(bot)
     exception_handling.setup(state)
-
-    for ext in walk_extensions(paths.PLUGINS_PACKAGE):
-        try:
-            bot.load_extension(ext)
-        except Exception as exc:
-            _LOG.error("Ignoring exception in %s:", ext, exc_info=exc)
+    init.load_plugins(paths.PLUGINS_PACKAGE, state)
 
     # bypass call to _schedule_app_command_preparation
     await Client.login(bot, CONFIG.bot_token)

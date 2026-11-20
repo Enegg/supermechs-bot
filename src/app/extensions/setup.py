@@ -11,11 +11,9 @@ from app.assets import Colors
 from app.core.state import State
 from app.plugins_factory import create_dev_plugin
 from app.typeshed import CommandInteraction
-from app.utils import format_exception, walk_extensions
+from app.utils import format_exception
 
 plugin = create_dev_plugin(__name__)
-KNOWN_PLUGIN_PATHS = tuple(walk_extensions(paths.PLUGINS_PACKAGE))
-assert 1 <= len(KNOWN_PLUGIN_PATHS) <= ComponentLimits.string_select_options
 
 
 class ComponentIds:
@@ -48,6 +46,7 @@ def parse_component_id(id: str, /) -> tuple[ComponentIds.AnyId | str, DevtoolsUI
 
 
 def create_console(ctx: DevtoolsUIContext, state: State) -> ui.MessageComponents:
+    assert 1 <= len(state.loaded_plugins) <= ComponentLimits.string_select_options
     container, add_component = ui.container()
     add_component(ui.TextDisplay("# Developer Console"))
 
@@ -100,7 +99,7 @@ def create_console(ctx: DevtoolsUIContext, state: State) -> ui.MessageComponents
         placeholder="Select plugin to reload",
         options=[
             ui.SelectOption(label=plugin_name, default=plugin_name == ctx.last_reload_plugin_name)
-            for plugin_name in KNOWN_PLUGIN_PATHS
+            for plugin_name in state.loaded_plugins
         ],
     )))  # fmt: skip
     add_component(ui.ActionRow(
@@ -181,7 +180,7 @@ async def _(inter: ui.MessageInteraction) -> None:
             assert inter.values
             [option_value] = inter.values
 
-            if option_value not in KNOWN_PLUGIN_PATHS:
+            if option_value not in state.loaded_plugins:
                 add_err_component(ui.TextDisplay("Selected plugin is no longer available."))
 
             else:

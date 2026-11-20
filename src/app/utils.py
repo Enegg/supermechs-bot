@@ -1,8 +1,6 @@
 import enum
-import importlib.util
 import os
 import pathlib
-import pkgutil
 import reprlib
 import traceback
 from collections import ChainMap, abc
@@ -138,19 +136,6 @@ def strip_cwd(path: Pathish, /) -> str:
         Path is not within the cwd.
     """
     return os.path.relpath(path, paths.CWD)
-
-
-def walk_extensions(root_module: str, *, package: str | None = None) -> abc.Iterator[str]:
-    if (spec := importlib.util.find_spec(root_module, package=package)) is None:
-        msg = f"Unable to find root module '{root_module}'"
-        raise ImportError(msg, name=root_module)
-
-    if (paths := spec.submodule_search_locations) is None:
-        msg = f"Module '{root_module}' is not a package"
-        raise ImportError(msg, name=root_module)
-
-    for _, sub_name, _ in pkgutil.iter_modules(paths, f"{spec.name}."):
-        yield sub_name
 
 
 class SourceStats(NamedTuple):

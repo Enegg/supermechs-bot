@@ -43,6 +43,7 @@ class State:
     bot_user_info: structs.BotUserInfo = attrs.Factory(structs.BotUserInfo)
     app_source_stats: SourceStats = SourceStats()  # noqa: RUF009
     command_mentions: Final[abc.MutableMapping[str, str]] = attrs.Factory(dict)
+    loaded_plugins: Final[abc.MutableSequence[str]] = attrs.Factory(list)
 
     item_pack: structs.ItemPack = attrs.Factory(structs.ItemPack)
     sprite_pack: structs.SpritePack = attrs.Factory(structs.SpritePack)
