@@ -40,22 +40,17 @@ class GetText:
 def _get[KT](
     mapping: abc.MutableMapping[structs.LocalePair[KT], str], key: KT, locale: Locale
 ) -> str:
-    try:
-        return mapping[key, locale]
-
-    except KeyError:
-        try:
-            value = mapping[key, const.FALLBACK_LOCALE]
-
-        except KeyError:
-            _LOG.error("Key %r does not exist", key)
-            value = mapping[key, locale] = mapping[key, const.FALLBACK_LOCALE] = str(key)
-
-        else:
-            _LOG.warning("Locale %s has no key %r", locale, key)
-            mapping[key, locale] = value
-
+    if (value := mapping.get((key, locale))) is not None:
         return value
+
+    if (value := mapping.get((key, const.FALLBACK_LOCALE))) is not None:
+        _LOG.warning("Locale %s has no key %r", locale, key)
+        mapping[key, locale] = value
+        return value
+
+    _LOG.error("Key %r does not exist", key)
+    value = mapping[key, locale] = mapping[key, const.FALLBACK_LOCALE] = str(key)
+    return value
 
 
 def get_message(
