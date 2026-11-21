@@ -40,7 +40,7 @@ _LOG = logging.getLogger(__name__)
 
 def load_plugins(package: str, /, state: State) -> None:
     if (spec := importlib.util.find_spec(package)) is None:
-        _LOG.error("Unable to find root module %r", package)
+        _LOG.error("Package %r not found", package)
         return
 
     if spec.submodule_search_locations is None:

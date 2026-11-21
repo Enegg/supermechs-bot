@@ -67,7 +67,7 @@ async def main() -> None:
             @override
             def get(self, key: str) -> abc.Mapping[str, str] | None:  # pyright: ignore[reportIncompatibleMethodOverride]
                 if (data := i18n.command_l10ns.get(key)) is None:
-                    self._LOG.info("Localizations not found for key %r", key)
+                    self._LOG.debug("Localizations not found for key %r", key)
 
                 return data
 
@@ -124,7 +124,8 @@ async def main() -> None:
             del frame
             sig = signal.Signals(signum).name
             _LOG.warning("Received %s, stopping", sig)
-            tg.start_soon(bot.close)
+            if not bot.is_closed():
+                tg.start_soon(Client.close, bot)
 
         signal.signal(signal.SIGINT, handle)
         signal.signal(signal.SIGTERM, handle)

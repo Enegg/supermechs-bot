@@ -26,7 +26,7 @@ async def slash_frantic(inter: CommandInteraction) -> None:
 @plugin.slash_command(name="info")
 async def slash_info(inter: CommandInteraction) -> None:
     """Display information about the bot."""
-    state: State = State.magically_get_state()
+    state = State.magically_get_state()
     components: ui.MessageComponents = []
     container, add_component = ui.container(accent_color=inter.me.color)
     components.append(container)
@@ -35,20 +35,20 @@ async def slash_info(inter: CommandInteraction) -> None:
         # when an app is team-owned, .owner is a pseudo-user that represents the team
         # and doesn't really have any useful attributes
         assert team.owner_id is not None  # TODO: disnake#1630
-        developer_line = f"Developer: {md.user_mention(team.owner_id)}"
+        developer_line = md.user_mention(team.owner_id)
         if len(team.members) > 1:
             if len(team.members) == 2:  # noqa: PLR2004
                 developer_line += " and 1 other"
             else:
                 developer_line += f" and {len(team.members)} others"
     else:
-        developer_line = f"Developer: {state.bot_user_info.owner.mention}"
+        developer_line = state.bot_user_info.owner.mention
 
     add_component(ui.Section(
         ui.TextDisplay(
             "## Bot info\n"
             "**General**\n"
-            f"{developer_line}\n"
+            f"Developer: {developer_line}\n"
             f"Created: {md.format_dt(state.bot.user.created_at, 'R')}\n"
             f"Servers: {len(state.bot.guilds)}"
         ),
