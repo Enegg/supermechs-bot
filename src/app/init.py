@@ -22,7 +22,7 @@ from app.const import Ansi
 from app.core.log import JsonFormatter
 from app.core.state import I18nStore, State
 from app.pack_conversion import collect_items
-from app.typeshed import Pathish, ResultTuple
+from app.typeshed import Bot, Pathish, ResultTuple
 from app.utils import (
     async_result,
     get_source_stats,
@@ -40,24 +40,46 @@ _LOG = logging.getLogger(__name__)
 
 def load_plugins(package: str, /, state: State) -> None:
     if (spec := importlib.util.find_spec(package)) is None:
-        msg = f"Unable to find root module '{package}'"
-        raise ImportError(msg, name=package)
+        _LOG.error("Unable to find root module %r", package)
+        return
 
-    if (paths := spec.submodule_search_locations) is None:
-        msg = f"Module '{package}' is not a package"
-        raise ImportError(msg, name=package)
+    if spec.submodule_search_locations is None:
+        _LOG.error("Module %r is not a package", package)
+        return
 
     # TODO: this isn't enough to make this callable more than once
     state.loaded_plugins.clear()
 
-    for module_info in pkgutil.iter_modules(paths, spec.name + "."):
-        ext = module_info.name
+    for module_info in pkgutil.iter_modules(spec.submodule_search_locations):
+        plugin_name = importlib.util.resolve_name(module_info.name, package)
+        sys.modules.pop(plugin_name, None)
+
         try:
-            state.bot.load_extension(ext)
+            module = importlib.import_module(module_info.name, package)
+        except ImportError as exc:
+            _LOG.error("Importing %r failed:", plugin_name, exc_info=exc)
+            continue
         except Exception as exc:
-            _LOG.error("Ignoring exception in %s:", ext, exc_info=exc)
-        else:
-            state.loaded_plugins.append(ext)
+            _LOG.error("Exception while executing %r:", plugin_name, exc_info=exc)
+            continue
+
+        setup: abc.Callable[[Bot], None] | None = getattr(module, "setup", None)
+
+        if setup is None:
+            del sys.modules[plugin_name]
+            _LOG.error("Plugin %r has no setup()", plugin_name)
+            continue
+
+        try:
+            setup(state.bot)
+        except Exception as exc:
+            del sys.modules[plugin_name]
+            _LOG.error("%s.setup() raised an exception:", plugin_name, exc_info=exc)
+            # TODO: _remove_module_references
+            # TODO: _call_module_finalizers
+            continue
+
+        state.loaded_plugins.append(plugin_name)
 
 
 def load_i18n(directory: Pathish, /, i18n: I18nStore) -> None:
