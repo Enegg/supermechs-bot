@@ -50,12 +50,12 @@ def load_plugins(package: str, /, state: State) -> None:
     # TODO: this isn't enough to make this callable more than once
     state.loaded_plugins.clear()
 
-    for module_info in pkgutil.iter_modules(spec.submodule_search_locations):
-        plugin_name = importlib.util.resolve_name(module_info.name, package)
+    for module_info in pkgutil.iter_modules(spec.submodule_search_locations, spec.name + "."):
+        plugin_name = module_info.name
         sys.modules.pop(plugin_name, None)
 
         try:
-            module = importlib.import_module(module_info.name, package)
+            module = importlib.import_module(plugin_name)
         except ImportError as exc:
             _LOG.error("Importing %r failed:", plugin_name, exc_info=exc)
             continue
