@@ -9,9 +9,9 @@ from app import i18n, structs, stuff, ui
 from app.assets import EMOJIS, ICONS, Colors, NoneEmoji
 from app.commands.autocompleters import item_name_autocomplete
 from app.commands.params import LEGACY_ELEMENT_CHOICES, LEGACY_TIER_CHOICES, SLOT_CHOICES
+from app.const import MAXED_ARENA_BUFFS
 from app.core.state import State
 from app.devtools import debug_components
-from app.gamerules import MAXED_ARENA_BUFFS
 from app.typeshed import CommandInteraction
 from resources import HttpResource
 
