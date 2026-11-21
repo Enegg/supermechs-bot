@@ -19,11 +19,11 @@ from disnake.abc import Messageable
 from app import aio, dto, paths, structs
 from app.async_utils import gather
 from app.const import Ansi
-from app.core.log import JsonFormatter
 from app.core.state import I18nStore, State
 from app.pack_conversion import collect_items
 from app.typeshed import Bot, Pathish, ResultTuple
 from app.utils import (
+    JsonFormatter,
     async_result,
     get_source_stats,
     read_and_parse_file,
