@@ -10,11 +10,10 @@ import attrs
 import orjson
 import yarl
 from aiohttp import ClientSession as HTTPSession
-from monads.result import Err, Ok, Result
 
 import disnake.http
 
-from app.typeshed import Pathish
+from app.typeshed import Pathish, ResultTuple
 from app.utils import as_binary_unit
 from resources import AnyResource, FileResource, HttpResource
 
@@ -46,15 +45,15 @@ def client_session(client: disnake.http.HTTPClient, /) -> HTTPSession:
     )
 
 
-async def read_path(path: Pathish, /) -> Result[bytes, OSError]:
+async def read_path(path: Pathish, /) -> ResultTuple[bytes, OSError]:
     path = pathlib.Path(path)
     _LOG.info("Open path=%s", path)
 
     try:
-        return Ok(await anyio.to_thread.run_sync(path.read_bytes))
+        return await anyio.to_thread.run_sync(path.read_bytes), None
 
     except OSError as exc:
-        return Err(exc)
+        return None, exc
 
 
 @attrs.define(auto_exc=True)
@@ -66,7 +65,7 @@ class ResponseNotOk(OSError):
         return cls(HTTPStatus(response.status))
 
 
-async def read_http(url: yarl.URL, /, session: HTTPSession) -> Result[bytes, HttpReadError]:
+async def read_http(url: yarl.URL, /, session: HTTPSession) -> ResultTuple[bytes, HttpReadError]:
     _LOG.info("Request method=%s url=%s", HTTPMethod.GET, url)
 
     async with session.get(url) as response:
@@ -82,20 +81,18 @@ async def read_http(url: yarl.URL, /, session: HTTPSession) -> Result[bytes, Htt
         )
 
         if response.status != HTTPStatus.OK:
-            return Err(ResponseNotOk.from_response(response))
+            return None, ResponseNotOk.from_response(response)
 
         try:
-            content = await response.content.read()
+            return await response.content.read(), None
 
         except aiohttp.ClientError as exc:
-            return Err(exc)
-
-    return Ok(content)
+            return None, exc
 
 
 async def read_resource(
     resource: AnyResource, /, session: HTTPSession
-) -> Result[bytes, HttpReadError | OSError]:
+) -> ResultTuple[bytes, HttpReadError | OSError]:
     match resource:
         case FileResource():
             return await read_path(resource.path)

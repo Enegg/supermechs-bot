@@ -13,6 +13,7 @@ type Pathish = os.PathLike[str] | str
 type AsyncFunc[**P, RetT] = abc.Callable[P, abc.Awaitable[RetT]]
 """Function yielding an awaitable."""
 ByteSize = NewType("ByteSize", int)
+type ResultTuple[T, E] = tuple[T, None] | tuple[None, E]
 
 type FilterType = logging.Filter | abc.Callable[[logging.LogRecord], logging.LogRecord | bool]
 """Type of an object acceptable as a Filter."""

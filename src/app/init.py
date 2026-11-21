@@ -7,22 +7,30 @@ import logging.handlers
 import pkgutil
 import sys
 from collections import abc
+from functools import partial
 from pathlib import Path
 
 import msgspec
-from monads.result import Err, Ok, Result
 
 from discord import markdown as md
 from disnake import ApplicationCommandType, HTTPException, Locale
 from disnake.abc import Messageable
 
 from app import aio, dto, paths, structs
+from app.async_utils import gather
 from app.const import Ansi
 from app.core.log import JsonFormatter
 from app.core.state import I18nStore, State
 from app.pack_conversion import collect_items
-from app.typeshed import Pathish
-from app.utils import async_result, get_source_stats, strip_cwd, try_enum, unset_to_default
+from app.typeshed import Pathish, ResultTuple
+from app.utils import (
+    async_result,
+    get_source_stats,
+    read_and_parse_file,
+    strip_cwd,
+    try_enum,
+    unset_to_default,
+)
 from resources import AnyResource, HttpResource
 
 from supermechs.enums import ItemStat
@@ -67,19 +75,15 @@ def load_i18n(directory: Pathish, /, i18n: I18nStore) -> None:
 
             if locale is None:
                 _LOG.warning("%r is not a valid locale", path.stem)
-                return
+                continue
 
-            try:
-                data = path.read_bytes()
-            except OSError as err:
-                _LOG.error("Failed to read %r:", path, exc_info=err)
-                return
+            match read_and_parse_file(path, type=dto.LocaleFileStruct):
+                case None, exc:
+                    _LOG.error("Failed to read %r:", path, exc_info=exc)
+                    continue
 
-            try:
-                locale_dto = msgspec.toml.decode(data, type=dto.LocaleFileStruct)
-            except msgspec.DecodeError as err:
-                _LOG.error("Failed to decode %s:", path, exc_info=err)
-                return
+                case locale_dto, None:
+                    pass
 
             for key, entry in locale_dto.stats.items():
                 if (stat := try_enum(key, ItemStat)) is None:
@@ -119,15 +123,16 @@ async def sync_commands(state: State, /) -> None:
 
 
 async def init_app_info(state: State, /) -> None:
-    match await async_result(state.bot.application_info(), HTTPException):
-        case Ok(app_info):
-            state.bot_user_info = structs.BotUserInfo(
-                owner=app_info.owner,
-                team=app_info.team,
-                bot_public=app_info.bot_public,
-            )
-        case Err(exc):
-            _LOG.error("Failed to fetch application_info:", exc_info=exc)
+    try:
+        app_info = await state.bot.application_info()
+    except HTTPException as exc:
+        _LOG.error("Failed to fetch application_info:", exc_info=exc)
+    else:
+        state.bot_user_info = structs.BotUserInfo(
+            owner=app_info.owner,
+            team=app_info.team,
+            bot_public=app_info.bot_public,
+        )
 
 
 async def init_sloc(state: State, /) -> None:
@@ -220,31 +225,30 @@ def config_logging() -> None:
 
 
 async def setup_logs_channel(state: State, channel_id: int) -> None:
-    try:
-        channel = await state.bot.fetch_channel(channel_id)
+    match await async_result(state.bot.fetch_channel(channel_id), HTTPException):
+        case None, exc:
+            _LOG.error("Fetching logs channel failed", exc_info=exc)
 
-    except HTTPException as exc:
-        _LOG.error("Fetching logs channel failed", exc_info=exc)
-        return
+        case Messageable() as channel, None:
+            _LOG.info("Logs channel: #%s", channel.name)
+            state.logs_channel = channel
 
-    if not isinstance(channel, Messageable):
-        _LOG.error(
-            "Channel is not Messageable: type=%s",
-            # abc.PrivateChannel does not expose .type, but DMChannel does
-            channel.type.name,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType]
-        )
-        return
-
-    _LOG.info("Logs channel: #%s", channel.name)
-    state.logs_channel = channel
+        case channel, None:
+            _LOG.error(
+                "Channel is not Messageable: type=%s",
+                # abc.PrivateChannel does not expose .type, but DMChannel does
+                channel.type.name,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType]
+            )
 
 
-def safe_decode[T](data: abc.Buffer | str, /, *, type: type[T]) -> Result[T, msgspec.DecodeError]:
+def safe_decode[T](
+    data: abc.Buffer | str, /, *, type: type[T]
+) -> ResultTuple[T, msgspec.DecodeError]:
     # "safe" as in it won't bail with a DecodeError
     try:
-        return Ok(msgspec.json.decode(data, type=type))
+        return msgspec.json.decode(data, type=type), None
     except msgspec.DecodeError as exc:
-        return Err(exc)
+        return None, exc
 
 
 async def load_datapack(
@@ -254,19 +258,43 @@ async def load_datapack(
     state: State,
     http_session: aio.HTTPSession,
 ) -> None:
-    match await aio.read_resource(item_pack_uri, http_session):
-        case Err(exc):
+    if gfx_pack_uri is None:
+        item_pack_resource = await aio.read_resource(item_pack_uri, http_session)
+        gfx_dto = None
+        _LOG.warning(f"{gfx_pack_uri=}, no graphics to load")
+    else:
+        item_pack_resource, gfx_pack_resource = await gather(
+            partial(aio.read_resource, item_pack_uri, http_session),
+            partial(aio.read_resource, gfx_pack_uri, http_session),
+        )
+
+        match gfx_pack_resource:
+            case None, exc:
+                _LOG.error("Could not read %s:", gfx_pack_uri.uri, exc_info=exc)
+                return
+
+            case gfx_data, None:
+                match safe_decode(gfx_data, type=dto.GfxPackDto):
+                    case None, exc:
+                        _LOG.error("Could not decode GfxPackDto:", exc_info=exc)
+                        return
+
+                    case gfx_dto, None:
+                        pass
+
+    match item_pack_resource:
+        case None, exc:
             _LOG.error("Could not read %r:", item_pack_uri.uri, exc_info=exc)
             return
 
-        case Ok(item_data):
-            pack_decode_result = safe_decode(item_data, type=dto.ItemPackDto)
+        case item_data, None:
+            match safe_decode(item_data, type=dto.ItemPackDto):
+                case None, exc:
+                    _LOG.error("Could not decode ItemPackDto:", exc_info=exc)
+                    return
 
-    if not pack_decode_result:
-        _LOG.error("Could not decode ItemPackDto:", exc_info=pack_decode_result.err_value)
-        return
-
-    item_pack, images = collect_items(pack_decode_result.ok_value.items)
+                case pack_dto, None:
+                    item_pack, images = collect_items(pack_dto.items)
 
     _LOG.info(
         "Loaded item pack: reloaded=%d, legacy=%d",
@@ -275,23 +303,9 @@ async def load_datapack(
     )
     state.item_pack = item_pack
 
-    if gfx_pack_uri is None:
-        _LOG.warning(f"{gfx_pack_uri=}, no graphics to load")
+    if gfx_dto is None:
         return
 
-    match await aio.read_resource(gfx_pack_uri, http_session):
-        case Err(exc):
-            _LOG.error("Could not read %s:", gfx_pack_uri.uri, exc_info=exc)
-            return
-
-        case Ok(gfx_data):
-            gfx_decode_result = safe_decode(gfx_data, type=dto.GfxPackDto)
-
-    if not gfx_decode_result:
-        _LOG.error("Could not decode GfxPackDto:", exc_info=gfx_decode_result.err_value)
-        return
-
-    gfx_dto = gfx_decode_result.ok_value
     sprites: dict[structs.SpriteKey, HttpResource] = {}
     sprite_table = {(sprite.gfx, sprite.reloaded): sprite for sprite in gfx_dto.sprites}
 

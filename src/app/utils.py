@@ -2,26 +2,20 @@ import enum
 import os
 import pathlib
 import reprlib
+import threading
 import traceback
 from collections import ChainMap, abc
-from threading import Lock
-from typing import Any, Final, Literal, NamedTuple, Self, get_args as get_type_args
+from typing import Literal, NamedTuple, get_args as get_type_args
 
 import anyio
 import anyio.to_thread
-import attrs
-import cattrs
 import msgspec
 import rtoml
-from monads.result import Err, Ok, Result
 
-from discord.entities import AnyEmoji, CustomEmoji, UnicodeEmoji
-from disnake import Color, PartialEmoji
 from disnake.utils import utcnow as utcnow
 
 from app import paths
-from app.typeshed import ByteSize, Pathish
-from resources import AnyResource, from_uri
+from app.typeshed import Pathish, ResultTuple
 
 __all__ = ("as_binary_unit", "atoi_bin", "format_exception", "limited_repr", "utcnow")
 
@@ -150,7 +144,7 @@ class SourceStats(NamedTuple):
 async def get_source_stats(directory: Pathish = ".", /) -> SourceStats:
     """Get statistics about python source files within a directory."""
     total_lines = total_chars = significant_lines = classes = functions = 0
-    write_lock = Lock()
+    write_lock = threading.Lock()
 
     def runner(path: Pathish, /) -> None:
         nonlocal total_lines, total_chars, significant_lines, classes, functions
@@ -211,83 +205,50 @@ def try_enum[E: enum.Enum](key: str, enum_type: type[E]) -> E | None:
 
 async def async_result[T, E: BaseException](
     coro: abc.Awaitable[T], /, *excs: type[E]
-) -> Result[T, E]:
+) -> ResultTuple[T, E]:
     try:
-        return Ok(await coro)
+        return await coro, None
 
     except excs as err:
-        return Err(err)
+        return None, err
 
 
-CONVERTER: Final = cattrs.Converter()
+def read_and_parse_file[T](
+    path: Pathish, /, *, type: type[T]
+) -> ResultTuple[T, OSError | rtoml.TomlParsingError | msgspec.DecodeError]:
+    path = pathlib.Path(path)
 
+    match path.suffix:
+        case ".toml":
+            try:
+                toml_text = path.read_text(encoding="utf-8")
+            except OSError as exc:
+                return None, exc
 
-@CONVERTER.register_structure_hook
-def _structure_color(value: int, cls: type) -> Color:
-    return Color(int(value))
+            try:
+                toml_dict = rtoml.loads(toml_text)
+            except rtoml.TomlParsingError as exc:
+                return None, exc
 
+            try:
+                obj = msgspec.convert(toml_dict, type=type)
+            except msgspec.DecodeError as exc:
+                return None, exc
 
-def _structure_resource(value: str, cls: type) -> AnyResource:
-    assert isinstance(value, str)
-    return from_uri(value)
+            return obj, None
 
+        case ".json":
+            try:
+                json_bytes = path.read_bytes()
+            except OSError as exc:
+                return None, exc
 
-CONVERTER.register_structure_hook_func(lambda x: x is AnyResource, _structure_resource)
+            try:
+                obj = msgspec.json.decode(json_bytes, type=type)
+            except msgspec.DecodeError as exc:
+                return None, exc
 
+            return obj, None
 
-def _structure_emoji(value: str, cls: type) -> AnyEmoji:
-    partial_emoji = PartialEmoji.from_str(value)
-    if partial_emoji.id is None:
-        return UnicodeEmoji(partial_emoji.name)
-    return CustomEmoji(partial_emoji.id, partial_emoji.name, partial_emoji.animated)
-
-
-CONVERTER.register_structure_hook_func(lambda x: x is AnyEmoji, _structure_emoji)
-
-
-@CONVERTER.register_structure_hook
-def _structure_binary_int(value: Any, _: object) -> ByteSize:
-    try:
-        return ByteSize(int(value))
-
-    except (ValueError, TypeError):
-        pass
-
-    if not isinstance(value, str):
-        msg = f"Invalid type: {value!r}"
-        raise TypeError(msg) from None
-
-    return ByteSize(atoi_bin(value))
-
-
-del _structure_color, _structure_resource, _structure_binary_int
-
-
-@attrs.define
-class MappingParser:
-    mappings: list[abc.Mapping[str, Any]]
-    conv: cattrs.Converter
-
-    def __init__(
-        self, *mappings: abc.Mapping[str, Any], conv: cattrs.Converter = CONVERTER
-    ) -> None:
-        self.mappings = list(mappings)
-        self.conv = conv
-
-    def structure[T](self, cls: type[T], *key_path: str) -> T:
-        config: abc.Mapping[str, Any] = chain_maps(self.mappings)
-
-        for key in key_path:
-            config = config[key]
-
-        return self.conv.structure(config, cls)
-
-    @classmethod
-    def from_path(
-        cls,
-        path: Pathish,
-        loader: abc.Callable[[str], abc.Mapping[str, Any]] = rtoml.loads,
-    ) -> Self:
-        path = pathlib.Path(path)
-        config = loader(path.read_text(encoding="utf-8"))
-        return cls(config)
+        case unknown:
+            return None, OSError(f"Unknown file type: {unknown!r}")

@@ -28,11 +28,6 @@ class DebugOptions:
     locale_override: Locale | None = None
 
 
-# TODO: Assets
-class Assets:
-    EMOJIS: Final = ...
-
-
 @attrs.define(kw_only=True)
 class State:
     instance: ClassVar[Self]
@@ -50,7 +45,6 @@ class State:
 
     i18n: Final[I18nStore] = attrs.Factory(I18nStore)
     debug: Final[DebugOptions] = attrs.Factory(DebugOptions)
-    assets: Assets = attrs.Factory(Assets)
 
     @classmethod
     def magically_get_state(cls) -> Self:

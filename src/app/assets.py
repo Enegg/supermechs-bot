@@ -2,23 +2,23 @@
 
 import logging
 from collections import abc
-from typing import Final, final
+from typing import Any, ClassVar, Final, final
 
 import attrs
-import rtoml
 
 from discord import AnyEmoji, UnicodeEmoji
 from disnake import Color
 
 from app import paths
-from app.utils import CONVERTER, MappingParser, chain_maps
+from app.conversion import CONVERTER
+from app.utils import chain_maps, read_and_parse_file
 from resources import AnyResource, FileResource, HttpResource
 
 import supermechs.all as sm
 
 __all__ = ("ASSETS", "EMOJIS", "ICONS", "Colors")
 
-_LOG = logging.getLogger("assets")
+_LOG = logging.getLogger("app.init")
 
 
 @final
@@ -36,7 +36,7 @@ class NoneEmoji:
 
 @attrs.frozen
 class Emojis:
-    NULL_EMOJI = UnicodeEmoji("❔")
+    NULL_EMOJI: ClassVar[Final] = UnicodeEmoji("❔")
 
     item_slot_torso: AnyEmoji = NULL_EMOJI
     item_slot_legs: AnyEmoji = NULL_EMOJI
@@ -181,7 +181,7 @@ class Emojis:
 
 @attrs.frozen
 class Icons:
-    MISSING_IMAGE = FileResource(paths.MISSING_PNG)
+    MISSING_IMAGE: ClassVar[Final] = FileResource(paths.MISSING_PNG)
 
     item_slot_torso: AnyResource | None = None
     item_slot_legs: AnyResource | None = None
@@ -250,31 +250,35 @@ class Assets:
     frantic_gifs: abc.Sequence[str]
 
 
-def _parse_emojis() -> Emojis:
+def load_assets() -> tuple[Emojis, Icons, Assets]:
+    match read_and_parse_file(paths.ASSETS_TOML, type=abc.Mapping[str, Any]):
+        case None, exc:
+            _LOG.error("Failed to read %r:", paths.ASSETS_TOML, exc_info=exc)
+            return Emojis(), Icons(), Assets(())
+
+        case assets_data, None:
+            pass
+
     sources: list[abc.Mapping[str, str]] = []
 
-    config = rtoml.loads(paths.ASSETS_TOML.read_text(encoding="utf-8"))
-    emojis_overrides: abc.Mapping[str, str] | None = config.get("emoji_overrides")
+    emojis_overrides: abc.Mapping[str, str] | None = assets_data.get("emoji_overrides")
 
     if emojis_overrides is not None:
         sources.append(emojis_overrides)
 
-    if paths.EMOJIS_TOML.exists():
-        sources.append(rtoml.loads(paths.EMOJIS_TOML.read_text(encoding="utf-8")))
-    else:
-        _LOG.warning("Emojis not cached")
+    match read_and_parse_file(paths.EMOJIS_TOML, type=abc.Mapping[str, Any]):
+        case None, FileNotFoundError():
+            _LOG.warning("%s doesn't exist", paths.EMOJIS_TOML)
+        case None, exc:
+            _LOG.warning("Failed to read emoji cache:", exc_info=exc)
+        case emoji_cache_data, None:
+            sources.append(emoji_cache_data)
 
-    data = chain_maps(sources)
-    return CONVERTER.structure(data, Emojis)
+    emojis = CONVERTER.structure(chain_maps(sources), Emojis)
+    assets = CONVERTER.structure(assets_data["misc"], Assets)
+    icons = CONVERTER.structure(assets_data["icon_overrides"], Icons)
 
-
-def load_assets() -> tuple[Assets, Icons]:
-    parser = MappingParser.from_path(paths.ASSETS_TOML)
-    return (
-        parser.structure(Assets, "misc"),
-        parser.structure(Icons, "icon_overrides"),
-    )
+    return emojis, icons, assets
 
 
-ASSETS, ICONS = load_assets()
-EMOJIS = _parse_emojis()
+EMOJIS, ICONS, ASSETS = load_assets()

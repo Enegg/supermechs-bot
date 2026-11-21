@@ -9,7 +9,8 @@ import attrs
 import dotenv
 
 from app import paths
-from app.utils import MappingParser
+from app.conversion import CONVERTER
+from app.utils import chain_maps
 from resources import AnyResource, from_uri
 
 __all__ = ("CONFIG",)
@@ -78,7 +79,7 @@ def get_config() -> Config:
     ns = _parser.parse_args(namespace=types.SimpleNamespace())
     assert isinstance(ns.env, pathlib.Path)
     dotenv.load_dotenv(ns.env)
-    return MappingParser(vars(ns), os.environ).structure(Config)
+    return CONVERTER.structure(chain_maps((vars(ns), os.environ)), Config)
 
 
 CONFIG: Final = get_config()
