@@ -17,7 +17,6 @@ from disnake import ApplicationCommandType, HTTPException, Locale
 from disnake.abc import Messageable
 
 from app import aio, dto, paths, structs
-from app.async_utils import gather
 from app.const import Ansi
 from app.core.state import I18nStore, State
 from app.pack_conversion import collect_items
@@ -285,7 +284,7 @@ async def load_datapack(
         gfx_dto = None
         _LOG.warning(f"{gfx_pack_uri=}, no graphics to load")
     else:
-        item_pack_resource, gfx_pack_resource = await gather(
+        item_pack_resource, gfx_pack_resource = await aio.gather(
             partial(aio.read_resource, item_pack_uri, http_session),
             partial(aio.read_resource, gfx_pack_uri, http_session),
         )

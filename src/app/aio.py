@@ -1,7 +1,7 @@
 import logging
 import pathlib
 from http import HTTPMethod as HTTPMethod, HTTPStatus as HTTPStatus
-from typing import Any, Self
+from typing import Any, Self, cast as type_cast, overload
 
 import aiohttp
 import anyio
@@ -13,8 +13,8 @@ from aiohttp import ClientSession as HTTPSession
 
 import disnake.http
 
-from app.typeshed import Pathish, ResultTuple
-from app.utils import as_binary_unit
+from app.typeshed import AsyncFunc, Pathish, ResultTuple
+from app.utils import as_binary_unit, async_result
 from resources import AnyResource, FileResource, HttpResource
 
 _LOG = logging.getLogger("io")
@@ -83,11 +83,7 @@ async def read_http(url: yarl.URL, /, session: HTTPSession) -> ResultTuple[bytes
         if response.status != HTTPStatus.OK:
             return None, ResponseNotOk.from_response(response)
 
-        try:
-            return await response.content.read(), None
-
-        except aiohttp.ClientError as exc:
-            return None, exc
+        return await async_result(response.content.read(), aiohttp.ClientError)
 
 
 async def read_resource(
@@ -99,3 +95,40 @@ async def read_resource(
 
         case HttpResource():
             return await read_http(resource.url, session)
+
+
+# fmt: off
+@overload
+async def gather[T1, T2](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], /) -> tuple[T1, T2]: ...
+@overload
+async def gather[T1, T2, T3](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], /) -> tuple[T1, T2, T3]: ...
+@overload
+async def gather[T1, T2, T3, T4](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], c4: AsyncFunc[[], T4], /) -> tuple[T1, T2, T3, T4]: ...
+@overload
+async def gather[T1, T2, T3, T4, Tn](c1: AsyncFunc[[], T1], c2: AsyncFunc[[], T2], c3: AsyncFunc[[], T3], c4: AsyncFunc[[], T4], /, *cs: AsyncFunc[[], Tn]) -> tuple[T1, T2, T3, T4, *tuple[Tn, ...]]: ...
+# fmt: on
+async def gather[T](*coros: AsyncFunc[[], T]) -> tuple[T, ...]:  # pyright: ignore[reportInconsistentOverload]
+    out: list[T] = [type_cast("T", None)] * len(coros)
+
+    async def worker(index: int, coro: AsyncFunc[[], T]) -> None:
+        out[index] = await coro()
+
+    async with anyio.create_task_group() as tg:
+        for i, coro in enumerate(coros):
+            tg.start_soon(worker, i, coro)
+
+    return tuple(out)
+
+
+async def amap[T, RetT](coro: AsyncFunc[[T], RetT], /, *args: T) -> list[RetT]:
+    """Asynchronously map coroutine function over arguments."""
+    out: list[RetT] = [type_cast("RetT", None)] * len(args)
+
+    async def worker(index: int, arg: T) -> None:
+        out[index] = await coro(arg)
+
+    async with anyio.create_task_group() as tg:
+        for i, arg in enumerate(args):
+            tg.start_soon(worker, i, arg)
+
+    return out
