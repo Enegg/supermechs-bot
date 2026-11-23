@@ -8,17 +8,25 @@ from disnake.abc import Messageable
 from disnake.ext import commands
 
 from app import structs
-from app.utils import SourceStats
+from app.utils import SourceStats, limited_repr
 
 from supermechs.enums import ItemStat
 
 
 @attrs.define(kw_only=True)
 class I18nStore:
-    locale_info: Final[abc.MutableMapping[Locale, structs.LocaleInfo]] = attrs.Factory(dict)
-    stat_l10ns: Final[abc.MutableMapping[structs.LocalePair[ItemStat], str]] = attrs.Factory(dict)
-    message_l10ns: Final[abc.MutableMapping[structs.LocalePair[str], str]] = attrs.Factory(dict)
-    command_l10ns: Final[abc.MutableMapping[str, abc.Mapping[str, str]]] = attrs.Factory(dict)
+    locale_info: Final[abc.MutableMapping[Locale, structs.LocaleInfo]] = attrs.field(
+        factory=dict, repr=limited_repr
+    )
+    stat_l10ns: Final[abc.MutableMapping[structs.LocalePair[ItemStat], str]] = attrs.field(
+        factory=dict, repr=limited_repr
+    )
+    message_l10ns: Final[abc.MutableMapping[structs.LocalePair[str], str]] = attrs.field(
+        factory=dict, repr=limited_repr
+    )
+    command_l10ns: Final[abc.MutableMapping[str, abc.Mapping[str, str]]] = attrs.field(
+        factory=dict, repr=limited_repr
+    )
 
 
 @attrs.define(kw_only=True)
