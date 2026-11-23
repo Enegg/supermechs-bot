@@ -165,6 +165,22 @@ async def load_plugins(package: str, /, state: State) -> None:
         state.loaded_plugins.append(plugin_name)
 
 
+def cleanup(bot: Bot, /) -> None:
+    bot.extra_events.clear()
+    bot.all_slash_commands.clear()
+    bot.all_user_commands.clear()
+    bot.all_message_commands.clear()
+
+    for module_name in tuple(sys.modules):
+        if not module_name.startswith("app."):
+            continue
+
+        if module_name.startswith("app.core."):
+            continue
+
+        del sys.modules[module_name]
+
+
 def load_i18n(directory: Pathish, /, i18n: I18nStore) -> None:
     i18n.locale_info.clear()
     i18n.stat_l10ns.clear()
