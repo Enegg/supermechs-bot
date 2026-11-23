@@ -66,7 +66,7 @@ async def main() -> None:
 
     init.load_i18n(paths.LOCALE_DIR, i18n)
     init.setup_event_listeners(bot, state)
-    init.load_plugins(paths.PLUGINS_PACKAGE, state)
+    await init.load_plugins(paths.PLUGINS_PACKAGE, state)
 
     # bypass call to _schedule_app_command_preparation
     await Client.login(bot, CONFIG.bot_token)

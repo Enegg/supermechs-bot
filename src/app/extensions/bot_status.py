@@ -8,7 +8,7 @@ from app.assets import ASSETS, EMOJIS
 from app.core.config import CONFIG
 from app.core.state import State
 from app.devtools import debug_components
-from app.plugins_factory import create_plugin
+from app.plugins_factory import create_plugin, create_plugin_handlers
 from app.typeshed import CommandInteraction
 from app.utils import as_binary_unit
 from resources import HttpResource
@@ -96,4 +96,4 @@ async def slash_info(inter: CommandInteraction) -> None:
     await inter.response.send_message(components=components, ephemeral=True)
 
 
-setup, teardown = plugin.create_extension_handlers()
+setup, teardown = create_plugin_handlers(plugin)

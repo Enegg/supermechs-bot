@@ -121,7 +121,7 @@ def setup_event_listeners(client: Client, /, state: State) -> None:
         await exception_handling.send_response(inter, builder, state)
 
 
-def load_plugins(package: str, /, state: State) -> None:
+async def load_plugins(package: str, /, state: State) -> None:
     if (spec := importlib.util.find_spec(package)) is None:
         _LOG.error("Package %r not found", package)
         return
@@ -146,15 +146,14 @@ def load_plugins(package: str, /, state: State) -> None:
             _LOG.error("Exception while executing %r:", plugin_name, exc_info=exc)
             continue
 
-        setup: abc.Callable[[Bot], None] | None = getattr(module, "setup", None)
+        setup: abc.Callable[[Bot], abc.Awaitable[None]] | None = getattr(module, "setup", None)
 
         if setup is None:
-            del sys.modules[plugin_name]
-            _LOG.error("Plugin %r has no setup()", plugin_name)
+            _LOG.warning("Plugin %r has no setup()", plugin_name)
             continue
 
         try:
-            setup(state.bot)
+            await setup(state.bot)
         except Exception as exc:
             del sys.modules[plugin_name]
             _LOG.error("%s.setup() raised an exception:", plugin_name, exc_info=exc)

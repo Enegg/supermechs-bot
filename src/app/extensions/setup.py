@@ -9,7 +9,7 @@ from disnake.ext import commands
 from app import devtools, init, paths, ui
 from app.assets import Colors
 from app.core.state import State
-from app.plugins_factory import create_dev_plugin
+from app.plugins_factory import create_dev_plugin, create_plugin_handlers
 from app.typeshed import CommandInteraction
 from app.utils import format_exception
 
@@ -234,4 +234,4 @@ async def _(inter: ui.MessageInteraction) -> None:
         await inter.response.edit_message(components=components)
 
 
-setup, teardown = plugin.create_extension_handlers()
+setup, teardown = create_plugin_handlers(plugin)

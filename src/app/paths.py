@@ -12,4 +12,4 @@ ICONS_SVG_DIR = STATIC_DIR / "icons/svg/"
 LOGS_DIR = Path("logs/")
 DEV_ENV = Path("dev.env")
 PROD_ENV = Path("prod.env")
-PLUGINS_PACKAGE = "extensions"
+PLUGINS_PACKAGE = "app.extensions"

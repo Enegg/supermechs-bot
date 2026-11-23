@@ -1,7 +1,7 @@
 from disnake import Event
 
 from app import ui
-from app.plugins_factory import create_plugin
+from app.plugins_factory import create_plugin, create_plugin_handlers
 
 from . import legacy_lookup, reloaded_lookup
 
@@ -20,4 +20,4 @@ async def _(inter: ui.MessageInteraction) -> None:
         await legacy_lookup.on_legacy_lookup_interaction(inter, plugin.logger)
 
 
-setup, teardown = plugin.create_extension_handlers()
+setup, teardown = create_plugin_handlers(plugin)
