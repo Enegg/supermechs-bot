@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import logging
 import logging.handlers
+import os
 import pkgutil
 import sys
 from collections import abc
@@ -169,47 +170,57 @@ def load_i18n(directory: Pathish, /, i18n: I18nStore) -> None:
     i18n.stat_l10ns.clear()
     i18n.message_l10ns.clear()
     i18n.command_l10ns.clear()
-    # .glob can fail
-    # TODO: is there a better way to wrap .glob?
+
     try:
-        for path in Path(directory).glob(f"*{paths.LOCALE_FILE_EXT}"):
-            _LOG.info("Loading locale from %s", path)
+        dir_entries = os.listdir(directory)  # noqa: PTH208
+    except OSError as exc:
+        _LOG.error("Failed to scan directory %r:", directory, exc_info=exc)
+        return
+    else:
+        dir_entries = map(Path, dir_entries)
 
-            locale = try_enum(path.stem, Locale)
+    for path in dir_entries:
+        if path.suffix != paths.LOCALE_FILE_EXT:
+            continue
 
-            if locale is None:
-                _LOG.warning("%r is not a valid locale", path.stem)
+        if not path.is_file():
+            continue
+
+        _LOG.info("Loading locale from %s", path)
+
+        locale = try_enum(path.stem, Locale)
+
+        if locale is None:
+            _LOG.warning("%r is not a valid locale", path.stem)
+            continue
+
+        match read_and_parse_file(path, type=dto.LocaleFileStruct):
+            case None, exc:
+                _LOG.error("Failed to read %r:", path, exc_info=exc)
                 continue
 
-            match read_and_parse_file(path, type=dto.LocaleFileStruct):
-                case None, exc:
-                    _LOG.error("Failed to read %r:", path, exc_info=exc)
-                    continue
+            case locale_dto, None:
+                pass
 
-                case locale_dto, None:
-                    pass
+        for key, entry in locale_dto.stats.items():
+            if (stat := try_enum(key, ItemStat)) is None:
+                _LOG.error("Invalid stat key: %s", key)
+                continue
+            i18n.stat_l10ns[stat, locale] = entry
 
-            for key, entry in locale_dto.stats.items():
-                if (stat := try_enum(key, ItemStat)) is None:
-                    _LOG.error("Invalid stat key: %s", key)
-                    continue
-                i18n.stat_l10ns[stat, locale] = entry
+        if locale_dto.messages is not msgspec.UNSET:
+            for key, message in locale_dto.messages.items():
+                i18n.message_l10ns[key, locale] = message
 
-            if locale_dto.messages is not msgspec.UNSET:
-                for key, message in locale_dto.messages.items():
-                    i18n.message_l10ns[key, locale] = message
+        if locale_dto.commands is not msgspec.UNSET:
+            i18n.command_l10ns[locale.value] = locale_dto.commands
 
-            if locale_dto.commands is not msgspec.UNSET:
-                i18n.command_l10ns[locale.value] = locale_dto.commands
-
-            i18n.locale_info[locale] = structs.LocaleInfo(
-                english_name=locale_dto.metadata.english_name,
-                local_name=locale_dto.metadata.local_name,
-                flag_emoji=unset_to_default(locale_dto.metadata.flag_emoji),
-                region=unset_to_default(locale_dto.metadata.region),
-            )
-    except OSError as exc:
-        _LOG.error("Failed to load i18n:", exc_info=exc)
+        i18n.locale_info[locale] = structs.LocaleInfo(
+            english_name=locale_dto.metadata.english_name,
+            local_name=locale_dto.metadata.local_name,
+            flag_emoji=unset_to_default(locale_dto.metadata.flag_emoji),
+            region=unset_to_default(locale_dto.metadata.region),
+        )
 
 
 async def sync_commands(state: State, /) -> None:
