@@ -1,11 +1,8 @@
-import logging
 from contextlib import suppress
-from functools import partial
 
 from discord import ComponentLimits, markdown as md, text_to_file
 from discord.message_builder import MessageBuilder
-from disnake import Event, InteractionTimedOut
-from disnake.ext import commands
+from disnake import InteractionTimedOut
 
 from app import i18n, ui
 from app.assets import Colors
@@ -13,35 +10,6 @@ from app.core.config import CONFIG
 from app.core.state import State
 from app.typeshed import CommandInteraction
 from app.utils import format_exception
-
-_LOG = logging.getLogger("event.command_error")
-
-
-def get_user_error_message(
-    inter: CommandInteraction, exc: commands.CommandError, state: State
-) -> str | None:
-    gettext = i18n.get_gettext(inter, state)
-
-    match exc:
-        case commands.NotOwner():
-            info = gettext("command-dev")
-
-        case commands.UserInputError() | commands.CheckFailure():
-            # TODO: localize (some UserInputErrors are localized)
-            info = str(exc)
-
-        case commands.MaxConcurrencyReached():
-            # TODO: localize
-            info = str(exc)
-
-        case commands.CommandInvokeError(original=TimeoutError()):
-            _LOG.warning("Command %s timed out", inter.application_command.qualified_name)
-            info = gettext("command-timeout")
-
-        case _:
-            info = None
-
-    return info
 
 
 def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> MessageBuilder:
@@ -71,20 +39,6 @@ def exception_to_message(exc: BaseException, inter: CommandInteraction, /) -> Me
     return builder.with_components(container)
 
 
-async def on_slash_command_error(
-    inter: CommandInteraction, exc: commands.CommandError, state: State
-) -> None:
-    if (msg := get_user_error_message(inter, exc, state)) is not None:
-        with suppress(InteractionTimedOut):
-            await inter.send(msg, ephemeral=True)
-        return
-
-    error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
-    _LOG.error("Exception in %s", inter.application_command.qualified_name, exc_info=error)
-    builder = exception_to_message(error, inter)
-    await send_response(inter, builder, state)
-
-
 if CONFIG.indev:
 
     async def send_response(
@@ -110,7 +64,3 @@ else:
             await inter.send(
                 i18n.get_message(state.i18n, inter.locale, "command-error"), ephemeral=True
             )
-
-
-def setup(state: State, /) -> None:
-    state.bot.add_listener(partial(on_slash_command_error, state=state), Event.slash_command_error)

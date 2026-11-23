@@ -8,50 +8,14 @@ from typing import override
 import anyio
 
 import disnake
-from disnake import Client, Event, LocalizationProtocol
+from disnake import Client, LocalizationProtocol
 from disnake.ext import commands
 
 from app import aio, init, paths
-from app.commands import exception_handling
 from app.core.config import CONFIG
 from app.core.state import I18nStore, State
-from app.typeshed import CommandInteraction
 
 _LOG = logging.getLogger("main")
-_LOG_EVENT = logging.getLogger("event")
-
-
-def setup_event_loggers(client: Client, /) -> None:
-    @client.listen(Event.ready)
-    async def _() -> None:
-        limit = client.session_start_limit
-        assert limit is not None
-        _LOG_EVENT.info(
-            f"Username: {client.user.name};"
-            f" Session #{limit.total - limit.remaining}/{limit.total}"
-            f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
-        )
-
-    @client.listen(Event.disconnect)
-    async def _() -> None:
-        _LOG_EVENT.info("Disconnected")
-
-    @client.listen(Event.slash_command)
-    async def _(inter: CommandInteraction, /) -> None:
-        command_name = inter.application_command.qualified_name
-        _LOG_EVENT.info(
-            "%s (%d): /%s",
-            inter.author.name,
-            inter.author.id,
-            command_name,
-            extra={"filled_options": inter.filled_options},
-        )
-
-    @client.listen(Event.slash_command_completion)
-    async def _(inter: CommandInteraction, /) -> None:
-        command_name = inter.application_command.qualified_name
-        result = "failed" if inter.command_failed else "finished"
-        _LOG_EVENT.info("Command by %s %s: /%s", inter.author, result, command_name)
 
 
 async def main() -> None:
@@ -101,8 +65,7 @@ async def main() -> None:
     State.instance = state = State(bot=bot, i18n=i18n)
 
     init.load_i18n(paths.LOCALE_DIR, i18n)
-    setup_event_loggers(bot)
-    exception_handling.setup(state)
+    init.setup_event_listeners(bot, state)
     init.load_plugins(paths.PLUGINS_PACKAGE, state)
 
     # bypass call to _schedule_app_command_preparation

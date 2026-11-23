@@ -13,14 +13,23 @@ from pathlib import Path
 import msgspec
 
 from discord import markdown as md
-from disnake import ApplicationCommandType, HTTPException, Locale
+from disnake import (
+    ApplicationCommandType,
+    Client,
+    Event,
+    HTTPException,
+    InteractionTimedOut,
+    Locale,
+)
 from disnake.abc import Messageable
+from disnake.ext import commands
 
-from app import aio, dto, paths, structs
+from app import aio, dto, i18n, paths, structs
+from app.commands import exception_handling
 from app.const import Ansi
 from app.core.state import I18nStore, State
 from app.pack_conversion import collect_items
-from app.typeshed import Bot, Pathish, ResultTuple
+from app.typeshed import Bot, CommandInteraction, Pathish, ResultTuple
 from app.utils import (
     JsonFormatter,
     async_result,
@@ -35,6 +44,81 @@ from resources import AnyResource, HttpResource
 from supermechs.enums import ItemStat
 
 _LOG = logging.getLogger(__name__)
+_LOG_EVENT = logging.getLogger("app.event")
+
+
+def setup_event_listeners(client: Client, /, state: State) -> None:
+    @client.listen(Event.ready)
+    async def _() -> None:
+        limit = client.session_start_limit
+        assert limit is not None
+        _LOG_EVENT.info(
+            f"Username: {client.user.name};"
+            f" Session #{limit.total - limit.remaining}/{limit.total}"
+            f" (expires {limit.reset_time:%d.%m.%Y %H:%M:%S})"
+        )
+
+    @client.listen(Event.connect)
+    async def _() -> None:
+        _LOG_EVENT.info("Connected")
+
+    @client.listen(Event.disconnect)
+    async def _() -> None:
+        _LOG_EVENT.info("Disconnected")
+
+    @client.listen(Event.slash_command)
+    async def _(inter: CommandInteraction, /) -> None:
+        command_name = inter.application_command.qualified_name
+        _LOG_EVENT.info(
+            "%s (%d): /%s",
+            inter.author.name,
+            inter.author.id,
+            command_name,
+            extra={"filled_options": inter.filled_options},
+        )
+
+    @client.listen(Event.slash_command_completion)
+    async def _(inter: CommandInteraction, /) -> None:
+        command_name = inter.application_command.qualified_name
+        result = "failed" if inter.command_failed else "finished"
+        _LOG_EVENT.info("Command by %s %s: /%s", inter.author, result, command_name)
+
+    @client.listen(Event.slash_command_error)
+    async def _(inter: CommandInteraction, exc: commands.CommandError) -> None:
+        gettext = i18n.get_gettext(inter, state)
+
+        match exc:
+            case commands.NotOwner():
+                msg = gettext("command-dev")
+
+            case commands.UserInputError() | commands.CheckFailure():
+                # TODO: localize (some UserInputErrors are localized)
+                msg = str(exc)
+
+            case commands.MaxConcurrencyReached():
+                # TODO: localize
+                msg = str(exc)
+
+            case commands.CommandInvokeError(original=TimeoutError()):
+                _LOG_EVENT.warning("Command %s timed out", inter.application_command.qualified_name)
+                msg = gettext("command-timeout")
+
+            case _:
+                msg = None
+
+        if msg is not None:
+            try:
+                await inter.send(msg, ephemeral=True)
+            except InteractionTimedOut:
+                pass
+            return
+
+        error = exc.original if isinstance(exc, commands.CommandInvokeError) else exc
+        _LOG_EVENT.error(
+            "Exception in %s", inter.application_command.qualified_name, exc_info=error
+        )
+        builder = exception_handling.exception_to_message(error, inter)
+        await exception_handling.send_response(inter, builder, state)
 
 
 def load_plugins(package: str, /, state: State) -> None:
