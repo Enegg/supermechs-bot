@@ -77,6 +77,7 @@ ignore = [
     "RET503",    # "return xyz(...)" where both return None is ok
     "S101",      # asserts are very useful
     "S311",      # we don't do cryptography
+    "SIM105",    # try ... except exc: pass -> with suppress(exc); no thanks
     "SLF001",    # _member access; => pyright
     "T201",      # print
     "TC001",     # move under TYPE_CHECKING
